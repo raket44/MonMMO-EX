@@ -39,9 +39,23 @@ ping 127.0.0.1 -n 4 >nul
 if not exist logs mkdir logs
 del /q logs\server-login.log logs\server-login.err.log logs\server-game.log logs\server-game.err.log 2>nul
 
-start "MonMMO Login Server" /min cmd /c "call gradlew.bat :server.login:run > logs\server-login.log 2> logs\server-login.err.log"
-ping 127.0.0.1 -n 6 >nul
-start "MonMMO Game Server" /min cmd /c "call gradlew.bat :server.game:run > logs\server-game.log 2> logs\server-game.err.log"
+rem Prefer the INSTALLED distributions: a plain JVM start opens the ports in ~2s, instead of the
+rem Gradle daemon prelude that made the client's "connecting..." hang after clicking log-in.
+rem Refresh the dists after server code changes:
+rem   gradlew.bat :server.game:installDist :server.login:installDist
+rem Working dir must be each server's project dir - the hot-reload data files (warp-rules.txt,
+rem nds-*.txt) resolve relative to it.
+if exist "server.login\build\install\server.login\bin\server.login.bat" (
+  start "MonMMO Login Server" /min cmd /c "cd /d "%~dp0server.login" && call build\install\server.login\bin\server.login.bat > "%~dp0logs\server-login.log" 2> "%~dp0logs\server-login.err.log""
+) else (
+  start "MonMMO Login Server" /min cmd /c "call gradlew.bat :server.login:run > logs\server-login.log 2> logs\server-login.err.log"
+)
+ping 127.0.0.1 -n 3 >nul
+if exist "server.game\build\install\server.game\bin\server.game.bat" (
+  start "MonMMO Game Server" /min cmd /c "cd /d "%~dp0server.game" && call build\install\server.game\bin\server.game.bat > "%~dp0logs\server-game.log" 2> "%~dp0logs\server-game.err.log""
+) else (
+  start "MonMMO Game Server" /min cmd /c "call gradlew.bat :server.game:run > logs\server-game.log 2> logs\server-game.err.log"
+)
 
 echo Started MonMMO login and game server tasks.
 echo Logs:

@@ -87,4 +87,21 @@ internal object ClientStoryWhitelist {
 
   /** True when the client's `LG0.Yw1` accepts this (region, id) - i.e. a 0x2A send is safe. */
   fun accepts(regionId: Int, id: Int): Boolean = id == 0 || byRegion[regionId]?.contains(id) == true
+
+  /**
+   * The client's own badge tables (`f/qK.O9` static initializer, bytecode-verified): per region,
+   * the client ids of badges 1..8 plus a ninth champion/game-clear slot. Its badge HUD counts set
+   * flags among exactly these ids, so a region's story engine syncs "badge N earned" by sending
+   * 0x2A for badgeIds[region][N] - no probing needed, the semantics are the client's own code.
+   * GBA ids are the ROM's real flag ids; NDS ids are the client's numbering (Sinnoh's order is
+   * scrambled on purpose - it mirrors the client's badge-index remap in LG0.tA1).
+   */
+  val badgeIds: Map<Int, List<Int>> =
+      mapOf(
+          0 to listOf(2080, 2081, 2082, 2083, 2084, 2085, 2086, 2087, 2092),
+          1 to listOf(2151, 2152, 2153, 2154, 2155, 2156, 2157, 2158, 2175),
+          2 to listOf(1521, 1522, 1523, 1524, 1525, 1526, 1527, 1528, 2400),
+          3 to listOf(1361, 1362, 1365, 1363, 1364, 1366, 1367, 1368, 2404),
+          4 to listOf(1361, 1362, 1363, 1364, 1365, 1366, 1367, 1368, 2404),
+      )
 }

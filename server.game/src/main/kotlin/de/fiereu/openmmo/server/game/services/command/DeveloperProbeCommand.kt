@@ -151,6 +151,21 @@ constructor(
         ctx.session.send(ServerNoticePacket(type.toShort(), 0, text))
         ctx.reply("Sent ServerNoticePacket type=$type.")
       }
+      // The client-self-population experiment: "/probe npcs off" suppresses this session's npc
+      // spawn packets; walk through any door and look. Empty map = NPCs are server-fed;
+      // populated map = the client spawns its own from ROM data. "/probe npcs on" restores.
+      "npcs" -> {
+        val mode = ctx.args.getOrNull(1)?.lowercase()
+        if (mode != "on" && mode != "off") {
+          ctx.reply("/probe npcs <on|off>")
+          return
+        }
+        ctx.state.suppressNpcSpawns = mode == "off"
+        ctx.reply(
+            if (mode == "off")
+                "NPC spawn packets suppressed - walk through a door and see who is left."
+            else "NPC spawn packets restored - re-enter the map to repopulate.")
+      }
       // Raw 0x2A story-flag send, bypassing the key mapping: the tool for decoding what each
       // whitelisted client id renders (drawbridge state? gate opening? fly spot?). Stand where
       // the effect would show, flip the id, watch. Ids outside the client's whitelist are

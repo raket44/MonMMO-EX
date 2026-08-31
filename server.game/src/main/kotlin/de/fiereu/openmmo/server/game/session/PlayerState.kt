@@ -139,6 +139,12 @@ data class PlayerState(
     /** Where /warp from was called, pending its /warp to. Region, bank, map, x, y. */
     @field:Volatile var pendingWarpSource: IntArray? = null,
     /**
+     * Developer experiment: suppress all map-npc spawn packets for this session. If a map still
+     * shows people with this on, the client populates NPCs itself; if it is empty, they are
+     * server-fed. Toggled by /probe npcs.
+     */
+    @field:Volatile var suppressNpcSpawns: Boolean = false,
+    /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.
      */

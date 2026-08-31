@@ -34,6 +34,12 @@ constructor(
   }
 
   fun spawnNpcsForMap(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {
+    // The /probe npcs experiment: with spawns suppressed, an empty map proves NPCs are
+    // server-fed; a populated one proves the client spawns its own.
+    if (ctx.attributes[PLAYER_STATE]?.suppressNpcSpawns == true) {
+      log.info { "NPC spawns suppressed for $regionId:$bankId:$mapId (probe)" }
+      return
+    }
     val map = mapManager.getMap(regionId, bankId, mapId) ?: return
     val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
     val storyFlags = stored?.storyFlags.orEmpty()

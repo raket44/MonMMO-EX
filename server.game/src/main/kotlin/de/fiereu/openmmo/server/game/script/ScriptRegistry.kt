@@ -19,6 +19,13 @@ internal fun gbaScriptSource(regionId: Int): String? =
 
 class ScriptResolutionException(message: String) : IllegalStateException(message)
 
+/**
+ * The decomp writes object events with no script as literal `0x0`; the map generator passes it
+ * through. It is a first-class "this npc has nothing to say", not a resolution failure.
+ */
+internal fun isNoScript(label: String): Boolean =
+    label.isEmpty() || label == "0x0" || label == "0" || label == "NULL"
+
 /** Resolves a decomp label through developer forcing, support analysis, and Kotlin fallback. */
 class ScriptRegistry(
     private val byLabel: Map<String, Script>,
@@ -29,6 +36,7 @@ class ScriptRegistry(
     private val interpretedCandidates: Map<String, List<InterpretedScript>> = emptyMap(),
 ) {
   fun forLabel(scriptLabel: String, source: String? = null): Script? {
+    if (isNoScript(scriptLabel)) return null
     val candidates = interpretedCandidates[scriptLabel].orEmpty()
     val interpreted =
         if (source == null) {

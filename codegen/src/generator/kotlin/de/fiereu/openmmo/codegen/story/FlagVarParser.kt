@@ -13,10 +13,45 @@ object FlagVarParser {
   )
 
   fun flags(decompDir: File): List<StoryConstant> =
-      constants(decompDir, "include/constants/flags.h", "FLAG_")
+      if (File(decompDir, "include/constants/flags.h").exists())
+          constants(decompDir, "include/constants/flags.h", "FLAG_")
+      else enumList(decompDir, "FLAG_")
 
   fun vars(decompDir: File): List<StoryConstant> =
-      constants(decompDir, "include/constants/vars.h", "VAR_")
+      if (File(decompDir, "include/constants/vars.h").exists())
+          constants(decompDir, "include/constants/vars.h", "VAR_")
+      else enumList(decompDir, "VAR_")
+
+  /**
+   * pokeplatinum ships its whole flag/var space as one flattened C-enum listing
+   * (generated/vars_flags.txt): one name per line, implicit previous+1 numbering, with occasional
+   * `NAME = <number|earlier name>` anchors (VARS_START = 16384 etc.).
+   */
+  private fun enumList(decompDir: File, prefix: String): List<StoryConstant> {
+    val file = File(decompDir, "generated/vars_flags.txt")
+    require(file.exists()) { "Missing ${file.path} (and no include/constants/flags.h)" }
+    val values = linkedMapOf<String, Int>()
+    var next = 0
+    for (rawLine in file.readLines()) {
+      val line = rawLine.substringBefore('#').trim()
+      if (line.isEmpty()) continue
+      val name = line.substringBefore('=').trim()
+      val explicit = line.substringAfter('=', "").trim().takeIf(String::isNotEmpty)
+      val value =
+          when {
+            explicit == null -> next
+            explicit.startsWith("0x", ignoreCase = true) -> explicit.drop(2).toInt(16)
+            explicit.toIntOrNull() != null -> explicit.toInt()
+            else ->
+                checkNotNull(values[explicit]) {
+                  "${file.name}: $name references unknown $explicit"
+                }
+          }
+      values.putIfAbsent(name, value)
+      next = value + 1
+    }
+    return values.filterKeys { it.startsWith(prefix) }.map { StoryConstant(it.key, it.value) }
+  }
 
   /** Flags the source game's new-game reset sets. */
   fun initialFlags(decompDir: File): List<String> =

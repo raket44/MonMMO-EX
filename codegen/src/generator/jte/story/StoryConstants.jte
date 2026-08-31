@@ -20,8 +20,7 @@ object ${objectName} {
   const val ${constant.getName()} = "${namespace}/${constant.getName()}"
 @endfor
 
-@if(!initialFlags.isEmpty())
-  /** Flags set by the source game's new-game map reset. */
+  /** Flags set by the source game's new-game map reset (empty when the game has none). */
   val initiallySet: Set<String> =
       setOf(
 @for(StoryConstant constant : initialFlags)
@@ -45,7 +44,6 @@ object ${objectName} {
 @endfor
       )
 
-@endif
   /** Numeric id assigned by the source game's constants header. */
   fun numericId(key: String): Int? {
 @for(int index = 0; index < idChunks.size(); index++)

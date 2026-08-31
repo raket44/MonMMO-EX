@@ -314,7 +314,7 @@ constructor(
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
             ?: return null
-    val npc =
+    val template =
         map.npcs.firstOrNull {
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
@@ -323,6 +323,18 @@ constructor(
               it.entityIdx,
           ) == entityId
         } ?: return null
+    // The spawned position, not the template's - story placement and setobjectxyperm move npcs,
+    // and the template tile then fails the adjacency test (wrong-way facing on moved npcs).
+    val stored = state.characterId?.let(characterStore::getCharacter)
+    val npc =
+        npcService.effectiveNpc(
+            info.positionRegionId.toInt(),
+            info.positionBankId.toInt(),
+            info.positionMapId.toInt(),
+            template,
+            stored?.storyFlags.orEmpty(),
+            stored?.storyVars.orEmpty(),
+        )
     val dx = info.positionX.toInt() - npc.x
     val dy = info.positionY.toInt() - npc.y
     if (Math.abs(dx) + Math.abs(dy) != 1) return null

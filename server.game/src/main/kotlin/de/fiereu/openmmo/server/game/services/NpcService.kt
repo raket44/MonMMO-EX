@@ -111,6 +111,27 @@ constructor(
     }
   }
 
+  /**
+   * The npc as this character actually sees it spawned - the template adjusted by story placement
+   * and any setobjectxyperm override, the same pipeline the spawn uses. Position math (facing,
+   * adjacency) must use this, never the raw MapDef template: a story-moved npc read from the
+   * template fails the adjacency test and faces the wrong way.
+   */
+  fun effectiveNpc(
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      npc: NpcDef,
+      storyFlags: Set<String>,
+      storyVars: Map<String, Int>,
+  ): NpcDef =
+      applyXyOverride(
+          regionId,
+          bankId,
+          mapId,
+          applyStoryPlacement(bankId, mapId, npc, storyFlags, storyVars),
+          storyVars)
+
   private fun sessionStoryVars(ctx: SessionContext): Map<String, Int> =
       ctx.attributes[PLAYER_STATE]
           ?.characterId

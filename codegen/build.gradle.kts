@@ -90,14 +90,17 @@ jteCodegen {
         })
   }
   // Per region flag and var key constants for scripts. Names come from each decomp, so this is by
-  // region like maps. The generic story store in server.game does not depend on these, they are the
-  // GBA adapter that gives ported scripts readable keys.
+  // region like maps. The generic story store in server.game does not depend on these, they are
+  // the adapter that gives ported scripts readable keys. Story covers the NDS regions too -
+  // pokeheartgold has pret-style flags.h/vars.h, pokeplatinum ships a flattened enum list.
   register("story") {
     mainClass.set("de.fiereu.openmmo.codegen.story.Main")
+    val storyRegionSources =
+        regionSources + mapOf("johto" to "pokeheartgold", "sinnoh" to "pokeplatinum")
     inputDirs.from(
-        regionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
+        storyRegionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
     extraArgs.set(
-        regionSources.map { (region, decomp) ->
+        storyRegionSources.map { (region, decomp) ->
           "$region|${rootProject.layout.projectDirectory.dir("decomp/$decomp").asFile.absolutePath}"
         })
   }

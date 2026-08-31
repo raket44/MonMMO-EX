@@ -14,6 +14,9 @@ internal object StoryClientState {
 
   fun flagUpdate(regionId: Byte, key: String, enabled: Boolean): StoryFlagUpdatePacket? {
     val id = flagId(regionId, key) ?: return null
+    // The client whitelists the story ids it mirrors (badges, fly points, gates) and its 0x2A
+    // handler throws on anything else - every other flag is server-side save state only.
+    if (!ClientStoryWhitelist.accepts(regionId.toInt(), id)) return null
     return StoryFlagUpdatePacket(regionId, id, enabled)
   }
 
@@ -46,8 +49,14 @@ internal object StoryClientState {
 
   private fun flagId(regionId: Byte, key: String): Int? =
       when (regionId.toInt()) {
+        // GBA regions: the client's whitelisted ids ARE the ROM flag ids, so the generated
+        // decomp mapping is also the wire mapping.
         KANTO_REGION -> KantoFlags.numericId(key)
         HOENN_REGION -> HoennFlags.numericId(key)
+        // NDS regions: NEVER forward ROM ids. HGSS keeps badges in a save bitfield, not event
+        // flags, so the client's whitelisted 1360..1368 are PokeMMO-invented ids - and the ROM's
+        // OWN 1360+ range is its trainer-defeated flags. Forwarding ROM ids would light badges
+        // for beating random trainers. Regions 2..4 need a probed ROM-id -> client-id table.
         else -> null
       }
 

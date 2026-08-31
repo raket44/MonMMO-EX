@@ -24,6 +24,24 @@ object ConfigLoader {
         rootKeyFile = config.stringOrNull("server.rootKeyFile"),
         sessionSecret = secret.toByteArray(Charsets.UTF_8),
         sessionTokenMaxAge = tokenMaxAge,
+        developer =
+            DeveloperToolsConfig(
+                enabled = config.getBoolean("developer.enabled"),
+                interpretedOverrides =
+                    config
+                        .getStringList("developer.interpretedOverrides")
+                        .map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .toSet(),
+                kotlinOverrides =
+                    config
+                        .getStringList("developer.kotlinOverrides")
+                        .map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .toSet(),
+                interpreterVerbose = config.getBoolean("developer.interpreterVerbose"),
+                expansionClientContent = config.getBoolean("developer.expansionClientContent"),
+            ),
         db =
             DbConfig(
                 host = config.getString("db.host"),

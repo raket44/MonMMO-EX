@@ -18,9 +18,12 @@ import de.fiereu.openmmo.server.game.battle.MoveLearner
 import de.fiereu.openmmo.server.game.battle.TurnEngine
 import de.fiereu.openmmo.server.game.battle.WildMonFactory
 import de.fiereu.openmmo.server.game.services.BattleService
+import de.fiereu.openmmo.server.game.services.ClassicModeService
+import de.fiereu.openmmo.server.game.services.DexProgressService
 import de.fiereu.openmmo.server.game.services.MapLoadService
 import de.fiereu.openmmo.server.game.services.PresenceService
 import de.fiereu.openmmo.server.game.services.StoryPlayerService
+import de.fiereu.openmmo.server.game.services.WarpRules
 import de.fiereu.openmmo.server.game.services.WarpService
 import de.fiereu.openmmo.server.game.services.WorldStateService
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -41,6 +44,18 @@ import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 
+/** Dev tools on, the way the private dev server runs, so the command dispatches. */
+private fun enabledTools() =
+    de.fiereu.openmmo.server.game.developer.DeveloperTools(
+        de.fiereu.openmmo.server.game.config.GameServerConfig(
+            host = "127.0.0.1",
+            port = 0,
+            checksumSize = 2,
+            rootKeyResource = "game.private.pem",
+            sessionSecret = "test-secret".toByteArray(),
+            developer = de.fiereu.openmmo.server.game.config.DeveloperToolsConfig(enabled = true),
+        ))
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoryResetTest :
     FunSpec({
@@ -53,7 +68,7 @@ class StoryResetTest :
         val items = ItemRegistry()
         return StoryCommand(
             characterStore = store,
-            worldStateService = WorldStateService(),
+            worldStateService = WorldStateService(DexProgressService(store)),
             storyPlayerService =
                 StoryPlayerService(
                     store,
@@ -61,6 +76,8 @@ class StoryResetTest :
                     species,
                     moves,
                     items,
+                    DexProgressService(store),
+                    WorldStateService(DexProgressService(store)),
                 ),
             warpService =
                 WarpService(
@@ -68,6 +85,7 @@ class StoryResetTest :
                     mapManager,
                     store,
                     PresenceService(interest, PassThroughInterestPolicy(), mapLoad, store),
+                    WarpRules(),
                 ),
             battleService =
                 BattleService(
@@ -82,8 +100,10 @@ class StoryResetTest :
                     interestManager = interest,
                     speciesRegistry = species,
                     moveRegistry = moves,
+                    dexProgress = DexProgressService(store),
                     trainers = TrainerRegistry(),
                     items = items,
+                    classicMode = ClassicModeService(store),
                 ),
             items = items,
         )
@@ -105,7 +125,7 @@ class StoryResetTest :
           store.setStoryVar(charId, KantoVars.VAR_STARTER_MON, 2)
           store.addItem(charId, itemId = 4, amount = 5)
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(storyCommand(store)))
+          val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
 
           service.tryHandle(session, "/story reset") shouldBe true
 
@@ -134,7 +154,7 @@ class StoryResetTest :
                       .create(4, 5, BattleRng(seed = 2))!!
                       .copy(container = PokemonContainer.PC, containerSlot = 0))
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(storyCommand(store)))
+          val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
 
           service.tryHandle(session, "/story reset") shouldBe true
 
@@ -150,8 +170,8 @@ class StoryResetTest :
           val charId = developer(store)
           store.setStoryFlag(charId, KantoFlags.FLAG_SYS_POKEMON_GET)
           val session = FakeSession(characterId = charId)
-          session.state().inDialog = true
-          val service = ChatCommandService(store, setOf(storyCommand(store)))
+          session.state().scriptRunning = true
+          val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
 
           service.tryHandle(session, "/story reset") shouldBe true
 

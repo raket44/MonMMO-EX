@@ -85,4 +85,16 @@ class BattleMonStateTest :
         block.movesPresent shouldBe true
         block.moveIds shouldBe listOf<Short>(33, 0, 0, 0)
       }
+
+      test("Expansion battle state wraps onto the client wire through the imported mapping") {
+        // Every enabled expansion species has a client mapping since the content import
+        // completed (clientUnmapped=0), so battle state for one must build a wire block.
+        val registry = SpeciesRegistry()
+        val expansionId = 0x10000 + 700
+        val species = registry.get(expansionId)!!
+        val source = rattata(level = 25).copy(dexId = expansionId)
+        val mon = BattleMonState(1, species, 0, source, StatCalculator.computeAll(species, source))
+
+        mon.toBlock(0, movesPresent = true).movesPresent shouldBe true
+      }
     })

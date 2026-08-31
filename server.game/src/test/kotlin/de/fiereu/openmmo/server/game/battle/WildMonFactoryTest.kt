@@ -53,7 +53,20 @@ class WildMonFactoryTest :
 
       test("an unknown species returns null") {
         factory.create(9999, 5, BattleRng(seed = 1)).shouldBeNull()
-        factory.create(495, 5, BattleRng(seed = 1)).shouldBeNull()
+      }
+
+      test("Expansion species can be constructed without changing the Pokemon model") {
+        val sylveon = factory.create(0x10000 + 700, 25, BattleRng(seed = 9))
+        val sprigatito = factory.create(0x10000 + 1289, 10, BattleRng(seed = 10))
+
+        sylveon.shouldNotBeNull()
+        sylveon.dexId shouldBe 0x10000 + 700
+        sprigatito.shouldNotBeNull()
+        sprigatito.dexId shouldBe 0x10000 + 1289
+      }
+
+      test("mapped Gen 5 Expansion control uses the established client id") {
+        factory.create(495, 10, BattleRng(seed = 11))!!.dexId shouldBe 495
       }
 
       test("the wild id carries the monster tag") {

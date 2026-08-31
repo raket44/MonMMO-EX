@@ -10,8 +10,8 @@ private val log = KotlinLogging.logger {}
  * Sword/Shield encounter and Dynamax integration.
  *
  * Drop decomp/pokesword/recomp/libsword_recomp.a (from RecompSwordC.zip) and build
- * decomp/pokesword/openmmo/CMakeLists.txt → libsword_bridge.so into the JVM lib path to enable
- * the native bridge. Without it, the stub encounter table below is used instead.
+ * decomp/pokesword/openmmo/CMakeLists.txt → libsword_bridge.so into the JVM lib path to enable the
+ * native bridge. Without it, the stub encounter table below is used instead.
  */
 @Singleton
 class SwordShieldService @Inject constructor() {
@@ -80,36 +80,21 @@ class SwordShieldService @Inject constructor() {
   // Stub encounter tables mirroring GalarEncounters.cpp (Gen8 national dex IDs).
   private fun stubEncounter(areaId: Int): Int =
       when (areaId) {
-        Areas.ROUTE_1 ->
-            pick(listOf(819 to 30, 831 to 30, 821 to 20, 827 to 20))
-        Areas.ROUTE_2 ->
-            pick(listOf(819 to 25, 831 to 25, 821 to 20, 827 to 15, 835 to 15))
-        Areas.ROUTE_3 ->
-            pick(listOf(819 to 20, 831 to 20, 833 to 20, 829 to 20, 52 to 20))
-        Areas.MINE_1 ->
-            pick(listOf(837 to 40, 527 to 30, 52 to 30))
-        Areas.ROUTE_4 ->
-            pick(listOf(829 to 25, 833 to 25, 835 to 25, 840 to 25))
-        Areas.ROUTE_5 ->
-            pick(listOf(840 to 25, 843 to 25, 848 to 25, 850 to 25))
-        Areas.MINE_2 ->
-            pick(listOf(837 to 35, 852 to 35, 848 to 30))
-        Areas.ROUTE_6 ->
-            pick(listOf(843 to 25, 854 to 25, 856 to 25, 859 to 25))
-        Areas.ROUTE_7 ->
-            pick(listOf(856 to 25, 859 to 25, 870 to 25, 871 to 25))
-        Areas.ROUTE_8 ->
-            pick(listOf(871 to 30, 872 to 30, 875 to 20, 877 to 20))
-        Areas.ROUTE_9 ->
-            pick(listOf(875 to 30, 877 to 30, 884 to 20, 885 to 20))
-        Areas.ROUTE_10 ->
-            pick(listOf(884 to 30, 885 to 30, 872 to 20, 875 to 20))
-        Areas.WILD_SOUTH ->
-            pick(listOf(819 to 20, 831 to 20, 833 to 20, 835 to 20, 829 to 20))
-        Areas.WILD_EAST ->
-            pick(listOf(840 to 20, 843 to 20, 845 to 20, 848 to 20, 850 to 20))
-        Areas.WILD_NORTH ->
-            pick(listOf(872 to 20, 875 to 20, 877 to 20, 884 to 20, 885 to 20))
+        Areas.ROUTE_1 -> pick(listOf(819 to 30, 831 to 30, 821 to 20, 827 to 20))
+        Areas.ROUTE_2 -> pick(listOf(819 to 25, 831 to 25, 821 to 20, 827 to 15, 835 to 15))
+        Areas.ROUTE_3 -> pick(listOf(819 to 20, 831 to 20, 833 to 20, 829 to 20, 52 to 20))
+        Areas.MINE_1 -> pick(listOf(837 to 40, 527 to 30, 52 to 30))
+        Areas.ROUTE_4 -> pick(listOf(829 to 25, 833 to 25, 835 to 25, 840 to 25))
+        Areas.ROUTE_5 -> pick(listOf(840 to 25, 843 to 25, 848 to 25, 850 to 25))
+        Areas.MINE_2 -> pick(listOf(837 to 35, 852 to 35, 848 to 30))
+        Areas.ROUTE_6 -> pick(listOf(843 to 25, 854 to 25, 856 to 25, 859 to 25))
+        Areas.ROUTE_7 -> pick(listOf(856 to 25, 859 to 25, 870 to 25, 871 to 25))
+        Areas.ROUTE_8 -> pick(listOf(871 to 30, 872 to 30, 875 to 20, 877 to 20))
+        Areas.ROUTE_9 -> pick(listOf(875 to 30, 877 to 30, 884 to 20, 885 to 20))
+        Areas.ROUTE_10 -> pick(listOf(884 to 30, 885 to 30, 872 to 20, 875 to 20))
+        Areas.WILD_SOUTH -> pick(listOf(819 to 20, 831 to 20, 833 to 20, 835 to 20, 829 to 20))
+        Areas.WILD_EAST -> pick(listOf(840 to 20, 843 to 20, 845 to 20, 848 to 20, 850 to 20))
+        Areas.WILD_NORTH -> pick(listOf(872 to 20, 875 to 20, 877 to 20, 884 to 20, 885 to 20))
         else -> 819 // Skwovet fallback
       }
 

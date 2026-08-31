@@ -1,0 +1,85 @@
+# Universal warp-trigger rules, one row per region + fixture type. Hot-reloaded - edit and the
+# next step uses the new rule, no restart. Rows here OVERRIDE the server's built-in defaults
+# (this file ships matching them, so what you see is what runs).
+#
+#   region;type;fire;press;arrival
+#
+#   region : 0 Kanto, 1 Hoenn, 3 Sinnoh, 4 Johto (2 Unova needs no rows - its warps carry
+#            their own directions from the ROM)
+#   type   : Gen 4 = the ROM tile-behavior byte (decimal, names from the decomps);
+#            GBA   = the TileBehavior name
+#   fire   : STAND   = fires only pressing <press> while STANDING on the tile (walkable
+#                      fixtures - lets the client animate the step first, then fires in sync)
+#            STEP    = fires stepping TOWARD the tile with <press> (impassable doors)
+#            CONTACT = fires stepping onto the tile from any direction (panels, escalators)
+#   press  : UP / DOWN / LEFT / RIGHT, or - for CONTACT
+#   arrival: REST = arrivals stay on the landing tile; STEP = walk out one tile.
+#            LIVE FOR ALL REGIONS. The landing tile's rule also sets the exit FACING:
+#            its <press> reversed (land on a press-UP door = walk out DOWN), which is
+#            exactly vanilla's GetAdjustedInitialDirection table on every region.
+#
+# ONE SINGLE WARP can also get its own rule - add an 8-field row and it beats the type rule:
+#
+#   region;bank;map;x;y;fire;press;arrival
+#
+# e.g.  4;222;0;6;6;STAND;LEFT;REST   would retune just that one tile in that one map.
+
+# ---- Sinnoh (3) - decomp names in comments ----
+3;60;STAND;UP;REST      # LADDER_NORTH
+3;61;STAND;DOWN;REST    # LADDER_SOUTH
+3;62;CONTACT;-;REST     # LADDER_DOWN
+3;94;STAND;RIGHT;REST   # WARP_STAIRS_EAST
+3;95;STAND;LEFT;REST    # WARP_STAIRS_WEST
+3;98;STAND;RIGHT;REST   # WARP_ENTRANCE_EAST
+3;99;STAND;LEFT;REST    # WARP_ENTRANCE_WEST
+3;100;STAND;UP;REST     # WARP_ENTRANCE_NORTH
+3;101;STAND;DOWN;REST   # WARP_ENTRANCE_SOUTH
+3;103;CONTACT;-;REST    # WARP_PANEL
+3;105;STEP;UP;STEP      # DOOR
+3;106;CONTACT;-;STEP    # ESCALATOR_FLIP_FACE
+3;107;CONTACT;-;STEP    # ESCALATOR
+3;108;STEP;RIGHT;STEP   # WARP_EAST
+3;109;STEP;LEFT;STEP    # WARP_WEST
+3;110;STEP;UP;STEP      # WARP_NORTH
+3;111;STEP;DOWN;STEP    # WARP_SOUTH
+
+# ---- Johto (4) ----
+4;60;STAND;UP;REST      # LADDER_NORTH
+4;61;STAND;DOWN;REST    # LADDER_SOUTH
+4;62;CONTACT;-;REST     # LADDER_DOWN
+4;94;STAND;RIGHT;REST   # WARP_STAIRS_EAST
+4;95;STAND;LEFT;REST    # WARP_STAIRS_WEST
+4;98;STAND;RIGHT;REST   # WARP_ENTRANCE_EAST
+4;99;STAND;LEFT;REST    # WARP_ENTRANCE_WEST
+4;100;STAND;UP;REST     # WARP_ENTRANCE_NORTH
+4;101;STAND;DOWN;REST   # WARP_ENTRANCE_SOUTH
+4;103;CONTACT;-;REST    # WARP_PANEL
+4;105;STEP;UP;STEP      # DOOR
+4;106;CONTACT;-;STEP    # ESCALATOR_FLIP_FACE
+4;107;CONTACT;-;STEP    # ESCALATOR
+4;108;STEP;RIGHT;STEP   # WARP_EAST
+4;109;STEP;LEFT;STEP    # WARP_WEST
+4;110;STEP;UP;STEP      # WARP_NORTH
+4;111;STEP;DOWN;STEP    # WARP_SOUTH
+
+# ---- Kanto (0) ----
+0;DOOR;STEP;UP;STEP
+0;NON_ANIMATED_DOOR;CONTACT;-;STEP
+0;LADDER;CONTACT;-;REST
+0;STAIR_WARP_EAST;STAND;RIGHT;REST
+0;STAIR_WARP_WEST;STAND;LEFT;REST
+0;NORTH_ARROW_WARP;STAND;UP;REST
+0;SOUTH_ARROW_WARP;STAND;DOWN;REST
+0;EAST_ARROW_WARP;STAND;RIGHT;REST
+0;WEST_ARROW_WARP;STAND;LEFT;REST
+
+# ---- Hoenn (1) ----
+1;DOOR;STEP;UP;STEP
+1;NON_ANIMATED_DOOR;CONTACT;-;STEP
+1;LADDER;CONTACT;-;REST
+1;STAIR_WARP_EAST;STAND;RIGHT;REST
+1;STAIR_WARP_WEST;STAND;LEFT;REST
+1;NORTH_ARROW_WARP;STAND;UP;REST
+1;SOUTH_ARROW_WARP;STAND;DOWN;REST
+1;EAST_ARROW_WARP;STAND;RIGHT;REST
+1;WEST_ARROW_WARP;STAND;LEFT;REST

@@ -2,6 +2,8 @@ package de.fiereu.openmmo.server.game.script
 
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.maps.MapManager
+import de.fiereu.openmmo.server.game.developer.DeveloperTools
+import de.fiereu.openmmo.server.game.script.interpreter.InterpretedScript
 import de.fiereu.openmmo.server.game.services.BattleService
 import de.fiereu.openmmo.server.game.services.DialogService
 import de.fiereu.openmmo.server.game.services.MapEntryScripts
@@ -29,8 +31,8 @@ private val log = KotlinLogging.logger {}
 /**
  * Launches a [Script] on the connection's own coroutine scope so it can wait on a dialog without
  * blocking packet handling. Shared by every script trigger (npc/sign interactions and map entry).
- * Claiming the dialog first stops a second trigger from starting a parallel script on the same
- * player, and the dialog is always closed when the script ends.
+ * Script ownership stops a second trigger from starting in parallel; dialog visibility and the
+ * lifecycle lock are tracked separately and are always cleaned up when the script ends.
  */
 @Singleton
 class ScriptRunner
@@ -46,6 +48,7 @@ constructor(
     private val mapManager: MapManager,
     private val entryScripts: MapEntryScripts,
     private val shopService: ShopService,
+    private val developerTools: DeveloperTools? = null,
 ) {
   fun run(session: SessionContext, state: PlayerState, script: Script, entityId: Long) =
       runAll(session, state, listOf(script), entityId)
@@ -73,13 +76,16 @@ constructor(
       entityId: Long,
   ) {
     if (scripts.isEmpty()) return
+    if (state.scriptRunning) return
     val scope =
         session.attributes.getOrPut(SCRIPT_SCOPE) {
           CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
-    // A cancelled scope cannot launch, so bail before claiming the dialog lock.
+    // A cancelled scope cannot launch, so bail before claiming script ownership.
     if (!scope.isActive) return
-    state.inDialog = true
+    state.scriptRunning = true
+    // Existing Kotlin scripts rely on the runner's historical whole-script player lock.
+    state.lockLocal(entityId)
     val snapshot = state.characterId?.let(characterStore::getCharacter)
     if (snapshot != null) session.attributes[SCRIPT_SNAPSHOT] = snapshot
     val ctx =
@@ -97,12 +103,21 @@ constructor(
             mapManager,
             entryScripts,
             shopService,
+            developerTools,
         )
     scope.launch {
       var finished = false
       var cancelled = false
       try {
-        for (script in scripts) script.run(ctx)
+        for (script in scripts) {
+          val description = describe(script)
+          developerTools?.trace { "Script started: $description" }
+          try {
+            script.run(ctx)
+          } finally {
+            developerTools?.trace { "Script ended: $description" }
+          }
+        }
         finished = true
       } catch (e: CancellationException) {
         // The disconnect that cancelled this rolls back itself, in order with the battle flush
@@ -114,6 +129,7 @@ constructor(
         // A stub wrote nothing, so there is nothing to undo.
         finished = true
       } catch (e: Exception) {
+        developerTools?.trace { "Script error for entity $entityId: ${e.message}" }
         log.error(e) { "Script failed for entity $entityId" }
       } finally {
         if (!cancelled) {
@@ -121,7 +137,13 @@ constructor(
           session.attributes.remove(SCRIPT_SNAPSHOT)
         }
         dialogService.close(session, state)
+        state.releaseScriptLock()
+        state.scriptRunning = false
       }
     }
   }
+
+  private fun describe(script: Script): String =
+      if (script is InterpretedScript) "interpreted ${script.program.id.stable}"
+      else "Kotlin ${script::class.simpleName ?: script.javaClass.name}"
 }

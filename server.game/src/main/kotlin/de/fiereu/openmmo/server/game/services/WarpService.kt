@@ -4,10 +4,10 @@ import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.WarpTile
-import de.fiereu.openmmo.net.game.packets.MapTransitionAckPacket
-import de.fiereu.openmmo.net.game.packets.MapTransitionKind
 import de.fiereu.openmmo.net.game.packets.MapTransitionPacket
 import de.fiereu.openmmo.net.game.packets.RenderScreenPacket
+import de.fiereu.openmmo.net.game.packets.Season
+import de.fiereu.openmmo.net.game.packets.SeasonPacket
 import de.fiereu.openmmo.server.game.session.PENDING_MAP_LOAD
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
@@ -23,6 +23,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -39,6 +40,7 @@ constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
     private val presenceService: PresenceService,
+    private val warpRules: WarpRules,
 ) {
 
   fun executeWarp(ctx: SessionContext, charId: Long, tile: WarpTile) {
@@ -57,6 +59,9 @@ constructor(
     }
 
     state?.justWarped = true
+    state?.pendingStepDir = null
+    state?.pendingStepX = -1
+    state?.pendingStepY = -1
     // Leave now, so the old map's observers do not keep a ghost for the whole transition.
     presenceService.leave(ctx)
 
@@ -68,15 +73,30 @@ constructor(
         WarpExitRules.getKnownOverride(sourceMap, destMap, warp.targetX, warp.targetY)
     val destBehavior = destMap.tileAt(warp.targetX, warp.targetY)?.behavior
 
+    // The facing the player had when the warp fired - vanilla keeps it on ladder-style
+    // arrivals (GetAdjustedInitialDirection returns playerStruct->direction for ladders).
+    val entryFacing = state?.facingDirection ?: Direction.DOWN
+
+    // Same rulebook as the NDS regions: the landing tile's own rule leads, and its required
+    // press REVERSED is the exit facing (land on a press-UP door = walk out DOWN, land on the
+    // paired east-wall stair = walk off LEFT) - the identical chain head that fixed the Gen4
+    // first-trip facing. Per-tile rows in warp-rules.txt override per-type without a recompile.
+    val destRule =
+        warpRules.forTile(
+            warp.targetRegionId.toInt(),
+            warp.targetBankId.toInt(),
+            warp.targetMapId.toInt(),
+            warp.targetX,
+            warp.targetY)
+            ?: destBehavior?.let { warpRules.forName(warp.targetRegionId.toInt(), it.name) }
+
     val warpFacing =
         warp.exitFacing
             ?: knownOverride?.facing
+            ?: destRule?.press?.opposite()
             ?: WarpExitRules.inferExitFacing(
                 destTileBehavior = destBehavior,
-                destMap = destMap,
-                destX = warp.targetX,
-                destY = warp.targetY,
-                sourceMap = sourceMap,
+                entryFacing = entryFacing,
             )
 
     state?.facingDirection = warpFacing
@@ -84,31 +104,29 @@ constructor(
     var offsetX = warp.targetX
     var offsetY = warp.targetY
 
+    // Arrival column of the same rulebook: STEP walks out, REST stays on the tile - vanilla's
+    // SetUpWarpExitTask picks the walk-out for doors, non-anim doors and stair warps only;
+    // everything else is Task_ExitNonDoor (no step). Untyped tiles (no behavior data) keep the
+    // old map-type heuristic as the safety net.
     val shouldAutoStepOffWarp =
         knownOverride?.autoStep
+            ?: destRule?.let { it.arrival == WarpRules.Arrival.STEP }
             ?: WarpExitRules.shouldAutoStep(
                 sourceMap = sourceMap,
                 destMap = destMap,
                 destTileBehavior = destBehavior,
             )
-    if (shouldAutoStepOffWarp) {
-      val destWarp = destMap.warps.find { it.x == offsetX && it.y == offsetY }
-      if (destWarp != null) {
-        offsetX +=
-            when (warpFacing) {
-              Direction.LEFT -> -1
-              Direction.RIGHT -> 1
-              else -> 0
-            }
-        offsetY +=
-            when (warpFacing) {
-              Direction.UP -> -1
-              Direction.DOWN -> 1
-              else -> 0
-            }
-        offsetX = offsetX.coerceIn(0, destMap.width - 1)
-        offsetY = offsetY.coerceIn(0, destMap.height - 1)
-      }
+    // The step arms only with an in-bounds, walkable, warp-free target; the validator moves
+    // with it (acceptNextMoveSource at the send site).
+    if (shouldAutoStepOffWarp && destMap.warps.any { it.x == offsetX && it.y == offsetY }) {
+      val sx = warp.targetX + warpFacing.dx
+      val sy = warp.targetY + warpFacing.dy
+      val open =
+          sx in 0 until destMap.width &&
+              sy in 0 until destMap.height &&
+              destMap.tileAt(sx, sy)?.blocksMovement() != true &&
+              destMap.warps.none { it.x == sx && it.y == sy }
+      if (open) state?.pendingStepDir = warpFacing
     }
 
     val playerZ =
@@ -140,10 +158,37 @@ constructor(
       state.elevation = playerZ
     }
 
+    // Vanilla kicks you off the bike at the doorway: warps are doors/stairs/cave mouths, so
+    // riding never survives one. The arrival spawn already carries transportation 0; clearing
+    // the flag keeps the server's idea of the player in step with what the client will draw.
+    state?.riding = false
+
     // Only fade out and send the map. onRequestPlayer does the arrival and fades back in.
     ctx.send(MapTransitionPacket())
     ctx.send(RenderScreenPacket(false))
-    ctx.send(MapTransitionAckPacket(MapTransitionKind.WARP))
+    // Input lock AFTER the transition sequence - the transition resets the screen's input
+    // state, so a lock sent before it was wiped instantly (verified: no locking effect at
+    // all). onRequestPlayer re-asserts it for the step and releases after; the failsafe
+    // covers a lost arrival.
+    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    run {
+      val scope =
+          ctx.attributes.getOrPut(SCRIPT_SCOPE) {
+            CoroutineScope(SupervisorJob() + Dispatchers.Default)
+          }
+      scope.launch {
+        delay(5000)
+        if (ctx.channel.isActive) {
+          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+        }
+      }
+    }
+    // The season is GLOBAL and real-clock driven - all regions have seasonal content (the
+    // mechanic is Unova's but the textures exist for every ROM). One consistent value
+    // everywhere also stops the mid-session flip-flop an NDS/GBA split caused: every value
+    // change fires the client's refresh listeners (f.u2.X02) mid-transition, which is what
+    // glitched GBA door-exit animations.
+    ctx.send(SeasonPacket(Season.current()))
 
     mapLoadService.resetClientCache(ctx, destMap)
     ctx.send(mapManager.createLoadMapPacket(destMap, reloadPlayer = true, deleteCache = true))
@@ -151,6 +196,100 @@ constructor(
     if (state != null) awaitArrival(ctx, state, charId)
 
     log.info { "Player $charId warped to bank=${warp.targetBankId} map=${warp.targetMapId}" }
+  }
+
+  /**
+   * Pushes the client to a map the server holds no data for - the NDS-region probe. The client is
+   * told only the ids plus a neutral lighting/weather/type header, so whatever appears is rendered
+   * entirely from its own ROM data. Server-side collision and movement do not exist there; the
+   * position is persisted so a relog does not snap back, and /tp by name leads back out.
+   */
+  fun executeRawWarp(
+      ctx: SessionContext,
+      charId: Long,
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      x: Int,
+      y: Int,
+      railLine: Int = -1,
+  ) {
+    // Raw warps carry an NDS-format map header. Regions 0 and 1 are GBA regions the server
+    // hosts - a raw warp there is malformed data that black-screens or kills the client, so it
+    // is refused outright; hosted maps go through executeWarp.
+    if (regionId == 0 || regionId == 1) {
+      ctx.send(notice("Raw warps are for regions 2-4 (Unova, Sinnoh, Johto) only."))
+      return
+    }
+    val state = ctx.attributes[PLAYER_STATE]
+    val stored = characterStore.getCharacter(charId) ?: return
+    state?.justWarped = true
+    state?.pendingStepDir = null
+    state?.pendingStepX = -1
+    state?.pendingStepY = -1
+    // Arrivals land on the partner warp's own tile; hold NDS warps until the player has stood on
+    // a warp-free tile once, or wide boxes bounce the player straight back.
+    state?.ndsWarpGuard = true
+    // Consumed by the next LoadEntity: rail maps need the player attached to a rail line or the
+    // client shows a blue void.
+    state?.pendingRailLine = railLine
+    presenceService.leave(ctx)
+    characterStore.updateCharacter(
+        stored.info.copy(
+            positionRegionId = regionId.toByte(),
+            positionBankId = bankId.toByte(),
+            positionMapId = mapId.toByte(),
+            positionX = x.toShort(),
+            positionY = y.toShort(),
+        ))
+    characterStore.flushCharacterAsync(charId)
+    if (state != null) {
+      state.regionId = regionId
+      state.bankId = bankId
+      state.mapId = mapId
+      state.x = x.toShort()
+      state.y = y.toShort()
+      state.loadedMaps.clear()
+      // Same dismount rule as executeWarp - the fresh spawn draws on foot regardless.
+      state.riding = false
+    }
+    ctx.send(MapTransitionPacket())
+    ctx.send(RenderScreenPacket(false))
+    // Lock AFTER the transition sequence (it resets the screen's input state and wiped an
+    // earlier lock); re-asserted at arrival for the step, failsafe below for lost arrivals.
+    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    run {
+      val scope =
+          ctx.attributes.getOrPut(SCRIPT_SCOPE) {
+            CoroutineScope(SupervisorJob() + Dispatchers.Default)
+          }
+      scope.launch {
+        delay(5000)
+        if (ctx.channel.isActive) {
+          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+        }
+      }
+    }
+    ctx.send(SeasonPacket(Season.current()))
+    // deleteCache stays off: NDS maps come from the client's own ROM conversion and the cache is
+    // always valid. Deleting it forces a reconvert, and a render frame between the wipe and the
+    // rebuilt model crashes the client with a null current map (seen warping into Cold Storage
+    // while the Driftveil matrix chunk was still converting).
+    ctx.send(
+        de.fiereu.openmmo.net.game.packets.LoadMapPacket(
+            reloadPlayer = true,
+            deleteCache = false,
+            regionId = regionId and 0xFF,
+            bankId = bankId and 0xFF,
+            mapId = mapId and 0xFF,
+            mapData =
+                de.fiereu.openmmo.net.game.packets.MapData.NdsMapData(
+                    lighting = de.fiereu.openmmo.common.enums.Lighting.REGULAR,
+                    weather = de.fiereu.openmmo.common.enums.Weather.REGULAR_WEATHER,
+                    mapType = de.fiereu.openmmo.common.enums.MapType.ROUTE,
+                )),
+    )
+    log.info { "Player $charId raw-warped to $regionId:$bankId:$mapId ($x, $y)" }
   }
 
   /**

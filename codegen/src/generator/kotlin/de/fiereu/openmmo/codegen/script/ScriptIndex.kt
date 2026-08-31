@@ -8,36 +8,107 @@ import java.io.File
  * opens a script, a label ending in a single `:` opens data such as text and ends the current
  * script.
  */
-class ScriptIndex private constructor(private val commands: Map<String, List<String>>) {
+data class ScriptBody(val sourceFile: String, val commands: MutableList<String>)
 
-  fun commandsFor(label: String): List<String>? = commands[label]
+data class MovementBody(val sourceFile: String, val actions: MutableList<String>)
+
+class ScriptIndex
+private constructor(
+    private val scripts: Map<String, ScriptBody>,
+    private val movements: Map<String, MovementBody>,
+) {
+
+  fun commandsFor(label: String): List<String>? = scripts[label]?.commands
+
+  fun bodyFor(label: String): ScriptBody? = scripts[label]
+
+  fun movementBodyFor(label: String): MovementBody? = movements[label]
+
+  fun scriptBodies(): Map<String, ScriptBody> = scripts
+
+  fun movementBodies(): Map<String, MovementBody> = movements
 
   companion object {
     private val labelLine = Regex("^(\\w+)::?\\s*$")
 
     fun build(decompDir: File): ScriptIndex {
       val roots = listOf(File(decompDir, "data/maps"), File(decompDir, "data/scripts"))
-      val out = LinkedHashMap<String, MutableList<String>>()
+      val out = LinkedHashMap<String, ScriptBody>()
+      val movements = LinkedHashMap<String, MovementBody>()
       for (root in roots) {
         if (!root.isDirectory) continue
         root
             .walkTopDown()
             .filter { it.isFile && it.extension == "inc" }
-            .forEach { parseFile(it, out) }
+            .forEach {
+              val lines = expandLocalMacros(it.readLines())
+              parseFile(it, lines, out)
+              parseMovementFile(it, lines, movements)
+            }
       }
-      return ScriptIndex(out)
+      File(decompDir, "data/event_scripts.s").takeIf(File::isFile)?.let {
+        val lines = expandLocalMacros(it.readLines())
+        parseFile(it, lines, out)
+        parseMovementFile(it, lines, movements)
+      }
+      return ScriptIndex(out, movements)
     }
 
-    private fun parseFile(file: File, out: MutableMap<String, MutableList<String>>) {
+    /**
+     * Inlines a file's own argument-less `.macro`/`.endm` blocks (Pallet Town's walk_to_lab,
+     * Pewter's walk_to_gym) so movement lists read as plain steps. Parameterised macros are dropped
+     * whole - nothing expands them, so their call sites stay visibly unsupported.
+     */
+    private fun expandLocalMacros(raw: List<String>): List<String> {
+      val macros = HashMap<String, List<String>>()
+      val body = mutableListOf<String>()
+      var recording = false
+      var name: String? = null
+      val withoutDefinitions = mutableListOf<String>()
+      for (line in raw) {
+        val trimmed = line.trim()
+        when {
+          trimmed.startsWith(".macro") -> {
+            recording = true
+            body.clear()
+            name =
+                trimmed
+                    .removePrefix(".macro")
+                    .trim()
+                    .split(Regex("\\s+"))
+                    .takeIf { it.size == 1 }
+                    ?.single()
+          }
+          trimmed == ".endm" -> {
+            name?.let { macros[it] = body.toList() }
+            recording = false
+            name = null
+          }
+          recording -> body.add(line)
+          else -> withoutDefinitions.add(line)
+        }
+      }
+      if (macros.isEmpty()) return withoutDefinitions
+
+      fun expand(line: String, depth: Int): List<String> {
+        val invocation = line.substringBefore('@').trim()
+        val macro = macros[invocation] ?: return listOf(line)
+        if (depth > 4) return listOf(line)
+        return macro.flatMap { expand(it, depth + 1) }
+      }
+      return withoutDefinitions.flatMap { expand(it, 0) }
+    }
+
+    private fun parseFile(file: File, lines: List<String>, out: MutableMap<String, ScriptBody>) {
       // Labels stacked with no commands between them are aliases for the same body.
       val pending = mutableListOf<String>()
-      for (raw in file.readLines()) {
+      for (raw in lines) {
         val line = raw.trim()
         val match = labelLine.matchEntire(line)
         if (match != null) {
           if (line.endsWith("::")) {
             val label = match.groupValues[1]
-            out.getOrPut(label) { mutableListOf() }
+            out.getOrPut(label) { ScriptBody(file.path, mutableListOf()) }
             pending.add(label)
           } else {
             // A data label ends the current script body.
@@ -51,8 +122,44 @@ class ScriptIndex private constructor(private val commands: Map<String, List<Str
           continue
         }
         if (line.startsWith("@")) continue
-        for (label in pending) out.getValue(label).add(line)
+        for (label in pending) out.getValue(label).commands.add(line)
       }
+    }
+
+    /** Movement lists are data, and Emerald therefore declares nearly all of them with `:`. */
+    private fun parseMovementFile(
+        file: File,
+        lines: List<String>,
+        out: MutableMap<String, MovementBody>,
+    ) {
+      val pendingLabels = mutableListOf<String>()
+      val actions = mutableListOf<String>()
+
+      fun flush() {
+        if (actions.any { it.substringBefore('@').trim() == "step_end" }) {
+          for (label in pendingLabels) {
+            out.putIfAbsent(label, MovementBody(file.path, actions.toMutableList()))
+          }
+        }
+        pendingLabels.clear()
+        actions.clear()
+      }
+
+      for (raw in lines) {
+        val line = raw.trim()
+        val match = labelLine.matchEntire(line)
+        if (match != null) {
+          if (actions.isNotEmpty()) flush()
+          pendingLabels.add(match.groupValues[1])
+          continue
+        }
+        if (line.isEmpty()) {
+          flush()
+          continue
+        }
+        if (!line.startsWith("@") && pendingLabels.isNotEmpty()) actions.add(line)
+      }
+      flush()
     }
   }
 }

@@ -33,9 +33,12 @@ class DevCharacterSeederTest :
 
           DevCharacterSeeder(store, config).seed()
 
+          // Only the GBA regions get seeded characters - the NDS regions have no playable
+          // new-game start yet.
+          val seededRegions = listOf(Region.KANTO, Region.HOENN)
           val seeded = store.getCharactersByUser(1)
-          seeded.size shouldBe Region.entries.size
-          Region.entries.forEach { region ->
+          seeded.size shouldBe seededRegions.size
+          seededRegions.forEach { region ->
             val start = NewGameStarts.forRegion(region, female = false)
             val character = seeded.single { it.info.positionRegionId == region.wireValue }
             character.info.positionBankId shouldBe start.bankId
@@ -56,7 +59,7 @@ class DevCharacterSeederTest :
           seeder.seed()
           seeder.seed()
 
-          store.getCharactersByUser(1).size shouldBe Region.entries.size
+          store.getCharactersByUser(1).size shouldBe 2
         }
       }
     })

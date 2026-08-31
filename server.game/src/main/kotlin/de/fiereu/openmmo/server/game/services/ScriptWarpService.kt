@@ -3,10 +3,10 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.DynamicWarp
 import de.fiereu.openmmo.maps.MapManager
-import de.fiereu.openmmo.net.game.packets.MapTransitionAckPacket
-import de.fiereu.openmmo.net.game.packets.MapTransitionKind
 import de.fiereu.openmmo.net.game.packets.MapTransitionPacket
 import de.fiereu.openmmo.net.game.packets.RenderScreenPacket
+import de.fiereu.openmmo.net.game.packets.Season
+import de.fiereu.openmmo.net.game.packets.SeasonPacket
 import de.fiereu.openmmo.server.game.session.PENDING_MAP_LOAD
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -75,7 +75,8 @@ constructor(
 
     session.send(MapTransitionPacket())
     session.send(RenderScreenPacket(false))
-    session.send(MapTransitionAckPacket(MapTransitionKind.WARP))
+    // Hosted GBA path: retail byte 1 (see WarpService.executeWarp).
+    session.send(SeasonPacket(Season.current()))
     mapLoadService.resetClientCache(session, map)
     session.send(mapManager.createLoadMapPacket(map, reloadPlayer = true, deleteCache = true))
     mapLoadService.preloadConnectedMaps(session, map, depth = 1, reloadPlayer = true)

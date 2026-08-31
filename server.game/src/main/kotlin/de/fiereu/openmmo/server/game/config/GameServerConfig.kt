@@ -10,6 +10,7 @@ data class GameServerConfig(
     val sessionSecret: ByteArray,
     val sessionTokenMaxAge: Duration = Duration.ofMinutes(5),
     val db: DbConfig = DbConfig(),
+    val developer: DeveloperToolsConfig = DeveloperToolsConfig(),
     val rootKey: String? = null,
     val rootKeyFile: String? = null,
 ) {
@@ -23,7 +24,8 @@ data class GameServerConfig(
           rootKeyFile == other.rootKeyFile &&
           sessionSecret.contentEquals(other.sessionSecret) &&
           sessionTokenMaxAge == other.sessionTokenMaxAge &&
-          db == other.db
+          db == other.db &&
+          developer == other.developer
 
   override fun hashCode(): Int {
     var h = host.hashCode()
@@ -35,6 +37,7 @@ data class GameServerConfig(
     h = h * 31 + sessionSecret.contentHashCode()
     h = h * 31 + sessionTokenMaxAge.hashCode()
     h = h * 31 + db.hashCode()
+    h = h * 31 + developer.hashCode()
     return h
   }
 }

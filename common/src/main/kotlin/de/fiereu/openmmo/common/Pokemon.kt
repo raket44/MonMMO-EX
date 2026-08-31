@@ -8,6 +8,17 @@ import java.time.LocalDateTime
 
 const val MAX_MOVE_SLOTS = 4
 
+/**
+ * PP given to a move the server has no definition for.
+ *
+ * Its own table stops at the 354 moves of the Emerald decomp, so every Expansion move above that
+ * arrives without one. Two places used to disagree about this - the factory said 35 and the give
+ * path said 0 - and the give path won, which is why imported moves showed no PP at all. It is a
+ * placeholder either way: the real number lives in the Expansion, and only a move table built from
+ * it will get Moonblast to 15 and Oblivion Wing to 10.
+ */
+const val DEFAULT_MOVE_PP = 35
+
 const val MAX_PARTY_SIZE = 6
 
 data class Pokemon(

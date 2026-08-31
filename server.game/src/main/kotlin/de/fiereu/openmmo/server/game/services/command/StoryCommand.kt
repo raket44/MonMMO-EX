@@ -27,7 +27,7 @@ constructor(
     private val items: ItemRegistry,
 ) : ChatCommand {
   override val name = "story"
-  override val usage = "/story [checkpoint|reset]"
+  override val usage = "/story [checkpoint|reset|reset keep]"
   override val description = "jumps to a story scene, or lists the scenes with no argument"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -36,10 +36,11 @@ constructor(
     if (wanted == null) {
       KANTO_CHECKPOINTS.forEach { ctx.reply("${it.name} - ${it.description}") }
       ctx.reply("reset - starts the region's story over, keeping money and the counters")
+      ctx.reply("reset keep - the same, but your party, PC and bag stay as they are")
       return
     }
     // A jump warps out from under a parked script or a running battle, and neither recovers.
-    if (ctx.state.inDialog) {
+    if (ctx.state.blocksNewScript) {
       ctx.reply("Finish what you are talking to first.")
       return
     }
@@ -48,7 +49,7 @@ constructor(
       return
     }
     if (wanted.equals("reset", ignoreCase = true)) {
-      reset(ctx)
+      reset(ctx, keepBuild = ctx.args.getOrNull(1).equals("keep", ignoreCase = true))
       return
     }
     val checkpoint = KANTO_CHECKPOINTS.find { it.name.equals(wanted, ignoreCase = true) }
@@ -59,7 +60,7 @@ constructor(
     apply(ctx, checkpoint)
   }
 
-  private fun reset(ctx: CommandContext) {
+  private fun reset(ctx: CommandContext, keepBuild: Boolean) {
     val charId = ctx.characterId
     val stored = characterStore.getCharacter(charId) ?: return
     val region = Region.byWireValue(stored.info.positionRegionId)
@@ -72,10 +73,11 @@ constructor(
 
     characterStore.replaceProgress(
         characterId = charId,
-        party = emptyList(),
-        items = emptyMap(),
+        party = if (keepBuild) stored.pokemon.toList() else emptyList(),
+        items = if (keepBuild) stored.items.toMap() else emptyMap(),
         storyFlags = start.storyFlags,
         storyVars = start.storyVars,
+        pc = if (keepBuild) stored.pcStorage.toList() else emptyList(),
     )
     // Hoenn's opening reads the dynamic warp on its way out of the truck.
     characterStore.setDynamicWarp(charId, start.dynamicWarp)
@@ -97,7 +99,9 @@ constructor(
         ),
     )
     characterStore.flushCharacterAsync(charId)
-    ctx.reply("Reset to the ${region.displayName} start. Your party, PC and bag are empty.")
+    ctx.reply(
+        if (keepBuild) "Reset to the ${region.displayName} start. Party, PC and bag kept."
+        else "Reset to the ${region.displayName} start. Your party, PC and bag are empty.")
   }
 
   private suspend fun apply(ctx: CommandContext, checkpoint: StoryCheckpoint) {

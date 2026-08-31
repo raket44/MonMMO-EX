@@ -50,6 +50,20 @@ class TrainerRegistryTest :
         trainers.get(Region.HOENN, BROCK) shouldNotBe trainers.get(Region.KANTO, BROCK)
       }
 
+      test("pret trainer constants resolve inside their own region") {
+        val brock = trainers.get(Region.KANTO, "TRAINER_LEADER_BROCK").shouldNotBeNull()
+
+        brock.id shouldBe BROCK
+        trainers.get(Region.HOENN, "TRAINER_LEADER_BROCK") shouldBe null
+      }
+
+      test("generated trainers retain authentic rematch chains") {
+        trainers.get(Region.KANTO, "TRAINER_YOUNGSTER_BEN").shouldNotBeNull().rematchIds shouldBe
+            listOf(89, 101, null, 498, 499)
+        trainers.get(Region.HOENN, "TRAINER_CALVIN_1").shouldNotBeNull().rematchIds shouldBe
+            listOf(318, 328, 329, 330, 331)
+      }
+
       test("every trainer has a usable party") {
         for (region in Region.entries) {
           for (id in 0..1000) {

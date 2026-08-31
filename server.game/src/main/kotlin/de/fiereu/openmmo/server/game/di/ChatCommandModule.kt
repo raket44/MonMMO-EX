@@ -5,6 +5,20 @@ import dagger.Module
 import dagger.multibindings.IntoSet
 import de.fiereu.openmmo.server.game.services.command.CatchCommand
 import de.fiereu.openmmo.server.game.services.command.ChatCommand
+import de.fiereu.openmmo.server.game.services.command.ClientCreateItemCommand
+import de.fiereu.openmmo.server.game.services.command.ClientMoveTo2Command
+import de.fiereu.openmmo.server.game.services.command.ClientMoveToCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperGamemodeCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperGiveExpansionCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperGiveItemCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperGmMenuCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperHealCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperReleaseCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperScriptCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperStoryCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperTeleportCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperTourCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperWarpCommand
 import de.fiereu.openmmo.server.game.services.command.HelpCommand
 import de.fiereu.openmmo.server.game.services.command.PosCommand
 import de.fiereu.openmmo.server.game.services.command.StoryCommand
@@ -25,4 +39,40 @@ interface ChatCommandModule {
   @Binds @IntoSet fun catchCommand(command: CatchCommand): ChatCommand
 
   @Binds @IntoSet fun storyCommand(command: StoryCommand): ChatCommand
+
+  @Binds @IntoSet fun developerScriptCommand(command: DeveloperScriptCommand): ChatCommand
+
+  @Binds
+  @IntoSet
+  fun developerGiveExpansionCommand(command: DeveloperGiveExpansionCommand): ChatCommand
+
+  @Binds @IntoSet fun developerStoryCommand(command: DeveloperStoryCommand): ChatCommand
+
+  @Binds
+  @IntoSet
+  fun developerProbeCommand(
+      command: de.fiereu.openmmo.server.game.services.command.DeveloperProbeCommand
+  ): ChatCommand
+
+  @Binds @IntoSet fun developerTeleportCommand(command: DeveloperTeleportCommand): ChatCommand
+
+  @Binds @IntoSet fun developerReleaseCommand(command: DeveloperReleaseCommand): ChatCommand
+
+  @Binds @IntoSet fun developerGiveItemCommand(command: DeveloperGiveItemCommand): ChatCommand
+
+  @Binds @IntoSet fun developerHealCommand(command: DeveloperHealCommand): ChatCommand
+
+  @Binds @IntoSet fun developerGamemodeCommand(command: DeveloperGamemodeCommand): ChatCommand
+
+  @Binds @IntoSet fun developerGmMenuCommand(command: DeveloperGmMenuCommand): ChatCommand
+
+  @Binds @IntoSet fun developerWarpCommand(command: DeveloperWarpCommand): ChatCommand
+
+  @Binds @IntoSet fun developerTourCommand(command: DeveloperTourCommand): ChatCommand
+
+  @Binds @IntoSet fun clientMoveToCommand(command: ClientMoveToCommand): ChatCommand
+
+  @Binds @IntoSet fun clientCreateItemCommand(command: ClientCreateItemCommand): ChatCommand
+
+  @Binds @IntoSet fun clientMoveTo2Command(command: ClientMoveTo2Command): ChatCommand
 }

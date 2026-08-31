@@ -19,6 +19,7 @@ class TrainerParser(private val rootDir: File) {
   fun parseAll(): List<ParsedTrainer> {
     val parties = readParties()
     val (prizeRates, defaultPrizeRate) = readPrizeRates()
+    val rematches = readRematches()
     return readTrainers()
         .mapNotNull { entry ->
           val id = trainerIds[entry.constant]
@@ -35,11 +36,13 @@ class TrainerParser(private val rootDir: File) {
           }
           ParsedTrainer(
               id = id,
+              constant = entry.constant,
               name = entry.name,
               trainerClass = classIds[entry.trainerClass] ?: 0,
               doubleBattle = entry.doubleBattle,
               prizeRate = prizeRates[entry.trainerClass] ?: defaultPrizeRate,
               party = party,
+              rematchIds = rematches[id].orEmpty(),
           )
         }
         .sortedBy { it.id }
@@ -106,6 +109,50 @@ class TrainerParser(private val rootDir: File) {
   }
 
   /**
+   * Reads the base-to-rematch trainer chains used by Emerald's Match Call and FireRed's Vs Seeker.
+   */
+  private fun readRematches(): Map<Int, List<Int?>> {
+    val fireRed = File(rootDir, "src/vs_seeker.c")
+    if (fireRed.isFile) {
+      val body = FIRE_RED_REMATCH_TABLE.find(fireRed.readText())?.groupValues?.get(1).orEmpty()
+      return FIRE_RED_REMATCH_ENTRY.findAll(body)
+          .mapNotNull { match ->
+            val ids =
+                match.groupValues[1].split(',').map { token ->
+                  val constant = token.trim()
+                  when (constant) {
+                    "SKIP" -> null
+                    else -> trainerIds[constant]
+                  }
+                }
+            val base = ids.firstOrNull() ?: return@mapNotNull null
+            base to ids.takeWhileIndexed { index, id -> index == 0 || id != 0 }
+          }
+          .toMap()
+    }
+
+    val emerald = File(rootDir, "src/battle_setup.c")
+    if (!emerald.isFile) return emptyMap()
+    val body = EMERALD_REMATCH_TABLE.find(emerald.readText())?.groupValues?.get(1).orEmpty()
+    return EMERALD_REMATCH_ENTRY.findAll(body)
+        .mapNotNull { match ->
+          val ids = match.groupValues[1].split(',').take(5).mapNotNull { trainerIds[it.trim()] }
+          val base = ids.firstOrNull() ?: return@mapNotNull null
+          base to ids.map<Int, Int?> { it }
+        }
+        .toMap()
+  }
+
+  private fun <T> List<T>.takeWhileIndexed(predicate: (Int, T) -> Boolean): List<T> {
+    val out = mutableListOf<T>()
+    forEachIndexed { index, value ->
+      if (!predicate(index, value)) return out
+      out += value
+    }
+    return out
+  }
+
+  /**
    * gTrainerMoneyTable, which pays a trainer class this much per level of its last monster. The
    * table ends with a 0xFF row that every class it does not list falls through to.
    */
@@ -151,5 +198,18 @@ class TrainerParser(private val rootDir: File) {
         Regex("""gTrainerMoneyTable\[]\s*=\s*\{(.*?)};""", RegexOption.DOT_MATCHES_ALL)
     val MONEY_ENTRY = Regex("""\{\s*(TRAINER_CLASS_\w+)\s*,\s*(\d+)\s*}""")
     val MONEY_FALLBACK = Regex("""\{\s*0xFF\s*,\s*(\d+)\s*}""")
+    val FIRE_RED_REMATCH_TABLE =
+        Regex(
+            """static\s+const\s+struct\s+RematchData\s+sRematches\[\]\s*=\s*\{(.*?)};""",
+            RegexOption.DOT_MATCHES_ALL,
+        )
+    val FIRE_RED_REMATCH_ENTRY =
+        Regex("""\{\s*\{([^}]*)}\s*,\s*MAP\s*\(""", RegexOption.DOT_MATCHES_ALL)
+    val EMERALD_REMATCH_TABLE =
+        Regex(
+            """gRematchTable\[REMATCH_TABLE_ENTRIES]\s*=\s*\{(.*?)};""",
+            RegexOption.DOT_MATCHES_ALL,
+        )
+    val EMERALD_REMATCH_ENTRY = Regex("""=\s*REMATCH\s*\(([^)]*)\)""")
   }
 }

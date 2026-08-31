@@ -77,5 +77,6 @@ class CharacterIntroTest :
         }
       }
 
-      test("unsupported region wire values remain locked") { Region.byWireValue(2) shouldBe null }
+      // Wire values 0-4 are the five supported ROM regions; anything beyond stays locked.
+      test("unsupported region wire values remain locked") { Region.byWireValue(5) shouldBe null }
     })

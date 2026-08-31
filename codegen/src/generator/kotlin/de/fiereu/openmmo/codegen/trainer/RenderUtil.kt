@@ -4,8 +4,11 @@ object RenderUtil {
 
   fun trainer(region: String, t: ParsedTrainer): String {
     val party = t.party.joinToString(", ", "listOf(", ")") { mon(it) }
+    val rematches =
+        t.rematchIds.joinToString(", ", "listOf(", ")") { id -> id?.toString() ?: "null" }
     return "reg.register(Region.${region.uppercase()}, TrainerDef(${t.id}, \"${escape(t.name)}\", " +
-        "${t.trainerClass}, ${t.doubleBattle}, ${t.prizeRate}, $party))"
+        "${t.trainerClass}, ${t.doubleBattle}, ${t.prizeRate}, $party, " +
+        "\"${t.constant}\", $rematches))"
   }
 
   private fun mon(m: ParsedTrainerMon): String {

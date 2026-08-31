@@ -11,9 +11,11 @@ data class ParsedTrainerMon(
 
 data class ParsedTrainer(
     val id: Int,
+    val constant: String,
     val name: String,
     val trainerClass: Int,
     val doubleBattle: Boolean,
     val prizeRate: Int,
     val party: List<ParsedTrainerMon>,
+    val rematchIds: List<Int?>,
 )

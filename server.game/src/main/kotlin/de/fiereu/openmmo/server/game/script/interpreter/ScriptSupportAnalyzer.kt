@@ -1,0 +1,482 @@
+package de.fiereu.openmmo.server.game.script.interpreter
+
+import de.fiereu.openmmo.common.enums.Region
+import de.fiereu.openmmo.script.FlagArg
+import de.fiereu.openmmo.script.IntArg
+import de.fiereu.openmmo.script.LabelArg
+import de.fiereu.openmmo.script.MovementArg
+import de.fiereu.openmmo.script.ObjectArg
+import de.fiereu.openmmo.script.ScriptInstruction
+import de.fiereu.openmmo.script.ScriptProgram
+import de.fiereu.openmmo.script.SymbolArg
+import de.fiereu.openmmo.script.TextArg
+import de.fiereu.openmmo.script.TrainerArg
+import de.fiereu.openmmo.script.VarArg
+import de.fiereu.openmmo.server.game.script.MovementStep
+import de.fiereu.openmmo.trainer.TrainerRegistry
+import java.util.ArrayDeque
+import java.util.concurrent.ConcurrentHashMap
+
+data class ScriptSupport(
+    val complete: Boolean,
+    val reason: String? = null,
+) {
+  companion object {
+    val COMPLETE = ScriptSupport(complete = true)
+
+    fun incomplete(reason: String) = ScriptSupport(complete = false, reason = reason)
+  }
+}
+
+/**
+ * Conservatively proves that every instruction reachable from a program's entry point has the
+ * commands and source resources the current interpreter needs. It never executes script logic.
+ */
+class ScriptSupportAnalyzer(
+    private val trainers: TrainerRegistry = TrainerRegistry(),
+    private val items: de.fiereu.openmmo.items.ItemRegistry =
+        de.fiereu.openmmo.items.ItemRegistry(),
+) {
+  private val cache = ConcurrentHashMap<InterpretedScript, ScriptSupport>()
+
+  fun analyze(script: InterpretedScript): ScriptSupport =
+      cache.computeIfAbsent(script, ::analyzeUncached)
+
+  private fun analyzeUncached(script: InterpretedScript): ScriptSupport {
+    val root = script.program
+    if (root.instructions.isEmpty()) return ScriptSupport.incomplete("program has no instructions")
+
+    val pending = ArrayDeque<ProgramLocation>()
+    val visited = mutableSetOf<Pair<String, Int>>()
+    pending.add(ProgramLocation(root, 0))
+    while (pending.isNotEmpty()) {
+      val location = pending.removeFirst()
+      val activeProgram = location.program
+      val pc = location.pc
+      if (pc == activeProgram.instructions.size || !visited.add(activeProgram.id.stable to pc))
+          continue
+      if (pc !in activeProgram.instructions.indices) {
+        return ScriptSupport.incomplete(
+            "control flow reaches invalid instruction $pc in ${activeProgram.id.stable}")
+      }
+      val instruction = activeProgram.instructions[pc]
+      validateInstruction(script, activeProgram, instruction)?.let {
+        return ScriptSupport.incomplete(it)
+      }
+      successors(script, activeProgram, pc, instruction)
+          .fold(
+              onSuccess = { pending.addAll(it) },
+              onFailure = {
+                return ScriptSupport.incomplete(checkNotNull(it.message))
+              },
+          )
+    }
+    return ScriptSupport.COMPLETE
+  }
+
+  private fun validateInstruction(
+      script: InterpretedScript,
+      activeProgram: ScriptProgram,
+      instruction: ScriptInstruction,
+  ): String? {
+    if (instruction.command !in SUPPORTED_COMMANDS) {
+      return sourceReason(instruction, "unsupported command ${instruction.command}")
+    }
+
+    instruction.args.filterIsInstance<TextArg>().forEach { text ->
+      if (text.token !in script.textBindings) {
+        return sourceReason(instruction, "unresolved text ${text.token}")
+      }
+    }
+    instruction.args.filterIsInstance<MovementArg>().forEach { movementRef ->
+      val movement =
+          script.movementPrograms[movementRef.token]
+              ?: return sourceReason(instruction, "unresolved movement ${movementRef.token}")
+      movement.actions.forEach { action ->
+        if (action.args.isNotEmpty() ||
+            (MovementStep.fromPretCommand(action.command) == null &&
+                !MovementStep.isRuntimeResolved(action.command))) {
+          return "unsupported movement ${movement.id.stable}:${action.command} from " +
+              "`${action.sourceLine}`"
+        }
+      }
+    }
+    instruction.args.filterIsInstance<ObjectArg>().forEach { objectRef ->
+      if (!canResolveObject(activeProgram, objectRef.token)) {
+        return sourceReason(instruction, "unresolved object ${objectRef.token}")
+      }
+    }
+    instruction.args.filterIsInstance<TrainerArg>().forEach { trainerRef ->
+      validateTrainer(script, instruction, trainerRef)?.let {
+        return it
+      }
+    }
+
+    return validateShape(script, instruction) ?: validateTypes(instruction)
+  }
+
+  private fun validateTrainer(
+      script: InterpretedScript,
+      instruction: ScriptInstruction,
+      trainerRef: TrainerArg,
+  ): String? {
+    val region =
+        when (script.program.id.source) {
+          "firered" -> Region.KANTO
+          "emerald" -> Region.HOENN
+          else ->
+              return sourceReason(instruction, "unknown trainer source ${script.program.id.source}")
+        }
+    val trainer =
+        trainers.get(region, trainerRef.token)
+            ?: return sourceReason(instruction, "unresolved trainer ${trainerRef.token}")
+    if (instruction.command != "trainerbattle_rematch") return null
+    val rematches = trainer.rematchIds.drop(1).filterNotNull()
+    if (rematches.isEmpty()) {
+      return sourceReason(instruction, "trainer ${trainerRef.token} has no rematch chain")
+    }
+    val missing = rematches.firstOrNull { trainers.get(region, it) == null }
+    return missing?.let { sourceReason(instruction, "unresolved rematch trainer id $it") }
+  }
+
+  private fun validateShape(script: InterpretedScript, instruction: ScriptInstruction): String? {
+    val args = instruction.args
+    val expected =
+        when (instruction.command) {
+          in InterpreterSupport.NOOP_COMMANDS -> true
+          in InterpreterSupport.ITEM_COMMANDS -> args.size in 1..2
+          "delay",
+          "special",
+          "removeobject",
+          "addobject" -> args.size == 1
+          "random" -> args.size == 1
+          "specialvar",
+          "getplayerxy",
+          "trainerbattle_no_intro",
+          "showobjectat",
+          "hideobjectat" -> args.size == 2
+          in InterpreterSupport.DEFEATED_BRANCHES -> args.size == 2
+          "giveitem_msg" -> args.size in 2..3
+          "setobjectxy",
+          "setobjectxyperm",
+          "warp" -> args.size == 3
+          "multichoice" -> args.size == 4
+          "checkplayergender" -> args.isEmpty()
+          "end",
+          "return",
+          "lock",
+          "lockall",
+          "release",
+          "releaseall",
+          "closemessage",
+          "waitmessage",
+          "waitbuttonpress",
+          "signmsg",
+          "normalmsg",
+          "faceplayer" -> args.isEmpty()
+          "message",
+          "textcolor",
+          "setflag",
+          "setworldmapflag",
+          "clearflag",
+          "goto",
+          "call" -> args.size == 1
+          "msgbox" -> args.size in 1..2
+          "yesnobox",
+          "setvar",
+          "copyvar",
+          "setorcopyvar",
+          "addvar",
+          "subvar",
+          "compare",
+          "applymovement",
+          "goto_if_set",
+          "goto_if_unset",
+          "call_if_set",
+          "call_if_unset" -> args.size == 2
+          "waitmovement" -> args.size <= 1
+          "trainerbattle_single" -> args.size in setOf(3, 4, 5)
+          "trainerbattle_rematch" -> args.size == 3
+          in COMPARISON_BRANCHES -> args.size == 1 || args.size == 3
+          else -> false
+        }
+    if (!expected) return sourceReason(instruction, "unsupported argument shape")
+
+    if (instruction.command == "yesnobox") {
+      val invalid = args.filterIsInstance<IntArg>().firstOrNull { it.value !in 0..0xFF }
+      if (invalid != null || args.size != args.filterIsInstance<IntArg>().size) {
+        return sourceReason(instruction, "yesnobox requires two byte arguments")
+      }
+    }
+    if (instruction.command == "special" &&
+        args[0].token !in InterpreterSupport.SUPPORTED_SPECIALS) {
+      return sourceReason(instruction, "unsupported special ${args[0].token}")
+    }
+    if (instruction.command == "specialvar" &&
+        args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS) {
+      return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
+    }
+    if (instruction.command == "multichoice" && args[2].token != "MULTICHOICE_YES_NO") {
+      return sourceReason(instruction, "unsupported multichoice menu ${args[2].token}")
+    }
+    if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {
+      if (items.byScriptConstant(args[0].token) == null) {
+        return sourceReason(instruction, "unresolved item ${args[0].token}")
+      }
+      if (args.size == 2 && args[1] !is IntArg) {
+        return sourceReason(instruction, "unsupported item count ${args[1].token}")
+      }
+    }
+    if (instruction.command == "giveitem_msg") {
+      if (items.byScriptConstant(args[1].token) == null) {
+        return sourceReason(instruction, "unresolved item ${args[1].token}")
+      }
+      if (args.size == 3 && args[2] !is IntArg) {
+        return sourceReason(instruction, "unsupported item count ${args[2].token}")
+      }
+    }
+    if (instruction.command == "msgbox" && args.size == 2) {
+      val supported = args[1].token in SUPPORTED_MSGBOX_TYPES
+      if (!supported) return sourceReason(instruction, "unsupported msgbox type ${args[1].token}")
+    }
+    if (instruction.command == "textcolor" && script.program.id.source == "firered") {
+      val supported =
+          args.single().token in
+              setOf(
+                  "NPC_TEXT_COLOR_MALE",
+                  "NPC_TEXT_COLOR_FEMALE",
+                  "NPC_TEXT_COLOR_MON",
+                  "NPC_TEXT_COLOR_NEUTRAL",
+                  "NPC_TEXT_COLOR_DEFAULT",
+                  "0",
+                  "1",
+                  "2",
+                  "3",
+                  "255",
+                  "0xFF",
+              )
+      if (!supported)
+          return sourceReason(instruction, "unsupported textcolor ${args.single().token}")
+    }
+    return null
+  }
+
+  private fun validateTypes(instruction: ScriptInstruction): String? {
+    val args = instruction.args
+    val valid =
+        when (instruction.command) {
+          "msgbox",
+          "message" -> args[0] is TextArg
+          "setflag",
+          "setworldmapflag",
+          "clearflag" -> args[0] is FlagArg
+          "delay" -> args[0] is IntArg
+          "specialvar" -> args[0] is VarArg
+          "getplayerxy" -> args.all { it is VarArg }
+          "random" -> args[0] is IntArg
+          "removeobject",
+          "addobject",
+          "showobjectat",
+          "hideobjectat" -> args[0] is ObjectArg
+          "setobjectxy",
+          "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
+          "warp" -> args.all { it is IntArg }
+          "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
+          in InterpreterSupport.DEFEATED_BRANCHES -> args[0] is TrainerArg && args[1] is LabelArg
+          "setvar",
+          "setorcopyvar",
+          "subvar" -> args[0] is VarArg && isValue(args[1])
+          "copyvar" -> args.all { it is VarArg }
+          "addvar" -> args[0] is VarArg && isImmediate(args[1])
+          "compare" -> args.all(::isValue)
+          "goto",
+          "call" -> args[0] is LabelArg
+          in COMPARISON_BRANCHES ->
+              if (args.size == 1) args[0] is LabelArg
+              else isValue(args[0]) && isValue(args[1]) && args[2] is LabelArg
+          in FLAG_BRANCHES -> args[0] is FlagArg && args[1] is LabelArg
+          "applymovement" -> args[0] is ObjectArg && args[1] is MovementArg
+          "waitmovement" -> args.isEmpty() || args[0] is ObjectArg
+          "trainerbattle_single" ->
+              args[0] is TrainerArg &&
+                  args[1] is TextArg &&
+                  args[2] is TextArg &&
+                  (args.size < 4 || args[3] is LabelArg) &&
+                  (args.size < 5 || args[4].token in SUPPORTED_TRAINER_MUSIC)
+          "trainerbattle_rematch" ->
+              args[0] is TrainerArg && args[1] is TextArg && args[2] is TextArg
+          else -> true
+        }
+    return if (valid) null else sourceReason(instruction, "unsupported argument types")
+  }
+
+  private fun isValue(arg: de.fiereu.openmmo.script.ScriptArg): Boolean =
+      arg is IntArg || arg is VarArg || (arg is SymbolArg && arg.token in BOOLEAN_SYMBOLS)
+
+  private fun isImmediate(arg: de.fiereu.openmmo.script.ScriptArg): Boolean =
+      arg is IntArg || (arg is SymbolArg && arg.token in BOOLEAN_SYMBOLS)
+
+  private fun successors(
+      script: InterpretedScript,
+      activeProgram: ScriptProgram,
+      pc: Int,
+      instruction: ScriptInstruction,
+  ): Result<List<ProgramLocation>> = runCatching {
+    val next = ProgramLocation(activeProgram, pc + 1)
+    when (instruction.command) {
+      "end",
+      "return" -> emptyList()
+      "goto" -> listOf(target(script, activeProgram, instruction, 0))
+      "call" -> listOf(target(script, activeProgram, instruction, 0), next)
+      in COMPARISON_BRANCHES ->
+          listOf(
+              target(
+                  script,
+                  activeProgram,
+                  instruction,
+                  if (instruction.args.size == 1) 0 else 2,
+              ),
+              next,
+          )
+      in FLAG_BRANCHES -> listOf(target(script, activeProgram, instruction, 1), next)
+      in InterpreterSupport.DEFEATED_BRANCHES ->
+          listOf(target(script, activeProgram, instruction, 1), next)
+      "trainerbattle_single" -> {
+        val continuation = instruction.args.getOrNull(3) as? LabelArg
+        if (continuation == null || continuation.token == "FALSE") listOf(next)
+        else listOf(target(script, activeProgram, instruction, 3), next)
+      }
+      else -> listOf(next)
+    }
+  }
+
+  private fun target(
+      script: InterpretedScript,
+      activeProgram: ScriptProgram,
+      instruction: ScriptInstruction,
+      index: Int,
+  ): ProgramLocation {
+    val label =
+        instruction.args.getOrNull(index) as? LabelArg
+            ?: error(
+                "${instruction.command} has no label argument from `${instruction.sourceLine}`")
+    activeProgram.labels[label.token]?.let {
+      return ProgramLocation(activeProgram, it)
+    }
+    val dependency =
+        script.programLibrary[label.token]
+            ?: error("unresolved label ${label.token} from `${instruction.sourceLine}`")
+    check(
+        dependency.id.source == script.program.id.source &&
+            dependency.id.gameCode == script.program.id.gameCode) {
+          "cross-source label ${label.token} from `${instruction.sourceLine}`"
+        }
+    return ProgramLocation(dependency, dependency.labels[label.token] ?: 0)
+  }
+
+  private fun canResolveObject(program: ScriptProgram, token: String): Boolean =
+      token in setOf("LOCALID_NONE", "LOCALID_PLAYER", "VAR_LAST_TALKED") ||
+          token.startsWith("VAR_") ||
+          token in program.objectIds ||
+          sourceInt(token) != null
+
+  private fun sourceInt(token: String): Int? =
+      if (token.startsWith("0x", ignoreCase = true)) token.drop(2).toIntOrNull(16)
+      else token.toIntOrNull()
+
+  private fun sourceReason(instruction: ScriptInstruction, reason: String): String =
+      "$reason from `${instruction.sourceLine}`"
+
+  private data class ProgramLocation(
+      val program: ScriptProgram,
+      val pc: Int,
+  )
+
+  private companion object {
+    val COMPARISON_BRANCHES =
+        setOf(
+            "goto_if_eq",
+            "goto_if_ne",
+            "goto_if_lt",
+            "goto_if_le",
+            "goto_if_gt",
+            "goto_if_ge",
+            "call_if_eq",
+            "call_if_ne",
+            "call_if_lt",
+            "call_if_le",
+            "call_if_gt",
+            "call_if_ge",
+        )
+    val FLAG_BRANCHES = setOf("goto_if_set", "goto_if_unset", "call_if_set", "call_if_unset")
+    val BOOLEAN_SYMBOLS = setOf("TRUE", "FALSE")
+    val SUPPORTED_MSGBOX_TYPES =
+        setOf(
+            "MSGBOX_NPC",
+            "MSGBOX_SIGN",
+            "MSGBOX_DEFAULT",
+            "MSGBOX_AUTOCLOSE",
+            "MSGBOX_YESNO",
+            "2",
+            "4",
+            "5",
+            "6",
+        )
+    val SUPPORTED_TRAINER_MUSIC = setOf("NO_MUSIC", "FALSE", "TRUE")
+    val SUPPORTED_COMMANDS =
+        setOf(
+            "msgbox",
+            "message",
+            "lock",
+            "lockall",
+            "release",
+            "releaseall",
+            "closemessage",
+            "waitmessage",
+            "waitbuttonpress",
+            "yesnobox",
+            "textcolor",
+            "signmsg",
+            "normalmsg",
+            "applymovement",
+            "waitmovement",
+            "faceplayer",
+            "trainerbattle_single",
+            "trainerbattle_rematch",
+            "setflag",
+            "setworldmapflag",
+            "clearflag",
+            "setvar",
+            "copyvar",
+            "setorcopyvar",
+            "addvar",
+            "subvar",
+            "compare",
+            "call",
+            "goto",
+            "return",
+            "end",
+            "delay",
+            "special",
+            "specialvar",
+            "multichoice",
+            "removeobject",
+            "addobject",
+            "checkplayergender",
+            "getplayerxy",
+            "random",
+            "giveitem_msg",
+            "setobjectxy",
+            "setobjectxyperm",
+            "showobjectat",
+            "hideobjectat",
+            "trainerbattle_no_intro",
+            "warp",
+        ) +
+            InterpreterSupport.DEFEATED_BRANCHES +
+            COMPARISON_BRANCHES +
+            FLAG_BRANCHES +
+            InterpreterSupport.NOOP_COMMANDS +
+            InterpreterSupport.ITEM_COMMANDS
+  }
+}

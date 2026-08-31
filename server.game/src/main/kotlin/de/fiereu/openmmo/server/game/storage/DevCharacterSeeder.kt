@@ -27,7 +27,10 @@ constructor(
   suspend fun seed() {
     if (!config.db.seedDev) return
     val existing = characterStore.getCharactersByUser(DEV_USER_ID)
-    for (region in Region.entries) {
+    // Only the regions the server actually hosts. Seeding one per Region entry kept resurrecting
+    // Johto and Galar characters after every restart - regions with no server maps, whose spawns
+    // the client renders from its own NDS data and whose first door is a black screen.
+    for (region in listOf(Region.KANTO, Region.HOENN)) {
       val name = region.name.lowercase().replaceFirstChar { it.uppercase() }
       if (existing.any { it.info.name == name }) continue
       val created = characterStore.createCharacter(DEV_USER_ID, name, CharacterGender.MALE, region)

@@ -14,6 +14,7 @@ import de.fiereu.openmmo.moves.MoveRegistry
 import de.fiereu.openmmo.net.game.packets.EntityMovePpPacket
 import de.fiereu.openmmo.net.game.packets.EntityPresencePacket
 import de.fiereu.openmmo.net.game.packets.MapLoadedAckPacket
+import de.fiereu.openmmo.net.game.packets.WorldFlagTableResetPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleBulkStatePacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket
@@ -104,8 +105,10 @@ private class Fixture(scope: CoroutineScope) {
           interestManager = interestManager,
           speciesRegistry = SpeciesRegistry(),
           moveRegistry = MoveRegistry(),
+          dexProgress = DexProgressService(store),
           trainers = TrainerRegistry(),
           items = ItemRegistry(),
+          classicMode = ClassicModeService(store),
       )
 
   suspend fun playerWithParty(level: Byte = 50, hp: Short = 999): Pair<FakeSession, Long> {
@@ -149,6 +152,9 @@ class BattleServiceTest :
                   BattleFieldStatePacket::class,
                   BattleTileMapPacket::class,
                   BattleQueuedEventPacket::class,
+                  // Facing a new species marks it seen, so the refreshed dex tiers ride at
+                  // the end of the start sequence.
+                  WorldFlagTableResetPacket::class,
               )
           // Bulbasaur base hp 45 at level 50 with empty IVs and EVs.
           val field = session.sent.filterIsInstance<BattleFieldStatePacket>().single()

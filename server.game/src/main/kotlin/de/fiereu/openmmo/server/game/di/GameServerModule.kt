@@ -8,11 +8,14 @@ import de.fiereu.openmmo.common.auth.SessionTokenVerifier
 import de.fiereu.openmmo.common.io.PemKeyLoader
 import de.fiereu.openmmo.common.io.pemStream
 import de.fiereu.openmmo.server.game.config.GameServerConfig
+import de.fiereu.openmmo.server.game.developer.DeveloperTools
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
+import de.fiereu.openmmo.server.game.script.interpreter.ScriptSupportAnalyzer
 import de.fiereu.openmmo.server.game.storage.CharacterRepository
 import de.fiereu.openmmo.server.game.storage.JooqCharacterRepository
 import de.fiereu.openmmo.server.game.world.interest.InterestPolicy
 import de.fiereu.openmmo.server.game.world.interest.PassThroughInterestPolicy
+import de.fiereu.openmmo.trainer.TrainerRegistry
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.nio.NioIoHandler
@@ -58,7 +61,13 @@ object GameServerModule {
 
   @Provides @Singleton fun interestPolicy(impl: PassThroughInterestPolicy): InterestPolicy = impl
 
-  @Provides @Singleton fun scriptRegistry(): ScriptRegistry = ScriptRegistry.generated()
+  @Provides
+  @Singleton
+  fun scriptRegistry(
+      developerTools: DeveloperTools,
+      trainerRegistry: TrainerRegistry,
+  ): ScriptRegistry =
+      ScriptRegistry.generated(developerTools, ScriptSupportAnalyzer(trainerRegistry))
 
   @Provides
   @Singleton

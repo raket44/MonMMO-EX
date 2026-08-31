@@ -27,11 +27,80 @@ enum class MovementStep(
   FAST_UP(Direction.UP, true, 0x1E, fast = true),
   FAST_LEFT(Direction.LEFT, true, 0x1F, fast = true),
   FAST_RIGHT(Direction.RIGHT, true, 0x20, fast = true),
+  FASTER_DOWN(Direction.DOWN, true, 0x35, fast = true),
+  FASTER_UP(Direction.UP, true, 0x36, fast = true),
+  FASTER_LEFT(Direction.LEFT, true, 0x37, fast = true),
+  FASTER_RIGHT(Direction.RIGHT, true, 0x38, fast = true),
   WALK_IN_PLACE_FAST_LEFT(Direction.LEFT, false, 0x23, fast = true),
   WALK_IN_PLACE_FAST_RIGHT(Direction.RIGHT, false, 0x24, fast = true),
+  WALK_IN_PLACE_FASTER_DOWN(Direction.DOWN, false, 0x2D, fast = true),
+  WALK_IN_PLACE_FASTER_UP(Direction.UP, false, 0x2E, fast = true),
+  WALK_IN_PLACE_FASTER_LEFT(Direction.LEFT, false, 0x2F, fast = true),
+  WALK_IN_PLACE_FASTER_RIGHT(Direction.RIGHT, false, 0x30, fast = true),
   // Captured delay actions use Emerald ids plus eight.
+  DELAY_1(Direction.DOWN, false, 0x18, changesFacing = false),
+  DELAY_2(Direction.DOWN, false, 0x19, changesFacing = false),
+  DELAY_4(Direction.DOWN, false, 0x1A, changesFacing = false),
   DELAY_8(Direction.DOWN, false, 0x1B, changesFacing = false),
   DELAY_16(Direction.DOWN, false, 0x1C, changesFacing = false),
   // Hides the entity in place, used at the end of a walk into a door (decomp set_invisible).
-  SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false),
+  SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false);
+
+  companion object {
+    /** Translates source-level pret action names into the existing client movement vocabulary. */
+    fun fromPretCommand(command: String): MovementStep? =
+        when (command) {
+          "face_down" -> FACE_DOWN
+          "face_up" -> FACE_UP
+          "face_left" -> FACE_LEFT
+          "face_right" -> FACE_RIGHT
+          "walk_down" -> WALK_DOWN
+          "walk_up" -> WALK_UP
+          "walk_left" -> WALK_LEFT
+          "walk_right" -> WALK_RIGHT
+          "walk_fast_down" -> FAST_DOWN
+          "walk_fast_up" -> FAST_UP
+          "walk_fast_left" -> FAST_LEFT
+          "walk_fast_right" -> FAST_RIGHT
+          "walk_faster_down" -> FASTER_DOWN
+          "walk_faster_up" -> FASTER_UP
+          "walk_faster_left" -> FASTER_LEFT
+          "walk_faster_right" -> FASTER_RIGHT
+          "walk_in_place_faster_down" -> WALK_IN_PLACE_FASTER_DOWN
+          "walk_in_place_faster_up" -> WALK_IN_PLACE_FASTER_UP
+          "walk_in_place_faster_left" -> WALK_IN_PLACE_FASTER_LEFT
+          "walk_in_place_faster_right" -> WALK_IN_PLACE_FASTER_RIGHT
+          "delay_1" -> DELAY_1
+          "delay_2" -> DELAY_2
+          "delay_4" -> DELAY_4
+          "delay_8" -> DELAY_8
+          "delay_16" -> DELAY_16
+          "set_invisible" -> SET_INVISIBLE
+          // The rest are approximations onto capture-verified action bytes: slow walks play at
+          // normal speed, in-place walks at the faster tempo, and pure animations (emotes, the
+          // nurse's bow) become a beat of delay so sequence timing survives.
+          "walk_slow_down" -> WALK_DOWN
+          "walk_slow_up" -> WALK_UP
+          "walk_slow_left" -> WALK_LEFT
+          "walk_slow_right" -> WALK_RIGHT
+          "walk_in_place_fast_left" -> WALK_IN_PLACE_FAST_LEFT
+          "walk_in_place_fast_right" -> WALK_IN_PLACE_FAST_RIGHT
+          "walk_in_place_down" -> WALK_IN_PLACE_FASTER_DOWN
+          "walk_in_place_up" -> WALK_IN_PLACE_FASTER_UP
+          "walk_in_place_left" -> WALK_IN_PLACE_FASTER_LEFT
+          "walk_in_place_right" -> WALK_IN_PLACE_FASTER_RIGHT
+          "emote_exclamation_mark",
+          "emote_question_mark",
+          "emote_heart",
+          "nurse_joy_bow" -> DELAY_16
+          else -> null
+        }
+
+    /**
+     * Actions with no fixed byte: their direction exists only at run time (where is the player, how
+     * did the NPC originally face). The executor handles them between fixed-step segments.
+     */
+    fun isRuntimeResolved(command: String): Boolean =
+        command == "face_player" || command == "face_original_direction"
+  }
 }

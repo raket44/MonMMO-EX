@@ -4,7 +4,17 @@
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
+  <!-- The server usually runs in a detached console nobody can scroll back; the file is the
+       record. append=true so restarts do not eat the evidence. -->
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>logs/game-app.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
   <root level="INFO">
     <appender-ref ref="STDOUT"/>
+    <appender-ref ref="FILE"/>
   </root>
 </configuration>

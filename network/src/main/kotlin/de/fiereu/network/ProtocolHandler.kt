@@ -51,15 +51,33 @@ abstract class ProtocolHandler(
     }
     try {
       if (msg.readableBytes() < 1) throw EmptyFrameException()
+      // The whole frame, captured before any read moves the index: when a frame cannot be
+      // decoded, its bytes are the diagnostic.
+      val frameHex = io.netty.buffer.ByteBufUtil.hexDump(msg)
       val opcode = (msg.readByte().toInt() and 0xFF).toUByte()
       val registration = protocol.incomingRegistration(side, opcode)
       if (registration == null) {
-        log.error { "No incoming codec for opcode 0x${opcode.toString(16)} on $side" }
+        log.error {
+          "No incoming codec for opcode 0x${opcode.toString(16)} on $side frame=$frameHex"
+        }
         return
       }
-      val packet = decode(registration.codec, msg)
-      val trailing = msg.readableBytes()
-      if (trailing > 0) throw TrailingBytesException(opcode, trailing)
+      val packet =
+          try {
+            val decoded = decode(registration.codec, msg)
+            val trailing = msg.readableBytes()
+            if (trailing > 0) throw TrailingBytesException(opcode, trailing)
+            decoded
+          } catch (t: Throwable) {
+            // The transport is framed, so one undecodable frame cannot desync the stream. While
+            // packet shapes are still being reverse-engineered, a mis-sized codec is data to
+            // collect, not a reason to drop the session.
+            log.warn {
+              "Dropping undecodable frame opcode=0x${opcode.toString(16)} on $side " +
+                  "frame=$frameHex reason=${t.message}"
+            }
+            return
+          }
       try {
         onPacket(PacketEvent(packet, session))
       } catch (t: Throwable) {

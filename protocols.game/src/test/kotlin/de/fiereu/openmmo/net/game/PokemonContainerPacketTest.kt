@@ -120,6 +120,12 @@ class PokemonContainerPacketTest :
         decoded.pokemon[1].containerSlot shouldBe 1.toShort()
         PokemonContainerPacketCodec.encodeToBytes(decoded) shouldBe bytes
       }
+
+      test("an Expansion server id round trips through its generated client wire id") {
+        val canonical = 0x10000 + 696
+        val encoded = PokemonCodec.encodeToBytes(testMon(1, dex = canonical, slot = 0))
+        PokemonCodec.decodeBytes(encoded).dexId shouldBe canonical
+      }
     })
 
 private fun bytes(): ByteArray = fixture("game/s2c/13/party_scrubbed.bin")

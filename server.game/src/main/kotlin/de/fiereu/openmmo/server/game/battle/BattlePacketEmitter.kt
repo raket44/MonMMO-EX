@@ -176,7 +176,11 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     broadcast(
         battle,
         BattleSwitchInPacket(
-            newSlot = battle.activeSlot,
+            // The packed header names the battle-field POSITION, not the party slot: the client
+            // indexes its per-side active array with it, which in singles has exactly one cell.
+            // Party slot 4 in that nibble was the ArrayIndexOutOfBounds crash on send-out. The
+            // party slot rides inside the monster block instead.
+            newSlot = 0,
             oldSlot = oldSlot,
             mon = battle.activeMon().toBlock(slot = battle.activeSlot, movesPresent = true),
             fullBlock = fullBlock,
@@ -189,7 +193,7 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     broadcast(
         battle,
         BattleSwitchInPacket(
-            newSlot = battle.opponentSlot,
+            newSlot = 0,
             oldSlot = oldSlot,
             mon = battle.opponentMon().toBlock(battle.opponentSlot, movesPresent = false),
             fullBlock = fullBlock,

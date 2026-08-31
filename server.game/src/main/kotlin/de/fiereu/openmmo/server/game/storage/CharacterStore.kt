@@ -217,15 +217,64 @@ constructor(
   }
 
   /** False when the monster could not be written, in which case the party is left as it was. */
-  suspend fun addPokemon(characterId: Long, pokemon: Pokemon): Boolean =
-      mutateDurably(
-          characterId,
-          // Copy instead of mutating in place, so flusher snapshots never see a half-updated list.
-          apply = { it.copy(pokemon = (it.pokemon + pokemon).toMutableList()) },
-          rollback = {
-            it.copy(pokemon = it.pokemon.filter { m -> m.id != pokemon.id }.toMutableList())
-          },
-      )
+  suspend fun addPokemon(characterId: Long, pokemon: Pokemon): Boolean {
+    // A seventh party member corrupts the character: the client rejects the whole character
+    // list and the player can no longer log in. Monsters in any other container land in
+    // pcStorage.
+    val toParty = pokemon.container == de.fiereu.openmmo.common.enums.PokemonContainer.PARTY
+    if (toParty &&
+        (getCharacter(characterId)?.pokemon?.size ?: 0) >= de.fiereu.openmmo.common.MAX_PARTY_SIZE)
+        return false
+    return mutateDurably(
+        characterId,
+        // Copy instead of mutating in place, so flusher snapshots never see a half-updated list.
+        apply = {
+          if (toParty) it.copy(pokemon = (it.pokemon + pokemon).toMutableList())
+          else it.copy(pcStorage = (it.pcStorage + pokemon).toMutableList())
+        },
+        rollback = {
+          if (toParty)
+              it.copy(pokemon = it.pokemon.filter { m -> m.id != pokemon.id }.toMutableList())
+          else it.copy(pcStorage = it.pcStorage.filter { m -> m.id != pokemon.id }.toMutableList())
+        },
+    )
+  }
+
+  /**
+   * Removes one party monster and closes the gap behind it.
+   *
+   * Slots are renumbered because the client draws the party by slot: leaving a hole makes the
+   * remaining monsters render in the wrong places. False when nothing was written.
+   */
+  suspend fun removePokemon(characterId: Long, pokemonId: Long): Boolean {
+    val previous = getCharacter(characterId)?.pokemon?.toList() ?: return false
+    if (previous.none { it.id == pokemonId }) return false
+    return mutateDurably(
+        characterId,
+        apply = { stored ->
+          stored.copy(
+              pokemon =
+                  stored.pokemon
+                      .filter { it.id != pokemonId }
+                      .mapIndexed { slot, mon -> mon.copy(containerSlot = slot.toShort()) }
+                      .toMutableList())
+        },
+        rollback = { it.copy(pokemon = previous.toMutableList()) },
+    )
+  }
+
+  /** Swap two zero-based party slots, keeping each monster's slot field in step with the list. */
+  fun swapPartySlots(characterId: Long, first: Int, second: Int): Boolean =
+      mutate(characterId) { stored ->
+        val party = stored.pokemon.toMutableList()
+        if (first !in party.indices || second !in party.indices || first == second) {
+          return@mutate null
+        }
+        val moved = party[first]
+        party[first] = party[second].copy(containerSlot = first.toShort())
+        party[second] = moved.copy(containerSlot = second.toShort())
+        stored.copy(pokemon = party)
+      }
 
   /** Replace one party monster by id, for example after a battle changed hp, xp, or level. */
   fun updatePokemon(characterId: Long, updated: Pokemon) {
@@ -270,6 +319,35 @@ constructor(
     mutate(characterId) { it.copy(info = it.info.copy(dynamicWarp = warp)) }
   }
 
+  /** Set (or clear with null) one skin slot - the BIKE slot is how riding persists. */
+  fun setSkin(characterId: Long, slot: SkinSlot, skin: Skin?) {
+    mutate(characterId) { stored ->
+      val skins = stored.skins.toMutableMap()
+      if (skin == null) skins.remove(slot) else skins[slot] = skin
+      stored.copy(skins = skins)
+    }
+  }
+
+  /**
+   * Commit a whole appearance from the customization dialog (0x29): the full skin map replaces the
+   * old one (an absent slot is clothing taken off), plus gender (the historical rivalSex field) and
+   * the skin set's leading region-outfit byte.
+   */
+  fun setAppearance(
+      characterId: Long,
+      skins: Map<SkinSlot, Skin>,
+      gender: Byte,
+      skinRegionSelectionIndex: Int,
+  ) {
+    mutate(characterId) { stored ->
+      stored.copy(
+          skins = skins.toMutableMap(),
+          info =
+              stored.info.copy(
+                  rivalSex = gender, skinRegionSelectionIndex = skinRegionSelectionIndex))
+    }
+  }
+
   /** Set a story flag. Copies the set so flusher snapshots never see a half-updated collection. */
   fun setStoryFlag(characterId: Long, flag: String) {
     mutate(characterId) { stored ->
@@ -301,11 +379,12 @@ constructor(
       items: Map<Int, Int>,
       storyFlags: Set<String>,
       storyVars: Map<String, Int>,
+      pc: List<Pokemon> = emptyList(),
   ) {
     mutate(characterId) { stored ->
       stored.copy(
           pokemon = party.toMutableList(),
-          pcStorage = mutableListOf(),
+          pcStorage = pc.toMutableList(),
           items = items.toMutableMap(),
           storyFlags = storyFlags.toMutableSet(),
           // A var of 0 is the default, so it is stored as absent everywhere else too.

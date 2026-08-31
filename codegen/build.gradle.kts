@@ -29,6 +29,9 @@ val regionSources =
 // is the canonical pick, same as byRegion is for maps.
 val sourceDecompDir = rootProject.layout.projectDirectory.dir("decomp/pokeemerald")
 
+// Kept separate from retail Emerald. This sibling is the user's configured Expansion source tree.
+val expansionDecompDir = rootProject.layout.projectDirectory.dir("../pokeemerald-expansion")
+
 // The Gen 5 table the live client speaks, not the GBA decomps, which number the same items
 // differently. Committed rather than a submodule because openmmo-org/pokeblack is private, taken
 // from its src/data/items.json and container 54 of its src/data/text1.json.
@@ -58,13 +61,18 @@ jteCodegen {
   register("moves") {
     mainClass.set("de.fiereu.openmmo.codegen.move.Main")
     templatesSubdir.set("move")
-    inputDirs.from(sourceDecompDir)
-    extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
+    inputDirs.from(expansionDecompDir)
+    extraArgs.set(listOf(expansionDecompDir.asFile.absolutePath))
   }
   register("pokemon") {
     mainClass.set("de.fiereu.openmmo.codegen.pokemon.Main")
     inputDirs.from(sourceDecompDir)
     extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
+  }
+  register("expansionPokemon") {
+    mainClass.set("de.fiereu.openmmo.codegen.pokemon.expansion.ExpansionPokemonMain")
+    inputDirs.from(expansionDecompDir)
+    extraArgs.set(listOf(expansionDecompDir.asFile.absolutePath))
   }
   register("learnset") {
     mainClass.set("de.fiereu.openmmo.codegen.learnset.Main")
@@ -102,6 +110,18 @@ jteCodegen {
     mainClass.set("de.fiereu.openmmo.codegen.dialog.Main")
     inputDirs.from(dialogDataDir)
     extraArgs.set(listOf(dialogDataDir.asFile.absolutePath) + regionSources.keys)
+  }
+  register("scriptCorpus") {
+    mainClass.set("de.fiereu.openmmo.codegen.script.ScriptCorpusMain")
+    inputDirs.from(
+        regionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") } +
+            dialogDataDir)
+    extraArgs.set(
+        listOf(dialogDataDir.asFile.absolutePath) +
+            listOf(
+                "kanto|firered|BPRE|${rootProject.layout.projectDirectory.dir("decomp/pokefirered").asFile.absolutePath}",
+                "hoenn|emerald|BPEE|${rootProject.layout.projectDirectory.dir("decomp/pokeemerald").asFile.absolutePath}",
+            ))
   }
 }
 

@@ -3,7 +3,9 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.PokemonMove
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.BattleAction
+import de.fiereu.openmmo.common.enums.GameMode
 import de.fiereu.openmmo.common.enums.IVs
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.common.enums.Region
@@ -26,14 +28,12 @@ import de.fiereu.openmmo.server.game.battle.BattleResult
 import de.fiereu.openmmo.server.game.battle.BattleRewards
 import de.fiereu.openmmo.server.game.battle.BattleRng
 import de.fiereu.openmmo.server.game.battle.BattleRules
-import de.fiereu.openmmo.common.enums.GameMode
 import de.fiereu.openmmo.server.game.battle.Gen1StatCalculator
 import de.fiereu.openmmo.server.game.battle.MoveLearner
 import de.fiereu.openmmo.server.game.battle.StatCalculator
 import de.fiereu.openmmo.server.game.battle.TurnEngine
 import de.fiereu.openmmo.server.game.battle.WildMonFactory
 import de.fiereu.openmmo.server.game.battle.acquiredMonsterDelta
-import de.fiereu.openmmo.server.game.services.ClassicModeService
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.world.interest.InterestManager
@@ -76,6 +76,7 @@ constructor(
     private val interestManager: InterestManager,
     private val speciesRegistry: SpeciesRegistry,
     private val moveRegistry: MoveRegistry,
+    private val dexProgress: DexProgressService,
     private val trainers: TrainerRegistry,
     private val items: ItemRegistry,
     private val classicMode: ClassicModeService,
@@ -85,15 +86,23 @@ constructor(
 
   private val pendingLearns = ConcurrentHashMap<Long, PendingMoveLearn>()
 
-  private fun computeStats(charId: Long, species: de.fiereu.openmmo.pokemon.SpeciesDef, mon: de.fiereu.openmmo.common.Pokemon) =
+  private fun computeStats(
+      charId: Long,
+      species: de.fiereu.openmmo.pokemon.SpeciesDef,
+      mon: de.fiereu.openmmo.common.Pokemon
+  ) =
       when (classicMode.getMode(charId)) {
-        GameMode.CLASSIC_RB, GameMode.CLASSIC_YELLOW -> Gen1StatCalculator.computeAll(species, mon, splitSpecial = false)
-        GameMode.CLASSIC_GS, GameMode.CLASSIC_CRYSTAL -> Gen1StatCalculator.computeAll(species, mon, splitSpecial = true)
+        GameMode.CLASSIC_RB,
+        GameMode.CLASSIC_YELLOW -> Gen1StatCalculator.computeAll(species, mon, splitSpecial = false)
+        GameMode.CLASSIC_GS,
+        GameMode.CLASSIC_CRYSTAL -> Gen1StatCalculator.computeAll(species, mon, splitSpecial = true)
         else -> StatCalculator.computeAll(species, mon)
       }
 
-  private fun computeWildStats(species: de.fiereu.openmmo.pokemon.SpeciesDef, mon: de.fiereu.openmmo.common.Pokemon) =
-      StatCalculator.computeAll(species, mon)
+  private fun computeWildStats(
+      species: de.fiereu.openmmo.pokemon.SpeciesDef,
+      mon: de.fiereu.openmmo.common.Pokemon
+  ) = StatCalculator.computeAll(species, mon)
 
   fun onBattlePacket(event: PacketEvent<*>) {
     log.info { "Battle packet ${event.packet::class.simpleName} received: ${event.packet}" }
@@ -163,13 +172,14 @@ constructor(
     finishBattle(battle, BattleResult.DISCONNECTED)
   }
 
-  /** Resumes scripts after returning to the overworld. */
-  fun onClientReady(event: PacketEvent<MapLoadedAckPacket>) {
-    if (event.packet.data.isNotEmpty()) return
-    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
-    val battle = battles.byChar(charId) ?: return
-    val result = battle.pendingResult ?: return
+  /** Resumes scripts after returning to the overworld; the finished result for whiteouts. */
+  fun onClientReady(event: PacketEvent<MapLoadedAckPacket>): BattleResult? {
+    if (event.packet.data.isNotEmpty()) return null
+    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return null
+    val battle = battles.byChar(charId) ?: return null
+    val result = battle.pendingResult ?: return null
     finishBattle(battle, result)
+    return result
   }
 
   /** True while the character has a battle running, so callers can skip starting another. */
@@ -225,6 +235,11 @@ constructor(
     return battle.completion.await()
   }
 
+  /** Resolves the original pret TRAINER_* constant inside one region's generated trainer table. */
+  fun resolveTrainer(region: Region, constant: String): TrainerDef? = trainers.get(region, constant)
+
+  fun resolveTrainer(region: Region, id: Int): TrainerDef? = trainers.get(region, id)
+
   /** Empty [moveIds] keeps the level up moveset, a null [iv] rolls one like a wild encounter. */
   private data class OpponentSpec(
       val dexId: Int,
@@ -267,6 +282,12 @@ constructor(
         session.send(notice("Your party has a species the battle data does not cover yet."))
         return null
       }
+      if (!def.abilityMechanicsSupported) {
+        // Refusing here made every encounter silently vanish the moment one imported species
+        // joined the party. An ability without mechanics simply never triggers, which is a far
+        // smaller lie than a world with no battles.
+        log.info { "Battle proceeds with inert ability on ${def.name} (char=$charId)" }
+      }
       party += BattleMonState(mon.id, def, index, mon, computeStats(charId, def, mon))
     }
     if (party.all { it.fainted }) {
@@ -290,6 +311,12 @@ constructor(
                     } + List((4 - spec.moveIds.size).coerceAtLeast(0)) { PokemonMove(0, 0) })
       }
       val def = speciesRegistry.get(spec.dexId)!!
+      if (!def.abilityMechanicsSupported) {
+        // Refusing here made every encounter silently vanish the moment one imported species
+        // joined the party. An ability without mechanics simply never triggers, which is a far
+        // smaller lie than a world with no battles.
+        log.info { "Battle proceeds with inert ability on ${def.name} (char=$charId)" }
+      }
       // A trainer's monsters are built to a fixed difficulty, so they must not keep the rolled
       // IVs. Max hp moves with them, and the monster comes out full.
       if (spec.iv != null) {
@@ -305,8 +332,7 @@ constructor(
         val fixed = rolled.copy(iVs = ivs)
         rolled = fixed.copy(hp = computeWildStats(def, fixed).hp.toShort())
       }
-      enemies +=
-          BattleMonState(rolled.id, def, null, rolled, computeWildStats(def, rolled))
+      enemies += BattleMonState(rolled.id, def, null, rolled, computeWildStats(def, rolled))
     }
     log.info {
       "Starting battle for char=$charId (${stored.info.name}) against " +
@@ -321,6 +347,8 @@ constructor(
     battle.seenActive.add(firstAlive)
     interestManager.join(session, battle.key)
     emitter.sendStart(battle, stored.info.name)
+    // Facing a species is seeing it: the Pokedex tiers update the moment the battle opens.
+    dexProgress.markSeen(session, charId, enemies.map { clientSpeciesId(it.source.dexId) })
     return battle
   }
 
@@ -418,14 +446,20 @@ constructor(
       return
     }
     val stored = characterStore.getCharacter(battle.charId) ?: return
-    val nextSlot = ((stored.pokemon.maxOfOrNull { it.containerSlot } ?: -1) + 1).toShort()
+    // A seventh party member corrupts the character - the client refuses the whole character
+    // list. With a full party the catch goes to PC storage instead, like the real games.
+    val partyFull = stored.pokemon.size >= de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    val container = if (partyFull) PokemonContainer.PC else PokemonContainer.PARTY
+    val nextSlot =
+        if (partyFull) ((stored.pcStorage.maxOfOrNull { it.containerSlot } ?: -1) + 1).toShort()
+        else ((stored.pokemon.maxOfOrNull { it.containerSlot } ?: -1) + 1).toShort()
     val caught =
         battle
             .opponentMon()
             .source
             .copy(
                 ownerId = battle.charId,
-                container = PokemonContainer.PARTY,
+                container = container,
                 containerSlot = nextSlot,
                 ot = stored.info.name,
                 hp = battle.opponentMon().currentHp.toShort(),
@@ -449,6 +483,8 @@ constructor(
     if (!characterStore.addPokemon(battle.charId, caught)) {
       log.error { "Could not persist the monster char=${battle.charId} just caught" }
     }
+    // Owning is derived from holdings, so a catch just needs the tiers pushed again.
+    dexProgress.refresh(battle.session, battle.charId)
     endBattle(battle, BattleResult.CAUGHT)
   }
 

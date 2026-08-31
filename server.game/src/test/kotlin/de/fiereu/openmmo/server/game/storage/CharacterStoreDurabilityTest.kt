@@ -62,6 +62,22 @@ class CharacterStoreDurabilityTest :
         }
       }
 
+      test("Expansion server species id survives the save round trip") {
+        runTest {
+          val repo = FakeCharacterRepository()
+          val store = CharacterStore(repo, EntityIdService(), backgroundScope)
+          val created = store.createCharacter(1, "Ash", CharacterGender.MALE, Region.HOENN)
+          val expansionId = 0x10000 + 700
+
+          store.addPokemon(
+              created.info.id,
+              caughtMonster(created.info.id).copy(dexId = expansionId),
+          ) shouldBe true
+
+          repo.loadById(created.info.id)!!.pokemon.single().dexId shouldBe expansionId
+        }
+      }
+
       test("walking does not pay for a write, it waits for the checkpoint") {
         runTest {
           val repo = FakeCharacterRepository()

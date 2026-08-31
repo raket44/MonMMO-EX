@@ -80,7 +80,7 @@ class WarpArrivalTest :
         val mapLoad = MapLoadService(mapManager)
         val presence =
             PresenceService(InterestManager(), PassThroughInterestPolicy(), mapLoad, store)
-        val warps = WarpService(mapLoad, mapManager, store, presence)
+        val warps = WarpService(mapLoad, mapManager, store, presence, WarpRules())
         val scriptWarps = ScriptWarpService(mapManager, mapLoad, store, presence)
       }
 
@@ -169,7 +169,11 @@ class WarpArrivalTest :
           advanceTimeBy(ARRIVAL_DEADLINE_PASSED)
           runCurrent()
 
-          session.sent shouldBe emptyList()
+          // The unconditional input-unlock failsafe may fire; the stale deadline itself must not
+          // reset or re-gate the player.
+          session.sent.filterNot {
+            it is de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket
+          } shouldBe emptyList()
         }
       }
 

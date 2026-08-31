@@ -47,7 +47,18 @@ constructor(
       if (shouldHideNpc(bankId, mapId, npc, storyFlags)) continue
       val resolved =
           resolveDynamicGraphics(
-              ctx, applyStoryPlacement(bankId, mapId, npc, storyFlags, storyVars))
+              ctx,
+              applyXyOverride(
+                  regionId,
+                  bankId,
+                  mapId,
+                  applyStoryPlacement(bankId, mapId, npc, storyFlags, storyVars),
+                  storyVars),
+              regionId,
+              storyVars)
+      // A still-unresolved VAR sprite would be an invisible but solid entity on the client; the
+      // GBA does not spawn these either. The post-script refresh sends it once its var is set.
+      if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) continue
       ctx.send(
           buildSpawnPacket(
               resolved,
@@ -59,6 +70,71 @@ constructor(
     }
   }
 
+  /**
+   * Re-sends the npcs whose sprite or position depends on story state, after a map's ON_TRANSITION
+   * script wrote the vars they read. The decomp runs that script before objects load; here the
+   * script runs after the spawn, so these npcs are corrected in place.
+   */
+  fun refreshDynamicNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    val map = mapManager.getMap(regionId, bankId, mapId) ?: return
+    val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
+    val storyFlags = stored?.storyFlags.orEmpty()
+    val storyVars = stored?.storyVars.orEmpty()
+    for (npc in map.npcs) {
+      val dynamicGfx = npc.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3
+      val hasOverride = xyOverrideKey(regionId, bankId, mapId, npc.entityIdx) in storyVars
+      if (!dynamicGfx && !hasOverride) continue
+      if (npc.hideFlag.substringAfter('/').startsWith(DECORATION_FLAG_PREFIX)) continue
+      if (shouldHideNpc(bankId, mapId, npc, storyFlags)) continue
+      val resolved =
+          resolveDynamicGraphics(
+              ctx,
+              applyXyOverride(
+                  regionId,
+                  bankId,
+                  mapId,
+                  applyStoryPlacement(bankId, mapId, npc, storyFlags, storyVars),
+                  storyVars),
+              regionId,
+              storyVars)
+      if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) continue
+      // Replace, not stack: despawn whatever the client holds under this entity id first.
+      despawnNpc(ctx, regionId, bankId, mapId, npc.entityIdx)
+      ctx.send(
+          buildSpawnPacket(
+              resolved,
+              entityIdFor(regionId, bankId, mapId, npc.entityIdx),
+              regionId,
+              bankId,
+              mapId,
+          ))
+    }
+  }
+
+  private fun sessionStoryVars(ctx: SessionContext): Map<String, Int> =
+      ctx.attributes[PLAYER_STATE]
+          ?.characterId
+          ?.let(characterStore::getCharacter)
+          ?.storyVars
+          .orEmpty()
+
+  /** The story-var key setobjectxyperm writes an npc's overridden tile into (x shl 12 or y). */
+  fun xyOverrideKey(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int): String {
+    val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()
+    return "$namespace/objxy/$bankId:$mapId:$entityIdx"
+  }
+
+  private fun applyXyOverride(
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      npc: NpcDef,
+      storyVars: Map<String, Int>,
+  ): NpcDef {
+    val packed = storyVars[xyOverrideKey(regionId, bankId, mapId, npc.entityIdx)] ?: return npc
+    return npc.copy(x = packed shr 12, y = packed and 0xFFF)
+  }
+
   /** Allocate (or return) the stable entity id for a map npc by its decomp local id. */
   fun entityIdFor(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int): Long =
       npcEntityIds.getOrPut(key(regionId, bankId, mapId, entityIdx)) {
@@ -68,9 +144,14 @@ constructor(
   /** Spawn a single npc (including a normally hidden one) for one player, for cutscenes. */
   fun spawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
+    val storyVars = sessionStoryVars(ctx)
+    val resolved =
+        resolveDynamicGraphics(
+            ctx, applyXyOverride(regionId, bankId, mapId, npc, storyVars), regionId, storyVars)
+    if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) return
     ctx.send(
         buildSpawnPacket(
-            resolveDynamicGraphics(ctx, npc),
+            resolved,
             entityIdFor(regionId, bankId, mapId, localId),
             regionId,
             bankId,
@@ -91,7 +172,7 @@ constructor(
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
     ctx.send(
         buildSpawnPacket(
-            resolveDynamicGraphics(ctx, npc.copy(x = x, y = y)),
+            resolveDynamicGraphics(ctx, npc.copy(x = x, y = y), regionId, sessionStoryVars(ctx)),
             entityIdFor(regionId, bankId, mapId, localId),
             regionId,
             bankId,
@@ -173,10 +254,25 @@ constructor(
     )
   }
 
-  private fun resolveDynamicGraphics(ctx: SessionContext, npc: NpcDef): NpcDef {
-    if (npc.graphicsId != DYNAMIC_GFX_VAR_0 ||
-        !(npc.script.contains("Rival", ignoreCase = true) ||
-            npc.hideFlag.contains("RIVAL", ignoreCase = true))) {
+  private fun resolveDynamicGraphics(
+      ctx: SessionContext,
+      npc: NpcDef,
+      regionId: Int,
+      storyVars: Map<String, Int>,
+  ): NpcDef {
+    if (npc.graphicsId !in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) return npc
+
+    // The map's ON_TRANSITION script chose the sprite (setvar VAR_OBJ_GFX_ID_N, gfx) - the
+    // Viridian old man and friends. The rival heuristic below covers npcs whose var no script
+    // has written yet.
+    val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()
+    val slot = npc.graphicsId - DYNAMIC_GFX_VAR_0
+    storyVars["$namespace/VAR_OBJ_GFX_ID_$slot"]?.let {
+      return npc.copy(graphicsId = it)
+    }
+
+    if (!(npc.script.contains("Rival", ignoreCase = true) ||
+        npc.hideFlag.contains("RIVAL", ignoreCase = true))) {
       return npc
     }
     val playerGender =
@@ -223,6 +319,7 @@ constructor(
   private companion object {
     const val DECORATION_FLAG_PREFIX = "FLAG_DECORATION_"
     const val DYNAMIC_GFX_VAR_0 = 240
+    const val DYNAMIC_GFX_VAR_3 = 243
     const val RIVAL_BRENDAN_NORMAL = 100
     const val RIVAL_MAY_NORMAL = 105
     const val FEMALE: Byte = 1

@@ -57,7 +57,7 @@ class CutsceneMovementLockTest :
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val (session, charId) = store.playerAt()
-          session.state().inDialog = true
+          session.state().lockAll()
 
           movementService(store, openMapManager())
               .onMovement(
@@ -78,7 +78,7 @@ class CutsceneMovementLockTest :
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val (session, charId) = store.playerAt()
-          session.state().inDialog = true
+          session.state().lockAll()
 
           movementService(store, openMapManager())
               .onFaceDirection(PacketEvent(FaceDirectionPacket(Direction.LEFT), session))
@@ -94,7 +94,7 @@ class CutsceneMovementLockTest :
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val (session, charId) = store.playerAt()
-          session.state().inDialog = false
+          session.state().releaseScriptLock()
 
           movementService(store, openMapManager())
               .onMovement(

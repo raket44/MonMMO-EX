@@ -12,50 +12,30 @@ data class WarpExitOverride(
 
 object WarpExitRules {
 
+  /**
+   * Vanilla's GetAdjustedInitialDirection (pokeemerald-expansion src/overworld.c): the landing
+   * tile's behavior decides the facing, ladders keep the facing the player warped in with, and
+   * everything else faces DOWN - there is no map-type or edge guessing in the real game. The old
+   * building/underground/edge heuristics produced the wrong facing whenever they disagreed with the
+   * tile (the "first trip" facing bugs), so they are gone.
+   */
   fun inferExitFacing(
       destTileBehavior: TileBehavior?,
-      destMap: MapDef?,
-      destX: Int,
-      destY: Int,
-      sourceMap: MapDef?,
-  ): Direction {
-    if (destMap == null) return Direction.DOWN
-
-    // The tile itself is exact, so it wins over the guesses below.
-    when (destTileBehavior) {
-      TileBehavior.DOOR,
-      TileBehavior.NON_ANIMATED_DOOR -> return Direction.DOWN
-      TileBehavior.NORTH_ARROW_WARP -> return Direction.DOWN
-      TileBehavior.SOUTH_ARROW_WARP -> return Direction.UP
-      TileBehavior.WEST_ARROW_WARP -> return Direction.RIGHT
-      TileBehavior.EAST_ARROW_WARP -> return Direction.LEFT
-      else -> Unit
-    }
-
-    val sourceMapType = sourceMap?.mapType
-
-    getKnownOverride(sourceMap, destMap, destX, destY)?.let {
-      return it.facing
-    }
-
-    if (isUndergroundMap(destMap.mapType) && !isUndergroundMap(sourceMapType)) {
-      return Direction.UP
-    }
-
-    if (isBuildingMap(destMap.mapType) && !isBuildingMap(sourceMapType)) {
-      return Direction.UP
-    }
-
-    if (isBuildingMap(sourceMapType) && !isBuildingMap(destMap.mapType)) {
-      return Direction.DOWN
-    }
-
-    if (isBuildingMap(sourceMapType) && isBuildingMap(destMap.mapType)) {
-      return Direction.DOWN
-    }
-
-    return inferFacingFromExactEdge(destMap, destX, destY)
-  }
+      entryFacing: Direction,
+  ): Direction =
+      when (destTileBehavior) {
+        TileBehavior.DOOR,
+        TileBehavior.NON_ANIMATED_DOOR -> Direction.DOWN
+        TileBehavior.NORTH_ARROW_WARP -> Direction.DOWN
+        TileBehavior.SOUTH_ARROW_WARP -> Direction.UP
+        TileBehavior.WEST_ARROW_WARP -> Direction.RIGHT
+        TileBehavior.EAST_ARROW_WARP -> Direction.LEFT
+        TileBehavior.STAIR_WARP_EAST -> Direction.LEFT
+        TileBehavior.STAIR_WARP_WEST -> Direction.RIGHT
+        // Ladders, escalators and warp pads: keep the pre-warp facing, per vanilla.
+        TileBehavior.LADDER -> entryFacing
+        else -> Direction.DOWN
+      }
 
   fun getKnownOverride(
       sourceMap: MapDef?,
@@ -89,20 +69,12 @@ object WarpExitRules {
     return null
   }
 
-  private fun inferFacingFromExactEdge(
-      destMap: MapDef,
-      destX: Int,
-      destY: Int,
-  ): Direction {
-    return when {
-      destY <= 1 -> Direction.DOWN
-      destY >= destMap.height - 2 -> Direction.UP
-      destX <= 1 -> Direction.RIGHT
-      destX >= destMap.width - 2 -> Direction.LEFT
-      else -> Direction.DOWN
-    }
-  }
-
+  /**
+   * Vanilla's SetUpWarpExitTask (pokeemerald-expansion src/field_screen_effect.c): doors, non-anim
+   * doors and directional stair warps play a walk-out on arrival; every other landing is
+   * Task_ExitNonDoor - no step. Only a tile with NO behavior data falls back to the old map-type
+   * heuristic (exiting a building or entering the underground steps).
+   */
   fun shouldAutoStep(
       sourceMap: MapDef?,
       destMap: MapDef?,
@@ -110,14 +82,14 @@ object WarpExitRules {
   ): Boolean {
     if (sourceMap == null || destMap == null) return false
 
-    // An animated door drops the player below it, every other warp tile keeps them on it.
-    when (destTileBehavior) {
-      TileBehavior.DOOR -> return true
-      TileBehavior.NON_ANIMATED_DOOR,
-      TileBehavior.LADDER,
-      TileBehavior.STAIR_WARP_EAST,
-      TileBehavior.STAIR_WARP_WEST -> return false
-      else -> Unit
+    if (destTileBehavior != null) {
+      // Only doors walk out: the GBA client animates the stair walk-off itself, so a server
+      // step on stair arrivals doubled it (play-verified).
+      return when (destTileBehavior) {
+        TileBehavior.DOOR,
+        TileBehavior.NON_ANIMATED_DOOR -> true
+        else -> false
+      }
     }
 
     val sourceBuilding =
@@ -132,13 +104,5 @@ object WarpExitRules {
     if (enteringUnderground) return true
 
     return false
-  }
-
-  fun isBuildingMap(type: MapType?): Boolean {
-    return type == MapType.INSIDE || type == MapType.SECRET_BASE
-  }
-
-  fun isUndergroundMap(type: MapType?): Boolean {
-    return type == MapType.UNDERGROUND
   }
 }

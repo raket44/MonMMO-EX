@@ -1,63 +1,74 @@
 package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
+import de.fiereu.openmmo.common.Skin
+import de.fiereu.openmmo.common.enums.SkinSlot
+import de.fiereu.openmmo.net.game.codecs.SkinSet
 
-data class CreatureMoveEntry(
-    val packed: Short,
-    val extra: Byte?,
-)
+// Type and color share one 16 bit word, exactly as in the skin-set codec.
+private const val TYPE_MASK = 0x3FF
+private const val COLOR_SHIFT = 10
+private const val COLOR_MASK = 0x3F
 
-data class CreatureMoveset(
-    val headerByte: Byte,
-    val moveMask: Short,
-    val moves: List<CreatureMoveEntry>,
-)
-
-private val CreatureMovesetCodec: Codec<CreatureMoveset> =
-    object : Codec<CreatureMoveset> {
-      override fun read(buf: ReadBuffer): CreatureMoveset {
-        val headerByte = S8.read(buf)
-        val moveMask = S16LE.read(buf)
-        val hasExtra = (moveMask.toInt() and 0x8000) != 0
-        val moves = ArrayList<CreatureMoveEntry>()
-        for (slot in 0 until 15) {
-          if ((moveMask.toInt() and (1 shl slot)) != 0) {
-            val packed = S16LE.read(buf)
-            val extra = if (hasExtra) S8.read(buf) else null
-            moves.add(CreatureMoveEntry(packed, extra))
-          }
-        }
-        return CreatureMoveset(headerByte, moveMask, moves)
-      }
-
-      override fun write(buf: WriteBuffer, value: CreatureMoveset) {
-        S8.write(buf, value.headerByte)
-        S16LE.write(buf, value.moveMask)
-        val hasExtra = (value.moveMask.toInt() and 0x8000) != 0
-        for (move in value.moves) {
-          S16LE.write(buf, move.packed)
-          if (hasExtra && move.extra != null) S8.write(buf, move.extra)
-        }
-      }
-    }
-
+/**
+ * C2S 0x29 - the in-game customization dialog's apply (client f.cb1, built by f.Te.W50 when the
+ * player confirms). The wire is the client's own writer, verified in bytecode:
+ *
+ * `s64 entityId, s8 gender (f.r4), s8 skinTone, [skin set via f.Em1.Sv0], s8 regionOutfit`
+ *
+ * Sv0 writes: u8 leading byte (the region-outfit index, same value as the trailing byte), s16 slot
+ * mask (bit 15 set when per-slot extra bytes follow), then per set slot an s16 `type | color <<
+ * 10` - plus one extra byte per entry when bit 15 is set.
+ *
+ * The dialog lists an option for every bag item whose catalog record links a cosmetic addon
+ * (f.Gc0.ka1), so ownership enforcement is the server's job when this arrives.
+ */
 data class CustomizeCharacterAppearancePacket(
     val entityId: Long,
-    val colorCategoryId: Byte,
-    val colorSlot: Byte,
-    val moveSet: CreatureMoveset,
-    val paletteIndex: Byte,
+    val gender: Byte,
+    val skinTone: Byte,
+    val appearance: SkinSet,
+    val extras: Map<SkinSlot, Byte>,
+    val regionOutfit: Byte,
 )
 
 object CustomizeCharacterAppearancePacketCodec : PacketCodec<CustomizeCharacterAppearancePacket>() {
   override fun CodecScope<CustomizeCharacterAppearancePacket>.body():
       CustomizeCharacterAppearancePacket {
     val entityId = field(S64LE) { it.entityId }
-    val colorCategoryId = field(S8) { it.colorCategoryId }
-    val colorSlot = field(S8) { it.colorSlot }
-    val moveSet = field(CreatureMovesetCodec) { it.moveSet }
-    val paletteIndex = field(S8) { it.paletteIndex }
+    val gender = field(S8) { it.gender }
+    val skinTone = field(S8) { it.skinTone }
+    val regionSelectionIndex = field(U8) { it.appearance.regionSelectionIndex }
+    val mask =
+        field(S16LE) { packet ->
+          var m = packet.appearance.keys.fold(0) { acc, slot -> acc or (1 shl slot.ordinal) }
+          if (packet.extras.isNotEmpty()) m = m or 0x8000
+          m.toShort()
+        }
+    val hasExtras = (mask.toInt() and 0x8000) != 0
+    val appearance = SkinSet(regionSelectionIndex)
+    val extras = mutableMapOf<SkinSlot, Byte>()
+    SkinSlot.entries.forEach { slot ->
+      if ((mask.toInt() and (1 shl slot.ordinal)) != 0) {
+        val packed =
+            field(S16LE) {
+              val skin = it.appearance[slot] ?: Skin(slot, 0u, 0u)
+              val type = (skin.type ?: 0u).toInt()
+              val color = (skin.color ?: 0u).toInt()
+              ((type and TYPE_MASK) or ((color and COLOR_MASK) shl COLOR_SHIFT)).toShort()
+            }
+        appearance.put(
+            Skin(
+                slot,
+                (packed.toInt() and TYPE_MASK).toUShort(),
+                ((packed.toInt() shr COLOR_SHIFT) and COLOR_MASK).toUByte()))
+        if (hasExtras) {
+          extras[slot] = field(S8) { it.extras[slot] ?: 0 }
+        }
+      }
+    }
+    val regionOutfit = field(S8) { it.regionOutfit }
     return CustomizeCharacterAppearancePacket(
-        entityId, colorCategoryId, colorSlot, moveSet, paletteIndex)
+        entityId, gender, skinTone, appearance, extras, regionOutfit)
   }
 }

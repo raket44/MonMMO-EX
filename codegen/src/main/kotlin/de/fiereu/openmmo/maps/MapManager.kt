@@ -4,6 +4,7 @@ import de.fiereu.openmmo.maps.generated.GeneratedMaps
 import de.fiereu.openmmo.net.game.packets.LoadMapPacket
 import de.fiereu.openmmo.net.game.packets.MapData
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,6 +12,7 @@ import javax.inject.Singleton
 class MapManager @Inject constructor() {
 
   private val maps = ConcurrentHashMap<Long, MapDef>()
+  private val mapsByName = ConcurrentHashMap<String, CopyOnWriteArrayList<MapDef>>()
 
   init {
     GeneratedMaps.loadInto(this)
@@ -18,6 +20,9 @@ class MapManager @Inject constructor() {
 
   fun register(map: MapDef) {
     maps[key(map.regionId, map.bankId, map.mapId)] = map
+    if (map.sourceName.isNotBlank()) {
+      mapsByName.computeIfAbsent(map.sourceName.lowercase()) { CopyOnWriteArrayList() }.add(map)
+    }
   }
 
   fun getMap(regionId: Byte, bankId: Byte, mapId: Byte): MapDef? =
@@ -26,7 +31,13 @@ class MapManager @Inject constructor() {
   fun getMap(regionId: Int, bankId: Int, mapId: Int): MapDef? =
       getMap(regionId.toByte(), bankId.toByte(), mapId.toByte())
 
+  fun getMapsByName(sourceName: String): List<MapDef> =
+      mapsByName[sourceName.lowercase()]?.toList().orEmpty()
+
   fun size(): Int = maps.size
+
+  /** Every loaded map, for name-fragment searches like the teleport command's. */
+  fun allMaps(): List<MapDef> = maps.values.toList()
 
   fun createLoadMapPacket(
       map: MapDef,

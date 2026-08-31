@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.battle
 
+import de.fiereu.openmmo.common.DEFAULT_MOVE_PP
 import de.fiereu.openmmo.common.MAX_MOVE_SLOTS
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.PokemonMove
@@ -15,7 +16,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TACKLE_ID = 33
-private const val FALLBACK_PP = 35
 
 /** Rolls a wild monster: random nature seed, random IVs, computed stats, full hp. */
 @Singleton
@@ -40,9 +40,21 @@ constructor(
           spd = rng.ivRoll()
         }
     // Species without a learnset fall back to Tackle so the monster can still attack.
-    val moveIds = learnsets.initialMoveset(dexId, level).ifEmpty { listOf(TACKLE_ID) }
+    //
+    // Moves the server has no definition for are kept rather than dropped. Its own table stops at
+    // the 354 moves of the Emerald decomp, so filtering here left an Expansion species holding
+    // whichever one or two of its moves happened to predate Gen 4 - a fresh Yveltal arrived
+    // knowing only Psychic. The client defines these moves now, and the battle engine already
+    // treats a missing definition as nullable, so the moveset displays correctly and only the
+    // in-battle effect is still missing.
+    val moveIds =
+        learnsets
+            .initialMoveset(dexId, level)
+            .ifEmpty { listOf(TACKLE_ID) }
+            // The most recently learned moves, and never more than the client has slots for.
+            .takeLast(MAX_MOVE_SLOTS)
     val moveset =
-        moveIds.map { PokemonMove(it.toShort(), (moves.get(it)?.pp ?: FALLBACK_PP).toByte()) } +
+        moveIds.map { PokemonMove(it.toShort(), (moves.get(it)?.pp ?: DEFAULT_MOVE_PP).toByte()) } +
             List(MAX_MOVE_SLOTS - moveIds.size) { PokemonMove(0, 0) }
     val mon =
         Pokemon(

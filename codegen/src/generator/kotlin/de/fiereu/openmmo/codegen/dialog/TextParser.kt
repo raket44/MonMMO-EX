@@ -29,6 +29,10 @@ class TextParser(private val decompDir: File) {
           .filter { it.isFile && it.extension == "inc" }
           .forEach { file -> parseFile(file, out) }
     }
+    // Both games keep a batch of shared overworld text (Pokemon Center nurse lines included)
+    // directly in the event_scripts assembly rather than any of the folders above.
+    val eventScripts = File(decompDir, "data/event_scripts.s")
+    if (eventScripts.isFile) parseFile(eventScripts, out)
     return out.map { DecompText(it.key, it.value) }
   }
 

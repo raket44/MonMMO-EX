@@ -3,6 +3,8 @@ package de.fiereu.openmmo.net.game.codecs
 import de.fiereu.bytecodec.*
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.PokemonMove
+import de.fiereu.openmmo.common.canonicalSpeciesId
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.*
 import de.fiereu.openmmo.common.utils.hexToBytes
 
@@ -22,12 +24,20 @@ private fun reserved(hex: String): Codec<Unit> =
 // Fixed 4-byte U8 list at the start of trailer A, purpose unknown, always zero here.
 private const val LIST4 = "00000000"
 // Trailer A bytes between the EVs and the IV word, purpose unknown (includes the ff/03 markers).
+// NOT constant: game/s2c/13/party_scrubbed.bin has ...01...040502... here while
+// game/s2c/14/monster_record_32710.bin has ...00...580500..., so at least three of these bytes are
+// per-monster fields still modelled as fixed bytes. Both captures keep the region the same width,
+// so a wrong value cannot desync a reader; it only sends the client incorrect data.
 private const val TAIL_A_REST = "00000100000000000000040502ffffffff0300"
 // Trailer B long that follows the unknown byte, purpose unknown. Species-dependent, so the captured
 // value is written back for now.
 private const val TRAILER_B_LONG = 0x200000L
-// Record end: unknown bytes closed by a U8 list count, which is zero (empty list) in every capture.
-private const val TRAILER = "00ffff0000"
+// Record end. Measured against the installed 31914 client rather than the 32710 fixtures: the
+// client consumed 136 bytes of a record we wrote as 137, so this tail is one byte shorter than the
+// captured one. f.tK0.wG finishes by reading a U8 list count and doing new QB[count] with it as a
+// SIGNED byte, so the final byte must stay zero; a misaligned read landing on 0xff is what produced
+// NegativeArraySizeException: -1 at character select.
+private const val TRAILER = "00ffff00"
 
 private fun packRarity(p: Pokemon): Int =
     (if (p.isShiny) PokemonRarityFlag.SHINY.mask else 0) or
@@ -65,7 +75,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     field(S64LE, Pokemon::ownerId)
     field(reserved("01")) {}
     val containerSlot = field(S16LE, Pokemon::containerSlot)
-    val dexId = field(U16LE, Pokemon::dexId)
+    val wireDexId = field(U16LE) { clientSpeciesId(it.dexId) }
     val seed = field(S32LE, Pokemon::seed)
     field(S64LE, Pokemon::ownerId)
     val ot = field(Utf16LeNullTerminated, Pokemon::ot)
@@ -98,7 +108,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
         ownerId = ownerId,
         container = PokemonContainer.PARTY,
         containerSlot = containerSlot,
-        dexId = dexId,
+        dexId = canonicalSpeciesId(wireDexId),
         seed = seed,
         ot = ot,
         nickname = nickname,

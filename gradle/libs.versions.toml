@@ -1,4 +1,5 @@
 [versions]
+asm = "9.9"
 kotlin = "2.4.10"
 kotlinx-serialization = "1.11.0"
 kotlinx-coroutines = "1.11.0"
@@ -28,6 +29,7 @@ dotenv = "4.0.0"
 vcdiff = "0.2.0"
 
 [libraries]
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 jooqCodegenGradlePlugin = { module = "org.jooq:jooq-codegen-gradle", version.ref = "jooq" }
 spotlessGradlePlugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }

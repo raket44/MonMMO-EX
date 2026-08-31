@@ -3,6 +3,8 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
+import de.fiereu.openmmo.server.game.script.ScriptResolutionException
+import de.fiereu.openmmo.server.game.script.gbaScriptSource
 import de.fiereu.openmmo.server.game.session.PlayerState
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
@@ -27,11 +29,11 @@ constructor(
   fun onEntry(state: PlayerState, map: MapDef): List<Script> {
     val charId = state.characterId
     return buildList {
-      resolve(map.onTransitionScript)?.let { add(it) }
+      resolve(map.onTransitionScript, map.regionId.toInt())?.let { add(it) }
       if (charId != null) {
         map.onFrameScripts
             .firstOrNull { storyService.getVar(charId, it.varKey) == it.value }
-            ?.let { resolve(it.script) }
+            ?.let { resolve(it.script, map.regionId.toInt()) }
             ?.let { add(it) }
       }
     }
@@ -43,16 +45,22 @@ constructor(
         map.coordScripts.firstOrNull {
           it.x == x && it.y == y && storyService.getVar(charId, it.varKey) == it.value
         } ?: return null
-    return resolve(trigger.script)
+    return resolve(trigger.script, map.regionId.toInt())
   }
 
   /** True when the tile has a trigger at all, whatever its var currently says. */
   fun hasCoordinate(map: MapDef, x: Int, y: Int): Boolean =
       map.coordScripts.any { it.x == x && it.y == y }
 
-  private fun resolve(label: String): Script? {
+  private fun resolve(label: String, regionId: Int): Script? {
     if (label.isEmpty()) return null
-    val script = scriptRegistry.forLabel(label)
+    val script =
+        try {
+          scriptRegistry.forLabel(label, gbaScriptSource(regionId))
+        } catch (cause: ScriptResolutionException) {
+          log.warn(cause) { "Skipping unavailable map-entry script $label" }
+          null
+        }
     if (script == null) log.debug { "Map script $label is not ported yet" }
     return script
   }

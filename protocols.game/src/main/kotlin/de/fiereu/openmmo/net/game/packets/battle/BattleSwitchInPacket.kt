@@ -3,10 +3,21 @@ package de.fiereu.openmmo.net.game.packets.battle
 import de.fiereu.bytecodec.*
 
 /**
- * Brings a monster onto the field after a switch (opcode 0x35). The header names the new and
- * previous active party slots. A monster coming out for the first time carries its full block, the
- * same layout as the field state. One already seen active is sent as just its 21-byte active
- * detail. When [fullBlock] is false the decode fills only species, level, and gender.
+ * Brings a monster onto the field after a switch (opcode 0x35).
+ *
+ * The layout here is the one the client's own parser (`f/n8.qP1`) reads, decoded from bytecode
+ * after the first real player switch crashed the client with a null battle monster:
+ * - one packed byte: the new slot in the high nibble, the side in the low nibble (`f/fd1.Po0`)
+ * - one kind byte, an enum the client resolves leniently; zero is the plain send-out
+ * - one flag byte: 1 means the full monster block follows, anything else means it does not
+ * - the full block plus its trailing last-block marker, when flagged
+ * - the 21-byte active detail, always
+ *
+ * The previous codec wrote a four-byte header (side, zero, new slot, old slot): a misreading of one
+ * capture whose new-slot byte happened to be 1, which the client actually treats as the full-block
+ * flag. Every synthesized switch-in was therefore shifted by one byte and the client dropped the
+ * monster, leaving a null in the field model that crashed the renderer on send-out. The old slot is
+ * not on the wire at all.
  */
 data class BattleSwitchInPacket(
     val newSlot: Int,
@@ -19,50 +30,44 @@ data class BattleSwitchInPacket(
 
 private val NO_MOVES = List(BattleMonBlock.MOVE_SLOTS) { 0.toShort() }
 
-private data class SwitchInMon(val mon: BattleMonBlock, val fullBlock: Boolean)
-
-// Whether the full block precedes the active detail is not flagged on the wire. Only the
-// remaining length tells the two shapes apart, so this section cannot go through the scope.
-private val SwitchInMonCodec: Codec<SwitchInMon> =
-    object : Codec<SwitchInMon> {
-      override fun read(buf: ReadBuffer): SwitchInMon {
-        val fullBlock = buf.remaining() > BattleActiveDetailCodec.WIRE_SIZE
-        val block = if (fullBlock) BattleFullBlockCodec.read(buf) else null
-        if (fullBlock) S8.read(buf) // last-block flag before the active detail
-        val active = BattleActiveDetailCodec.read(buf)
-        val mon =
-            block
-                ?: BattleMonBlock(
-                    slot = active.slot,
-                    entityId = 0,
-                    species = active.species,
-                    level = active.level,
-                    gender = active.gender,
-                    abilityId = 0,
-                    maxHp = 0,
-                    currentHp = 0,
-                    movesPresent = false,
-                    moveIds = NO_MOVES,
-                )
-        return SwitchInMon(mon, fullBlock)
-      }
-
-      override fun write(buf: WriteBuffer, value: SwitchInMon) {
-        if (value.fullBlock) {
-          BattleFullBlockCodec.write(buf, value.mon)
-          S8.write(buf, 1) // last-block flag before the active detail
-        }
-        BattleActiveDetailCodec.write(buf, BattleActiveDetail.of(value.mon.slot, value.mon))
-      }
-    }
-
 object BattleSwitchInPacketCodec : PacketCodec<BattleSwitchInPacket>() {
   override fun CodecScope<BattleSwitchInPacket>.body(): BattleSwitchInPacket {
-    val side = field(S8) { it.side }
-    reserved(0)
-    val newSlot = field(U8) { it.newSlot }
-    val oldSlot = field(U8) { it.oldSlot }
-    val section = field(SwitchInMonCodec) { SwitchInMon(it.mon, it.fullBlock) }
-    return BattleSwitchInPacket(newSlot, oldSlot, section.mon, section.fullBlock, side)
+    val packed = field(U8) { (it.newSlot shl 4) or (it.side.toInt() and 0x0F) }
+    val side = (packed and 0x0F).toByte()
+    val newSlot = (packed ushr 4) and 0x0F
+    field(U8) { 0 } // send-out kind; zero is the plain send-out
+    // Decoded against both the client's parser (f/n8.qP1 -> ns0 -> NQ1) and the captured retail
+    // switch-in, which agree byte for byte:
+    // - the flag byte says whether the ns0 block follows; the original codec mislabelled it
+    //   "newSlot", which held 1 in the capture by coincidence, so every switch from another slot
+    //   broke the parse.
+    // - a zero sub-side byte opens the block; ns0 then reads slot, the presence constant, and the
+    //   u64 monster uid (the block's entityId - consumed by the client's gb1()).
+    // - the byte before the detail is NQ1's presence marker, required in BOTH branches - it is
+    //   not a "last block" flag, so it also precedes a detail sent without a block.
+    val fullBlock = field(U8) { if (it.fullBlock) 1 else 0 } == 1
+    val block =
+        if (fullBlock) {
+          field(U8) { 0 } // ns0 sub-side
+          field(BattleFullBlockCodec) { it.mon }
+        } else null
+    field(S8) { 1 } // NQ1 presence: the monster is on the field
+    val active = field(BattleActiveDetailCodec) { BattleActiveDetail.of(it.mon.slot, it.mon) }
+    val mon =
+        block
+            ?: BattleMonBlock(
+                slot = active.slot,
+                entityId = 0,
+                species = active.species,
+                level = active.level,
+                gender = active.gender,
+                abilityId = 0,
+                maxHp = 0,
+                currentHp = 0,
+                movesPresent = false,
+                moveIds = NO_MOVES,
+            )
+    return BattleSwitchInPacket(
+        newSlot = newSlot, oldSlot = -1, mon = mon, fullBlock = fullBlock, side = side)
   }
 }

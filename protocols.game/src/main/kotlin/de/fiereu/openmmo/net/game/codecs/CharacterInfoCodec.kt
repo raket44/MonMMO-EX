@@ -2,6 +2,8 @@ package de.fiereu.openmmo.net.game.codecs
 
 import de.fiereu.bytecodec.*
 import de.fiereu.openmmo.common.CharacterInfo
+import de.fiereu.openmmo.common.clientStaffLevel
+import de.fiereu.openmmo.common.withClientStaffLevel
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -30,7 +32,8 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
     field(S16LE) { 0 }
     field(S32LE) { 0 }
     val permissions = field(U8) { it.permissions and 0xFF }
-    field(S8) { 0 }
+    // The client reads this byte as its staff level (f.ZZ.tI): 1 opens the built-in GM Menu.
+    val staffLevel = field(U8) { it.clientStaffLevel }
     field(S8) { 0 }
     field(S32LE) { 0 }
     repeat(8) { field(S8) { 0 } }
@@ -69,7 +72,7 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
         lastLogin = lastLogin,
         createdAt = createdAt,
         money = money,
-        permissions = permissions,
+        permissions = withClientStaffLevel(permissions, staffLevel),
         remainingSafariSteps = remainingSafariSteps,
         remainingSafariBalls = remainingSafariBalls,
         pcExtraSlots = pcExtraSlots,

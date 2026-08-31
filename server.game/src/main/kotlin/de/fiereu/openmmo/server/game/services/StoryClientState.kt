@@ -17,25 +17,31 @@ internal object StoryClientState {
     return StoryFlagUpdatePacket(regionId, id, enabled)
   }
 
-  fun variables(regionId: Byte, vars: Map<String, Int>): List<PlayerVariableEntry> =
-      vars
-          .mapNotNull { (key, value) ->
-            val id = varId(regionId, key) ?: return@mapNotNull null
-            if (id !in GBA_VARS_START..GBA_VARS_END) return@mapNotNull null
-            PlayerVariableEntry((id - GBA_VARS_START).toByte(), value.toShort())
-          }
-          .sortedBy { it.key.toInt() and 0xff }
-
   /**
-   * Every var in the GBA range, zeros included. A var back at 0 is stored as absent, so sending
-   * only what is stored would leave the client holding the old value. There is no var equivalent of
-   * [de.fiereu.openmmo.net.game.packets.WorldFlagTableResetPacket] to clear it first.
+   * The "variables" list is per-ITEM unlock flags: the client (f.Za0) stores each (s16 itemId, u8
+   * enabled) pair and its apply pass (X91) runs dY(itemId, enabled) -> Gc0.tv0 for every entry. tv0
+   * is what the customization dialog checks when deciding whether a cosmetic is an OPTION - so this
+   * list, not the bag, is what makes cosmetics selectable.
+   *
+   * Server policy, matching retail as the operator described it:
+   * - every item the player owns is enabled (obtaining a thing unlocks using it),
+   * - the twelve basic bicycle colors (BIKE addons 0..11) are ALWAYS enabled - they are not bag
+   *   items, the dialog just offers them,
+   * - every other item-backed cosmetic is explicitly DISABLED unless its item is in the bag. The
+   *   explicit zero matters: the retail pak ships some sub-frame leftovers (horse gallop frames,
+   *   sparkles) default-unlocked, and they polluted the dialog until overridden.
    */
-  fun allVariables(regionId: Byte, vars: Map<String, Int>): List<PlayerVariableEntry> {
-    val byId = variables(regionId, vars).associate { it.key.toInt() and 0xff to it.value }
-    return (0..(GBA_VARS_END - GBA_VARS_START)).map {
-      PlayerVariableEntry(it.toByte(), byId[it] ?: 0)
+  fun itemUnlocks(items: Map<Int, Int>): List<PlayerVariableEntry> {
+    val entries = mutableMapOf<Int, Byte>()
+    for (itemId in items.keys) {
+      if (itemId in 1..Short.MAX_VALUE.toInt()) entries[itemId] = 1
     }
+    for (addon in CosmeticsRegistry.itemBacked()) {
+      entries[addon.itemId] = if (addon.alwaysSelectable || addon.itemId in items) 1 else 0
+    }
+    return entries.entries
+        .sortedBy { it.key }
+        .map { PlayerVariableEntry(it.key.toShort(), it.value) }
   }
 
   private fun flagId(regionId: Byte, key: String): Int? =

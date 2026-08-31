@@ -9,6 +9,7 @@ import de.fiereu.openmmo.items.ItemDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.net.game.packets.dialog.TextPokemonSpeciesArg
 import de.fiereu.openmmo.server.game.battle.BattleResult
+import de.fiereu.openmmo.server.game.developer.DeveloperTools
 import de.fiereu.openmmo.server.game.services.BattleService
 import de.fiereu.openmmo.server.game.services.DialogPresentation
 import de.fiereu.openmmo.server.game.services.DialogService
@@ -19,8 +20,16 @@ import de.fiereu.openmmo.server.game.services.ShopService
 import de.fiereu.openmmo.server.game.services.StoryClientState
 import de.fiereu.openmmo.server.game.services.StoryPlayerService
 import de.fiereu.openmmo.server.game.services.StoryService
+import de.fiereu.openmmo.server.game.session.DialogMessageMode
+import de.fiereu.openmmo.server.game.session.DialogTextColor
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.trainer.TrainerDef
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
 class ScriptContext
@@ -39,6 +48,7 @@ internal constructor(
     private val maps: MapManager? = null,
     private val entryScripts: MapEntryScripts? = null,
     private val shops: ShopService? = null,
+    private val developerTools: DeveloperTools? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -57,11 +67,33 @@ internal constructor(
 
   internal fun send(packet: Any) = session.send(packet)
 
+  internal fun traceInterpreter(message: () -> String) = developerTools?.trace(message)
+
   /** Show [line] as a sign and wait for the player to close it. */
   suspend fun sign(line: DialogLine) = dialog.showAndWait(session, state, line.textId, SIGN, -1)
 
   /** Show [line] from the interacted entity and wait for the player to go on. */
   suspend fun say(line: DialogLine) = dialog.showAndWait(session, state, line.textId, NPC, entityId)
+
+  /** Begin a pret `message`; the following wait command owns the client acknowledgement. */
+  internal fun showMessage(line: DialogLine) {
+    val sign = state.dialogMessageMode == DialogMessageMode.SIGN
+    dialog.show(
+        session,
+        state,
+        line.textId,
+        if (sign) SIGN else NPC,
+        if (sign) -1 else entityId,
+    )
+  }
+
+  internal fun setDialogMessageMode(mode: DialogMessageMode) {
+    state.dialogMessageMode = mode
+  }
+
+  internal fun setDialogTextColor(color: DialogTextColor) {
+    state.dialogTextColor = color
+  }
 
   /** Show [line] from a cutscene npc addressed by its decomp local id. */
   suspend fun sayNpc(localId: Int, line: DialogLine) =
@@ -132,6 +164,33 @@ internal constructor(
     characterId?.let { story.setVar(it, key, value) }
   }
 
+  /** Record the local player/interacted-object lock used by this script. */
+  fun lock() = state.lockLocal(entityId)
+
+  /** Record the stronger all-object lifecycle lock used by cutscenes. */
+  fun lockAll() = state.lockAll()
+
+  /** Release a local lifecycle lock and close any visible message, without ending the script. */
+  fun release() {
+    dialog.close(session, state)
+    state.releaseScriptLock()
+  }
+
+  /** Release an all-object lifecycle lock and close any visible message. */
+  fun releaseAll() {
+    dialog.close(session, state)
+    state.releaseScriptLock()
+  }
+
+  /** Close only the visible message. Script execution and lifecycle ownership continue. */
+  fun closeMessage() = dialog.close(session, state)
+
+  /** Wait for the current message operation, if it has not already completed. */
+  suspend fun waitMessage() = dialog.waitForMessage(session)
+
+  /** Wait for A/B on the active message using the client's dialog acknowledgement. */
+  internal suspend fun waitButtonPress() = dialog.waitForButtonPress(session)
+
   suspend fun givePokemon(dexId: Int, level: Int, vararg moveIds: Int) =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }
           .givePokemon(session, state, dexId, level, moveIds.toList())
@@ -143,6 +202,20 @@ internal constructor(
 
   /** Take an item back out of the bag, the decomp removeitem. False when the bag lacks it. */
   suspend fun takeItem(item: ItemDef, quantity: Int = 1): Boolean = giveItem(item, -quantity)
+
+  fun resolveItem(constant: String): ItemDef? =
+      checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(constant)
+
+  fun itemCount(item: ItemDef): Int =
+      checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemCount(state, item)
+
+  /** MALE is 0 and FEMALE 1, matching the GBA checkplayergender result. */
+  fun playerGender(): Int = movement.playerGender(state)?.toInt() ?: 0
+
+  fun playerXy(): Pair<Int, Int>? = movement.playerXy(state)
+
+  /** The hide flag of the npc the player is talking to, for finditem's disappearing item ball. */
+  fun interactingHideFlag(): String? = interactingLocalId()?.let { movement.npcHideFlag(state, it) }
 
   /**
    * Opens the mart window on [items], the decomp pokemart. It does not wait: the player shops while
@@ -166,6 +239,27 @@ internal constructor(
         .startTrainerBattle(session, region, trainerId)
   }
 
+  internal fun resolveTrainer(constant: String): TrainerDef {
+    val region =
+        checkNotNull(Region.byWireValue(state.regionId.toByte())) {
+          "Scene ran in unknown region ${state.regionId}"
+        }
+    return checkNotNull(battles) { "Battle service is unavailable" }
+        .resolveTrainer(region, constant) ?: error("No $region trainer resolves from $constant")
+  }
+
+  internal fun resolveTrainerById(id: Int): TrainerDef {
+    val region =
+        checkNotNull(Region.byWireValue(state.regionId.toByte())) {
+          "Scene ran in unknown region ${state.regionId}"
+        }
+    return checkNotNull(battles) { "Battle service is unavailable" }.resolveTrainer(region, id)
+        ?: error("No $region trainer resolves from id $id")
+  }
+
+  internal suspend fun trainerBattle(trainer: TrainerDef): BattleResult =
+      checkNotNull(battles) { "Battle service is unavailable" }.startTrainerBattle(session, trainer)
+
   /**
    * Walk the map npc with decomp local id [localId] (its entityIdx) through [steps] and wait for
    * the whole path to finish. This is applymovement plus waitmovement for an npc.
@@ -187,10 +281,41 @@ internal constructor(
   suspend fun moveSelf(vararg steps: MovementStep) =
       movement.moveSelf(session, state, steps.toList())
 
-  /** Show a normally hidden map npc (its decomp local id) to this player, the decomp addobject. */
-  fun showNpc(localId: Int) = movement.showNpc(session, state, localId)
+  /** Starts an interpreted npc movement now; waitmovement awaits the returned operation later. */
+  internal suspend fun applyNpcMovement(
+      localId: Int,
+      steps: List<MovementStep>,
+  ): Deferred<Unit> {
+    movement.requireNpc(state, localId)
+    return CoroutineScope(currentCoroutineContext()).async(start = CoroutineStart.UNDISPATCHED) {
+      movement.moveNpc(session, state, localId, steps)
+    }
+  }
 
-  /** Shows a hidden NPC at a new position. */
+  /**
+   * Starts an interpreted player movement now; waitmovement awaits the returned operation later.
+   */
+  internal suspend fun applyPlayerMovement(steps: List<MovementStep>): Deferred<Unit> =
+      CoroutineScope(currentCoroutineContext()).async(start = CoroutineStart.UNDISPATCHED) {
+        movement.moveSelf(session, state, steps)
+      }
+
+  internal fun interactingLocalId(): Int? = movement.localIdForEntity(state, entityId)
+
+  /** Authentic faceplayer: turn only the currently selected object toward the player. */
+  internal fun facePlayer() = movement.facePlayer(session, entityId, facingDirection)
+
+  /** Show a normally hidden map npc (its decomp local id) to this player, the decomp addobject. */
+  /** Show a hidden npc (`addobject`). Clears its hide flag, mirroring the decomp command. */
+  fun showNpc(localId: Int) {
+    movement.npcHideFlag(state, localId)?.let(::clearFlag)
+    movement.showNpc(session, state, localId)
+  }
+
+  /**
+   * Shows a hidden NPC at a new position, as a session visual only - scenes use it to display a
+   * displaced copy while the hide flag keeps the template spawn suppressed.
+   */
   fun showNpcAt(localId: Int, x: Int, y: Int) = movement.showNpcAt(session, state, localId, x, y)
 
   /** Repositions an existing NPC. */
@@ -201,8 +326,27 @@ internal constructor(
   fun repositionSelf(x: Int, y: Int, facing: Direction) =
       movement.repositionSelf(session, state, x, y, facing)
 
-  /** Remove a cutscene npc and its collision (`removeobject`). */
-  fun removeNpc(localId: Int) = movement.removeNpc(session, state, localId)
+  /**
+   * Remove an npc and its collision (`removeobject`). With [persist] the npc's hide flag is set
+   * too, the way the decomp command does it, so the removal survives re-entering the map - the
+   * departed lab rival, taken starter balls, collected item balls. Without it the removal is a
+   * cutscene visual and the npc comes back with the map.
+   */
+  fun removeNpc(localId: Int, persist: Boolean = false) {
+    movement.removeNpc(session, state, localId)
+    if (persist) movement.npcHideFlag(state, localId)?.let(::setFlag)
+  }
+
+  /** GBA respawns a map npc when its hide flag clears; scripted clearflag mirrors that. */
+  fun respawnNpcForClearedHideFlag(flag: String) =
+      movement.respawnNpcByHideFlag(session, state, flag)
+
+  /** Persist an npc's overridden tile (`setobjectxyperm`); every later spawn uses it. */
+  fun setNpcXyOverride(localId: Int, x: Int, y: Int) {
+    val key = movement.npcXyOverrideKey(state, localId) ?: return
+    setVar(key, (x shl 12) or y)
+    repositionNpc(localId, x, y)
+  }
 
   /** Set where a MAP_DYNAMIC warp sends this player (the decomp setdynamicwarp). */
   fun setDynamicWarp(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, facing: Direction) =
@@ -233,6 +377,10 @@ internal constructor(
       )
       val destination = maps?.getMap(regionId, bankId, mapId) ?: return
       val scripts = entryScripts ?: return
+      // This coroutine owns the destination's entry scripts; the arrival's own player requests
+      // must not run a second copy.
+      state.entryScriptsMapKey =
+          de.fiereu.openmmo.server.game.services.MapScriptService.entryScriptsKey(destination)
       scripts.onEntry(state, destination).forEach { it.run(this) }
       state.characterId?.let { charId ->
         scripts.atCoordinate(charId, destination, state.x.toInt(), state.y.toInt())?.run(this)

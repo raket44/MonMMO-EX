@@ -38,7 +38,10 @@ object GameProtocol : Protocol() {
     c2s<ChatMessageSendPacket>(0x08u, ChatMessageSendPacketCodec)
     s2c<EntityLeavePacket>(0x08u, EntityLeavePacketCodec)
 
-    bidi<ChatMessagePacket>(0x09u, ChatMessagePacketCodec)
+    // 0x09 is chat only from the server; from the client it is the party drag. Registering it
+    // bidirectionally as chat made every drag an undecodable "chat message".
+    s2c<ChatMessagePacket>(0x09u, ChatMessagePacketCodec)
+    c2s<PartyReorderPacket>(0x09u, PartyReorderPacketCodec)
 
     c2s<MoveLearnReplyPacket>(0x0Au, MoveLearnReplyPacketCodec)
     s2c<WorldFlagTableResetPacket>(0x0Au, WorldFlagTableResetPacketCodec)
@@ -113,13 +116,13 @@ object GameProtocol : Protocol() {
 
     bidi<DialogChoicePacket>(0x25u, DialogChoicePacketCodec)
 
-    bidi<DialogOptionPacket>(0x26u, DialogOptionPacketCodec)
+    bidi<ContainerActionPacket>(0x26u, ContainerActionPacketCodec)
 
     c2s<TileInteractPacket>(0x27u, TileInteractPacketCodec)
     s2c<PcTogglePacket>(0x27u, PcTogglePacketCodec)
 
     c2s<TypedBinaryDataPacket>(0x28u, TypedBinaryDataPacketCodec)
-    s2c<EntityInteractionFlagPacket>(0x28u, EntityInteractionFlagPacketCodec)
+    s2c<EntityTransportationPacket>(0x28u, EntityTransportationPacketCodec)
 
     c2s<CustomizeCharacterAppearancePacket>(0x29u, CustomizeCharacterAppearancePacketCodec)
     s2c<ShopPriceTablePacket>(0x29u, ShopPriceTablePacketCodec)
@@ -142,7 +145,10 @@ object GameProtocol : Protocol() {
     c2s<DialogResponsePacket>(0x2Fu, DialogResponsePacketCodec)
     s2c<WorldJoinConfirmPacket>(0x2Fu, WorldJoinConfirmPacketCodec)
 
-    c2s<BattleActionPacket>(0x30u, BattleActionPacketCodec)
+    // 0x30 is the customization dialog's per-slot apply (client f.PQ per f.Mw1's own table).
+    // The old BattleActionPacket assignment here decoded those clicks as phantom battle
+    // actions; real battle input arrives on the BattleActionSelect/Submit opcodes.
+    c2s<CosmeticSlotApplyPacket>(0x30u, CosmeticSlotApplyPacketCodec)
     s2c<BattleFieldStatePacket>(0x30u, BattleFieldStatePacketCodec)
 
     s2c<BattleBulkStatePacket>(0x31u, BattleBulkStatePacketCodec)
@@ -499,7 +505,7 @@ object GameProtocol : Protocol() {
 
     s2c<MapTileEntityStateSetPacket>(0xB8u, MapTileEntityStateSetPacketCodec)
 
-    bidi<MapTransitionAckPacket>(0xB9u, MapTransitionAckPacketCodec)
+    bidi<SeasonPacket>(0xB9u, SeasonPacketCodec)
 
     s2c<MapTileObjectSlotSetPacket>(0xBAu, MapTileObjectSlotSetPacketCodec)
 
@@ -568,6 +574,7 @@ object GameProtocol : Protocol() {
 
     c2s<GtlListingsPageRequestPacket>(0xE4u, GtlListingsPageRequestPacketCodec)
     s2c<EntityMovePacket>(0xE4u, EntityMovePacketCodec)
+    s2c<RailEntityMovePacket>(0xECu, RailEntityMovePacketCodec)
 
     s2c<GbaEntityMovePacket>(0xEAu, GbaEntityMovePacketCodec)
 

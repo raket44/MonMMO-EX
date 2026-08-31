@@ -66,7 +66,11 @@ class ScriptMovementBoundsTest :
                   mapId = OAKS_LAB_MAP.toInt(),
               )
 
-          service(store).moveSelf(session, session.state(), List(8) { WALK_UP })
+          // The scene ran from a position it never expected, so the script must fail (and
+          // roll back) rather than continue corrupted - and commit nothing either way.
+          io.kotest.assertions.throwables.shouldThrow<IllegalStateException> {
+            service(store).moveSelf(session, session.state(), List(8) { WALK_UP })
+          }
           advanceUntilIdle()
 
           store.getCharacter(charId)!!.info.positionY shouldBe 4

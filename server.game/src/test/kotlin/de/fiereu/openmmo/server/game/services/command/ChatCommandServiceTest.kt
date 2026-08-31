@@ -14,6 +14,18 @@ import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 
+/** Dev tools off, so the permission checks under test actually gate. */
+private fun disabledTools() =
+    de.fiereu.openmmo.server.game.developer.DeveloperTools(
+        de.fiereu.openmmo.server.game.config.GameServerConfig(
+            host = "127.0.0.1",
+            port = 0,
+            checksumSize = 2,
+            rootKeyResource = "game.private.pem",
+            sessionSecret = "test-secret".toByteArray(),
+            developer = de.fiereu.openmmo.server.game.config.DeveloperToolsConfig(enabled = false),
+        ))
+
 private class RecordingCommand(
     override val permission: Int = 0,
     private val fail: Boolean = false,
@@ -39,7 +51,8 @@ class ChatCommandServiceTest :
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "hello there") shouldBe false
           session.sent shouldBe emptyList()
@@ -51,7 +64,8 @@ class ChatCommandServiceTest :
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId, regionId = 0, bankId = 4, mapId = 3)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "/pos") shouldBe true
 
@@ -64,7 +78,8 @@ class ChatCommandServiceTest :
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "  /PoS  ") shouldBe true
 
@@ -78,7 +93,8 @@ class ChatCommandServiceTest :
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
           val gated = RecordingCommand(CharacterPermissions.DEVELOPER)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand(), gated))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand(), gated), disabledTools())
 
           service.tryHandle(session, "/help") shouldBe true
 
@@ -92,7 +108,8 @@ class ChatCommandServiceTest :
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "/nonsense hunter2") shouldBe true
 
@@ -108,7 +125,8 @@ class ChatCommandServiceTest :
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
           val gated = RecordingCommand(CharacterPermissions.DEVELOPER)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand(), gated))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand(), gated), disabledTools())
 
           service.tryHandle(session, "/secret") shouldBe true
           gated.ran shouldBe false
@@ -131,7 +149,8 @@ class ChatCommandServiceTest :
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
           val service =
-              ChatCommandService(store, setOf(RecordingCommand(permission = 0, fail = true)))
+              ChatCommandService(
+                  store, setOf(RecordingCommand(permission = 0, fail = true)), disabledTools())
 
           service.tryHandle(session, "/secret") shouldBe true
 
@@ -144,7 +163,8 @@ class ChatCommandServiceTest :
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
           val session = FakeSession(characterId = charId)
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "/   ") shouldBe true
           session.replies().single() shouldContain "/help"
@@ -155,7 +175,8 @@ class ChatCommandServiceTest :
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val session = FakeSession()
-          val service = ChatCommandService(store, setOf(HelpCommand(), PosCommand()))
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand()), disabledTools())
 
           service.tryHandle(session, "/pos") shouldBe true
           session.replies().single() shouldContain "not in the world"

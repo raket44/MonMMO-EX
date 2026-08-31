@@ -9,6 +9,7 @@ import de.fiereu.openmmo.net.game.packets.TileInteractPacket
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
 import de.fiereu.openmmo.server.game.script.ScriptRunner
+import de.fiereu.openmmo.server.game.script.gbaScriptSource
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -28,13 +29,14 @@ constructor(
     private val characterStore: CharacterStore,
     private val scriptRegistry: ScriptRegistry,
     private val scriptRunner: ScriptRunner,
+    private val scriptMovement: ScriptMovementService,
 ) {
 
   /** The player pressed the action button on a specific entity, that is an npc. */
   fun onEntityInteract(event: PacketEvent<EntityInteractPacket>) {
     val session = event.session
     val state = session.attributes[PLAYER_STATE] ?: return
-    if (state.inDialog) return
+    if (state.blocksNewScript) return
     val stored = currentCharacter(state) ?: return
     val npcEntityId = event.packet.entityId
 
@@ -50,8 +52,11 @@ constructor(
 
     for (npc in currentMap.npcs) {
       if (npcService.getNpcEntityId(regionId, bankId, mapId, npc.entityIdx) == npcEntityId) {
-        val script = scriptRegistry.forLabel(npc.script)
+        val script = scriptRegistry.forLabel(npc.script, gbaScriptSource(state.regionId))
         if (script != null) {
+          // Nearly every talkable npc in the source games turns to the player; the hand-written
+          // Kotlin ports dropped their faceplayer lines, so it happens here for all of them.
+          scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
           runScript(session, state, script, npcEntityId)
         } else {
           log.info { "NPC entityIdx=${npc.entityIdx} script=${npc.script} has no wired dialog" }
@@ -66,7 +71,7 @@ constructor(
   fun onTileInteract(event: PacketEvent<TileInteractPacket>) {
     val session = event.session
     val state = session.attributes[PLAYER_STATE] ?: return
-    if (state.inDialog) return
+    if (state.blocksNewScript) return
     val stored = currentCharacter(state) ?: return
 
     val currentMap =
@@ -96,7 +101,7 @@ constructor(
       log.debug { "Tile interaction at ($facingX, $facingY) has no bg event" }
       return
     }
-    val script = scriptRegistry.forLabel(bgEvent.script)
+    val script = scriptRegistry.forLabel(bgEvent.script, gbaScriptSource(state.regionId))
     if (script != null) {
       runScript(session, state, script, entityId = -1)
     } else {

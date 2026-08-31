@@ -799,7 +799,7 @@
         },
         {
             "label": "CeladonCity_Gym_Text_TamiaDefeat",
-            "id": 1528284,
+            "id": 1529017,
             "text": "No!$"
         },
         {
@@ -6199,7 +6199,7 @@
         },
         {
             "label": "RocketHideout_B4F_Text_Grunt1Defeat",
-            "id": 1528284,
+            "id": 1529017,
             "text": "No!$"
         },
         {
@@ -6564,7 +6564,7 @@
         },
         {
             "label": "Route10_Text_RockTunnel",
-            "id": 1592190,
+            "id": 1593065,
             "text": "ROCK TUNNEL$"
         },
         {
@@ -6934,7 +6934,7 @@
         },
         {
             "label": "Route12_Text_AndrewDefeat",
-            "id": 1524425,
+            "id": 1595204,
             "text": "Lost it!$"
         },
         {
@@ -7239,7 +7239,7 @@
         },
         {
             "label": "Route13_Text_JaredPostBattle",
-            "id": 1576981,
+            "id": 1596723,
             "text": "Get lost!$"
         },
         {
@@ -7704,7 +7704,7 @@
         },
         {
             "label": "Route16_Text_LaoDefeat",
-            "id": 1582297,
+            "id": 1600607,
             "text": "Don't you dare laugh!$"
         },
         {
@@ -8144,7 +8144,7 @@
         },
         {
             "label": "Route18_Text_JacobDefeat",
-            "id": 1555558,
+            "id": 1603366,
             "text": "Darn!$"
         },
         {
@@ -8329,7 +8329,7 @@
         },
         {
             "label": "Route19_Text_ConnieDefeat",
-            "id": 1546653,
+            "id": 1604485,
             "text": "I'm exhausted…$"
         },
         {
@@ -8544,7 +8544,7 @@
         },
         {
             "label": "Route20_Text_SeafoamIslands",
-            "id": 1604642,
+            "id": 1606353,
             "text": "SEAFOAM ISLANDS$"
         },
         {
@@ -8874,7 +8874,7 @@
         },
         {
             "label": "Route24_Text_AliDefeat",
-            "id": 1541134,
+            "id": 1609703,
             "text": "How could I lose?$"
         },
         {
@@ -11069,7 +11069,7 @@
         },
         {
             "label": "SevenIsland_House_Room1_Text_StrVar1_1",
-            "id": 1705961,
+            "id": 4313204,
             "text": "{STR_VAR_1}$"
         },
         {
@@ -11084,7 +11084,7 @@
         },
         {
             "label": "SevenIsland_House_Room1_Text_StrVar1_2",
-            "id": 1705961,
+            "id": 4313204,
             "text": "{STR_VAR_1}$"
         },
         {
@@ -11094,7 +11094,7 @@
         },
         {
             "label": "SevenIsland_House_Room1_Text_StrVar1_3",
-            "id": 1705961,
+            "id": 4313204,
             "text": "{STR_VAR_1}$"
         },
         {
@@ -12324,7 +12324,7 @@
         },
         {
             "label": "SilphCo_9F_Text_Grunt2PostBattle",
-            "id": 1532186,
+            "id": 1535160,
             "text": "My brothers will avenge me!$"
         },
         {
@@ -14409,7 +14409,7 @@
         },
         {
             "label": "VermilionCity_Text_BoardSeagallopFerry",
-            "id": 1571644,
+            "id": 1572033,
             "text": "Would you like to board\\na SEAGALLOP ferry?$"
         },
         {
@@ -14604,7 +14604,7 @@
         },
         {
             "label": "VermilionCity_House2_Text_ThankYou",
-            "id": 1530842,
+            "id": 1657412,
             "text": "Thank you!$"
         },
         {
@@ -15524,7 +15524,7 @@
         },
         {
             "label": "CableClub_Text_WhichService",
-            "id": 1819444,
+            "id": 1819486,
             "text": "Which of our services do you wish\\nto use?$"
         },
         {
@@ -16054,7 +16054,7 @@
         },
         {
             "label": "Text_WhatsYourProfile",
-            "id": 1830974,
+            "id": 1831270,
             "text": "What's your profile?$"
         },
         {
@@ -16109,7 +16109,7 @@
         },
         {
             "label": "Test_Text_WelcomeToWorldOfPokemon",
-            "id": 1756485,
+            "id": 1856877,
             "text": "テストよう　メッセージです！\\nポケモンの　せかいへ　ようこそ！$"
         },
         {
@@ -16534,7 +16534,7 @@
         },
         {
             "label": "DayCare_Text_Huh",
-            "id": 1618883,
+            "id": 1833818,
             "text": "Huh?$"
         },
         {
@@ -16584,37 +16584,37 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_ProfOak1",
-            "id": 1562738,
+            "id": 1772625,
             "text": "RESEARCH LAB$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_ProfOak2",
-            "id": 1562738,
+            "id": 1772625,
             "text": "RESEARCH LAB$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_ProfOak3",
-            "id": 1586256,
+            "id": 1772651,
             "text": "VIRIDIAN CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_ProfOak4",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_ProfOak5",
-            "id": 1562738,
+            "id": 1772625,
             "text": "RESEARCH LAB$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Daisy0",
-            "id": 1562738,
+            "id": 1772625,
             "text": "RESEARCH LAB$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Daisy1",
-            "id": 1588725,
+            "id": 1589384,
             "text": "VERMILION CITY$"
         },
         {
@@ -16624,7 +16624,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Daisy3",
-            "id": 1586256,
+            "id": 1772651,
             "text": "VIRIDIAN CITY$"
         },
         {
@@ -16639,7 +16639,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Brock0",
-            "id": 1586294,
+            "id": 1772779,
             "text": "PEWTER CITY$"
         },
         {
@@ -16649,7 +16649,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Brock2",
-            "id": 1586294,
+            "id": 1772779,
             "text": "PEWTER CITY$"
         },
         {
@@ -16669,7 +16669,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Misty0",
-            "id": 1587655,
+            "id": 1772845,
             "text": "CERULEAN CITY$"
         },
         {
@@ -16684,7 +16684,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Misty3",
-            "id": 1604642,
+            "id": 1606353,
             "text": "SEAFOAM ISLANDS$"
         },
         {
@@ -16694,12 +16694,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Misty5",
-            "id": 1587655,
+            "id": 1772845,
             "text": "CERULEAN CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_LtSurge0",
-            "id": 1588725,
+            "id": 1589384,
             "text": "VERMILION CITY$"
         },
         {
@@ -16724,7 +16724,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_LtSurge5",
-            "id": 1588725,
+            "id": 1589384,
             "text": "VERMILION CITY$"
         },
         {
@@ -16759,7 +16759,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Koga0",
-            "id": 1598378,
+            "id": 1773092,
             "text": "FUCHSIA CITY$"
         },
         {
@@ -16774,17 +16774,17 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Koga3",
-            "id": 1598378,
+            "id": 1773092,
             "text": "FUCHSIA CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Koga4",
-            "id": 1598378,
+            "id": 1773092,
             "text": "FUCHSIA CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Koga5",
-            "id": 1574628,
+            "id": 1773155,
             "text": "SAFARI ZONE$"
         },
         {
@@ -16849,12 +16849,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Lorelei0",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Lorelei1",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
@@ -16879,12 +16879,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bruno0",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bruno1",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
@@ -16894,7 +16894,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bruno3",
-            "id": 1613136,
+            "id": 1773450,
             "text": "EMBER SPA$"
         },
         {
@@ -16909,7 +16909,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Agatha0",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
@@ -16929,7 +16929,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Agatha4",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
@@ -16939,12 +16939,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Lance0",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Lance1",
-            "id": 1608749,
+            "id": 1772665,
             "text": "POKéMON LEAGUE$"
         },
         {
@@ -16969,17 +16969,17 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bill0",
-            "id": 1587655,
+            "id": 1772845,
             "text": "CERULEAN CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bill1",
-            "id": 1587655,
+            "id": 1772845,
             "text": "CERULEAN CITY$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Bill2",
-            "id": 1598378,
+            "id": 1773092,
             "text": "FUCHSIA CITY$"
         },
         {
@@ -16999,7 +16999,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_MrFuji0",
-            "id": 1545801,
+            "id": 1773731,
             "text": "LAVENDER TOWN$"
         },
         {
@@ -17009,12 +17009,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_MrFuji2",
-            "id": 1545801,
+            "id": 1773731,
             "text": "LAVENDER TOWN$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_MrFuji3",
-            "id": 1545801,
+            "id": 1773731,
             "text": "LAVENDER TOWN$"
         },
         {
@@ -17034,12 +17034,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Giovanni1",
-            "id": 1570508,
+            "id": 1773831,
             "text": "SILPH CO.$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginLocation_Giovanni2",
-            "id": 1570508,
+            "id": 1773831,
             "text": "SILPH CO.$"
         },
         {
@@ -17064,7 +17064,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_ProfOak1",
-            "id": 1769870,
+            "id": 1773899,
             "text": "PROF. OAK$"
         },
         {
@@ -17079,7 +17079,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_ProfOak4",
-            "id": 1771764,
+            "id": 1773930,
             "text": "AGATHA$"
         },
         {
@@ -17099,7 +17099,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Daisy2",
-            "id": 1773949,
+            "id": 1773953,
             "text": "MAN$"
         },
         {
@@ -17124,7 +17124,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Brock1",
-            "id": 1770261,
+            "id": 1774003,
             "text": "BROCK$"
         },
         {
@@ -17139,7 +17139,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Brock4",
-            "id": 1773949,
+            "id": 1773953,
             "text": "MAN$"
         },
         {
@@ -17154,7 +17154,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Misty1",
-            "id": 1770425,
+            "id": 1774048,
             "text": "MISTY$"
         },
         {
@@ -17184,7 +17184,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_LtSurge1",
-            "id": 1770572,
+            "id": 1774095,
             "text": "LT. SURGE$"
         },
         {
@@ -17214,7 +17214,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Erika1",
-            "id": 1770762,
+            "id": 1774147,
             "text": "ERIKA$"
         },
         {
@@ -17229,7 +17229,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Erika4",
-            "id": 1770762,
+            "id": 1774147,
             "text": "ERIKA$"
         },
         {
@@ -17244,7 +17244,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Koga1",
-            "id": 1770952,
+            "id": 1774191,
             "text": "KOGA$"
         },
         {
@@ -17264,7 +17264,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Koga5",
-            "id": 1773949,
+            "id": 1773953,
             "text": "MAN$"
         },
         {
@@ -17279,12 +17279,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Sabrina2",
-            "id": 1771117,
+            "id": 1774244,
             "text": "SABRINA$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Sabrina3",
-            "id": 1771117,
+            "id": 1774244,
             "text": "SABRINA$"
         },
         {
@@ -17304,7 +17304,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Blaine1",
-            "id": 1771265,
+            "id": 1774287,
             "text": "BLAINE$"
         },
         {
@@ -17329,12 +17329,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Lorelei0",
-            "id": 1771429,
+            "id": 1774328,
             "text": "LORELEI$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Lorelei1",
-            "id": 1771429,
+            "id": 1774328,
             "text": "LORELEI$"
         },
         {
@@ -17359,12 +17359,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Bruno0",
-            "id": 1771595,
+            "id": 1774389,
             "text": "BRUNO$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Bruno1",
-            "id": 1771595,
+            "id": 1774389,
             "text": "BRUNO$"
         },
         {
@@ -17389,7 +17389,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Agatha0",
-            "id": 1771764,
+            "id": 1773930,
             "text": "AGATHA$"
         },
         {
@@ -17409,7 +17409,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Agatha4",
-            "id": 1771764,
+            "id": 1773930,
             "text": "AGATHA$"
         },
         {
@@ -17419,12 +17419,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Lance0",
-            "id": 1771909,
+            "id": 1774494,
             "text": "LANCE$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Lance1",
-            "id": 1771909,
+            "id": 1774494,
             "text": "LANCE$"
         },
         {
@@ -17449,7 +17449,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Bill0",
-            "id": 1637310,
+            "id": 1774550,
             "text": "{RIVAL}$"
         },
         {
@@ -17494,7 +17494,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_MrFuji3",
-            "id": 1773949,
+            "id": 1773953,
             "text": "MAN$"
         },
         {
@@ -17509,7 +17509,7 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Giovanni0",
-            "id": 1772460,
+            "id": 1774649,
             "text": "GIOVANNI$"
         },
         {
@@ -17524,12 +17524,12 @@
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Giovanni3",
-            "id": 1772460,
+            "id": 1774649,
             "text": "GIOVANNI$"
         },
         {
             "label": "gFameCheckerFlavorTextOriginObjectName_Giovanni4",
-            "id": 1773949,
+            "id": 1773953,
             "text": "MAN$"
         },
         {
@@ -18924,12 +18924,12 @@
         },
         {
             "label": "Help_Text_TM",
-            "id": 1791963,
+            "id": 1801683,
             "text": "TM$"
         },
         {
             "label": "Help_Text_HM",
-            "id": 1791979,
+            "id": 1801686,
             "text": "HM$"
         },
         {
@@ -18949,7 +18949,7 @@
         },
         {
             "label": "Help_Text_Pokemon",
-            "id": 1570587,
+            "id": 1801722,
             "text": "POKéMON$"
         },
         {
@@ -19194,7 +19194,7 @@
         },
         {
             "label": "Help_Text_WirelessAdapter",
-            "id": 1664483,
+            "id": 1809360,
             "text": "Wireless Adapter$"
         },
         {
@@ -19704,12 +19704,12 @@
         },
         {
             "label": "gNameChoice_Leaf",
-            "id": 1857378,
+            "id": 4095954,
             "text": "LEAF$"
         },
         {
             "label": "gNameChoice_Fire",
-            "id": 1811364,
+            "id": 1857383,
             "text": "FIRE$"
         },
         {
@@ -22041,6 +22041,226 @@
             "label": "Text_WhitedOut",
             "id": 1728997,
             "text": "{PLAYER} is out of usable\\nPOKéMON!\\p{PLAYER} whited out!$"
+        },
+        {
+            "label": "Text_WouldYouLikeToMixRecords",
+            "id": 1724456,
+            "text": "Would you like to mix records with\\nother TRAINERS?$"
+        },
+        {
+            "label": "Text_WeHopeToSeeYouAgain2",
+            "id": 1725713,
+            "text": "We hope to see you again!$"
+        },
+        {
+            "label": "Text_WelcomeTradeCenter",
+            "id": 1724675,
+            "text": "Welcome to the POKéMON CABLE CLUB\\nTRADE CENTER.$"
+        },
+        {
+            "label": "Text_WelcomeColosseum",
+            "id": 1724723,
+            "text": "Welcome to the POKéMON CABLE CLUB\\nCOLOSSEUM.$"
+        },
+        {
+            "label": "Text_WelcomeTimeCapsule",
+            "id": 1724768,
+            "text": "Welcome to the POKéMON CABLE CLUB\\nTIME CAPSULE.$"
+        },
+        {
+            "label": "Text_PleaseComeAgain",
+            "id": 1724816,
+            "text": "Please come again!$"
+        },
+        {
+            "label": "Text_HavingDiscountSaleToday",
+            "id": 1724835,
+            "text": "Welcome!\\pWe're having a discount sale today!$"
+        },
+        {
+            "label": "Text_PlayerWhatCanIDoForYou",
+            "id": 1724880,
+            "text": "{PLAYER}{KUN}, welcome!\\pWhat can I do for you?$"
+        },
+        {
+            "label": "Text_MakingPreparations",
+            "id": 1725265,
+            "text": "じゅんびちゅうです！$"
+        },
+        {
+            "label": "Text_WantWhichFloor",
+            "id": 1725276,
+            "text": "Which floor do you want?$"
+        },
+        {
+            "label": "Text_BagItemCanBeRegistered",
+            "id": 1725301,
+            "text": "An item in the BAG can be\\nregistered to SELECT for easy use.$"
+        },
+        {
+            "label": "Text_TrainerSchoolEmail",
+            "id": 1725362,
+            "text": "パソコンに\\nポケモン　トレーナー　こうざの\\lメールが　きている！\\p‥‥　‥‥　‥‥\\pポケモンが　おぼえられる　わざは　4つ！\\pどんな　わざを　おぼえさせるかで\\nトレーナーの　じつりょくが　とわれます！\\p‥‥　‥‥　‥‥$"
+        },
+        {
+            "label": "Text_PlayerBootedUpPC",
+            "id": 1724533,
+            "text": "{PLAYER} booted up the PC.$"
+        },
+        {
+            "label": "Text_LinkWasCanceled",
+            "id": 1725493,
+            "text": "つうしんは　キャンセルされました$"
+        },
+        {
+            "label": "Text_GiveNicknameToReceivedMon",
+            "id": 1725510,
+            "text": "Want to give a nickname to the\\n{STR_VAR_2} you received?$"
+        },
+        {
+            "label": "gText_PkmnFainted3",
+            "id": 1725558,
+            "text": "{STR_VAR_1} fainted…\\p$"
+        },
+        {
+            "label": "Text_WelcomeWantToHealPkmn",
+            "id": 1725571,
+            "text": "Welcome to our POKéMON CENTER!\\pWould you like me to heal your\\nPOKéMON back to perfect health?$"
+        },
+        {
+            "label": "Text_TakeYourPkmnForFewSeconds",
+            "id": 1725665,
+            "text": "Okay, I'll take your POKéMON for a\\nfew seconds.$"
+        },
+        {
+            "label": "Text_WeHopeToSeeYouAgain",
+            "id": 1725713,
+            "text": "We hope to see you again!$"
+        },
+        {
+            "label": "Text_RestoredPkmnToFullHealth",
+            "id": 1725739,
+            "text": "Thank you for waiting.\\nWe've restored your POKéMON to\\lfull health.$"
+        },
+        {
+            "label": "Text_DoorOpenedFarAway",
+            "id": 1725930,
+            "text": "どこか　とおくの　とびらが\\nひらいたような　おとだ‥‥$"
+        },
+        {
+            "label": "Text_BigHoleInTheWall",
+            "id": 1725958,
+            "text": "かべに\\nおおきな　あなが　あいている！$"
+        },
+        {
+            "label": "Text_WirelessClubUndergoingAdjustments",
+            "id": 1725978,
+            "text": "I'm terribly sorry.\\nThe POKéMON WIRELESS CLUB is\\lundergoing adjustments now.$"
+        },
+        {
+            "label": "Text_AppearsToBeUndergoingAdjustments",
+            "id": 1726055,
+            "text": "It appears to be undergoing\\nadjustments…$"
+        },
+        {
+            "label": "Text_HandedOverItem",
+            "id": 1726096,
+            "text": "{PLAYER} handed over the\\n{STR_VAR_1}.$"
+        },
+        {
+            "label": "Text_GiveNicknameToThisMon",
+            "id": 1726119,
+            "text": "Do you want to give a nickname to\\nthis {STR_VAR_1}?$"
+        },
+        {
+            "label": "Text_CardKeyOpenedDoor",
+            "id": 1727368,
+            "text": "Bingo!\\nThe CARD KEY opened the door!$"
+        },
+        {
+            "label": "Text_ItNeedsCardKey",
+            "id": 1727405,
+            "text": "No!\\nIt needs a CARD KEY!$"
+        },
+        {
+            "label": "Text_AccessedProfOaksPC",
+            "id": 1727430,
+            "text": "Accessed PROF. OAK's PC…\\pAccessed the POKéDEX Rating\\nSystem…$"
+        },
+        {
+            "label": "Text_HavePokedexRated",
+            "id": 1727491,
+            "text": "Would you like to have your\\nPOKéDEX rated?$"
+        },
+        {
+            "label": "Text_ClosedLinkToProfOaksPC",
+            "id": 1727534,
+            "text": "Closed link to PROF. OAK's PC.$"
+        },
+        {
+            "label": "Text_VoiceRangOutDontRunAway",
+            "id": 1727565,
+            "text": "Someone's voice rang out,\\n“Don't run away!”$"
+        },
+        {
+            "label": "Text_IdLikeToSeeRequest",
+            "id": 1727609,
+            "text": "えっとー\\n{STR_VAR_2}が　みてみたいなー\\pそれも　{STR_VAR_1}{STR_VAR_3}\\n{STR_VAR_2}が　みてみたいなー$"
+        },
+        {
+            "label": "Text_ThankYouForShowingMe",
+            "id": 1727647,
+            "text": "わぁー　すごい！\\n{STR_VAR_1}{STR_VAR_3}{STR_VAR_2}だー！\\pありがとー\\nまた　よろしくねー！$"
+        },
+        {
+            "label": "Text_ThatsNotRight",
+            "id": 1727683,
+            "text": "それっ　ちがうよー！$"
+        },
+        {
+            "label": "Text_ISee",
+            "id": 1727694,
+            "text": "そっか‥$"
+        },
+        {
+            "label": "Text_TheDoorIsClosed",
+            "id": 1727699,
+            "text": "ドアは　しまっている‥$"
+        },
+        {
+            "label": "Text_TheDoorIsOpen",
+            "id": 1727711,
+            "text": "The door is open…$"
+        },
+        {
+            "label": "Text_MonFlewAway",
+            "id": 1729476,
+            "text": "The {STR_VAR_1} flew away!$"
+        },
+        {
+            "label": "Text_TheresBedLetsRest",
+            "id": 1729494,
+            "text": "ベッドが　ある‥‥\\nやすんでいこう$"
+        },
+        {
+            "label": "Text_FoundTMHMContainsMove",
+            "id": 1729512,
+            "text": "{PLAYER} found a {STR_VAR_2}!\\nIt contains {STR_VAR_1}.$"
+        },
+        {
+            "label": "Text_Gyaoo",
+            "id": 1729608,
+            "text": "Gyaoo!$"
+        },
+        {
+            "label": "Text_MoveCanOnlyBeLearnedOnce",
+            "id": 1729615,
+            "text": "This move can be learned only\\nonce. Is that okay?$"
+        },
+        {
+            "label": "Text_TestMsg",
+            "id": 1856877,
+            "text": "テストよう　メッセージです！\\nポケモンの　せかいへ　ようこそ！$"
         }
     ]
 }

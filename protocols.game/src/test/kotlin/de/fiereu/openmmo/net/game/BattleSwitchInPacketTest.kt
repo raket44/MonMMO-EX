@@ -64,16 +64,17 @@ class BattleSwitchInPacketTest :
         BattleSwitchInPacketCodec.encodeToBytes(decoded).toHex() shouldBe bytes.toHex()
       }
 
-      // A benched monster coming out carries its full block then its active detail. The block
-      // matches the captured Patrat bytes now built from structured fields.
+      // A benched monster coming out carries its full block then its active detail. The header
+      // names the battle-field position, not a party slot; the old slot never rides the wire, and
+      // the block gains a leading sub-side byte, decoded from the client's own ns0 parser.
       test("round-trips a full-block switch-in") {
         val packet =
-            BattleSwitchInPacket(newSlot = 1, oldSlot = 0, mon = patrat(), fullBlock = true)
+            BattleSwitchInPacket(newSlot = 0, oldSlot = -1, mon = patrat(), fullBlock = true)
         val bytes = BattleSwitchInPacketCodec.encodeToBytes(packet)
         bytes.size shouldBe 65
         val decoded = BattleSwitchInPacketCodec.decodeBytes(bytes)
-        decoded.newSlot shouldBe 1
-        decoded.oldSlot shouldBe 0
+        decoded.newSlot shouldBe 0
+        decoded.oldSlot shouldBe -1
         decoded.fullBlock shouldBe true
         decoded.mon shouldBe patrat()
       }

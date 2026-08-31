@@ -1,0 +1,135 @@
+Calculating task graph as configuration cache cannot be reused because file 'launcher\build.gradle.kts' has changed.
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:generateExternalPluginSpecBuilders UP-TO-DATE
+> Task :buildSrc:extractPrecompiledScriptPluginPlugins UP-TO-DATE
+> Task :buildSrc:compilePluginsBlocks UP-TO-DATE
+> Task :buildSrc:generatePrecompiledScriptPluginAccessors UP-TO-DATE
+> Task :buildSrc:generateScriptPluginAdapters UP-TO-DATE
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :protocols.game:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server.game:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :network:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :codegen:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :bytecodec:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :codegen:processResources UP-TO-DATE
+> Task :keys:generateGame UP-TO-DATE
+> Task :codegen:processGeneratorResources NO-SOURCE
+> Task :common:processResources NO-SOURCE
+> Task :bytecodec:processResources NO-SOURCE
+> Task :protocols.game:processResources NO-SOURCE
+> Task :network:processResources NO-SOURCE
+> Task :server.game:copyPublicKeyGame UP-TO-DATE
+> Task :server.game:copyPrivateKeyGame UP-TO-DATE
+> Task :common:compileKotlin UP-TO-DATE
+> Task :bytecodec:compileKotlin UP-TO-DATE
+> Task :bytecodec:compileJava NO-SOURCE
+> Task :common:compileJava NO-SOURCE
+> Task :bytecodec:classes UP-TO-DATE
+> Task :common:classes UP-TO-DATE
+> Task :server.game:jooqCodegen UP-TO-DATE
+> Task :bytecodec:jar UP-TO-DATE
+> Task :common:jar UP-TO-DATE
+> Task :server.game:kspJooqKotlin UP-TO-DATE
+> Task :server.game:processJooqResources NO-SOURCE
+> Task :codegen:compileGeneratorKotlin UP-TO-DATE
+> Task :codegen:compileGeneratorJava NO-SOURCE
+> Task :codegen:generatorClasses UP-TO-DATE
+> Task :server.game:compileJooqKotlin UP-TO-DATE
+> Task :network:compileKotlin UP-TO-DATE
+> Task :codegen:generateItem UP-TO-DATE
+> Task :codegen:generateDialog UP-TO-DATE
+> Task :codegen:generateLearnset UP-TO-DATE
+> Task :codegen:generatePokemon UP-TO-DATE
+> Task :codegen:generateStory UP-TO-DATE
+> Task :codegen:generateScriptCorpus UP-TO-DATE
+> Task :codegen:generateMaps UP-TO-DATE
+> Task :codegen:generateTrainer UP-TO-DATE
+> Task :network:compileJava NO-SOURCE
+> Task :server.game:compileJooqJava NO-SOURCE
+> Task :network:classes UP-TO-DATE
+> Task :server.game:jooqClasses UP-TO-DATE
+> Task :codegen:generateTypechart UP-TO-DATE
+> Task :network:jar UP-TO-DATE
+> Task :protocols.game:compileKotlin UP-TO-DATE
+> Task :protocols.game:compileJava NO-SOURCE
+> Task :protocols.game:classes UP-TO-DATE
+> Task :protocols.game:jar UP-TO-DATE
+> Task :codegen:generateExpansionPokemon UP-TO-DATE
+> Task :codegen:generateMoves UP-TO-DATE
+> Task :codegen:compileKotlin UP-TO-DATE
+> Task :codegen:compileJava NO-SOURCE
+> Task :codegen:classes UP-TO-DATE
+> Task :codegen:jar UP-TO-DATE
+> Task :server.game:kspKotlin UP-TO-DATE
+> Task :server.game:processResources UP-TO-DATE
+> Task :server.game:compileKotlin UP-TO-DATE
+> Task :server.game:compileJava
+> Task :server.game:classes
+
+> Task :server.game:run
+kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory
+20:47:23.696 [main] INFO  de.fiereu.openmmo.server.game.Main - Developer tools: enabled=true expansionClientContent=true
+20:47:23.862 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+20:47:23.895 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+20:47:24.472 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: ******** (PostgreSQL 18.6)
+20:47:24.664 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 7 migrations (execution time 00:00.073s)
+20:47:24.699 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 6
+20:47:24.705 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+20:47:24.742 [main] INFO  d.f.o.s.game.db.DatabaseBootstrap - Applied 0 database migrations
+20:47:25.648 [DefaultDispatcher-worker-2] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.21.6 (Build date: 2026-06-15T11:40:13Z)
+                                      
+20:47:25.650 [DefaultDispatcher-worker-2] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: The code generator produces Javadoc from table or column comments, but you can override those directly in the code generator: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-comments/
+
+20:47:25.702 [DefaultDispatcher-worker-2] INFO  o.j.i.D.logVersionSupport - Version                  : Database version is supported by dialect SQLDialect.POSTGRES: 18.6 (Debian 18.6-1.pgdg13+2)
+20:47:26.278 [main] INFO  d.f.openmmo.server.game.GameServer - Game server listening on /[0:0:0:0:0:0:0:0]:7777
+20:54:26.108 [multiThreadIoEventLoopGroup-3-2] WARN  d.f.o.s.g.developer.DeveloperTools - Developer tools enabled; interpreted overrides=[] Kotlin overrides=[] verbose=false expansionClientContent=true
+20:54:33.543 [multiThreadIoEventLoopGroup-3-2] INFO  d.f.o.s.game.script.ScriptRegistry - [ScriptCorpus] FireRed indexed=8401 programs=8400 parseFailures=1 unavailableDirect=2 fullySupported=1752 unsupported=6648 direct=760/2004 complete, 896 Kotlin, 348 unavailable interactable=728/1611 complete, 881 Kotlin, 2 unavailable mapEntry=32/393 complete, 15 Kotlin, 346 unavailable
+20:54:33.544 [multiThreadIoEventLoopGroup-3-2] WARN  d.f.o.s.game.script.ScriptRegistry - [ScriptCorpus] FireRed parse failures: {case argument shape=1}
+20:54:33.646 [multiThreadIoEventLoopGroup-3-2] INFO  d.f.o.s.game.script.ScriptRegistry - [ScriptCorpus] Emerald indexed=8481 programs=8481 parseFailures=0 unavailableDirect=458 fullySupported=2775 unsupported=5706 direct=1138/2941 complete, 994 Kotlin, 809 unavailable interactable=1114/2066 complete, 952 Kotlin, 0 unavailable mapEntry=24/875 complete, 42 Kotlin, 809 unavailable
+20:54:33.905 [multiThreadIoEventLoopGroup-3-2] INFO  d.f.o.s.g.s.c.DeveloperGiveExpansionCommand - [ExpansionCatalog] baseSpecies=1025 forms=546 records=1571 highestExpansionId=1572 clientMapped=1571 clientUnmapped=0 missing={party icon source=1, follower source=120}
+20:54:34.072 [DefaultDispatcher-worker-2] INFO  d.f.o.s.game.services.LoginService - Session created for user 1
+20:54:36.602 [DefaultDispatcher-worker-2] INFO  d.f.o.s.game.services.LoginService - Player selected character 'Kanto' (id=2321193724844216320)
+20:54:36.635 [DefaultDispatcher-worker-2] WARN  d.f.o.s.game.services.LoginService - Map not found for position 2:50:1
+20:54:52.331 [DefaultDispatcher-worker-1] INFO  d.f.o.s.game.services.WarpService - WARP EXIT: source=null:null dest=3:1 target=(24,20) final=(24,20) z=3 facing=RIGHT autoStep=false
+20:54:52.355 [DefaultDispatcher-worker-1] INFO  d.f.o.s.game.services.WarpService - Player 2321193724844216320 warped to bank=3 map=1
+20:54:52.444 [DefaultDispatcher-worker-4] INFO  d.f.o.s.game.services.LoginService - Sending LoadEntity for character 'Kanto'
+20:54:52.449 [DefaultDispatcher-worker-4] INFO  d.f.o.s.game.script.ScriptRegistry - [ScriptResolver] KOTLIN_FALLBACK gba:firered:BPRE:ViridianCity_OnTransition reason=unsupported command setworldmapflag from `setworldmapflag FLAG_WORLD_MAP_VIRIDIAN_CITY`
+20:54:52.461 [DefaultDispatcher-worker-4] INFO  d.f.o.s.game.services.LoginService - Player 2321193724844216320 spawned in bank=3 map=1
+20:54:52.461 [DefaultDispatcher-worker-4] INFO  d.f.o.s.game.services.LoginService - Sending LoadEntity for character 'Kanto'
+20:54:52.462 [DefaultDispatcher-worker-4] INFO  d.f.o.s.game.services.LoginService - Player 2321193724844216320 spawned in bank=3 map=1
+20:54:52.497 [DefaultDispatcher-worker-3] INFO  d.f.o.s.game.services.LoginService - Sending LoadEntity for character 'Kanto'
+20:54:52.497 [DefaultDispatcher-worker-3] INFO  d.f.o.s.game.script.ScriptRegistry - [ScriptResolver] KOTLIN_FALLBACK gba:firered:BPRE:ViridianCity_OnTransition reason=unsupported command setworldmapflag from `setworldmapflag FLAG_WORLD_MAP_VIRIDIAN_CITY`
+20:54:52.498 [DefaultDispatcher-worker-3] INFO  d.f.o.s.game.services.LoginService - Player 2321193724844216320 spawned in bank=3 map=1
+20:54:52.498 [DefaultDispatcher-worker-3] INFO  d.f.o.s.game.services.LoginService - Sending LoadEntity for character 'Kanto'
+20:54:52.498 [DefaultDispatcher-worker-3] INFO  d.f.o.s.game.services.LoginService - Player 2321193724844216320 spawned in bank=3 map=1
+20:54:55.452 [DefaultDispatcher-worker-3] INFO  d.f.o.s.g.services.RetailEncounters - Retail encounter tables: 33405 entries
+21:10:31.512 [multiThreadIoEventLoopGroup-3-2] INFO  d.f.o.s.game.handler.GameAppHandler - Player 2321193724844216320 disconnected.
+
+> Task :server.game:run FAILED

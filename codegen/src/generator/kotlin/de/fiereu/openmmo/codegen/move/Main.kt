@@ -14,7 +14,9 @@ fun main(args: Array<String>) {
   val decompDir = File(args[3])
 
   println("[moves] parsing from $decompDir")
-  val moves = MoveParser(decompDir).parseAll()
+  // Moves come from the Expansion, not the Emerald decomp: its table stops at 354 and cannot
+  // describe anything from Gen 4 on, which left imported moves with placeholder PP and no power.
+  val moves = ExpansionMoveParser(decompDir).parseAll()
   println("[moves] parsed ${moves.size} moves. writing to $outputDir")
   MovesRenderer(templatesDir, outputDir, classCacheDir).render(moves)
   println("[moves] done")

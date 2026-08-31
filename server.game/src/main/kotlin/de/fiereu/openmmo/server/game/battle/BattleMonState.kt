@@ -2,6 +2,7 @@ package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.PokemonMove
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.net.game.packets.battle.BattleMonBlock
 import de.fiereu.openmmo.net.game.packets.battle.BattleOpponentBlock
 import de.fiereu.openmmo.pokemon.SpeciesDef
@@ -60,7 +61,7 @@ class BattleMonState(
           slot = slot,
           revealed = true,
           entityId = entityId,
-          species = species.id.toShort(),
+          species = wireSpeciesId(),
           level = source.level,
           gender = gender,
           maxHp = stats.hp.toShort(),
@@ -71,13 +72,15 @@ class BattleMonState(
       BattleMonBlock(
           slot = slot,
           entityId = entityId,
-          species = species.id.toShort(),
+          species = wireSpeciesId(),
           level = source.level,
           gender = gender,
-          abilityId = species.ability1.ordinal.toShort(),
+          abilityId = species.ability1Id.toShort(),
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,
           moveIds = List(BattleMonBlock.MOVE_SLOTS) { moves.getOrNull(it)?.id ?: 0 },
       )
+
+  private fun wireSpeciesId(): Short = clientSpeciesId(species.id).toShort()
 }

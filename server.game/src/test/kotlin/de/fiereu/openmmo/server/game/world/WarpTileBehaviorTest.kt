@@ -47,13 +47,17 @@ class WarpTileBehaviorTest :
 
         WarpExitRules.inferExitFacing(
             destTileBehavior = TileBehavior.DOOR,
-            destMap = town,
-            destX = 6,
-            destY = 7,
-            sourceMap = house,
+            entryFacing = Direction.UP,
         ) shouldBe Direction.DOWN
         WarpExitRules.shouldAutoStep(house, town, TileBehavior.DOOR) shouldBe true
         TileBehavior.DOOR.warpsWhenWalking shouldBe null
+      }
+
+      test("ladders keep the pre-warp facing, per vanilla") {
+        WarpExitRules.inferExitFacing(
+            destTileBehavior = TileBehavior.LADDER,
+            entryFacing = Direction.LEFT,
+        ) shouldBe Direction.LEFT
       }
 
       test("a cave entrance warps on the step, in any direction") {
@@ -65,10 +69,15 @@ class WarpTileBehaviorTest :
         entrance.warpsWhenWalking shouldBe null
       }
 
-      test("stairs leave the player standing on the tile") {
+      test("stair arrivals rest - the client plays the walk-off itself") {
         val house1f = maps.getMap(KANTO, INDOOR_PALLET_BANK, PLAYERS_HOUSE_1F)!!
         val house2f = maps.getMap(KANTO, INDOOR_PALLET_BANK, PLAYERS_HOUSE_2F)!!
 
         WarpExitRules.shouldAutoStep(house1f, house2f, TileBehavior.STAIR_WARP_EAST) shouldBe false
+        // Landing on the west-wall stair means the ride went east: face into the room.
+        WarpExitRules.inferExitFacing(
+            destTileBehavior = TileBehavior.STAIR_WARP_WEST,
+            entryFacing = Direction.RIGHT,
+        ) shouldBe Direction.RIGHT
       }
     })

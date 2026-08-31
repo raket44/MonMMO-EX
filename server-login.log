@@ -1,0 +1,99 @@
+Calculating task graph as configuration cache cannot be reused because environment variable 'PATH' has changed.
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:generateExternalPluginSpecBuilders UP-TO-DATE
+> Task :buildSrc:extractPrecompiledScriptPluginPlugins UP-TO-DATE
+> Task :buildSrc:compilePluginsBlocks UP-TO-DATE
+> Task :buildSrc:generatePrecompiledScriptPluginAccessors UP-TO-DATE
+> Task :buildSrc:generateScriptPluginAdapters UP-TO-DATE
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :bytecodec:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :network:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :protocols.login:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :server.login:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :keys:generateGame UP-TO-DATE
+> Task :bytecodec:processResources NO-SOURCE
+> Task :protocols.login:processResources NO-SOURCE
+> Task :network:processResources NO-SOURCE
+> Task :common:processResources NO-SOURCE
+> Task :server.login:copyPublicKeyGame UP-TO-DATE
+> Task :server.login:copyPrivateKeyGame UP-TO-DATE
+> Task :bytecodec:compileKotlin UP-TO-DATE
+> Task :common:compileKotlin UP-TO-DATE
+> Task :bytecodec:compileJava NO-SOURCE
+> Task :common:compileJava NO-SOURCE
+> Task :bytecodec:classes UP-TO-DATE
+> Task :common:classes UP-TO-DATE
+> Task :server.login:jooqCodegen UP-TO-DATE
+> Task :common:jar UP-TO-DATE
+> Task :bytecodec:jar UP-TO-DATE
+> Task :server.login:kspJooqKotlin UP-TO-DATE
+> Task :server.login:processJooqResources NO-SOURCE
+> Task :server.login:compileJooqKotlin UP-TO-DATE
+> Task :server.login:compileJooqJava NO-SOURCE
+> Task :server.login:jooqClasses UP-TO-DATE
+> Task :network:compileKotlin UP-TO-DATE
+> Task :network:compileJava NO-SOURCE
+> Task :network:classes UP-TO-DATE
+> Task :network:jar UP-TO-DATE
+> Task :protocols.login:compileKotlin UP-TO-DATE
+> Task :protocols.login:compileJava NO-SOURCE
+> Task :protocols.login:classes UP-TO-DATE
+> Task :protocols.login:jar UP-TO-DATE
+> Task :server.login:kspKotlin UP-TO-DATE
+> Task :server.login:processResources UP-TO-DATE
+> Task :server.login:compileKotlin UP-TO-DATE
+> Task :server.login:compileJava UP-TO-DATE
+> Task :server.login:classes UP-TO-DATE
+
+> Task :server.login:run
+20:04:59.408 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+20:04:59.450 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+20:05:00.163 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: ******** (PostgreSQL 18.6)
+20:05:00.364 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.073s)
+20:05:00.402 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 2
+20:05:00.410 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+kotlin-logging: initializing... active logger factory: Slf4jLoggerFactory
+20:05:00.533 [main] INFO  d.f.o.s.login.db.DatabaseBootstrap - Applied 0 database migrations
+20:05:01.469 [DefaultDispatcher-worker-1] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.21.6 (Build date: 2026-06-15T11:40:13Z)
+                                      
+20:05:01.470 [DefaultDispatcher-worker-1] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: Different jOOQ editions support multiple RDBMS versions. Check out the complete list here: https://www.jooq.org/download/support-matrix
+
+20:05:01.534 [DefaultDispatcher-worker-1] INFO  o.j.i.D.logVersionSupport - Version                  : Database version is supported by dialect SQLDialect.POSTGRES: 18.6 (Debian 18.6-1.pgdg13+2)
+20:05:02.036 [main] INFO  d.f.openmmo.server.login.LoginServer - Login server listening on /[0:0:0:0:0:0:0:0]:2106
+20:54:24.323 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+22:16:55.127 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+22:52:25.724 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+22:59:45.627 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:00:58.814 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:09:21.998 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:20:04.045 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:25:44.986 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:31:23.328 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED
+23:31:51.453 [DefaultDispatcher-worker-1] INFO  d.f.o.s.l.handler.LoginAppHandler - Token login for admin: AUTHED

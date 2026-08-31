@@ -177,7 +177,7 @@ private suspend fun starterBall(ctx: ScriptContext, starter: Starter) {
   //  The decomp opens a showmonpic window over the yes/no box. There is no verb for it yet.
   if (!ctx.askYesNoNpc(LOCALID_PROF_OAK, starter.confirmLine)) return
 
-  ctx.removeNpc(starter.localId)
+  ctx.removeNpc(starter.localId, persist = true)
   ctx.sayNpc(LOCALID_PROF_OAK, PalletTown_ProfessorOaksLab.OakThisMonIsEnergetic)
   ctx.setFlag(KantoFlags.FLAG_SYS_POKEMON_GET)
   ctx.setFlag(KantoFlags.FLAG_PALLET_LADY_NOT_BLOCKING_SIGN)
@@ -188,7 +188,7 @@ private suspend fun starterBall(ctx: ScriptContext, starter: Starter) {
   val rivalStarter = starter.rival
   ctx.moveNpc(LOCALID_RIVAL, *rivalStarter.rivalWalk.toTypedArray())
   ctx.sayNpc(LOCALID_RIVAL, PalletTown_ProfessorOaksLab.RivalIllTakeThisOneThen)
-  ctx.removeNpc(rivalStarter.localId)
+  ctx.removeNpc(rivalStarter.localId, persist = true)
   ctx.sign(PalletTown_ProfessorOaksLab.RivalReceivedMonFromOak)
   ctx.setVar(KantoVars.VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 3)
   if (ctx.isFlagSet(KantoFlags.FLAG_OPENED_START_MENU)) {
@@ -242,7 +242,7 @@ private suspend fun rivalBattle(ctx: ScriptContext, playerX: Int) {
         else -> listOf(WALK_LEFT, WALK_DOWN, WALK_DOWN, WALK_DOWN, WALK_DOWN, WALK_DOWN)
       }
   ctx.moveNpc(LOCALID_RIVAL, *exit.toTypedArray())
-  ctx.removeNpc(LOCALID_RIVAL)
+  ctx.removeNpc(LOCALID_RIVAL, persist = true)
   ctx.setVar(KantoVars.VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 4)
   ctx.setFlag(KantoFlags.FLAG_BEAT_RIVAL_IN_OAKS_LAB)
 }
@@ -265,7 +265,7 @@ internal object PalletTown_ProfessorOaksLab_EventScript_ProfOak : Script {
 private suspend fun receiveDexScene(ctx: ScriptContext) {
   ctx.say(PalletTown_ProfessorOaksLab.OakHaveSomethingForMe)
   ctx.sign(PalletTown_ProfessorOaksLab.DeliveredOaksParcel)
-  ctx.takeItem(Items.PARCEL)
+  ctx.takeItem(checkNotNull(ctx.resolveItem("ITEM_OAKS_PARCEL")))
   ctx.say(PalletTown_ProfessorOaksLab.OakCustomBallIOrdered)
 
   ctx.sign(PalletTown_ProfessorOaksLab.RivalGramps)
@@ -280,8 +280,8 @@ private suspend fun receiveDexScene(ctx: ScriptContext) {
   ctx.moveNpc(LOCALID_PROF_OAK, WALK_UP, WALK_LEFT, FACE_DOWN)
   ctx.sayNpc(LOCALID_PROF_OAK, PalletTown_ProfessorOaksLab.OakPokedexOnDesk)
   ctx.sayNpc(LOCALID_PROF_OAK, PalletTown_ProfessorOaksLab.OakTakeTheseWithYou)
-  ctx.removeNpc(LOCALID_POKEDEX_1)
-  ctx.removeNpc(LOCALID_POKEDEX_2)
+  ctx.removeNpc(LOCALID_POKEDEX_1, persist = true)
+  ctx.removeNpc(LOCALID_POKEDEX_2, persist = true)
   ctx.moveNpc(LOCALID_PROF_OAK, WALK_RIGHT, WALK_DOWN)
 
   ctx.sign(PalletTown_ProfessorOaksLab.ReceivedPokedexFromOak)
@@ -296,7 +296,7 @@ private suspend fun receiveDexScene(ctx: ScriptContext) {
   ctx.sayNpc(LOCALID_RIVAL, PalletTown_ProfessorOaksLab.RivalTellSisNotToGiveYouMap)
 
   ctx.moveNpc(LOCALID_RIVAL, *List(6) { WALK_DOWN }.toTypedArray())
-  ctx.removeNpc(LOCALID_RIVAL)
+  ctx.removeNpc(LOCALID_RIVAL, persist = true)
   ctx.setVar(KantoVars.VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 6)
   ctx.setVar(KantoVars.VAR_MAP_SCENE_VIRIDIAN_CITY_MART, 2)
   ctx.setVar(KantoVars.VAR_MAP_SCENE_VIRIDIAN_CITY_OLD_MAN, 1)

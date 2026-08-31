@@ -15,6 +15,7 @@ import de.fiereu.openmmo.server.game.script.MovementStep.WALK_RIGHT
 import de.fiereu.openmmo.server.game.script.MovementStep.WALK_UP
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptContext
+import de.fiereu.openmmo.server.game.services.notice
 import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 import de.fiereu.openmmo.story.generated.kanto.KantoVars
 
@@ -25,6 +26,10 @@ private const val OAKS_LAB_BANK = 4
 private const val OAKS_LAB_MAP = 3
 private const val OAKS_LAB_ENTRY_X = 6
 private const val OAKS_LAB_ENTRY_Y = 12
+private const val VIRIDIAN_CITY_BANK = 3
+private const val VIRIDIAN_CITY_MAP = 1
+private const val VIRIDIAN_CITY_X = 22
+private const val VIRIDIAN_CITY_Y = 28
 
 // The shared tail of every walk down to the lab door (the decomp walk_to_lab macro).
 private val WALK_TO_LAB = listOf(WALK_LEFT) + List(11) { WALK_DOWN } + List(4) { WALK_RIGHT }
@@ -156,6 +161,20 @@ internal object PalletTown_EventScript_FatMan : Script {
   override suspend fun run(ctx: ScriptContext) = ctx.say(PalletTown.CanStoreItemsAndMonsInPC)
 }
 
+internal object PalletTown_EventScript_JohtoGuide : Script {
+  override suspend fun run(ctx: ScriptContext) {
+    ctx.send(notice("Travel test: sending you to Viridian City."))
+    ctx.warp(
+        Region.KANTO.wireValue.toInt(),
+        VIRIDIAN_CITY_BANK,
+        VIRIDIAN_CITY_MAP,
+        VIRIDIAN_CITY_X,
+        VIRIDIAN_CITY_Y,
+        Direction.DOWN,
+    )
+  }
+}
+
 internal object PalletTown_EventScript_OaksLabSign : Script {
   override suspend fun run(ctx: ScriptContext) = ctx.sign(PalletTown.OakPokemonResearchLab)
 }
@@ -187,6 +206,7 @@ internal val PalletTownScripts: Map<String, Script> =
         "PalletTown_EventScript_SignLady" to PalletTown_EventScript_SignLady,
         "PalletTown_EventScript_SignLadyTrigger" to PalletTown_EventScript_SignLadyTrigger,
         "PalletTown_EventScript_FatMan" to PalletTown_EventScript_FatMan,
+        "PalletTown_EventScript_JohtoGuide" to PalletTown_EventScript_JohtoGuide,
         "PalletTown_EventScript_OaksLabSign" to PalletTown_EventScript_OaksLabSign,
         "PalletTown_EventScript_PlayersHouseSign" to PalletTown_EventScript_PlayersHouseSign,
         "PalletTown_EventScript_RivalsHouseSign" to PalletTown_EventScript_RivalsHouseSign,

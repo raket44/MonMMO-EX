@@ -26,6 +26,7 @@ import de.fiereu.openmmo.net.game.packets.MapData
 
 internal val ${objectName}: MapDef =
     MapDef(
+        sourceName = "${map.getSourceName()}",
         regionId = ${map.getRegion()}.toByte(),
         bankId = ${map.getBank()}.toByte(),
         mapId = ${map.getIndex()}.toByte(),

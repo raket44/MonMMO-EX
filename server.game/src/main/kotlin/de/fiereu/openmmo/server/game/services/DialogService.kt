@@ -99,11 +99,23 @@ class DialogService @Inject constructor() {
       entityId: Long,
       presentation: DialogPresentation = DialogPresentation(),
   ) {
+    show(session, state, textId, actionType, entityId, presentation).await()
+  }
+
+  /** Starts a dialog operation without consuming the later client acknowledgement. */
+  fun show(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      actionType: Int,
+      entityId: Long,
+      presentation: DialogPresentation = DialogPresentation(),
+  ): CompletableDeferred<Unit> {
     val advance = CompletableDeferred<Unit>()
     session.attributes[PENDING_DIALOG] = advance
     val seq = state.dialogSeqId
     state.dialogSeqId = seq + 1
-    state.inDialog = true
+    state.dialogVisible = true
     state.dialogNpcEntityId = entityId
     log.debug {
       "Send dialog box seq=$seq actionType=$actionType textId=0x${textId.toString(16)} entity=$entityId"
@@ -118,7 +130,7 @@ class DialogService @Inject constructor() {
             messageArgs = presentation.messageArgs,
             detail = presentation.detail,
         ))
-    advance.await()
+    return advance
   }
 
   /** Show a scene page and wait for the client's 0x21 acknowledgement. */
@@ -160,11 +172,24 @@ class DialogService @Inject constructor() {
   fun close(session: SessionContext, state: PlayerState) {
     session.attributes.remove(PENDING_DIALOG)
     session.attributes.remove(PENDING_DIALOG_RESPONSE)
-    if (state.inDialog) {
+    if (state.dialogVisible) {
       session.send(DialogStatePacket(false))
-      state.inDialog = false
+      state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }
+  }
+
+  /** Waits for a message already being presented, if one is still pending. */
+  suspend fun waitForMessage(session: SessionContext) {
+    session.attributes[PENDING_DIALOG]?.await()
+  }
+
+  /**
+   * The current client exposes one dialog acknowledgement, so this is also the closest available
+   * representation of the GBA's separate A/B wait.
+   */
+  suspend fun waitForButtonPress(session: SessionContext) {
+    session.attributes[PENDING_DIALOG]?.await()
   }
 
   fun onInteractive(event: PacketEvent<DialogActionResponsePacket>) {
@@ -183,9 +208,9 @@ class DialogService @Inject constructor() {
     }
     // No script is driving this dialog, just close whatever is open.
     val state = session.attributes[PLAYER_STATE] ?: return
-    if (state.inDialog) {
+    if (state.dialogVisible) {
       session.send(DialogStatePacket(false))
-      state.inDialog = false
+      state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }
   }
@@ -199,9 +224,9 @@ class DialogService @Inject constructor() {
       return
     }
     val state = session.attributes[PLAYER_STATE] ?: return
-    if (state.inDialog) {
+    if (state.dialogVisible) {
       session.send(DialogStatePacket(false))
-      state.inDialog = false
+      state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }
   }
@@ -215,11 +240,12 @@ class DialogService @Inject constructor() {
       contextValue: Int,
       detail: ByteArray = byteArrayOf(0),
   ): DialogActionResponsePacket {
+    session.attributes.remove(PENDING_DIALOG)?.complete(Unit)
     val response = CompletableDeferred<DialogActionResponsePacket>()
     session.attributes[PENDING_DIALOG_RESPONSE] = response
     val seq = state.dialogSeqId
     state.dialogSeqId = seq + 1
-    state.inDialog = true
+    state.dialogVisible = true
     state.dialogNpcEntityId = entityId
     session.send(
         DialogActionPacket(

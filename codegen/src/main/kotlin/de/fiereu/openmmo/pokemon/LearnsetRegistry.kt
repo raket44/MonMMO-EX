@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.pokemon
 
 import de.fiereu.openmmo.common.MAX_MOVE_SLOTS
+import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry
 import de.fiereu.openmmo.pokemon.generated.GeneratedLearnsets
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -10,7 +11,11 @@ data class LevelUpMove(val level: Int, val moveId: Int)
 
 /** The level up learnsets from the decomp, keyed by national dex id and sorted by level. */
 @Singleton
-class LearnsetRegistry @Inject constructor() {
+class LearnsetRegistry
+@Inject
+constructor(
+    private val expansion: ExpansionSpeciesRegistry = ExpansionSpeciesRegistry(),
+) {
 
   private val learnsets = ConcurrentHashMap<Int, List<LevelUpMove>>()
 
@@ -22,7 +27,13 @@ class LearnsetRegistry @Inject constructor() {
     learnsets[dexId] = moves
   }
 
-  fun get(dexId: Int): List<LevelUpMove> = learnsets[dexId] ?: emptyList()
+  fun get(dexId: Int): List<LevelUpMove> =
+      learnsets[dexId]
+          ?: expansion
+              .getByServerId(dexId)
+              ?.levelUpLearnset
+              ?.map { LevelUpMove(it.level, it.originalMoveId) }
+              .orEmpty()
 
   fun movesAt(dexId: Int, level: Int): List<Int> =
       get(dexId).filter { it.level == level }.map { it.moveId }

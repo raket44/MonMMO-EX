@@ -14,6 +14,8 @@ import de.fiereu.openmmo.server.game.battle.WildMonFactory
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
 import de.fiereu.openmmo.server.game.script.ScriptRunner
 import de.fiereu.openmmo.server.game.services.BattleService
+import de.fiereu.openmmo.server.game.services.ClassicModeService
+import de.fiereu.openmmo.server.game.services.DexProgressService
 import de.fiereu.openmmo.server.game.services.DialogService
 import de.fiereu.openmmo.server.game.services.EncounterService
 import de.fiereu.openmmo.server.game.services.MapEntryScripts
@@ -27,7 +29,9 @@ import de.fiereu.openmmo.server.game.services.ScriptWarpService
 import de.fiereu.openmmo.server.game.services.ShopService
 import de.fiereu.openmmo.server.game.services.StoryPlayerService
 import de.fiereu.openmmo.server.game.services.StoryService
+import de.fiereu.openmmo.server.game.services.WarpRules
 import de.fiereu.openmmo.server.game.services.WarpService
+import de.fiereu.openmmo.server.game.services.WorldStateService
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.EntityIdService
 import de.fiereu.openmmo.server.game.world.interest.InterestManager
@@ -51,14 +55,17 @@ fun movementService(
   val battles = battleService(store, interest)
   val entryScripts = MapEntryScripts(ScriptRegistry(emptyMap()), story)
   return MovementService(
-      WarpService(mapLoad, mapManager, store, presence),
+      WarpService(mapLoad, mapManager, store, presence, WarpRules()),
       mapLoad,
       npcs,
       presence,
       mapManager,
       store,
       EncounterService(store, battles),
-      MapScriptService(entryScripts, scriptRunner(store, mapManager, interest, battles)),
+      MapScriptService(entryScripts, scriptRunner(store, mapManager, interest, battles), npcs),
+      de.fiereu.openmmo.server.game.services.CustomWarps(),
+      de.fiereu.openmmo.server.game.services.NdsWarps(),
+      de.fiereu.openmmo.server.game.services.WarpRules(),
   )
 }
 
@@ -71,6 +78,7 @@ fun scriptRunner(
     mapManager: MapManager = MapManager(),
     interest: InterestManager = InterestManager(),
     battles: BattleService = battleService(store, interest),
+    dialog: DialogService = DialogService(),
 ): ScriptRunner {
   val mapLoad = MapLoadService(mapManager)
   val presence = PresenceService(interest, PassThroughInterestPolicy(), mapLoad, store)
@@ -81,11 +89,18 @@ fun scriptRunner(
   val wildMons = WildMonFactory(species, moves, LearnsetRegistry(), EntityIdService())
   val items = ItemRegistry()
   return ScriptRunner(
-      DialogService(),
+      dialog,
       story,
       ScriptMovementService(mapManager, npcs, store),
       ScriptWarpService(mapManager, mapLoad, store, presence),
-      StoryPlayerService(store, wildMons, species, moves, items),
+      StoryPlayerService(
+          store,
+          wildMons,
+          species,
+          moves,
+          items,
+          DexProgressService(store),
+          WorldStateService(DexProgressService(store))),
       battles,
       store,
       mapManager,
@@ -94,7 +109,7 @@ fun scriptRunner(
   )
 }
 
-private fun battleService(store: CharacterStore, interest: InterestManager): BattleService {
+fun battleService(store: CharacterStore, interest: InterestManager): BattleService {
   val species = SpeciesRegistry()
   val moves = MoveRegistry()
   return BattleService(
@@ -108,7 +123,9 @@ private fun battleService(store: CharacterStore, interest: InterestManager): Bat
       interestManager = interest,
       speciesRegistry = species,
       moveRegistry = moves,
+      dexProgress = DexProgressService(store),
       trainers = TrainerRegistry(),
       items = ItemRegistry(),
+      classicMode = ClassicModeService(store),
   )
 }

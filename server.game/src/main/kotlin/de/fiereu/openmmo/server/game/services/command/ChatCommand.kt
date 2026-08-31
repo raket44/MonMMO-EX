@@ -5,11 +5,15 @@ import de.fiereu.openmmo.server.game.services.notice
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
 
-/** One chat command, matched on [name] without the slash and without case. */
+/** One chat command, matched on [name] or any of [aliases], without the slash and without case. */
 interface ChatCommand {
   val name: String
   val usage: String
   val description: String
+
+  /** Alternate names that run the same command, for renames that keep muscle memory working. */
+  val aliases: List<String>
+    get() = emptyList()
 
   val permission: Int
     get() = 0

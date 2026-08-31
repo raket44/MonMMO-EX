@@ -47,3 +47,11 @@ bin/
 .env.*
 !.env.example
 docker-compose.override.yml
+
+# runtime logs
+log/
+logs/
+*.bak
+
+# extracted retail client (Windows reserved names break git; not ours to track)
+reference/client-31914/

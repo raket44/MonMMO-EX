@@ -36,6 +36,50 @@ constructor(
 ) {
   data class Pose(val x: Int, val y: Int, val facing: Direction)
 
+  /** The hide flag of a map npc on the player's current map (already namespaced), if set. */
+  fun npcHideFlag(state: PlayerState, localId: Int): String? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    val map =
+        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+            ?: return null
+    return map.npcs.firstOrNull { it.entityIdx == localId }?.hideFlag?.takeIf { it.isNotBlank() }
+  }
+
+  /**
+   * The GBA object system respawns a map npc once its hide flag clears; clearflag in a script
+   * mirrors that here (Oak reappearing behind his desk mid-scene).
+   */
+  fun respawnNpcByHideFlag(session: SessionContext, state: PlayerState, flag: String) {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return
+    val map =
+        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val npc = map.npcs.firstOrNull { it.hideFlag == flag } ?: return
+    npcService.spawnNpc(
+        session,
+        info.positionRegionId.toInt(),
+        info.positionBankId.toInt(),
+        info.positionMapId.toInt(),
+        npc.entityIdx,
+    )
+  }
+
+  /** The story-var key holding an npc's setobjectxyperm override on the player's current map. */
+  fun npcXyOverrideKey(state: PlayerState, localId: Int): String? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    return npcService.xyOverrideKey(
+        info.positionRegionId.toInt(),
+        info.positionBankId.toInt(),
+        info.positionMapId.toInt(),
+        localId,
+    )
+  }
+
+  /** The player's current tile, for getplayerxy. */
+  fun playerXy(state: PlayerState): Pair<Int, Int>? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    return info.positionX.toInt() to info.positionY.toInt()
+  }
+
   /** Walk a map npc (its decomp local id, that is its entityIdx) through [steps] for the player. */
   suspend fun moveNpc(
       session: SessionContext,
@@ -112,7 +156,9 @@ constructor(
         ))
 
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
-    commitPose(charId, state, map, applySteps(start, selfSteps))
+    check(commitPose(charId, state, map, applySteps(start, selfSteps))) {
+      "Scripted player movement ended off the map"
+    }
   }
 
   /** Show a normally hidden map npc to the player for a cutscene (the decomp addobject). */
@@ -209,6 +255,85 @@ constructor(
     )
   }
 
+  /** Fails before an interpreted movement starts if the map-local npc does not exist. */
+  fun requireNpc(state: PlayerState, localId: Int) {
+    val charId = checkNotNull(state.characterId) { "Scene has no selected character" }
+    val info =
+        checkNotNull(characterStore.getCharacter(charId)?.info) { "Character $charId is missing" }
+    val map =
+        checkNotNull(
+            mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)) {
+              "No map ${info.positionRegionId}:${info.positionBankId}:${info.positionMapId}"
+            }
+    check(map.npcs.any { it.entityIdx == localId }) {
+      "No npc with local id $localId on map ${map.regionId}:${map.bankId}:${map.mapId}"
+    }
+  }
+
+  /** Resolves the selected runtime entity back to this map's normalized local npc id. */
+  fun localIdForEntity(state: PlayerState, entityId: Long): Int? {
+    val charId = state.characterId ?: return null
+    val info = characterStore.getCharacter(charId)?.info ?: return null
+    val map =
+        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+            ?: return null
+    return map.npcs
+        .firstOrNull { npc ->
+          npcService.entityIdFor(
+              info.positionRegionId.toInt(),
+              info.positionBankId.toInt(),
+              info.positionMapId.toInt(),
+              npc.entityIdx,
+          ) == entityId
+        }
+        ?.entityIdx
+  }
+
+  /** Turns the currently selected entity toward the player without creating a movement wait. */
+  fun facePlayer(session: SessionContext, entityId: Long, playerFacing: Direction) {
+    if (entityId < 0) return
+    // The tile delta is the ground truth for a normal adjacent talk; the player's tracked facing
+    // only decides when the npc has been cutscene-moved off its template tile.
+    val step =
+        adjacentFaceStep(session, entityId)
+            ?: when (playerFacing.opposite()) {
+              Direction.DOWN -> MovementStep.FACE_DOWN
+              Direction.UP -> MovementStep.FACE_UP
+              Direction.LEFT -> MovementStep.FACE_LEFT
+              Direction.RIGHT -> MovementStep.FACE_RIGHT
+              Direction.DIVE,
+              Direction.EMERGE -> return
+            }
+    sendActions(session, entityId, listOf(step))
+  }
+
+  private fun adjacentFaceStep(session: SessionContext, entityId: Long): MovementStep? {
+    val state =
+        session.attributes[de.fiereu.openmmo.server.game.session.PLAYER_STATE] ?: return null
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    val map =
+        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+            ?: return null
+    val npc =
+        map.npcs.firstOrNull {
+          npcService.entityIdFor(
+              info.positionRegionId.toInt(),
+              info.positionBankId.toInt(),
+              info.positionMapId.toInt(),
+              it.entityIdx,
+          ) == entityId
+        } ?: return null
+    val dx = info.positionX.toInt() - npc.x
+    val dy = info.positionY.toInt() - npc.y
+    if (Math.abs(dx) + Math.abs(dy) != 1) return null
+    return when {
+      dy > 0 -> MovementStep.FACE_DOWN
+      dy < 0 -> MovementStep.FACE_UP
+      dx < 0 -> MovementStep.FACE_LEFT
+      else -> MovementStep.FACE_RIGHT
+    }
+  }
+
   /** Returns the created player's gender. */
   fun playerGender(state: PlayerState): Byte? =
       state.characterId?.let(characterStore::getCharacter)?.info?.rivalSex
@@ -233,7 +358,12 @@ constructor(
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
-    commitPose(charId, state, map, end)
+    // A player walked off the map means the scene ran from a position it never expected (a login
+    // in the middle of a cutscene map). Failing the script rolls its writes back for a clean
+    // retry from the proper entry.
+    check(commitPose(charId, state, map, end)) {
+      "Scripted player movement ended off the map at (${end.x}, ${end.y})"
+    }
   }
 
   /** Sends one packet per step from [start] and waits between them. Returns the final pose. */

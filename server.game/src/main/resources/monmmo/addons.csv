@@ -1,0 +1,833 @@
+FOREHEAD|0|-1|16|1|flow
+FOREHEAD|1|-1|16|1|side parting
+FOREHEAD|2|-1|16|1|simple
+FOREHEAD|3|-1|16|1|smooth
+FOREHEAD|4|-1|0|1|yellow
+HAT|0|2256|4|1|Ocean Bandana
+HAT|1|2257|20|1|Backwards Cap
+HAT|2|2258|20|1|Bandana
+HAT|3|2259|28|1|Beanie
+HAT|4|2260|20|1|Beret
+HAT|5|2261|20|1|Swimming Cap
+HAT|6|2262|4|1|Blue Turtle
+HAT|7|2263|20|1|Boater
+HAT|8|2264|20|1|Bow
+HAT|9|2265|20|1|Derby
+HAT|10|2266|12|1|Veil
+HAT|11|2267|20|1|Cap
+HAT|12|2268|4|1|Chef Hat
+HAT|13|2269|12|1|Santa Hat
+HAT|14|2270|20|1|Visor Cap
+HAT|15|2271|20|1|Classic Cap
+HAT|16|2272|20|1|Cowboy Hat
+HAT|17|2273|12|1|Elf Hat
+HAT|18|2274|20|1|Explorer's Hat
+HAT|19|2275|20|1|Fedora
+HAT|20|2276|20|1|Fez
+HAT|21|2277|20|1|Flat Cap
+HAT|22|2278|20|1|Mirror Goggles
+HAT|23|2279|20|1|Hairband
+HAT|24|2280|20|1|Headphones
+HAT|25|2281|28|1|Fighter's Headband
+HAT|26|2282|20|1|Guardian Hat
+HAT|27|2283|20|1|Hood
+HAT|28|2284|4|1|Black Kitty Ears
+HAT|29|2285|12|1|Knight Helmet
+HAT|30|2286|12|1|Kyu Hat
+HAT|31|2287|4|1|Lava Hood
+HAT|32|2288|20|1|Ninja Mask
+HAT|33|2289|4|1|Nurse Hat
+HAT|34|2290|4|1|Pink Kitty Ears
+HAT|35|2291|4|1|Liberty Hood
+HAT|36|2292|4|1|Pointed Yellow Ears
+HAT|37|2293|20|1|Pointed Hat
+HAT|38|2294|20|1|Newsboy Cap
+HAT|39|2295|4|1|R Cap
+HAT|40|2296|20|1|Peaked Cap
+HAT|41|2297|20|1|Chunky Beret
+HAT|42|2298|20|1|Stripy Cap
+HAT|43|2299|20|1|Backwards Stripy Cap
+HAT|44|2300|4|1|Teddy Ears
+HAT|45|2301|20|1|Top Hat
+HAT|46|2302|20|1|Tricorne
+HAT|47|2303|20|1|Viking Helmet
+HAT|48|2304|4|1|Big Straw Hat
+HAT|49|2305|4|1|Bunny Ears
+HAT|50|2306|20|1|Two Tone Cap
+HAT|51|2307|4|1|Floppy Bunny Ears
+HAT|52|2308|12|1|Get Out Hat
+HAT|53|2309|20|1|Horns
+HAT|54|2310|516|1|Halo
+HAT|55|2311|4|1|Candy Horns
+HAT|56|2312|20|1|Sunglasses & Cap
+HAT|57|2313|20|1|Sunglasses & Boater
+HAT|58|2314|4|1|Fennec Fox Ears
+HAT|59|2315|4|1|Blue Frog Hat
+HAT|60|2316|4|1|Chestnut Hat
+HAT|61|2317|4|1|White Kitty Ears
+HAT|62|2318|20|1|Motorcycle Helmet
+HAT|63|2319|4|1|Green Motorcycle Helmet
+HAT|64|2320|4|1|Party Hat
+HAT|65|2321|4|1|Camping Hat
+HAT|66|2322|4|1|Cloud Nest Hat
+HAT|67|2323|4|1|Conical
+HAT|68|2324|20|1|Watch Cap
+HAT|69|2325|20|1|Straw Hat
+HAT|70|2326|12|1|Jester Hat
+HAT|71|2327|4|1|Green Breeder's Bandana
+HAT|72|2328|524|3|Blue Flaming Skull Mask
+HAT|73|2329|4|1|Dragon Antlers
+HAT|74|2330|20|1|Cyber Helmet
+HAT|75|2331|20|1|Side-Tie Bandana
+HAT|76|2332|20|1|Sweatband
+HAT|77|2333|4|1|Wyrm Worm
+HAT|78|2334|4|1|Bug Catcher's Hat
+HAT|79|2335|4|1|Emerald Knit Hat
+HAT|80|2336|524|3|Orange Flaming Skull Mask
+HAT|81|2337|4|1|Horse Head
+HAT|82|2338|4|1|Pillar of Hats
+HAT|84|2340|20|1|Bobble Hat
+HAT|85|2341|4|1|Reindeer Antlers
+HAT|86|2342|4|1|Bird Nest Hat
+HAIR|0|2512|20|1|Default Hair
+HAIR|1|2513|20|1|Afro
+HAIR|4|-1|18|1|Bun
+HAIR|5|2517|21|1|Sideswept
+HAIR|6|-1|17|1|Crew Cut
+HAIR|7|-1|17|1|Curtains
+HAIR|9|2521|4|1|Disco Afro
+HAIR|11|-1|26|1|Feathered
+HAIR|12|-1|17|1|Flat Top
+HAIR|13|-1|17|1|Butch
+HAIR|14|2526|20|1|Faux Hawk
+HAIR|15|-1|18|1|Wavy
+HAIR|17|-1|17|1|Mohawk
+HAIR|19|-1|26|1|Odango & Pigtails
+HAIR|20|-1|26|1|Pigtails
+HAIR|21|-1|26|1|Ponytail
+HAIR|22|-1|26|1|Low Pigtails
+HAIR|23|2535|20|1|Scene
+HAIR|24|-1|17|1|Shaggy
+HAIR|26|-1|17|1|Brush Cut
+HAIR|27|-1|17|1|Medium Perm
+HAIR|28|-1|18|1|Bobbed
+HAIR|30|-1|17|1|Spiky
+HAIR|32|-1|26|1|Twintails
+HAIR|34|-1|17|1|Graduation Cut
+HAIR|35|-1|17|1|Windswept
+HAIR|38|-1|1|1|Bald
+HAIR|39|-1|17|1|Very Spiky
+HAIR|42|2554|20|1|Electric Storm
+EYES|0|-1|1024|1|Angry
+EYES|1|-1|1024|1|Calm
+EYES|2|-1|0|1|Grey
+EYES|3|2771|4|1|Glasses
+EYES|4|2772|4|1|Rock Star
+EYES|5|2773|4|1|Sunglasses
+EYES|8|2776|4|1|Swimming Goggles
+FACIAL_HAIR|1|-1|17|1|Beard
+FACIAL_HAIR|3|-1|17|1|Eyebrows & Beard
+FACIAL_HAIR|4|-1|16|1|Eyebrows
+FACIAL_HAIR|5|3029|21|1|Moustache
+FACIAL_HAIR|7|3031|21|1|Eyebrows & Moustache
+FACIAL_HAIR|12|-1|17|1|Pencil Moustache
+FACIAL_HAIR|15|-1|17|1|Eyebrows & Pencil Moustache
+BACK|0|3280|276|1|Angel Wings
+BACK|1|3281|20|1|Backpack
+BACK|2|3282|28|1|Cape
+BACK|3|3283|276|1|Demon Wings
+BACK|4|3284|276|1|Fairy Wings
+BACK|5|3285|20|1|Shoulder Bag
+BACK|6|3286|260|1|Scythe
+BACK|7|3287|276|1|Butterfly Wings
+BACK|8|3288|772|1|Ban Hammer
+BACK|9|3289|772|1|Fancy Butterfly Wings
+TOP|0|3536|20|1|Desu's Lab Coat (Colour)
+TOP|1|3537|20|1|Overcoat
+TOP|2|3538|16|1|Sleeveless Shirt
+TOP|3|3539|16|1|T-Shirt
+TOP|4|3540|20|1|Vest
+TOP|5|3541|16|1|Long Sleeve Top
+TOP|6|3542|4|1|yellow
+TOP|7|3543|6148|1|Tuxedo
+TOP|8|3544|6148|1|R Uniform
+TOP|9|3545|2052|1|Zodiac Dragon Outfit
+TOP|10|3546|6148|1|Santa Suit
+TOP|11|3547|4|1|Desu's Lab Coat
+GLOVES|1|3793|20|1|Gloves
+FOOTWEAR|0|4048|16|1|Boots
+FOOTWEAR|1|4049|16|1|Shoes
+LEGGINGS|0|4304|16|1|Pants
+LEGGINGS|1|4305|20|1|Shorts
+LEGGINGS|2|4306|18|1|Skirt
+FISHING_ROD|0|4560|0|1|Fishing Rod
+BIKE|0|4816|0|1|Red Bicycle
+BIKE|1|4817|4|1|Black Bicycle
+BIKE|2|4818|4|1|Motorcycle
+TOP|12|3548|6150|1|test1
+EYES|9|2777|4|1|Red Contacts
+EYES|10|-1|0|1|Blue
+EYES|11|-1|0|1|Amber
+EYES|12|2780|4|1|Amethyst Contacts
+EYES|13|-1|0|1|Brown
+EYES|14|-1|0|1|Green
+EYES|15|-1|0|1|Hazel
+EYES|16|2784|4|1|Violet Contacts
+HAT|87|2343|16900|6|Jack-O-Lantern Mask
+BACK|10|3290|260|1|Witch's Broomstick
+HAT|88|2344|4|1|Vampire Fangs
+HAT|89|2345|4|1|Ghost Costume
+BACK|11|3291|260|1|Pumpkin Backpack
+BIKE|3|4819|4|1|Blue Bicycle
+BIKE|4|4820|4|1|Brown Bicycle
+BIKE|5|4821|4|1|Green Bicycle
+BIKE|6|4822|4|1|Orange Bicycle
+BIKE|7|4823|4|1|Pink Bicycle
+BIKE|8|4824|4|1|Purple Bicycle
+BIKE|9|4825|4|1|Silver Bicycle
+BIKE|10|4826|4|1|White Bicycle
+BIKE|11|4827|4|1|Yellow Bicycle
+BACK|12|3292|260|1|Candy Cane
+HAT|90|2346|4|1|Holly Hairclip
+HAT|91|2347|4|1|Santa's Little Helper Hat
+TOP|13|3549|6148|1|Santa's Little Helper Outfit
+BACK|13|3293|260|1|Pink Candy Cane
+HAT|92|2348|12|1|Propellor Cap
+TOP|14|3550|6148|1|Lava Uniform
+TOP|15|3551|2068|1|Blue Overalls
+TOP|16|3552|20|1|Cool Jacket
+TOP|17|3553|2068|1|Pink Overalls
+HAT|93|2349|20|1|Plumber's Cap
+TOP|18|3554|2068|1|Gi
+TOP|19|3555|6148|1|Turtle Gi
+TOP|20|3556|20|1|Crossed Jumper
+TOP|21|3557|6148|1|Combat Armor
+TOP|22|3558|6148|1|Skeleton Costume
+TOP|23|3559|6148|1|Green Breeder's Overalls
+HAT|95|2351|4|1|Scary Hockey Mask
+HAT|96|2352|20|1|Earmuffs
+TOP|24|3560|6148|1|Fishing Outfit
+BACK|14|3294|260|1|Gingerbread Man
+TOP|25|3561|6148|1|Elf Tunic
+BACK|15|3295|28|1|Scarf
+TOP|26|3562|6148|1|Nutcracker Uniform
+HAT|97|2353|4|1|Nutcracker Hat
+TOP|27|3563|6148|1|Ocean Uniform
+TOP|28|3564|20|1|White Striped Top
+TOP|29|3565|6149|1|Maid Outfit
+TOP|30|3566|6148|1|Galaxy Uniform
+TOP|31|3567|6148|1|Flame Uniform
+EYES|17|2785|4|1|Flame Glasses
+HAT|98|2354|4|1|Bones Cap
+TOP|32|3568|6148|1|Bones Uniform
+TOP|33|3569|6148|1|Neo Liberty Uniform
+HAT|99|2355|4|1|Neo Liberty Hat
+HAT|100|2356|12|1|Electric Elfbot Hat
+HAT|101|2357|12|1|Grass Elfbot Hat
+HAT|102|2358|12|1|Psychic Elfbot Hat
+HAT|103|2359|12|1|Water Elfbot Hat
+HAT|104|2360|12|1|Fire Elfbot Hat
+HAT|105|2361|12|1|Ground Elfbot Hat
+TOP|34|3570|6148|1|Electric Elfbot Outfit
+TOP|35|3571|6148|1|Grass Elfbot Outfit
+TOP|36|3572|6148|1|Psychic Elfbot Outfit
+TOP|37|3573|6148|1|Water Elfbot Outfit
+TOP|38|3574|6148|1|Fire Elfbot Outfit
+TOP|39|3575|6148|1|Ground Elfbot Outfit
+HAT|106|2362|20|1|League Expo Cap
+TOP|40|3576|6164|1|Novice Trainer Jacket
+TOP|41|3577|6148|1|Ranger Uniform
+TOP|42|3578|6149|1|Groom Suit
+BACK|16|3296|4|1|Fox Tail
+BACK|17|3297|12|1|Raccoon Tail
+TOP|43|3579|6148|1|Liberty Uniform
+BACK|18|3298|268|1|White Kitty Tail
+TOP|44|3580|6148|1|Restaurant Uniform
+TOP|45|3581|20|1|Varsity Jacket
+BACK|19|3299|4|1|Winged Heart Backpack
+HAT|107|2363|4|1|Duck Cap
+HAT|108|2364|4|1|Lillipad Sombrero
+TOP|46|3582|20|1|Lab Coat
+TOP|47|3583|6148|1|Explorer's Outfit
+TOP|48|3584|6148|1|Camping Outfit
+BACK|20|3300|28|1|Poncho
+TOP|49|3585|2068|1|Sage's Robe
+TOP|50|3586|2068|1|Engineer's Overalls
+TOP|51|3587|6148|1|Sailor Uniform
+HAT|109|2365|532|1|Mining Hard Hat
+HAT|110|2366|4|1|Sailor Cap
+TOP|52|3588|6148|1|White R Uniform
+TOP|53|3589|6148|1|Hiking Clothing
+HAT|111|2367|4|1|Patriotic Top Hat
+HAT|112|2368|20|1|Football Helmet
+TOP|54|3590|6164|1|Baseball Jersey
+HAT|113|2369|20|1|Baseball Cap
+TOP|55|3591|6164|1|Football Jersey
+HAT|114|2370|20|1|Kufi Cap
+BACK|21|3301|260|1|Bug Catcher's Net
+HAT|115|2371|20|1|Sky Helmet
+TOP|56|3592|6164|1|Sky Suit
+BACK|22|3302|268|1|Black Kitty Tail
+TOP|57|3593|6164|1|Ninja Outfit
+BACK|23|3303|28|1|Ninja Scarf
+TOP|58|3594|6148|1|Fire Performer's Outfit
+BACK|24|3304|284|1|Collared Cape
+HAT|116|2372|524|1|Black Reaper Hood
+TOP|59|3595|6164|1|Ski Suit
+TOP|60|3596|6148|1|Gardener's Overalls
+TOP|61|3597|4|1|Punk Jacket
+TOP|62|3598|6164|1|Soccer Jersey
+TOP|63|3599|6164|1|Basketball Jersey
+TOP|64|3600|6164|1|Business Suit
+HAT|117|2373|4|1|Penguin Hood
+TOP|65|3601|6148|1|Penguin Costume
+BACK|25|3305|28|1|Hex Cloak
+TOP|66|3602|6148|1|Psychic Tunic
+HAT|118|2374|4|1|Snowman Hood
+TOP|67|3603|6148|1|Snowman Costume
+BACK|26|3306|20|1|Double Faced Scarf
+TOP|68|3604|6148|1|Chef Uniform
+HAT|119|2375|4|1|Frog Hood
+TOP|69|3605|6148|1|Frog Costume
+HAT|120|2376|516|2|Rudolph's Antlers
+HAT|122|2378|4|1|Turkey Hat
+TOP|70|3606|20|1|Cowboy Clothing
+TOP|71|3607|6148|1|Clown Outfit
+TOP|72|3608|2068|1|Tracksuit
+TOP|73|3609|6148|1|Police Officer Uniform
+HAT|123|2379|4|1|Land Snake Hat
+HAT|124|2380|20|1|Samurai Helmet
+BACK|27|3307|4|1|Easter Egg Backpack
+HAT|125|2381|4|1|Sleigh Bell Ribbons
+HAT|126|2382|4|1|Gingerbread Hood
+TOP|74|3610|6148|1|Gingerbread Costume
+TOP|75|3611|6148|1|Viking Tunic
+FISHING_ROD|1|4561|4|1|Watering Can
+HAT|127|2383|12|1|Fighting Elfbot Hat
+HAT|128|2384|12|1|Flying Elfbot Hat
+HAT|129|2385|12|1|Poison Elfbot Hat
+HAT|130|2386|12|1|Rock Elfbot Hat
+HAT|131|2387|12|1|Bug Elfbot Hat
+HAT|132|2388|12|1|Ghost Elfbot Hat
+HAT|133|2389|12|1|Steel Elfbot Hat
+HAT|134|2390|12|1|Ice Elfbot Hat
+HAT|135|2391|12|1|Dragon Elfbot Hat
+HAT|136|2392|12|1|Dark Elfbot Hat
+TOP|76|3612|6148|1|Fighting Elfbot Outfit
+TOP|77|3613|6148|1|Flying Elfbot Outfit
+TOP|78|3614|6148|1|Poison Elfbot Outfit
+TOP|79|3615|6148|1|Rock Elfbot Outfit
+TOP|80|3616|6148|1|Bug Elfbot Outfit
+TOP|81|3617|6148|1|Ghost Elfbot Outfit
+TOP|82|3618|6148|1|Steel Elfbot Outfit
+TOP|83|3619|6148|1|Ice Elfbot Outfit
+TOP|84|3620|6148|1|Dragon Elfbot Outfit
+TOP|85|3621|6148|1|Dark Elfbot Outfit
+TOP|86|3622|6164|1|Samurai Armor
+TOP|87|3623|6148|1|Bug Enthusiast Outfit
+TOP|88|3624|6148|1|Traditional Monk Robes
+HAT|137|2393|4|1|Panda Hood
+TOP|89|3625|6148|1|Panda Costume
+HAT|138|2394|4|1|Bear Hood
+TOP|90|3626|6148|1|Bear Costume
+HAT|139|2395|4|1|Bunny Hood
+TOP|91|3627|6148|1|Bunny Costume
+HAT|140|2396|516|1|W Cat Headphones Pink LED
+HAT|141|2397|516|1|W Cat Headphones Blue LED
+HAT|142|2398|4|1|Space Helmet
+TOP|92|3628|6148|1|Space Suit
+TOP|93|3629|6148|1|Paramedic Uniform
+TOP|94|3630|6148|1|Pilot Uniform
+HAT|143|2399|4|1|Pilot Cap
+HAT|144|2400|4|1|Leprechaun Top Hat
+TOP|95|3631|6148|1|Leprechaun Suit
+HAT|145|2401|4|1|Jungle Explorer's Hat
+TOP|96|3632|6148|1|Patriotic Suit
+HAT|146|2402|4|1|Android Cap
+HAT|147|2403|4|1|Blue Dragon Head
+HAT|148|2404|4|1|Blue Dragon Body
+HAT|149|2405|4|1|Blue Dragon Tail
+HAT|150|2406|4|1|Red Dragon Head
+HAT|151|2407|4|1|Red Dragon Body
+HAT|152|2408|4|1|Red Dragon Tail
+BACK|28|3308|260|1|Chipmunk Tail
+HAT|153|2409|4|1|Lion Hood
+TOP|97|3633|6148|1|Lion Costume
+HAT|154|2410|4|1|Mummy Head Wrap
+TOP|98|3634|6148|1|Mummy Body Wrap
+HAT|155|2411|516|1|Pharoah Headdress
+HAT|156|2412|4|1|Monkey Hood
+TOP|99|3635|6148|1|Monkey Costume
+HAT|157|2413|4|1|Bee Hairband
+TOP|100|3636|6148|1|Bee Costume
+HAT|158|2414|20|1|Pirate Hat
+HAT|159|2415|4|1|Gladiator Helmet
+HAT|160|2416|4|1|Bronze Beauty Tiara
+HAT|161|2417|4|1|Bronze Cool Tiara
+HAT|162|2418|4|1|Bronze Cute Tiara
+HAT|163|2419|4|1|Bronze Smart Tiara
+HAT|164|2420|4|1|Bronze Tough Tiara
+HAT|165|2421|4|1|Silver Beauty Tiara
+HAT|166|2422|4|1|Silver Cool Tiara
+HAT|167|2423|4|1|Silver Cute Tiara
+HAT|168|2424|4|1|Silver Smart Tiara
+HAT|169|2425|4|1|Silver Tough Tiara
+HAT|170|2426|4|1|Gold Beauty Tiara
+HAT|171|2427|4|1|Gold Cool Tiara
+HAT|172|2428|4|1|Gold Cute Tiara
+HAT|173|2429|4|1|Gold Smart Tiara
+HAT|174|2430|4|1|Gold Tough Tiara
+HAT|175|2431|4|1|Bronze NU Crown
+HAT|176|2432|4|1|Bronze UU Crown
+HAT|177|2433|4|1|Bronze OU Crown
+HAT|178|2434|4|1|Silver NU Crown
+HAT|179|2435|4|1|Silver UU Crown
+HAT|180|2436|4|1|Silver OU Crown
+HAT|181|2437|4|1|Gold NU Crown
+HAT|182|2438|4|1|Gold UU Crown
+HAT|183|2439|4|1|Gold OU Crown
+HAT|184|2440|4|1|Bronze Spring Crown
+HAT|185|2441|4|1|Silver Spring Crown
+HAT|186|2442|4|1|Gold Spring Crown
+HAT|187|2443|4|1|Bronze Summer Crown
+HAT|188|2444|4|1|Silver Summer Crown
+HAT|189|2445|4|1|Gold Summer Crown
+HAT|190|2446|4|1|Bronze Autumn Crown
+HAT|191|2447|4|1|Silver Autumn Crown
+HAT|192|2448|4|1|Gold Autumn Crown
+HAT|193|2449|4|1|Bronze Winter Crown
+HAT|194|2450|4|1|Silver Winter Crown
+HAT|195|2451|4|1|Gold Winter Crown
+HAT|196|2452|20|1|Bycocket
+HAT|197|2453|524|4|White Plague Doctor Mask
+TOP|101|3637|2052|1|Wedding Dress
+HAT|198|2454|524|1|Red Reaper Hood
+TOP|102|3638|6148|1|Aura Jacket
+HAT|199|2455|4|1|Aura Cap
+TOP|103|3639|4116|1|Captain's Coat
+HAT|200|2456|4|1|Grassquerade Mask
+TOP|104|3640|6148|1|Grassquerade Outfit
+HAT|201|2457|6148|1|Zombie Head
+TOP|105|3641|6148|1|Zombie Costume
+HAT|202|2458|516|1|Ghostly Pointed Hat
+HAT|203|2459|516|1|Ecto Goggles
+TOP|106|3642|6148|1|Ghost Purging Outfit
+BACK|29|3309|772|1|Proto Pack
+HAT|204|2460|4|1|Aviator Helmet
+GLOVES|2|3794|524|3|Torch
+HAT|205|2461|4|1|Turkey Hood
+TOP|107|3643|6148|1|Turkey Costume
+BACK|30|3310|260|1|Turkey Tail
+BACK|31|3311|260|1|Pitchfork
+HAT|206|2462|4|1|Reindeer Hood
+TOP|108|3644|6148|1|Reindeer Costume
+BACK|32|3312|260|1|Katana
+HAT|207|2463|20|1|Detective Cap
+HAT|208|2464|4|1|Military Cap
+TOP|109|3645|6148|1|Military Uniform
+HAT|209|2465|4|1|Yawn Hood
+TOP|110|3646|6148|1|Yawn Costume
+BACK|33|3313|524|2|Christmas Lights
+BACK|34|3314|260|1|Golden Dragon Tail
+HAT|210|2466|4|1|Phoenix Hood
+TOP|111|3647|6148|1|Phoenix Robe
+BACK|35|3315|260|1|Phoenix Tail
+TOP|112|3648|2052|1|Ice Spirit Robe
+BACK|36|3316|260|1|Christmas Wreath
+TOP|113|3649|6148|1|Hellcat Costume
+HAT|211|2467|4|1|Hellcat Hood
+HAT|212|2468|4|1|Boar Hood
+TOP|114|3650|6148|1|Boar Costume
+HAT|213|2469|4|1|Pig Hood
+TOP|115|3651|6148|1|Pig Costume
+BACK|37|3317|4|1|Pig Tail
+BACK|38|3318|276|1|Hiking Backpack
+TOP|116|3652|6148|1|Fantasy Princess Dress
+HAT|214|2470|20|1|Tropical Beanie
+HAT|215|2471|4|1|Fire Bunny Ears
+HAT|216|2472|4|1|Grass Chimp Hood
+HAT|217|2473|4|1|Water Newt Hat
+HAT|218|2474|4|1|Sombrero
+TOP|117|3653|6148|1|Gladiator Uniform
+HAT|219|2475|20|1|Cycling Helmet
+HAT|220|2476|20|1|Ball Hairclip
+HAT|221|2477|4|1|Polygon Cap
+TOP|118|3654|6148|1|Super Hero Costume
+TOP|119|3655|6148|1|Pirate Outfit
+TOP|120|3656|6164|1|Music Idol Outfit
+HAT|222|2478|516|1|Iron Hero Helmet
+TOP|121|3657|6148|1|Iron Hero Costume
+HAT|223|2479|4|1|Fairy Fox Hood
+TOP|122|3658|6148|1|Nurse Uniform
+TOP|123|3659|6164|1|Racing Outfit
+HAT|224|2480|4|1|Berd Hat
+HAT|225|2481|4|1|Owl Hood
+HAT|226|2482|4|1|Kitten Hat
+HAT|227|2483|4|1|Otter Hood
+HAT|228|2484|4|1|Snake Hat
+HAT|229|2485|4|1|Pig Cap
+HAT|230|2486|4|1|Sealion Cap
+BACK|39|3319|4|1|Acoustic Guitar
+BACK|40|3320|260|1|Squirrel Tail
+HAT|231|2487|4|1|Squirrel Hairband
+TOP|124|3660|6148|1|Lederhosen
+TOP|125|3661|6148|1|Worker's Outfit
+TOP|126|3662|2052|1|Toga
+HAT|232|2488|4|1|Sheep Hood
+HAT|233|2489|20|1|Flower Hairclip
+HAT|234|2490|4|1|Shell Turban
+HAT|235|2491|4|1|Lederhosen Hat
+HAT|236|2492|4|1|Clown Hat
+HAT|237|2493|4|1|Beaver Hat
+HAT|238|2494|4|1|Kaiju Hood
+TOP|128|3664|6148|1|Kaiju Costume
+TOP|129|3665|6148|1|Brown School Uniform
+TOP|130|3666|6148|1|Tamer Outfit
+TOP|131|3667|6148|1|Black Pinstripe Suit
+HAT|239|2495|4|1|Pumpkin Cap
+TOP|132|3668|6148|1|Pumpkin Costume
+HAT|243|2499|524|4|Black Plague Doctor Mask
+HAT|247|2503|20|1|Hair Ribbons
+HAT|248|2504|516|1|Pumpkin Hood
+BACK|41|3321|260|1|Red Christmas Stocking
+TOP|133|3669|524|2|Christmas Sweater
+HAT|249|2505|4|1|Rat Hood
+TOP|135|3671|6148|1|Rat Costume
+BACK|42|3322|260|1|Rat Tail
+BACK|43|3323|260|1|Green Christmas Stocking
+BACK|44|3324|260|1|Blue Christmas Stocking
+BACK|45|3325|260|1|Yellow Christmas Stocking
+HAT|250|2506|4|1|Helix Hat
+HAT|251|2507|4|1|Dome Helmet
+HAT|252|2508|4|1|Small Purple Rat Hood
+TOP|136|3672|6148|1|Small Purple Rat Costume
+BACK|46|3326|260|1|Small Purple Rat Tail
+HAT|253|2509|4|1|Small Black Rat Hood
+TOP|137|3673|6148|1|Small Black Rat Costume
+BACK|47|3327|260|1|Small Black Rat Tail
+TOP|138|3674|6148|1|Fig Tree Costume
+HAT|254|2510|4|1|Snow Mountain Beanie
+LEGGINGS|3|4307|4|1|Grass Skirt
+HAT|255|2511|16908|18|UFO Hat
+HAT|256|4576|4|1|Bronze Doubles Crown
+HAT|257|4577|4|1|Silver Doubles Crown
+HAT|258|4578|4|1|Gold Doubles Crown
+BACK|48|3328|276|1|Speckled Moth Wings
+HAT|259|4579|4|1|Werewolf Hood
+TOP|139|3675|6148|1|Werewolf Costume
+GLOVES|5|3797|4|1|Lollipop
+TOP|140|3676|6164|1|Changshan
+HAT|260|4580|4|1|Turban
+HAT|261|4581|4|1|Flower Crown
+HAT|262|4582|4|1|Forest Mushroom Cap
+HAT|263|4583|4|1|Polar Bear Cap
+HAT|264|4584|516|1|Jellyfish Hat
+BACK|49|3329|260|1|Leaf Wings
+HAT|265|4585|4|1|Red Oni Mask
+TOP|141|3677|2068|1|Wrestling Outfit
+HAT|266|4586|20|1|Hard Hat
+HAT|267|4587|4|1|Hiking Hat
+HAT|271|4591|4|1|Coconut Tree Hat
+HAT|272|4592|4|1|Eagle Headdress
+TOP|142|3678|6148|1|Rock 'n Roll Outfit
+BACK|50|3330|268|1|Crook & Flail
+HAT|273|4593|4|1|Burger Hat
+TOP|143|3679|6148|1|Pharaoh Outfit
+BACK|51|3331|4|1|Spooky Arms
+HAT|274|4594|524|3|Red Eyeball Mask
+HAT|277|4597|524|3|Green Eyeball Mask
+TOP|144|3680|6148|1|Traditional New Year Outfit
+HAT|280|4600|20|1|Futou
+HAT|281|4601|20|1|Baby Bonnet & Pacifier
+TOP|145|3681|6148|1|Archer's Tunic
+HAT|282|4602|20|1|Winged Helmet
+GLOVES|6|3798|4|1|Microphone
+TOP|146|3682|6148|1|Newsboy Outfit
+TOP|147|3683|6148|1|Ice Cream Clerk Uniform
+HAT|283|4603|20|1|Ice Cream Hood
+TOP|148|3684|6148|1|Artist's Overalls
+TOP|149|3685|6148|1|Writer's Outfit
+HAT|284|4604|4|1|Easter Basket Hat
+HAT|285|4605|12|1|Normal Elfbot Hat
+TOP|150|3686|6148|1|Normal Elfbot Outfit
+HAT|286|4606|524|3|Snow Globe Hat
+BACK|52|3332|260|1|Toy Plane
+BACK|53|3333|260|1|Retro Games Handheld
+BACK|54|3334|260|1|Teddy Bear
+BACK|55|3335|260|1|Christmas Gift Sack
+HAT|289|4609|4|1|Ox Horns
+TOP|151|3687|6148|1|Ox Costume
+BACK|56|3336|260|1|Ox Tail
+HAT|290|4610|524|6|Golden Dragon Mask
+HAT|291|4611|4|1|Nian Hood
+TOP|152|3688|4|1|Apron
+HAT|297|4617|4|1|Cursed Mask
+HAT|298|4618|20|1|Sou'wester Hat
+HAT|299|4619|4|1|Acorn Hat
+HAT|300|4620|4|1|Cow Hood
+TOP|153|3689|6148|1|Cow Costume
+HAT|301|4621|4|1|Clam Shell Hat
+TOP|154|3690|6148|1|Shinigami Robe
+BACK|57|3337|20|1|General's War Fan
+TOP|155|3691|4|1|Milk Delivery Uniform
+BACK|58|3338|20|1|Carnival Backpiece
+TOP|156|3692|6148|1|Carnival Outfit
+TOP|157|3693|6148|1|Builder Overalls
+HAT|302|4622|4|1|Drinking Cap
+HAT|303|4623|4|1|Apple Pie Hat
+HAT|304|4624|4|1|Bronze Randoms Crown
+HAT|305|4625|4|1|Silver Randoms Crown
+HAT|306|4626|4|1|Gold Randoms Crown
+HAT|307|4627|16908|12|Grey Werewolf Mask
+HAT|311|4631|16908|12|Brown Werewolf Mask
+HAT|315|4635|4|1|Mage's Hat
+BACK|59|3339|260|1|Mage's Staff
+BIKE|12|4828|524|5|Christmas Sleigh
+BIKE|13|4829|4|1|Sparkles_1
+BIKE|14|4830|4|1|Sparkles_2
+BIKE|15|4831|4|1|Sparkles_3
+BIKE|16|4832|4|1|Sparkles_4
+HAT|316|4636|524|3|Starlight Bobble Hat
+EYES|18|2786|4|1|Joke Glasses
+BACK|60|3340|260|1|Nutcracker Doll
+HAT|319|4639|4|1|Tiger Hood
+TOP|158|3694|6148|1|Tiger Costume
+BACK|61|3341|260|1|Tiger Tail
+HAT|320|4640|16908|7|Golden Tiger Mask
+HAT|327|4647|4|1|Shiny Nian Hood
+HAT|328|4648|4|1|Red Mandarin Hat
+BACK|62|3342|260|1|Bronze Team Trophy
+BACK|63|3343|260|1|Silver Team Trophy
+BACK|64|3344|260|1|Gold Team Trophy
+HAIR|46|2558|20|1|Idol Hairstyle
+HAT|329|4649|4|1|Koban
+HAT|330|4650|20|1|PokeMMO Cap
+BACK|65|3345|260|1|Pointed Yellow Tail
+HAT|331|4651|16388|7|Poisonous Flower Hat
+TOP|159|3695|6148|1|Fire Dragon Robes
+BACK|66|3346|260|1|Giant Turtle Shell
+HAT|332|4652|4|1|Psychic Training Helmet
+HAT|333|4653|4|1|Fishing Cap
+HAT|334|4654|4|1|Crab Hat
+HAT|335|4655|4|1|Jousting Knight's Helmet
+HAT|336|4656|4|1|Bone Helmet
+TOP|160|3696|6164|1|Summer School Uniform
+HAT|337|4657|4|1|Cult Mask
+HAT|338|4658|16908|6|Green Cthulhu Mask
+HAT|339|4659|16908|6|Purple Cthulhu Mask
+HAT|340|4660|516|1|Skull Helmet
+HAT|341|4661|516|1|Shadow Skull Helmet
+GLOVES|7|3799|4|1|Bone Club
+GLOVES|8|3800|4|4|Shadow Bone Club
+BACK|67|3347|260|1|Paladin's Shield
+HAT|342|4662|4|1|Red Christmas Present Hat
+HAT|343|4663|4|1|Blue Christmas Present Hat
+HAT|344|4664|4|1|Green Christmas Present Hat
+HAT|345|4665|4|1|Pink Christmas Present Hat
+TOP|161|3697|4|1|Red Christmas Present Costume
+TOP|162|3698|4|1|Blue Christmas Present Costume
+TOP|163|3699|4|1|Green Christmas Present Costume
+TOP|164|3700|4|1|Pink Christmas Present Costume
+TOP|165|3701|6164|1|Thick Winter Coat
+TOP|166|3702|2052|1|Ice Bird Robes
+TOP|167|3703|2052|1|Psychic Bird Robes
+BACK|68|3348|268|1|Ice Bird Wings
+BACK|69|3349|4|1|Ice_Bird_Sparkles_1
+BACK|70|3350|4|1|Ice_Bird_Sparkles_2
+BACK|71|3351|4|1|Ice_Bird_Sparkles_3
+BACK|72|3352|20|1|Ice_Bird_Sparkles_4
+BACK|73|3353|780|1|Psychic Bird Wings
+BACK|74|3354|4|1|Psychic_Bird_Sparkles_1
+BACK|75|3355|4|1|Psychic_Bird_Sparkles_2
+BACK|76|3356|4|1|Psychic_Bird_Sparkles_3
+BACK|77|3357|4|1|Psychic_Bird_Sparkles_4
+HAT|346|4666|516|1|Psychic Bird Mask
+HAT|347|4667|16908|10|Golden Rabbit Mask
+HAT|348|4668|524|5|Green Harvest Crown
+HAT|349|4669|524|5|Red Harvest Crown
+BACK|78|3358|524|5|Green Unity Cape
+BACK|79|3359|524|5|Red Unity Cape
+BACK|80|3360|12|3|Bunny Tail
+HAT|350|4670|4|1|White Rabbit Plush
+HAT|351|4671|4|1|Spring Flower Hairpin
+HAT|352|4672|4|3|Gloria
+HAT|353|4673|20|1|Cavalier Hat
+BACK|81|3361|260|11|Bronze Cup of the Year Trophy
+BACK|82|3362|260|11|Silver Cup of the Year Trophy
+BACK|83|3363|260|11|Gold Cup of the Year Trophy
+HAT|354|4674|16908|8|Scary Clown Mask
+HAT|355|4675|16900|20|Explosive Hat
+HAT|356|4676|4|1|Aurora Beast Mane
+TOP|168|3704|6148|1|Thunder Beast Daopao
+BACK|84|3364|260|1|Volcano Beast Wings
+HAT|357|4677|4|1|Kitsune Mask
+GLOVES|9|3801|516|5|Ghostly Lantern
+GLOVES|10|3802|4|1|Trick or Treat Bucket
+GLOVES|11|3803|4|1|Halloween Treat Bucket
+BACK|85|3365|260|1|Skeleton Wings
+BIKE|17|4833|524|1|Flaming Motorcycle
+BIKE|18|4834|4|1|Flaming Motorcycle Loop_1
+BIKE|19|4835|4|1|Flaming Motorcycle Loop_2
+BIKE|20|4836|4|1|Flaming Motorcycle Loop_3
+BIKE|21|4837|4|1|Flaming_Motorcycle_Ignition
+BIKE|22|4838|4|1|Flaming_Motorcycle_Power_Down
+BIKE|23|4839|4|1|Flaming_Motorcycle_Loop_Trail_1
+BIKE|24|4840|4|1|Flaming_Motorcycle_Loop_Trail_2
+BIKE|25|4841|4|1|Flaming_Motorcycle_Loop_Trail_3
+BIKE|26|4842|4|1|Flaming_Motorcycle_Power_Down_Trail
+BIKE|27|4843|4|1|Flaming_Motorcycle_Ignition_Trail
+HAT|358|4678|4|1|Bat Hat
+HAT|359|4679|33292|3|Black Mage Cat
+HAT|360|4680|33292|3|Black Mage Cat Hat
+HAT|361|4681|33292|3|Orange Mage Cat
+HAT|362|4682|33292|3|Orange Mage Cat Hat
+HAT|363|4683|4|1|Mini Halloween Top Hat
+HAT|364|4684|12|1|Fairy Elfbot Hat
+TOP|169|3705|6148|1|Fairy Elfbot Outfit
+GLOVES|13|3805|4|1|Boxing Gloves
+BIKE|28|4844|524|5|Red Dragon Mount
+BIKE|29|4845|524|5|Red Dragon Mount_Moving
+BIKE|30|4846|524|5|Gold Dragon Mount
+BIKE|31|4847|524|5|Gold Dragon Mount_Moving
+BACK|86|3366|268|1|Temporal Cape
+BACK|87|3367|260|1|Battle Axe
+BACK|88|3368|260|1|Dragon Wings
+HAT|365|4685|49676|15|Flaming Demon Skull
+HAT|366|4686|49676|11|Flaming Demon Skull NoFlame
+HAT|367|4687|49676|15|Blue Flaming Demon Skull
+HAT|368|4688|49676|11|Blue Flaming Demon Skull NoFlame
+HAT|369|4689|524|3|Ghostly Candle
+BACK|89|3369|260|1|Shovel
+BACK|90|3370|268|4|Skull Moth Wings
+BACK|91|3371|268|1|Shadow Cape
+BACK|92|3372|268|1|Fire Dragon Wings
+BACK|93|3373|268|1|Charcoal Dragon Wings
+BACK|94|3374|33548|6|Sparkling Charcoal Dragon Wings
+BACK|95|3375|12|1|Yellow Wasp Abdomen
+BACK|96|3376|12|1|Shiny Wasp Abdomen
+BIKE|40|4856|524|1|Blue Flaming Motorcycle
+BIKE|41|4857|4|1|Blue Flaming Motorcycle Loop_1
+BIKE|42|4858|4|1|Blue Flaming Motorcycle Loop_2
+BIKE|43|4859|4|1|Blue Flaming Motorcycle Loop_3
+BIKE|44|4860|4|1|Blue_Flaming_Motorcycle_Ignition
+BIKE|45|4861|4|1|Blue_Flaming_Motorcycle_Power_Down
+BIKE|46|4862|4|1|Blue_Flaming_Motorcycle_Loop_Trail_1
+BIKE|47|4863|4|1|Blue_Flaming_Motorcycle_Loop_Trail_2
+BIKE|48|4864|4|1|Blue_Flaming_Motorcycle_Loop_Trail_3
+BIKE|49|4865|4|1|Blue_Flaming_Motorcycle_Power_Down_Trail
+BIKE|50|4866|4|1|Blue_Flaming_Motorcycle_Ignition_Trail
+TOP|170|3706|4|1|Candy Corn Sweater
+LEGGINGS|4|4308|4|1|Candy Corn Pants
+FOOTWEAR|2|4050|4|1|Candy Corn Shoes
+HAT|370|4690|12|1|Spooky Beanie
+BACK|98|3378|268|1|Snowboarder Scarf
+FACIAL_HAIR|20|3044|4|1|Santa Beard
+BACK|99|3379|268|1|Star Backpiece
+TOP|171|3707|6148|1|Star Bodysuit
+HAT|371|4691|4|1|Star Cone Hat
+BACK|100|3380|268|1|Snow Leopard Tail
+HAT|372|4692|4|1|Snow Leopard Ears
+TOP|172|3708|6148|1|Snow Leopard Outfit
+BIKE|51|4867|524|4|Purple Christmas Sleigh
+GLOVES|14|3806|524|1|Teal Star Rod
+GLOVES|15|3807|524|1|Red Star Rod
+HAT|373|4693|12|1|Red Wish Tag Earrings
+HAT|374|4694|12|1|Teal Wish Tag Earrings
+TOP|173|3709|4|1|Red Wishmaker Robes
+TOP|174|3710|4|1|Teal Wishmaker Robes
+BIKE|52|4868|12|11|Xuanwu Mount
+BIKE|53|4869|12|5|Xuanwu Mount Transition
+BIKE|54|4870|12|5|Xuanwu Mount Loop_1
+BIKE|55|4871|12|5|Xuanwu Mount Loop_2
+BIKE|56|4872|12|5|Xuanwu Mount Loop_3
+TOP|175|3711|6148|1|Green Sky Serpent Armor
+TOP|176|3712|6148|1|Black Sky Serpent Armor
+HAT|375|4695|4|1|Tiny White Wings
+TOP|177|3713|4|1|Cobra Hoodie
+HAT|376|4696|4|1|Elegant Antennae
+BACK|101|3381|12|1|Elegant Scarf
+TOP|178|3714|4|1|Sand Snake Coat
+BACK|102|3382|260|1|Sand Snake Scarf
+HAIR|47|2559|28|1|Golden Cuffed Ponytail
+HAT|377|4697|28|2|Coiled Snake Hat
+TOP|179|3715|4|1|Zodiac Tangzhuang
+HAT|378|4698|4|1|Charcoal Dragon Horns
+GLOVES|16|3808|524|3|Orange Flaming Sword
+GLOVES|17|3809|524|3|Blue Flaming Sword
+BACK|103|3383|260|1|Ancient Coin
+BACK|104|3384|524|3|Orange Flaming Wings
+BACK|105|3385|524|3|Blue Flaming Wings
+BACK|106|3386|12|3|Strange Tentacles
+HAT|379|4699|4|1|Frankenstein Mask
+TOP|180|3716|4|1|Frankenstein Coat
+LEGGINGS|5|4309|4|1|Frankenstein Pants
+HAT|380|4700|28|1|Puffy Witch Hat
+TOP|181|3717|2068|1|Puffy Witch Dress
+HAT|381|4701|20|1|Cyclops Mask
+HAT|382|4702|4|1|Demon Horns
+HAT|383|4703|12|1|Springy Mushroom
+HAT|384|4704|12|1|Noh Mask
+HAT|385|4705|12|2|Green Slime
+HAT|386|4706|516|1|Deer Skull
+HAT|387|4707|516|1|Demon Queen Crown
+FACIAL_HAIR|21|3045|4|1|Kitty Face Mask
+FACIAL_HAIR|22|3046|4|1|Frowny Face Mask
+FACIAL_HAIR|23|3047|4|1|Cheeky Face Mask
+HAT|388|4708|12|6|Frog Friend
+TOP|182|3718|6164|1|Mermaid Costume
+HAIR|48|2560|98332|6|Mermaid Hair
+HAIR|49|2561|98332|6|Mermaid Hair Crown
+EYES|19|2787|516|1|Villain Mask
+HAT|389|4709|4|1|Red Lotus Crown
+BIKE|57|4873|524|3|Rudolph Idle
+BIKE|58|4874|524|3|Rudolph Prance 1
+BIKE|59|4875|524|3|Rudolph Prance 2
+BIKE|60|4876|524|3|Rudolph Prance 3
+BIKE|61|4877|524|3|Rudolph Prance 4
+HAT|390|4710|4|1|Weasel Headdress
+HAT|391|4711|12|1|Star Hairband
+HAT|392|4712|20|1|Christmas Present Hat
+HAT|393|4713|4|1|Ice Horns
+HAT|394|4714|4|1|Melty the Snowman
+HAT|395|4715|12|1|Pudgy Penguin
+TOP|183|3719|6148|1|Elven Outfit
+HAIR|50|2562|65564|1|Elven Ponytail
+GLOVES|18|3810|4|1|Elven Bow
+TOP|184|3720|4|1|Peppermint Shirt
+TOP|185|3721|6148|1|Festive Dress
+TOP|186|3722|4|1|Spruce Coat
+LEGGINGS|6|4310|4|1|Spruce Pants
+HAT|396|4716|33292|1|Christmas Camo
+HAT|397|4717|33292|1|Christmas Camo NoLights
+HAT|398|4718|4|1|Peace Apple Hat
+TOP|187|3723|4|1|Peace Apple Overalls
+HAT|399|4719|4|1|Horse Plush
+HAIR|51|2563|20|1|Elegant Ponytail
+HAT|400|4720|32796|1|Musketeer Hat
+TOP|188|3724|6148|1|Musketeer Tabard
+HAIR|53|2565|65548|4|Origin Hairstyle
+TOP|189|3725|6148|1|Origin Outfit
+BACK|107|3387|260|1|Origin Ring
+HAIR|54|2566|65548|1|Colorful Unicorn Hair
+HAT|401|4721|4|1|Panda Hat
+HAT|402|4722|12|1|Gold Hair Ornament
+HAT|403|4723|12|1|Red Tassel Hairclips
+BACK|108|3388|260|1|Red Petal Scarf
+HAT|404|4724|4|1|Horse Mask
+BIKE|62|4878|32780|3|Horse Brown Idle
+BIKE|63|4879|32780|3|Horse Brown Gallop 1
+BIKE|64|4880|32780|3|Horse Brown Gallop 2
+BIKE|65|4881|32780|3|Horse Brown Gallop 3
+BIKE|66|4882|32780|3|Horse Brown Gallop 4
+HAT|405|4725|32796|1|Musketeer Braid And Hat
+HAT|406|4726|32796|1|Musketeer Braid NoHat
+GLOVES|19|3811|4|1|Musketeer Rapier
+BIKE|67|4883|32780|3|Horse Red Idle
+BIKE|68|4884|32780|3|Horse Red Gallop 1
+BIKE|69|4885|32780|3|Horse Red Gallop 2
+BIKE|70|4886|32780|3|Horse Red Gallop 3
+BIKE|71|4887|32780|3|Horse Red Gallop 4
+HAT|407|4727|4|1|Plum Blossom Hairpin
+BACK|109|3389|260|1|Origin Ring Real
+HAT|408|4728|20|1|Festive Lion Mask
+BACK|110|3390|268|1|Flower Cape

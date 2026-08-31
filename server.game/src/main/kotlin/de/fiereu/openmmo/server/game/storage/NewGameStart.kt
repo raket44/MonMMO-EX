@@ -4,7 +4,6 @@ import de.fiereu.openmmo.common.DynamicWarp
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.GameMode
 import de.fiereu.openmmo.common.enums.Region
-import de.fiereu.openmmo.story.generated.galar.GalarFlags
 import de.fiereu.openmmo.story.generated.hoenn.HoennFlags
 import de.fiereu.openmmo.story.generated.hoenn.HoennVars
 import de.fiereu.openmmo.story.generated.johto.JohtoFlags
@@ -27,12 +26,17 @@ internal data class NewGameStart(
 
 internal object NewGameStarts {
 
-  fun forRegion(region: Region, female: Boolean, gameMode: GameMode = GameMode.REMAKE): NewGameStart =
+  fun forRegion(
+      region: Region,
+      female: Boolean,
+      gameMode: GameMode = GameMode.REMAKE
+  ): NewGameStart =
       when (region) {
         Region.HOENN -> hoenn(female)
         Region.KANTO -> if (GameMode.isClassic(gameMode)) kantoClassic(gameMode) else kanto()
+        Region.UNOVA -> unova()
+        Region.SINNOH -> sinnoh()
         Region.JOHTO -> johto()
-        Region.GALAR -> galar()
       }
 
   /** Emerald opens in the moving truck, whose exit goes through the player's dynamic warp. */
@@ -76,8 +80,10 @@ internal object NewGameStarts {
           storyFlags = KantoFlags.initiallySet,
       )
 
-  /** Classic Gen 1/Yellow start — same Pallet bedroom, gameMode var written so the engine
-   *  switches to DV/StatExp formulas and type-based physical/special split. */
+  /**
+   * Classic Gen 1/Yellow start — same Pallet bedroom, gameMode var written so the engine switches
+   * to DV/StatExp formulas and type-based physical/special split.
+   */
   private fun kantoClassic(gameMode: GameMode): NewGameStart =
       NewGameStart(
           bankId = 4,
@@ -88,24 +94,34 @@ internal object NewGameStarts {
           storyVars = mapOf(GameMode.VAR_KEY to gameMode.ordinal),
       )
 
-  /** Johto (Crystal) — placeholder coords; update once the Johto map bank is imported. */
-  private fun johto(): NewGameStart =
+  /**
+   * Unova (White) — bank 100 map 1 is a verified renderable Unova map on the client; the true
+   * Nuvema Town ids await the NDS map extraction.
+   */
+  private fun unova(): NewGameStart =
       NewGameStart(
           bankId = 100,
           mapId = 1,
           x = 4,
           y = 4,
-          storyFlags = JohtoFlags.initiallySet,
       )
 
-  /** Galar (Sword/Shield) — placeholder coords; writes MODERN_SWORD game mode. */
-  private fun galar(): NewGameStart =
+  /** Sinnoh (Platinum) — placeholder until the NDS map extraction names Twinleaf Town. */
+  private fun sinnoh(): NewGameStart =
       NewGameStart(
-          bankId = 200,
+          bankId = 1,
           mapId = 1,
           x = 4,
           y = 4,
-          storyFlags = GalarFlags.initiallySet,
-          storyVars = mapOf(GameMode.VAR_KEY to GameMode.MODERN_SWORD.ordinal),
+      )
+
+  /** Johto (HeartGold) — placeholder until the NDS map extraction names New Bark Town. */
+  private fun johto(): NewGameStart =
+      NewGameStart(
+          bankId = 1,
+          mapId = 1,
+          x = 4,
+          y = 4,
+          storyFlags = JohtoFlags.initiallySet,
       )
 }

@@ -296,6 +296,7 @@ constructor(
           slot = slot.name,
           skinType = type?.toShort(),
           skinColor = color?.toShort(),
+          skinVariant = variant.toShort(),
       )
 
   private fun CharacterSkinsRecord.toSkin(): Skin =
@@ -303,6 +304,7 @@ constructor(
           slot = SkinSlot.valueOf(slot),
           type = skinType?.toUShort(),
           color = skinColor?.toUByte(),
+          variant = (skinVariant ?: 0).toInt().toUByte(),
       )
 
   private fun Pokemon.toRecord(): PokemonRecord =

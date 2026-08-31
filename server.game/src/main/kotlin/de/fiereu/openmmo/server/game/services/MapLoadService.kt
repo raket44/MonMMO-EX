@@ -4,6 +4,7 @@ import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.CharacterInfo
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.Skin
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.EntityStatus
 import de.fiereu.openmmo.common.enums.SkinSlot
@@ -30,21 +31,37 @@ constructor(
       z: Int = 0,
       party: List<Pokemon> = emptyList(),
       skins: Map<SkinSlot, Skin> = emptyMap(),
+      railLine: Int = -1,
+      transportation: Int = 0,
+      mountType: Int = -1,
+      mountId: Int = -1,
   ): LoadEntityPacket {
     return LoadEntityPacket(
         entityId = info.id,
         skin = SkinSet(info.skinRegionSelectionIndex, skins),
         name = info.name,
-        regionId = info.positionRegionId.toInt(),
-        bankId = info.positionBankId.toInt(),
-        mapId = info.positionMapId.toInt(),
+        // Unsigned on purpose: NDS banks run past 127 (Cold Storage is 192). A signed widening
+        // makes the U8 codec throw during Netty encode - AFTER the "Sending LoadEntity" log and
+        // into a write future nobody reads - so the client never receives its player and every
+        // bank>127 interior froze in the doorway with no error anywhere.
+        regionId = info.positionRegionId.toInt() and 0xFF,
+        bankId = info.positionBankId.toInt() and 0xFF,
+        mapId = info.positionMapId.toInt() and 0xFF,
         x = info.positionX.toInt(),
         y = info.positionY.toInt(),
         z = z,
         facing = facing,
         status = EntityStatus.NONE,
-        hasFollower = party.isNotEmpty(),
-        followerDexId = (party.firstOrNull()?.dexId ?: 0).toShort(),
+        // Followers draw from ROM overworld sprite descriptors, which imported species do not
+        // have - announcing one crashes the client with a zero-dimension mod atlas at spawn. No
+        // follower for an imported lead until descriptors are injected alongside the sprites.
+        hasFollower =
+            party.isNotEmpty() && clientSpeciesId(party.first().dexId) <= LAST_ROM_FOLLOWER_SPECIES,
+        followerDexId = clientSpeciesId(party.firstOrNull()?.dexId ?: 0).toShort(),
+        railLine = railLine,
+        transportation = transportation,
+        mountType = mountType,
+        mountId = mountId,
     )
   }
 
@@ -88,3 +105,6 @@ constructor(
     preload(map.connections, depth)
   }
 }
+
+/** The last species with a ROM overworld sprite the client can walk as a follower. */
+private const val LAST_ROM_FOLLOWER_SPECIES = 649

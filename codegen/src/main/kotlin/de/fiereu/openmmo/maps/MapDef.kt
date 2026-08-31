@@ -11,6 +11,8 @@ import de.fiereu.openmmo.net.game.packets.MapData
 import java.util.Base64
 
 class MapDef(
+    /** Stable decomp map name, for example ViridianCity. */
+    val sourceName: String = "",
     val regionId: Byte,
     val bankId: Byte,
     val mapId: Byte,

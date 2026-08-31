@@ -105,7 +105,8 @@ class ScriptRollbackTest :
           scriptRunner(store).run(session, session.state(), grantingScript(null), entityId = -1)
           runCurrent()
 
-          session.state().inDialog shouldBe false
+          session.state().dialogVisible shouldBe false
+          session.state().scriptRunning shouldBe false
           store.getCharacter(charId)!!.storyFlags.contains(FLAG) shouldBe false
         }
       }

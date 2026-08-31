@@ -33,10 +33,17 @@ class SkinSetCodec(
 ) : PacketCodec<SkinSet>() {
   override fun CodecScope<SkinSet>.body(): SkinSet {
     val regionSelectionIndex = if (withLeadingByte) field(U8) { it.regionSelectionIndex } else 0
+    // Bit 15 of the slot mask announces one VARIANT byte after each slot's packed short - the
+    // client's per-slot "extra" (f.N50.wn0, read by f.tK0.yF0, written by f.Em1.Sv0). It picks
+    // an addon's alternate form (Noble Steed -> Alt).
     val mask =
         field(U16LE) { skins ->
-          skins.keys.filter { it in slots }.fold(0) { acc, slot -> acc or (1 shl slot.ordinal) }
+          val bits =
+              skins.keys.filter { it in slots }.fold(0) { acc, slot -> acc or (1 shl slot.ordinal) }
+          val hasVariants = skins.values.any { (it.variant.toInt()) > 0 }
+          if (hasVariants) bits or 0x8000 else bits
         }
+    val hasVariants = (mask and 0x8000) != 0
     val skins = SkinSet(regionSelectionIndex)
     slots.forEach { slot ->
       if ((mask and (1 shl slot.ordinal)) != 0) {
@@ -49,9 +56,10 @@ class SkinSetCodec(
               require(color <= COLOR_MASK) { "Skin color too large: ${skin.color}" }
               type or (color shl COLOR_SHIFT)
             }
+        val variant = if (hasVariants) field(U8) { (it[slot]?.variant ?: 0u).toInt() } else 0
         val type = (compressed and TYPE_MASK).toUShort()
         val color = ((compressed shr COLOR_SHIFT) and COLOR_MASK).toUByte()
-        skins.put(Skin(slot, type, color))
+        skins.put(Skin(slot, type, color, variant.toUByte()))
       }
     }
     return skins

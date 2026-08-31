@@ -2,9 +2,15 @@ package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
 
+/**
+ * ITEM-UNLOCK flag, not a GBA variable: the client (f.Za0) reads each entry as s16 ITEM ID + u8
+ * ENABLED and calls dY(itemId, enabled) -> Gc0.tv0 - per-item usability. The old (byte key, short
+ * value) codec was the same 3 bytes TRANSPOSED, so it parsed silently into garbage and no item
+ * (bike, ocarinas...) ever armed.
+ */
 data class PlayerVariableEntry(
-    val key: Byte,
-    val value: Short,
+    val key: Short,
+    val value: Byte,
 )
 
 data class LocalPlayerStatePacket(
@@ -31,8 +37,8 @@ data class LocalPlayerStatePacket(
 private val PlayerVariableEntryCodec: Codec<PlayerVariableEntry> =
     object : PacketCodec<PlayerVariableEntry>() {
       override fun CodecScope<PlayerVariableEntry>.body(): PlayerVariableEntry {
-        val key = field(S8) { it.key }
-        val value = field(S16LE) { it.value }
+        val key = field(S16LE) { it.key }
+        val value = field(S8) { it.value }
         return PlayerVariableEntry(key, value)
       }
     }

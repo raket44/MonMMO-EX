@@ -38,6 +38,9 @@ data class SpeciesDef(
     val safariZoneFleeRate: Int,
     val bodyColor: BodyColor,
     val noFlip: Boolean,
+    val ability1Id: Int = ability1.ordinal,
+    val ability2Id: Int = ability2.ordinal,
+    val abilityMechanicsSupported: Boolean = true,
 ) {
   val types: Set<PokemonType> = setOf(type1, type2)
 

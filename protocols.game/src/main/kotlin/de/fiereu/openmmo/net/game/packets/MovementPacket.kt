@@ -11,6 +11,8 @@ data class MovementPacket(
     val y: Int,
     val direction: Direction,
     val running: Boolean = false,
+    /** The full state byte; bits 2-6 are unmapped and may carry rail data on Gen 5 rail maps. */
+    val stateRaw: Int = 0,
 )
 
 object MovementPacketCodec : PacketCodec<MovementPacket>() {
@@ -20,6 +22,6 @@ object MovementPacketCodec : PacketCodec<MovementPacket>() {
     val state = field(U8) { it.direction.ordinal or (if (it.running) 0x80 else 0) }
     val direction = Direction.entries[state and 0x03]
     val running = state and 0x80 != 0
-    return MovementPacket(x.toInt(), y.toInt(), direction, running)
+    return MovementPacket(x.toInt(), y.toInt(), direction, running, state)
   }
 }

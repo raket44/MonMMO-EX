@@ -1,18 +1,21 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /** Export/import character state as tweakable JSON. */
 @Singleton
 class LocalSaveService @Inject constructor() {
 
-  private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+  private val json = Json {
+    prettyPrint = true
+    ignoreUnknownKeys = true
+  }
 
   fun export(char: StoredCharacter, file: File) {
     file.writeText(json.encodeToString(SaveBlob.from(char)))

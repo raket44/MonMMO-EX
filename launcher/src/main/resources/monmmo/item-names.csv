@@ -1,0 +1,3203 @@
+0;????????
+121;Orange Mail
+122;Harbor Mail
+123;Glitter Mail
+124;Mech Mail
+125;Wood Mail
+126;Wave Mail
+127;Bead Mail
+128;Shadow Mail
+129;Tropic Mail
+130;Dream Mail
+131;Fab Mail
+132;Retro Mail
+259;Mach Bike
+260;Coin Case
+261;Itemfinder
+262;Old Rod
+263;Good Rod
+264;Super Rod
+265;S.S. Ticket
+266;Contest Pass
+268;Wailmer Pail
+269;Devon Goods
+270;Soot Sack
+271;Basement Key
+272;Acro Bike
+273;Pokéblock Case
+274;Letter
+275;Eon Ticket
+276;Red Orb
+277;Blue Orb
+278;Scanner
+279;Go-goggles
+280;Meteorite
+281;Rm. 1 Key
+282;Rm. 2 Key
+283;Rm. 4 Key
+284;Rm. 6 Key
+285;Storage Key
+286;Root Fossil
+287;Claw Fossil
+288;Devon Scope
+339;HM01
+340;HM02
+341;HM03
+342;HM04
+343;HM05
+344;HM06
+345;HM07
+346;HM08
+349;Oak'S Parcel
+350;Poké Flute
+351;Secret Key
+352;Bike Voucher
+353;Gold Teeth
+354;Old Amber
+355;Card Key
+356;Lift Key
+357;Helix Fossil
+358;Dome Fossil
+359;Silph Scope
+360;Bicycle
+361;Town Map
+362;Vs Seeker
+363;Fame Checker
+364;Tm Case
+365;Berry Pouch
+366;Teachy Tv
+367;Tri-pass
+368;Rainbow Pass
+369;Tea
+370;Mysticticket
+371;Auroraticket
+372;Powder Jar
+373;Ruby
+374;Sapphire
+375;Magma Emblem
+376;Old Sea Map
+1000;Training Link
+1001;Name Change Contract
+1002;Mystery Box
+1003;Makeover Kit
+1004;Team Name Change Plaque
+1013;Root Fossil
+1014;Claw Fossil
+1015;Old Amber
+1016;Helix Fossil
+1017;Dome Fossil
+1018;Ability Pill
+1019;Spooky Candy
+1020;Goodie Bag (2015)
+1021;Bad Candy
+1022;Big Robot Part
+1023;Tiny Robot Part
+1024;Xmas Present (2015)
+1025;Donator Status Ticket - 7 DAYS
+1026;Donator Status Ticket - 15 DAYS
+1027;Donator Status Ticket - 30 DAYS
+1028;Harvesting Tool
+1029;Unbreakable Harvesting Tool
+1030;Plain Spicy Seed
+1031;Very Spicy Seed
+1032;Plain Dry Seed
+1033;Very Dry Seed
+1034;Plain Sweet Seed
+1035;Very Sweet Seed
+1036;Plain Bitter Seed
+1037;Very Bitter Seed
+1038;Plain Sour Seed
+1039;Very Sour Seed
+1040;Exp. Reamplifier
+1041;Lure
+1042;Super Lure
+1043;Expert Lure
+1044;Premium Lure
+1045;Premium Super Lure
+1046;Premium Max Lure
+1050;White Dye
+1051;Black Dye
+1052;Blue Dye
+1053;Cyan Dye
+1054;Teal Dye
+1055;Green Dye
+1056;Olive Dye
+1057;Lime Dye
+1058;Yellow Dye
+1059;Orange Dye
+1060;Brown Dye
+1061;Red Dye
+1062;Pink Dye
+1063;Amethyst Dye
+1064;Purple Dye
+1065;Violet Dye
+1090;Armor Fossil
+1091;Skull Fossil
+1100;PVP Mystery Box (Legacy)
+1103;Genderswap Ticket
+1106;{STRING_270600}
+1107;{STRING_270601}
+1108;{STRING_270602}
+1109;{STRING_270603}
+1110;{STRING_270604}
+1111;{STRING_270612}
+1112;{STRING_270600} Plus
+1113;{STRING_270601} Plus
+1114;{STRING_270602} Plus
+1115;{STRING_270603} Plus
+1116;{STRING_270604} Plus
+1117;{STRING_270612} Plus
+1118;{STRING_270611}
+1119;Berry Powder
+1120;PC Expansion Drive
+1121;Unknown Item
+1122;Goodie Bag (2016)
+1123;Xmas Present (2016)
+1124;Children's Present
+1125;Ability Pill
+1126;Xmas Present (2017)
+1127;Goodie Bag (2018)
+1128;Pumpking Goodie Bag (2018)
+1129;Special Candy
+1130;Xmas Present (2018)
+1131;Santa's Present (2018)
+1132;Rare Candy
+1133;Cheri Berry
+1134;Chesto Berry
+1135;Pecha Berry
+1136;Rawst Berry
+1137;Aspear Berry
+1138;Leppa Berry
+1139;Oran Berry
+1140;Persim Berry
+1141;Lum Berry
+1142;Sitrus Berry
+1143;Figy Berry
+1144;Wiki Berry
+1145;Mago Berry
+1146;Aguav Berry
+1147;Iapapa Berry
+1148;Razz Berry
+1149;Bluk Berry
+1150;Nanab Berry
+1151;Wepear Berry
+1152;Pinap Berry
+1153;Pomeg Berry
+1154;Kelpsy Berry
+1155;Qualot Berry
+1156;Hondew Berry
+1157;Grepa Berry
+1158;Tamato Berry
+1159;Cornn Berry
+1160;Magost Berry
+1161;Rabuta Berry
+1162;Nomel Berry
+1163;Spelon Berry
+1164;Pamtre Berry
+1165;Watmel Berry
+1166;Durin Berry
+1167;Belue Berry
+1168;Liechi Berry
+1169;Ganlon Berry
+1170;Salac Berry
+1171;Petaya Berry
+1172;Apicot Berry
+1173;Lansat Berry
+1174;Starf Berry
+1175;Enigma Berry
+1179;{STRING_110230} Ocarina
+1180;{STRING_110015} Ocarina
+1181;{STRING_110019} Ocarina
+1182;{STRING_110057} Ocarina
+1183;{STRING_110070} Ocarina
+1184;{STRING_110148} Ocarina
+1185;{STRING_110249} Ocarina
+1186;{STRING_110127} Ocarina
+1187;{STRING_110291} Ocarina
+1188;{STRING_110431} Ocarina
+1189;{STRING_110432} Ocarina
+1190;100RP Reward Point Voucher
+1191;500RP Reward Point Voucher
+1192;1,000RP Reward Point Voucher
+1193;{STRING_245231} (Small)
+1194;Battle Box Expansion Drive
+1195;{STRING_110250} Ocarina
+1196;{STRING_110091} Ocarina
+1197;{STRING_110100} Ocarina
+1198;{STRING_110029} Ocarina
+1199;Ocarina Bundle
+1200;Occa Berry
+1201;Passho Berry
+1202;Wacan Berry
+1203;Rindo Berry
+1204;Yache Berry
+1205;Chople Berry
+1206;Kebia Berry
+1207;Shuca Berry
+1208;Coba Berry
+1209;Payapa Berry
+1210;Tanga Berry
+1211;Charti Berry
+1212;Kasib Berry
+1213;Haban Berry
+1214;Colbur Berry
+1215;Babiri Berry
+1216;Chilan Berry
+1217;Micle Berry
+1218;Custap Berry
+1219;Jaboca Berry
+1220;Rowap Berry
+1225;Red Envelope (2019)
+1226;Lucky Red Envelope (2019)
+1227;Red Firework
+1228;Purple Firework
+1229;Yellow Firework
+1230;Green Firework
+1231;Mandarin
+1232;Lucky Gold Coin
+1233;Lucky Copper Coin
+1234;Goodie Bag (2019)
+1235;Pumpking Goodie Bag (2019)
+1236;Broom Cookie
+1237;Bat Cookie
+1238;Pumpkin Cookie
+1239;Ghost Cookie
+1240;Cat Cookie
+1241;Red Envelope (2020)
+1242;Lucky Red Envelope (2020)
+1243;Firecrackers
+1244;Rat Token
+1245;Broom
+1246;Dragon Scale Blanket
+1247;Dumplings
+1248;Rare Candy
+1249;Jump Stone
+1250;Super HP Up
+1251;Hyper HP Up
+1252;Max HP Up
+1253;Super Protein
+1254;Hyper Protein
+1255;Max Protein
+1256;Super Iron
+1257;Hyper Iron
+1258;Max Iron
+1259;Super Carbos
+1260;Hyper Carbos
+1261;Max Carbos
+1262;Super Calcium
+1263;Hyper Calcium
+1264;Max Calcium
+1265;Super Zinc
+1266;Hyper Zinc
+1267;Max Zinc
+1270;Mysterious Gem Cluster
+1271;The Mystery of Jumpeon
+1272;Multi-Vitamin Pack
+1273;Breeding Assistance Pack
+1274;PVP Mystery Box
+1275;Move Tool Pack
+1276;Goodie Bag (2020)
+1277;Pumpking Goodie Bag (2020)
+1278;Xmas Present (2020)
+1279;Santa's Present (2020)
+1280;Evolution Charm
+1281;Mooncake
+1282;Strength Charm
+1283;Red Envelope (2021)
+1284;Lucky Red Envelope (2021)
+1285;Goodie Bag (2021)
+1286;Pumpking Goodie Bag (2021)
+1287;Self-Destruct Button
+1288;Repair Kit
+1289;Xmas Present (2021)
+1290;Santa's Present (2021)
+1291;Red Envelope (2022)
+1292;Lucky Red Envelope (2022)
+1293;Ability Patch (Fire)
+1294;Ability Patch (Grass)
+1295;Ability Patch (Water)
+1296;Ability Patch
+1297;Battle Box Expansion Drive
+1298;Pokémon
+1299;Anniversary Medallion
+1302;Hitodama Particle Effect
+1303;Bats Particle Effect
+1304;Ghosts Particle Effect
+1305;The Eye Particle Effect
+1306;Pumpking's Delight Particle Effect
+1307;Rising Star Particle Effect
+1308;Snowflake Particle Effect
+1309;Present Particle Effect
+1310;Paper Lantern Particle Effect
+1311;Fireworks Particle Effect
+1312;Pungent Stench Particle Effect
+1313;Black Hole Particle Effect
+1314;Witch's Haze Particle Effect
+1315;Pumpkid's Treat Particle Effect
+1316;Witch's Cat Particle Effect
+1317;Pumpcat Particle Effect
+1318;White Kitty Particle Effect
+1319;Spinning Scythe Particle Effect
+1320;Spider's Web Particle Effect
+1321;Zombie Grip Particle Effect
+1322;Zodiac Particle Effect
+1323;Eerie Howl Particle Effect
+1324;Graveyard Particle Effect
+1325;King's Fall Particle Effect
+1326;Red Dragon Particle Effect
+1327;Anniversary Cake Particle Effect
+1328;{STRING_250000} Friends Particle Effect
+1329;Shiny {STRING_250000} Friends Particle Effect
+1330;Menacing Spirit Particle Effect
+1331;Shiny Menacing Spirit Particle Effect
+1332;Xmas Decorations Particle Effect
+1333;Spirit of Spring Particle Effect
+1335;Phantom Particle Effect
+1336;Shiny Phantom Particle Effect
+1337;Dark Crystal Particle Effect
+1338;Shiny Dark Crystal Particle Effect
+1339;Lotus Field Particle Effect
+1340;Blood Lotus Field Particle Effect
+1400;{STRING_101120} (+25%)
+1401;{STRING_101120} (+50%)
+1402;{STRING_101120} (+100%)
+1403;{STRING_101122} (+25%)
+1404;{STRING_101122} (+50%)
+1405;{STRING_101122} (+100%)
+1406;{STRING_101124} (+25%)
+1407;{STRING_101124} (+50%)
+1408;{STRING_101124} (+100%)
+1409;{STRING_101126} (+10%)
+1410;{STRING_101126} (+15%)
+1411;{STRING_101126} (+20%)
+1412;{STRING_101128} (+75%)
+1413;{STRING_101128} (+100%)
+1414;{STRING_101128} (+150%)
+1415;EXP Candy (XS)
+1416;EXP Candy (S)
+1417;EXP Candy (M)
+1418;EXP Candy (L)
+1419;EXP Candy (XL)
+1420;Anniversary Chest
+1421;Golden Anniversary Chest
+1422;Prismatic Pearl
+1423;Assault Gear
+1424;Goodie Bag (2022)
+1425;Pumpking Goodie Bag (2022)
+1426;Reinforced Boots
+1427;Mysterious {STRING_245004} (2022)
+1428;Mysterious {STRING_245003} (2022)
+1429;Mysterious {STRING_245002} (2022)
+1430;Mysterious {STRING_245012} (2022)
+1431;Xmas Present (2022)
+1432;Santa's Present (2022)
+1433;Rat Zodiac Tablet
+1434;Ox Zodiac Tablet
+1435;Tiger Zodiac Tablet
+1436;Rabbit Zodiac Tablet
+1437;Dragon Zodiac Tablet
+1438;Snake Zodiac Tablet
+1439;Horse Zodiac Tablet
+1440;Goat Zodiac Tablet
+1441;Monkey Zodiac Tablet
+1442;Rooster Zodiac Tablet
+1443;Dog Zodiac Tablet
+1444;Pig Zodiac Tablet
+1445;Dying Flower
+1446;Gracidea
+1447;Pokémon
+1448;Pokémon
+1449;Pokémon
+1450;Pokémon
+1451;Pokémon
+1452;Pokémon
+1453;Pokémon
+1454;Pokémon
+1455;Pokémon
+1456;Pokémon
+1457;Pokémon
+1458;Pokémon
+1459;Pokémon
+1460;Pokémon
+1461;Pokémon
+1462;Pokémon
+1463;Pokémon
+1464;Pokémon
+1465;Pokémon
+1466;Pokémon
+1467;Pokémon
+1468;Pokémon
+1469;Pokémon
+1470;Pokémon
+1471;Pokémon
+1472;Red Envelope (2023)
+1473;Lucky Red Envelope (2023)
+1474;Rainbow Quill
+1475;Legendary Lure
+1476;Goodie Bag (2023)
+1477;Pumpking Goodie Bag (2023)
+1478;Mysterious {STRING_245004} (2023)
+1479;Mysterious {STRING_245003} (2023)
+1480;Mysterious {STRING_245002} (2023)
+1481;Mysterious {STRING_245012} (2023)
+1482;Elemental Orb
+1483;Wishing Stone
+1484;Mystic Mirror
+1485;Mysterious {STRING_245016} (2024)
+1486;Red Envelope (2024)
+1487;Lucky Red Envelope (2024)
+1488;Mellow Bait
+1489;Hearty Bait
+1490;Giant Bait
+1491;Witch Cookie
+1492;Werewolf Cookie
+1493;Mysterious Shard
+1494;Mysterious Handle
+1495;Carving Blade
+1496;Pumpkin Carving Knife
+1497;{STRING_150491} Summoning Orb
+1498;Mysterious {STRING_245013} (2024)
+1499;Dream Essence
+1500;{STRING_101116} (Elfbot)
+1501;{STRING_101118} (Elfbot)
+1502;{STRING_101116} (Robosanta)
+1503;{STRING_101118} (Robosanta)
+1504;{STRING_101116} (Elf)
+1505;{STRING_101118} (Elf)
+1506;Punching Gloves
+1507;Pure Amulet
+1508;Covert Mantle
+1509;Loaded Dice
+1510;Safety Goggles
+1511;Type Policy
+1512;Accident Policy
+1513;Mirror Herb
+1514;Throat Spray
+1515;Ability Guard
+1516;Protective Pads
+1517;Room Service
+1518;Eject Pack
+1519;Utility Umbrella
+1520;Snowball
+1521;Glowing Moss
+1522;Deep Black Sphere
+1523;Wilted Bouquet
+1524;Rejuvenated Bouquet
+1525;Nian Tablet
+1526;Blank Tablet
+1534;ElfUp: Gold Edition™
+1535;Attribute Recombinator
+1536;Energy Elixir
+1537;Lost Present
+1538;Lost Big Present
+1539;Teleport Gem
+1540;POKéNAV
+1541;POKéGEAR
+1542;Egg Incubator
+1543;Temporary Egg Incubator
+1544;Egg Incubator
+1547;Chum Bucket
+1570;Mystic Watch
+1571;Catcher's Bag
+1572;Strange Chunk
+1573;Dream Sphere
+1574;Goodie Bag (2024)
+1575;Pumpking Goodie Bag (2024)
+1576;Mysterious {STRING_245004} (2024)
+1577;Mysterious {STRING_245003} (2024)
+1578;Mysterious {STRING_245002} (2024)
+1579;{STRING_0}'s Wish Tag
+1580;Wishing Star
+1581;Blank Wish Tag
+1582;Xmas Present (2024)
+1583;Santa's Present (2024)
+1584;Mysterious {STRING_245016} (2025)
+1585;Red Envelope (2025)
+1586;Lucky Red Envelope (2025)
+1587;Mysterious {STRING_245013}
+1588;Goodie Bag
+1589;Pumpking Goodie Bag
+1590;Halloween Mystery Box
+1591;Lunar Wing
+1592;Mysterious {STRING_245004}
+1593;Mysterious {STRING_245003}
+1594;Mysterious {STRING_245002}
+1595;Relic Note
+1596;Xmas Present
+1597;Santa's Present
+1598;Xmas Mystery Box
+1599;Mysterious {STRING_245016}
+1600;Unknown Item
+1601;Unknown Item
+1602;Unknown Item
+1603;Unknown Item
+1604;Unknown Item
+1605;Unknown Item
+1606;Unknown Item
+1607;Unknown Item
+1608;Unknown Item
+1609;Unknown Item
+1610;Unknown Item
+1611;Unknown Item
+1612;Unknown Item
+1613;Unknown Item
+1614;Unknown Item
+1615;Unknown Item
+1616;Unknown Item
+1617;Unknown Item
+1618;Unknown Item
+1619;Unknown Item
+1620;Unknown Item
+1621;Unknown Item
+1622;Unknown Item
+1623;Unknown Item
+1624;Unknown Item
+1625;Unknown Item
+1626;Unknown Item
+1627;Unknown Item
+1628;Unknown Item
+1629;Unknown Item
+1630;Unknown Item
+1631;Unknown Item
+1632;Unknown Item
+1633;Unknown Item
+1634;Unknown Item
+1635;Unknown Item
+1636;Unknown Item
+1637;Unknown Item
+1638;Unknown Item
+1639;Unknown Item
+1640;Unknown Item
+1641;Unknown Item
+1642;Unknown Item
+1643;Unknown Item
+1644;Unknown Item
+1645;Unknown Item
+1646;Unknown Item
+1647;Unknown Item
+1648;Unknown Item
+1649;Unknown Item
+1650;Unknown Item
+1651;Unknown Item
+1652;Unknown Item
+1653;Unknown Item
+1654;Unknown Item
+1655;Unknown Item
+1656;Unknown Item
+1657;Unknown Item
+1658;Unknown Item
+1659;Unknown Item
+1660;Unknown Item
+1661;Unknown Item
+1662;Unknown Item
+1663;Unknown Item
+1664;Unknown Item
+1665;Unknown Item
+1666;Unknown Item
+1667;Unknown Item
+1668;Unknown Item
+1669;Unknown Item
+1670;Unknown Item
+1671;Unknown Item
+1672;Unknown Item
+1673;Unknown Item
+1674;Unknown Item
+1675;Unknown Item
+1676;Unknown Item
+1677;Unknown Item
+1678;Unknown Item
+1679;Unknown Item
+1680;Unknown Item
+1681;Unknown Item
+1682;Unknown Item
+1683;Unknown Item
+1684;Unknown Item
+1685;Unknown Item
+1686;Unknown Item
+1687;Unknown Item
+1688;Unknown Item
+1689;Unknown Item
+1690;Unknown Item
+1691;Unknown Item
+1692;Unknown Item
+1693;Unknown Item
+1694;Unknown Item
+1695;Unknown Item
+1696;Unknown Item
+1697;Unknown Item
+1698;Unknown Item
+1699;Unknown Item
+1700;Unknown Item
+1701;Unknown Item
+1702;Unknown Item
+1703;Unknown Item
+1704;Unknown Item
+1705;Unknown Item
+1706;Unknown Item
+1707;Unknown Item
+1708;Unknown Item
+1709;Unknown Item
+1710;Unknown Item
+1711;Unknown Item
+1712;Unknown Item
+1713;Unknown Item
+1714;Unknown Item
+1715;Unknown Item
+1716;Unknown Item
+1717;Unknown Item
+1718;Unknown Item
+1719;Unknown Item
+1720;Unknown Item
+1721;Unknown Item
+1722;Unknown Item
+1723;Unknown Item
+1724;Unknown Item
+1725;Unknown Item
+1726;Unknown Item
+1727;Unknown Item
+1728;Unknown Item
+1729;Unknown Item
+1730;Unknown Item
+1731;Unknown Item
+1732;Unknown Item
+1733;Unknown Item
+1734;Unknown Item
+1735;Unknown Item
+1736;Unknown Item
+1737;Unknown Item
+1738;Unknown Item
+1739;Unknown Item
+1740;Unknown Item
+1741;Unknown Item
+1742;Unknown Item
+1743;Unknown Item
+1744;Unknown Item
+1745;Unknown Item
+1746;Unknown Item
+1747;Unknown Item
+1748;Unknown Item
+1749;Unknown Item
+1750;Unknown Item
+1751;Unknown Item
+1752;Unknown Item
+1753;Unknown Item
+1754;Unknown Item
+1755;Unknown Item
+1756;Unknown Item
+1757;Unknown Item
+1758;Unknown Item
+1759;Unknown Item
+1760;Unknown Item
+1761;Unknown Item
+1762;Unknown Item
+1763;Unknown Item
+1764;Unknown Item
+1765;Unknown Item
+1766;Unknown Item
+1767;Unknown Item
+1768;Unknown Item
+1769;Unknown Item
+1770;Unknown Item
+1771;Unknown Item
+1772;Unknown Item
+1773;Unknown Item
+1774;Unknown Item
+1775;Unknown Item
+1776;Unknown Item
+1777;Unknown Item
+1778;Unknown Item
+1779;Unknown Item
+1780;Unknown Item
+1781;Unknown Item
+1782;Unknown Item
+1900;Plume of Feathers
+1901;Red Envelope
+1902;Lucky Red Envelope
+1903;Lunar New Year Mystery Box
+2256;Ocean Bandana
+2257;Backwards Cap
+2258;Bandana
+2259;Beanie
+2260;Beret
+2261;Swimming Cap
+2262;Blue Turtle Hat
+2263;Boater
+2264;Bow
+2265;Derby
+2266;Veil
+2267;Cap
+2268;Chef Hat
+2269;Santa Hat
+2270;Visor Cap
+2271;Classic Cap
+2272;Cowboy Hat
+2273;Elf Hat
+2274;Explorer's Hat
+2275;Fedora
+2276;Fez
+2277;Flat Cap
+2278;Reflective Goggles
+2279;Headband
+2280;Headphones
+2281;Fighter's Headband
+2282;Guardian Hat
+2283;Hood
+2284;Black Cat Ears
+2285;Knight Helmet
+2286;Kyu Hat
+2287;Lava Hood
+2288;Ninja Mask
+2289;Nurse Hat
+2290;Pink Cat Ears
+2291;Liberty Hood
+2292;Pointy Yellow Ears
+2293;Pointed Hat
+2294;Newsboy Cap
+2295;R Cap
+2296;Peaked Cap
+2297;Chunky Beret
+2298;Stripy Cap
+2299;Backwards Stripy Cap
+2300;Teddy Ears
+2301;Top Hat
+2302;Tricorne
+2303;Viking Helmet
+2304;Big Straw Hat
+2305;Bunny Ears
+2306;Two Tone Cap
+2307;Floppy Bunny Ears
+2308;Get Out Hat
+2309;Horns
+2310;Halo
+2311;Candy Horns
+2312;Cap & Sunglasses
+2313;Boater & Sunglasses
+2314;Fennec Fox Ears
+2315;Blue Frog Hat
+2316;Chestnut Hat
+2317;White Cat Ears
+2318;Motorcycle Helmet
+2319;Spartan Helmet
+2320;Party Hat
+2321;Camping Cap
+2322;Cloud Nest Hat
+2323;Conical
+2324;Watch Cap
+2325;Straw Hat
+2326;Jester Hat
+2327;Breeder's Bandana
+2328;Blue Flaming Skull Mask
+2329;Dragon Antlers
+2330;Rock Helmet
+2331;Side Tie Bandana
+2332;Sweatband
+2333;Wyrm Worm
+2334;Bug Catcher's Hat
+2335;Emerald Knit Hat
+2336;Orange Flaming Skull Mask
+2337;Horse Head
+2338;Pillar of Hats
+2340;Bobble Hat
+2341;Reindeer Antlers
+2342;Bird Nest Hat
+2343;Jack-O-Lantern Mask
+2344;Vampire Fangs
+2345;Ghost Costume
+2346;Holly Hairclip
+2347;Santa's Little Helper Hat
+2348;Propeller Cap
+2349;Plumber's Cap
+2351;Scary Hockey Mask
+2352;Earmuffs
+2353;Nutcracker Hat
+2354;Bones Cap
+2355;Neo Liberty Hat
+2356;Electric Elfbot Hat
+2357;Grass Elfbot Hat
+2358;Psychic Elfbot Hat
+2359;Water Elfbot Hat
+2360;Fire Elfbot Hat
+2361;Ground Elfbot Hat
+2362;League Expo Cap
+2363;Duck Cap
+2364;Lillipad Sombrero
+2365;Mining Hard Hat
+2366;Sailor Cap
+2367;Patriotic Top Hat
+2368;Football Helmet
+2369;Baseball Cap
+2370;Kufi Cap
+2371;Sky Helmet
+2372;Black Reaper Hood
+2373;Penguin Hood
+2374;Snowman Hood
+2375;Frog Hood
+2376;Rudolph's Antlers
+2378;Turkey Hat
+2379;Land Snake Hat
+2380;Samurai Helmet
+2381;Sleigh Bell Ribbons
+2382;Gingerbread Head
+2383;Fighting Elfbot Hat
+2384;Flying Elfbot Hat
+2385;Poison Elfbot Hat
+2386;Rock Elfbot Hat
+2387;Bug Elfbot Hat
+2388;Ghost Elfbot Hat
+2389;Steel Elfbot Hat
+2390;Ice Elfbot Hat
+2391;Dragon Elfbot Hat
+2392;Dark Elfbot Hat
+2393;Panda Hood
+2394;Bear Hood
+2395;Bunny Hood
+2396;Pink LED Cat Headphones
+2397;Blue LED Cat Headphones
+2398;Space Helmet
+2399;Pilot Cap
+2400;Leprechaun Top Hat
+2401;Jungle Explorer's Hat
+2402;Android Cap
+2403;Blue Dragon Head
+2404;Blue Dragon Body
+2405;Blue Dragon Tail
+2406;Red Dragon Head
+2407;Red Dragon Body
+2408;Red Dragon Tail
+2409;Lion Hood
+2410;Mummy Head Wrap
+2411;Pharaoh Headdress
+2412;Monkey Hood
+2413;Bee Hairband
+2414;Pirate Hat
+2415;Gladiator Helmet
+2416;Bronze Beauty Tiara
+2417;Bronze Cool Tiara
+2418;Bronze Cute Tiara
+2419;Bronze Smart Tiara
+2420;Bronze Tough Tiara
+2421;Silver Beauty Tiara
+2422;Silver Cool Tiara
+2423;Silver Cute Tiara
+2424;Silver Smart Tiara
+2425;Silver Tough Tiara
+2426;Gold Beauty Tiara
+2427;Gold Cool Tiara
+2428;Gold Cute Tiara
+2429;Gold Smart Tiara
+2430;Gold Tough Tiara
+2431;Bronze NU Crown
+2432;Bronze UU Crown
+2433;Bronze OU Crown
+2434;Silver NU Crown
+2435;Silver UU Crown
+2436;Silver OU Crown
+2437;Gold NU Crown
+2438;Gold UU Crown
+2439;Gold OU Crown
+2440;Bronze Spring Crown
+2441;Silver Spring Crown
+2442;Gold Spring Crown
+2443;Bronze Summer Crown
+2444;Silver Summer Crown
+2445;Gold Summer Crown
+2446;Bronze Autumn Crown
+2447;Silver Autumn Crown
+2448;Gold Autumn Crown
+2449;Bronze Winter Crown
+2450;Silver Winter Crown
+2451;Gold Winter Crown
+2452;Bycocket
+2453;White Plague Doctor Mask
+2454;Red Reaper Hood
+2455;Aura Cap
+2456;Grassquerade Mask
+2457;Zombie Head
+2458;Ghostly Pointed Hat
+2459;Ecto Goggles
+2460;Aviator Helmet
+2461;Turkey Hood
+2462;Reindeer Hood
+2463;Detective Cap
+2464;Military Cap
+2465;Yawn Hood
+2466;Phoenix Hood
+2467;Hellcat Hood
+2468;Boar Hood
+2469;Pig Hood
+2470;Tropical Beanie
+2471;Fire Bunny Ears
+2472;Grass Chimp Hood
+2473;Water Newt Hat
+2474;Sombrero
+2475;Cycling Helmet
+2476;Ball Hairclip
+2477;Polygon Cap
+2478;Iron Hero Helmet
+2479;Fairy Fox Ears
+2480;Berd Hat
+2481;Owl Hood
+2482;Kitten Hat
+2483;Otter Hood
+2484;Snake Hat
+2485;Pig Cap
+2486;Sealion Cap
+2487;Squirrel Hairband
+2488;Sheep Hood
+2489;Flower Hairclip
+2490;Shell Turban
+2491;Lederhosen Hat
+2492;Clown Hat
+2493;Beaver Hat
+2494;Kaiju Hood
+2495;Pumpkin Cap
+2499;Black Plague Doctor Mask
+2503;Hair Ribbons
+2504;Pumpkin Hood
+2505;Brown Rat Hat
+2506;Helix Hat
+2507;Dome Helmet
+2508;Purple Rat Hat
+2509;Black Rat Hat
+2510;Snow Mountain Beanie
+2511;UFO Hat
+2512;Default Hair
+2513;Afro
+2517;Sideswept
+2521;Disco Afro
+2526;Faux Hawk
+2535;Reverse Scene
+2554;THE ELECTRIC STORM
+2558;Idol Hairstyle
+2559;Golden Cuffed Ponytail
+2560;Mermaid Hair
+2561;Mermaid Hair (Alt)
+2562;Elven Ponytail
+2563;Elegant Ponytail
+2565;Origin Hairstyle
+2566;Colorful Unicorn Hair
+2771;Glasses
+2772;Rockstar
+2773;Sunglasses
+2776;Swimming Goggles
+2777;Red Contacts
+2780;Amethyst Contacts
+2784;Violet Contacts
+2785;Flame Glasses
+2786;Joke Glasses
+2787;Villain Mask
+3029;Moustache
+3031;Eyebrows & Moustache
+3044;Santa Beard
+3045;Kitty Face Mask
+3046;Frowny Face Mask
+3047;Cheeky Face Mask
+3280;Angel Wings
+3281;Backpack
+3282;Cape
+3283;Devil Wings
+3284;Fairy Wings
+3285;Shoulder Bag
+3286;Scythe
+3287;Butterfly Wings
+3288;Ban Hammer
+3289;Fancy Butterfly Wings
+3290;Witch's Broomstick
+3291;Pumpkin Backpack
+3292;Candy Cane
+3293;Pink Candy Cane
+3294;Gingerbread Man
+3295;Scarf
+3296;Fox Tail
+3297;Raccoon Tail
+3298;White Kitty Tail
+3299;Winged Heart Backpack
+3300;Poncho
+3301;Bug Catcher's Net
+3302;Black Kitty Tail
+3303;Ninja Scarf
+3304;Collared Cape
+3305;Hex Cloak
+3306;Double Faced Scarf
+3307;Easter Egg Backpack
+3308;Chipmunk Tail
+3309;Proto Pack
+3310;Turkey Tail
+3311;Pitchfork
+3312;Katana
+3313;Xmas Lights
+3314;Golden Dragon Tail
+3315;Phoenix Tail
+3316;Xmas Wreath
+3317;Pig Tail
+3318;Hiking Backpack
+3319;Acoustic Guitar
+3320;Squirrel Tail
+3321;Red Xmas Stocking
+3322;Rat Tail
+3323;Green Xmas Stocking
+3324;Blue Xmas Stocking
+3325;Yellow Xmas Stocking
+3326;Small Purple Rat Tail
+3327;Small Black Rat Tail
+3328;Speckled Moth Wings
+3329;Leaf Wings
+3330;Crook & Flail
+3331;Spooky Arms
+3332;Toy Plane
+3333;Retro Games Handheld
+3334;Teddy Bear
+3335;Xmas Gift Sack
+3336;Ox Tail
+3337;General's War Fan
+3338;Carnival Backpiece
+3339;Mage's Staff
+3340;Nutcracker Doll
+3341;Tiger Tail
+3342;Bronze Team Trophy
+3343;Silver Team Trophy
+3344;Gold Team Trophy
+3345;Pointed Yellow Tail
+3346;Giant Turtle Shell
+3347;Paladin's Shield
+3348;Glistening Blue Wings
+3349;STRING_25069
+3350;STRING_25070
+3351;STRING_25071
+3352;STRING_25072
+3353;Glistening Purple Wings
+3354;STRING_25074
+3355;STRING_25075
+3356;STRING_25076
+3357;STRING_25077
+3358;Green Unity Cape
+3359;Red Unity Cape
+3360;Bunny Tail
+3361;Bronze Cup of the Year Trophy
+3362;Silver Cup of the Year Trophy
+3363;Gold Cup of the Year Trophy
+3364;Volcano Beast Wings
+3365;Skeleton Wings
+3366;Temporal Cape
+3367;Battle Axe
+3368;Dragon Wings
+3369;Shovel
+3370;Skull Moth Wings
+3371;Shadow Cape
+3372;Fire Dragon Wings
+3373;Charcoal Dragon Wings
+3374;Sparkling Charcoal Dragon Wings
+3375;Yellow Wasp Abdomen
+3376;Shiny Wasp Abdomen
+3378;Snowboarder Scarf
+3379;Star Backpiece
+3380;Snow Leopard Tail
+3381;Elegant Scarf
+3382;Sand Snake Scarf
+3383;Ancient Coin
+3384;Orange Flaming Wings
+3385;Blue Flaming Wings
+3386;Strange Tentacles
+3387;Elven Quiver
+3388;Red Petal Scarf
+3389;Origin Ring
+3390;Flower Cape
+3536;Desu's Lab Coat (Colour)
+3537;Overcoat
+3538;Sleeveless Top
+3539;T-Shirt
+3540;Vest
+3541;Long Sleeve Top
+3542;Yellow Overalls
+3543;Tuxedo
+3544;R Uniform
+3545;Zodiac Dragon Outfit
+3546;Santa Suit
+3547;Desu's Lab Coat
+3548;STRING_26012
+3549;Santa's Little Helper Outfit
+3550;Lava Uniform
+3551;Blue Overalls
+3552;Cool Jacket
+3553;Pink Overalls
+3554;Gi
+3555;Turtle Gi
+3556;Crossed Jumper
+3557;Combat Armor
+3558;Skeleton Costume
+3559;Breeder's Overalls
+3560;Fishing Outfit
+3561;Elf Tunic
+3562;Nutcracker Uniform
+3563;Ocean Uniform
+3564;White Striped Top
+3565;Maid Outfit
+3566;Galaxy Uniform
+3567;Flame Uniform
+3568;Bones Uniform
+3569;Neo Liberty Uniform
+3570;Electric Elfbot Outfit
+3571;Grass Elfbot Outfit
+3572;Psychic Elfbot Outfit
+3573;Water Elfbot Outfit
+3574;Fire Elfbot Outfit
+3575;Ground Elfbot Outfit
+3576;Trainer's Jacket
+3577;Ranger Uniform
+3578;Groom Suit
+3579;Liberty Uniform
+3580;Restaurant Uniform
+3581;Varsity Jacket
+3582;Lab Coat
+3583;Explorer's Outfit
+3584;Camping Outfit
+3585;Sage's Robe
+3586;Engineer's Overalls
+3587;Sailor Uniform
+3588;White R Uniform
+3589;Hiking Clothing
+3590;Baseball Jersey
+3591;Football Jersey
+3592;Sky Suit
+3593;Ninja Outfit
+3594;Fire Performer's Outfit
+3595;Ski Suit
+3596;Gardener's Overalls
+3597;Punk Jacket
+3598;Soccer Jersey
+3599;Basketball Jersey
+3600;Business Suit
+3601;Penguin Costume
+3602;Psychic Tunic
+3603;Snowman Costume
+3604;Chef Uniform
+3605;Frog Costume
+3606;Cowboy Clothing
+3607;Clown Outfit
+3608;Tracksuit
+3609;Police Officer Uniform
+3610;Gingerbread Costume
+3611;Viking Tunic
+3612;Fighting Elfbot Outfit
+3613;Flying Elfbot Outfit
+3614;Poison Elfbot Outfit
+3615;Rock Elfbot Outfit
+3616;Bug Elfbot Outfit
+3617;Ghost Elfbot Outfit
+3618;Steel Elfbot Outfit
+3619;Ice Elfbot Outfit
+3620;Dragon Elfbot Outfit
+3621;Dark Elfbot Outfit
+3622;Samurai Armor
+3623;Bug Enthusiast Outfit
+3624;Traditional Monk Robes
+3625;Panda Costume
+3626;Bear Costume
+3627;Bunny Costume
+3628;Space Suit
+3629;Paramedic Uniform
+3630;Pilot Uniform
+3631;Leprechaun Suit
+3632;Patriotic Suit
+3633;Lion Costume
+3634;Mummy Body Wrap
+3635;Monkey Costume
+3636;Bee Costume
+3637;Wedding Dress
+3638;Aura Jacket
+3639;Captain's Coat
+3640;Grassquerade Outfit
+3641;Zombie Costume
+3642;Ghost Purging Outfit
+3643;Turkey Costume
+3644;Reindeer Costume
+3645;Military Uniform
+3646;Yawn Costume
+3647;Phoenix Robe
+3648;Ice Spirit Robe
+3649;Hellcat Costume
+3650;Boar Costume
+3651;Pig Costume
+3652;Fantasy Princess Dress
+3653;Gladiator Uniform
+3654;Super Hero Costume
+3655;Pirate Outfit
+3656;Music Idol Outfit
+3657;Iron Hero Costume
+3658;Nurse Uniform
+3659;Racing Outfit
+3660;Lederhosen
+3661;Worker's Outfit
+3662;Toga
+3664;Kaiju Costume
+3665;Brown School Uniform
+3666;Tamer Outfit
+3667;Black Pinstripe Suit
+3668;Pumpkin Costume
+3669;Xmas Sweater
+3671;Rat Costume
+3672;Small Purple Rat Costume
+3673;Small Black Rat Costume
+3674;Frosty Tree Outfit
+3675;Werewolf Costume
+3676;Changshan
+3677;Wrestling Outfit
+3678;Rock 'n Roll Outfit
+3679;Pharaoh Outfit
+3680;Traditional New Year Outfit
+3681;Archer's Tunic
+3682;Newsboy Outfit
+3683;Ice Cream Clerk Uniform
+3684;Artist's Overalls
+3685;Writer's Outfit
+3686;Normal Elfbot Outfit
+3687;Ox Costume
+3688;Apron
+3689;Cow Costume
+3690;Shinigami Robe
+3691;Milk Delivery Uniform
+3692;Carnival Outfit
+3693;Builder Overalls
+3694;Tiger Costume
+3695;Fire Dragon Robes
+3696;Summer School Uniform
+3697;Red Christmas Present Costume
+3698;Blue Christmas Present Costume
+3699;Green Christmas Present Costume
+3700;Pink Christmas Present Costume
+3701;Thick Winter Coat
+3702;Legendary Blue Robes
+3703;Legendary Purple Robes
+3704;Thunder Beast Daopao
+3705;Fairy Elfbot Outfit
+3706;Candy Corn Sweater
+3707;Star Bodysuit
+3708;Snow Leopard Outfit
+3709;Red Wishmaker Robes
+3710;Teal Wishmaker Robes
+3711;Green Sky Serpent Armor
+3712;Black Sky Serpent Armor
+3713;Cobra Hoodie
+3714;Sand Snake Coat
+3715;Zodiac Tangzhuang
+3716;Frankenstein Coat
+3717;Puffy Witch Dress
+3718;Mermaid Costume
+3719;Elven Outfit
+3720;Peppermint Shirt
+3721;Festive Dress
+3722;Spruce Coat
+3723;Peace Apple Overalls
+3724;Musketeer Tabard
+3725;Origin Outfit
+3792;Unknown Item
+3793;Gloves
+3794;Torch
+3797;Lollipop
+3798;Microphone
+3799;Bone Club
+3800;Shadow Bone Club
+3801;Ghostly Lantern
+3802;Trick or Treat Bucket
+3803;Halloween Treat Bucket
+3805;Boxing Gloves
+3806;Teal Star Rod
+3807;Red Star Rod
+3808;Orange Flaming Sword
+3809;Blue Flaming Sword
+3810;Elven Bow
+3811;Musketeer Rapier
+4048;Boots
+4049;Shoes
+4050;Candy Corn Shoes
+4304;Pants
+4305;Shorts
+4306;Skirt
+4307;Grass Skirt
+4308;Candy Corn Pants
+4309;Frankenstein Pants
+4310;Spruce Pants
+4560;Fishing Rod
+4561;Watering Can
+4576;Bronze Doubles Crown
+4577;Silver Doubles Crown
+4578;Gold Doubles Crown
+4579;Werewolf Hood
+4580;Turban
+4581;Flower Crown
+4582;Forest Mushroom Cap
+4583;Polar Bear Cap
+4584;Jellyfish Hat
+4585;Red Oni Mask
+4586;Hard Hat
+4587;Hiking Hat
+4591;Coconut Tree Hat
+4592;Eagle Headdress
+4593;Burger Hat
+4594;Red Eyeball Mask
+4597;Green Eyeball Mask
+4600;Futou
+4601;Baby Bonnet & Pacifier
+4602;Winged Helmet
+4603;Ice Cream Hood
+4604;Easter Basket Hat
+4605;Normal Elfbot Hat
+4606;Snow Globe Hat
+4609;Ox Horns
+4610;Golden Dragon Mask
+4611;Nian Hood
+4617;Cursed Mask
+4618;Sou'wester Hat
+4619;Acorn Hat
+4620;Cow Hood
+4621;Clam Shell Hat
+4622;Drinking Cap
+4623;Apple Pie Hat
+4624;Bronze Randoms Crown
+4625;Silver Randoms Crown
+4626;Gold Randoms Crown
+4627;Grey Werewolf Mask
+4631;Brown Werewolf Mask
+4635;Mage's Hat
+4636;Starlight Bobble Hat
+4639;Tiger Hood
+4640;Golden Tiger Mask
+4647;Shiny Nian Hood
+4648;Red Mandarin Hat
+4649;Koban
+4650;PokeMMO Cap
+4651;Poisonous Flower Hat
+4652;Psychic Training Helmet
+4653;Fishing Cap
+4654;Crab Hat
+4655;Jousting Knight's Helmet
+4656;Bone Helmet
+4657;Cult Mask
+4658;Green Cthulhu Mask
+4659;Purple Cthulhu Mask
+4660;Skull Helmet
+4661;Shadow Skull Helmet
+4662;Red Christmas Present Hat
+4663;Blue Christmas Present Hat
+4664;Green Christmas Present Hat
+4665;Pink Christmas Present Hat
+4666;Psychic Bird Mask
+4667;Golden Rabbit Mask
+4668;Green Harvest Crown
+4669;Red Harvest Crown
+4670;White Rabbit Plush
+4671;Spring Flower Hairpin
+4672;Gloria
+4673;Cavalier Hat
+4674;Scary Clown Mask
+4675;Explosive Hat
+4676;Aurora Beast Mane
+4677;Kitsune Mask
+4678;Bat Hat
+4679;Trick Kitty
+4680;Trick Kitty (Alt)
+4681;Pumpcat
+4682;Pumpcat (Alt)
+4683;Mini Halloween Top Hat
+4684;Fairy Elfbot Hat
+4685;Flaming Demon Skull
+4686;Flaming Demon Skull (Alt)
+4687;Blue Flaming Demon Skull
+4688;Blue Flaming Demon Skull (Alt)
+4689;Ghostly Candle
+4690;Spooky Beanie
+4691;Star Cone Hat
+4692;Snow Leopard Ears
+4693;Red Wish Tag Earrings
+4694;Teal Wish Tag Earrings
+4695;Tiny White Wings
+4696;Elegant Antennae
+4697;Coiled Snake Hat
+4698;Charcoal Dragon Horns
+4699;Frankenstein Mask
+4700;Puffy Witch Hat
+4701;Cyclops Mask
+4702;Demon Horns
+4703;Springy Mushroom
+4704;Noh Mask
+4705;Green Slime
+4706;Deer Skull
+4707;Demon Queen Crown
+4708;Froggy
+4709;Red Lotus Crown
+4710;Weasel Headdress
+4711;Star Hairband
+4712;Christmas Present Hat
+4713;Ice Horns
+4714;Melty the Snowman
+4715;Pudgy Penguin
+4716;Christmas Camo
+4717;Christmas Camo (Alt)
+4718;Peace Apple Hat
+4719;Horse Plush
+4720;Musketeer Hat (No Braid)
+4721;Panda Hat
+4722;Gold Hair Ornament
+4723;Red Tassel Hairclips
+4724;Horse Mask
+4725;Musketeer Hat
+4726;Musketeer Hat (No Hat)
+4727;Plum Blossom Hairpin
+4728;Festive Lion Mask
+4816;Red Bicycle
+4817;Black Bicycle
+4818;Motorcycle
+4819;Blue Bicycle
+4820;Brown Bicycle
+4821;Green Bicycle
+4822;Orange Bicycle
+4823;Pink Bicycle
+4824;Purple Bicycle
+4825;Silver Bicycle
+4826;White Bicycle
+4827;Yellow Bicycle
+4828;Red Christmas Sleigh
+4829;STRING_31013
+4830;STRING_31014
+4831;STRING_31015
+4832;STRING_31016
+4833;Flaming Motorcycle
+4834;STRING_31018
+4835;STRING_31019
+4836;STRING_31020
+4837;STRING_31021
+4838;STRING_31022
+4839;STRING_31023
+4840;STRING_31024
+4841;STRING_31025
+4842;STRING_31026
+4843;STRING_31027
+4844;Lucky Red Dragon
+4845;STRING_31029
+4846;Lucky Gold Dragon
+4847;STRING_31031
+4856;Blue Flaming Motorcycle
+4857;STRING_31041
+4858;STRING_31042
+4859;STRING_31043
+4860;STRING_31044
+4861;STRING_31045
+4862;STRING_31046
+4863;STRING_31047
+4864;STRING_31048
+4865;STRING_31049
+4866;STRING_31050
+4867;Purple Christmas Sleigh
+4868;Xuanwu
+4869;STRING_31053
+4870;STRING_31054
+4871;STRING_31055
+4872;STRING_31056
+4873;Rudolph
+4874;STRING_31058
+4875;STRING_31059
+4876;STRING_31060
+4877;STRING_31061
+4878;Noble Steed
+4879;STRING_31063
+4880;STRING_31064
+4881;STRING_31065
+4882;STRING_31066
+4883;Noble Steed (Alt)
+4884;STRING_31068
+4885;STRING_31069
+4886;STRING_31070
+4887;STRING_31071
+5000;None
+5001;Master Ball
+5002;Ultra Ball
+5003;Great Ball
+5004;Poké Ball
+5005;Safari Ball
+5006;Net Ball
+5007;Dive Ball
+5008;Nest Ball
+5009;Repeat Ball
+5010;Timer Ball
+5011;Luxury Ball
+5012;Premier Ball
+5013;Dusk Ball
+5014;Heal Ball
+5015;Quick Ball
+5016;Cherish Ball
+5017;Potion
+5018;Antidote
+5019;Burn Heal
+5020;Ice Heal
+5021;Awakening
+5022;Parlyz Heal
+5023;Full Restore
+5024;Max Potion
+5025;Hyper Potion
+5026;Super Potion
+5027;Full Heal
+5028;Revive
+5029;Max Revive
+5030;Fresh Water
+5031;Soda Pop
+5032;Lemonade
+5033;Moomoo Milk
+5034;EnergyPowder
+5035;Energy Root
+5036;Heal Powder
+5037;Revival Herb
+5038;Ether
+5039;Max Ether
+5040;Elixir
+5041;Max Elixir
+5042;Lava Cookie
+5043;Berry Juice
+5044;Sacred Ash
+5045;HP Up
+5046;Protein
+5047;Iron
+5048;Carbos
+5049;Calcium
+5050;Rare Candy
+5051;PP Up
+5052;Zinc
+5053;PP Max
+5054;Old Gateau
+5055;Guard Spec.
+5056;Dire Hit
+5057;X Attack
+5058;X Defend
+5059;X Speed
+5060;X Accuracy
+5061;X Special
+5062;X Sp. Def
+5063;Poké Doll
+5064;Fluffy Tail
+5065;Blue Flute
+5066;Yellow Flute
+5067;Red Flute
+5068;Black Flute
+5069;White Flute
+5070;Shoal Salt
+5071;Shoal Shell
+5072;Red Shard
+5073;Blue Shard
+5074;Yellow Shard
+5075;Green Shard
+5076;Super Repel
+5077;Max Repel
+5078;Escape Rope
+5079;Repel
+5080;Sun Stone
+5081;Moon Stone
+5082;Fire Stone
+5083;Thunderstone
+5084;Water Stone
+5085;Leaf Stone
+5086;TinyMushroom
+5087;Big Mushroom
+5088;Pearl
+5089;Big Pearl
+5090;Stardust
+5091;Star Piece
+5092;Nugget
+5093;Heart Scale
+5094;Honey
+5095;Growth Mulch
+5096;Damp Mulch
+5097;Stable Mulch
+5098;Gooey Mulch
+5099;Root Fossil
+5100;Claw Fossil
+5101;Helix Fossil
+5102;Dome Fossil
+5103;Old Amber
+5104;Armor Fossil
+5105;Skull Fossil
+5106;Rare Bone
+5107;Shiny Stone
+5108;Dusk Stone
+5109;Dawn Stone
+5110;Oval Stone
+5111;Odd Keystone
+5112;Griseous Orb
+5113;???
+5114;???
+5115;???
+5116;Douse Drive
+5117;Shock Drive
+5118;Burn Drive
+5119;Chill Drive
+5120;???
+5121;???
+5122;???
+5123;???
+5124;???
+5125;???
+5126;???
+5127;???
+5128;???
+5129;???
+5130;???
+5131;???
+5132;???
+5133;???
+5134;Sweet Heart
+5135;Adamant Orb
+5136;Lustrous Orb
+5137;Greet Mail
+5138;Favored Mail
+5139;RSVP Mail
+5140;Thanks Mail
+5141;Inquiry Mail
+5142;Like Mail
+5143;Reply Mail
+5144;BridgeMail S
+5145;BridgeMail D
+5146;BridgeMail T
+5147;BridgeMail V
+5148;BridgeMail M
+5149;Cheri Berry
+5150;Chesto Berry
+5151;Pecha Berry
+5152;Rawst Berry
+5153;Aspear Berry
+5154;Leppa Berry
+5155;Oran Berry
+5156;Persim Berry
+5157;Lum Berry
+5158;Sitrus Berry
+5159;Figy Berry
+5160;Wiki Berry
+5161;Mago Berry
+5162;Aguav Berry
+5163;Iapapa Berry
+5164;Razz Berry
+5165;Bluk Berry
+5166;Nanab Berry
+5167;Wepear Berry
+5168;Pinap Berry
+5169;Pomeg Berry
+5170;Kelpsy Berry
+5171;Qualot Berry
+5172;Hondew Berry
+5173;Grepa Berry
+5174;Tamato Berry
+5175;Cornn Berry
+5176;Magost Berry
+5177;Rabuta Berry
+5178;Nomel Berry
+5179;Spelon Berry
+5180;Pamtre Berry
+5181;Watmel Berry
+5182;Durin Berry
+5183;Belue Berry
+5184;Occa Berry
+5185;Passho Berry
+5186;Wacan Berry
+5187;Rindo Berry
+5188;Yache Berry
+5189;Chople Berry
+5190;Kebia Berry
+5191;Shuca Berry
+5192;Coba Berry
+5193;Payapa Berry
+5194;Tanga Berry
+5195;Charti Berry
+5196;Kasib Berry
+5197;Haban Berry
+5198;Colbur Berry
+5199;Babiri Berry
+5200;Chilan Berry
+5201;Liechi Berry
+5202;Ganlon Berry
+5203;Salac Berry
+5204;Petaya Berry
+5205;Apicot Berry
+5206;Lansat Berry
+5207;Starf Berry
+5208;Enigma Berry
+5209;Micle Berry
+5210;Custap Berry
+5211;Jaboca Berry
+5212;Rowap Berry
+5213;BrightPowder
+5214;White Herb
+5215;Macho Brace
+5216;Exp. Share
+5217;Quick Claw
+5218;Soothe Bell
+5219;Mental Herb
+5220;Choice Band
+5221;King's Rock
+5222;SilverPowder
+5223;Amulet Coin
+5224;Cleanse Tag
+5225;Soul Dew
+5226;DeepSeaTooth
+5227;DeepSeaScale
+5228;Smoke Ball
+5229;Everstone
+5230;Focus Band
+5231;Lucky Egg
+5232;Scope Lens
+5233;Metal Coat
+5234;Leftovers
+5235;Dragon Scale
+5236;Light Ball
+5237;Soft Sand
+5238;Hard Stone
+5239;Miracle Seed
+5240;BlackGlasses
+5241;Black Belt
+5242;Magnet
+5243;Mystic Water
+5244;Sharp Beak
+5245;Poison Barb
+5246;NeverMeltIce
+5247;Spell Tag
+5248;TwistedSpoon
+5249;Charcoal
+5250;Dragon Fang
+5251;Silk Scarf
+5252;Up-Grade
+5253;Shell Bell
+5254;Sea Incense
+5255;Lax Incense
+5256;Lucky Punch
+5257;Metal Powder
+5258;Thick Club
+5259;Stick
+5260;Red Scarf
+5261;Blue Scarf
+5262;Pink Scarf
+5263;Green Scarf
+5264;Yellow Scarf
+5265;Wide Lens
+5266;Muscle Band
+5267;Wise Glasses
+5268;Expert Belt
+5269;Light Clay
+5270;Life Orb
+5271;Power Herb
+5272;Toxic Orb
+5273;Flame Orb
+5274;Quick Powder
+5275;Focus Sash
+5276;Zoom Lens
+5277;Metronome
+5278;Iron Ball
+5279;Lagging Tail
+5280;Destiny Knot
+5281;Black Sludge
+5282;Icy Rock
+5283;Smooth Rock
+5284;Heat Rock
+5285;Damp Rock
+5286;Grip Claw
+5287;Choice Scarf
+5288;Sticky Barb
+5289;Power Bracer
+5290;Power Belt
+5291;Power Lens
+5292;Power Band
+5293;Power Anklet
+5294;Power Weight
+5295;Shed Shell
+5296;Big Root
+5297;Choice Specs
+5298;Flame Plate
+5299;Splash Plate
+5300;Zap Plate
+5301;Meadow Plate
+5302;Icicle Plate
+5303;Fist Plate
+5304;Toxic Plate
+5305;Earth Plate
+5306;Sky Plate
+5307;Mind Plate
+5308;Insect Plate
+5309;Stone Plate
+5310;Spooky Plate
+5311;Draco Plate
+5312;Dread Plate
+5313;Iron Plate
+5314;Odd Incense
+5315;Rock Incense
+5316;Full Incense
+5317;Wave Incense
+5318;Rose Incense
+5319;Luck Incense
+5320;Pure Incense
+5321;Protector
+5322;Electirizer
+5323;Magmarizer
+5324;Dubious Disc
+5325;Reaper Cloth
+5326;Razor Claw
+5327;Razor Fang
+5328;TM01
+5329;TM02
+5330;TM03
+5331;TM04
+5332;TM05
+5333;TM06
+5334;TM07
+5335;TM08
+5336;TM09
+5337;TM10
+5338;TM11
+5339;TM12
+5340;TM13
+5341;TM14
+5342;TM15
+5343;TM16
+5344;TM17
+5345;TM18
+5346;TM19
+5347;TM20
+5348;TM21
+5349;TM22
+5350;TM23
+5351;TM24
+5352;TM25
+5353;TM26
+5354;TM27
+5355;TM28
+5356;TM29
+5357;TM30
+5358;TM31
+5359;TM32
+5360;TM33
+5361;TM34
+5362;TM35
+5363;TM36
+5364;TM37
+5365;TM38
+5366;TM39
+5367;TM40
+5368;TM41
+5369;TM42
+5370;TM43
+5371;TM44
+5372;TM45
+5373;TM46
+5374;TM47
+5375;TM48
+5376;TM49
+5377;TM50
+5378;TM51
+5379;TM52
+5380;TM53
+5381;TM54
+5382;TM55
+5383;TM56
+5384;TM57
+5385;TM58
+5386;TM59
+5387;TM60
+5388;TM61
+5389;TM62
+5390;TM63
+5391;TM64
+5392;TM65
+5393;TM66
+5394;TM67
+5395;TM68
+5396;TM69
+5397;TM70
+5398;TM71
+5399;TM72
+5400;TM73
+5401;TM74
+5402;TM75
+5403;TM76
+5404;TM77
+5405;TM78
+5406;TM79
+5407;TM80
+5408;TM81
+5409;TM82
+5410;TM83
+5411;TM84
+5412;TM85
+5413;TM86
+5414;TM87
+5415;TM88
+5416;TM89
+5417;TM90
+5418;TM91
+5419;TM92
+5420;HM01
+5421;HM02
+5422;HM03
+5423;HM04
+5424;HM05
+5425;HM06
+5426;???
+5427;???
+5428;Explorer Kit
+5429;Loot Sack
+5430;Rule Book
+5431;Poké Radar
+5432;Point Card
+5433;Journal
+5434;Seal Case
+5435;Fashion Case
+5436;Seal Bag
+5437;Pal Pad
+5438;Works Key
+5439;Old Charm
+5440;Galactic Key
+5441;Red Chain
+5442;Town Map
+5443;Vs. Seeker
+5444;Coin Case
+5445;Old Rod
+5446;Good Rod
+5447;Super Rod
+5448;Sprayduck
+5449;Poffin Case
+5450;Bicycle
+5451;Suite Key
+5452;Oak's Letter
+5453;Lunar Wing
+5454;Member Card
+5455;Azure Flute
+5456;S.S. Ticket
+5457;Contest Pass
+5458;Magma Stone
+5459;Parcel
+5460;Coupon 1
+5461;Coupon 2
+5462;Coupon 3
+5463;Storage Key
+5464;SecretPotion
+5465;Vs. Recorder
+5466;Gracidea
+5467;Secret Key
+5468;Apricorn Box
+5469;Unown Report
+5470;Berry Pots
+5471;Dowsing MCHN
+5472;Blue Card
+5473;SlowpokeTail
+5474;Clear Bell
+5475;Card Key
+5476;Basement Key
+5477;SquirtBottle
+5478;Red Scale
+5479;Lost Item
+5480;Pass
+5481;Machine Part
+5482;Silver Wing
+5483;Rainbow Wing
+5484;Mystery Egg
+5485;Red Apricorn
+5486;Blu Apricorn
+5487;Ylw Apricorn
+5488;Grn Apricorn
+5489;Pnk Apricorn
+5490;Wht Apricorn
+5491;Blk Apricorn
+5492;Fast Ball
+5493;Level Ball
+5494;Lure Ball
+5495;Heavy Ball
+5496;Love Ball
+5497;Friend Ball
+5498;Moon Ball
+5499;Sport Ball
+5500;Park Ball
+5501;Photo Album
+5502;GB Sounds
+5503;Tidal Bell
+5504;RageCandyBar
+5505;Data Card 01
+5506;Data Card 02
+5507;Data Card 03
+5508;Data Card 04
+5509;Data Card 05
+5510;Data Card 06
+5511;Data Card 07
+5512;Data Card 08
+5513;Data Card 09
+5514;Data Card 10
+5515;Data Card 11
+5516;Data Card 12
+5517;Data Card 13
+5518;Data Card 14
+5519;Data Card 15
+5520;Data Card 16
+5521;Data Card 17
+5522;Data Card 18
+5523;Data Card 19
+5524;Data Card 20
+5525;Data Card 21
+5526;Data Card 22
+5527;Data Card 23
+5528;Data Card 24
+5529;Data Card 25
+5530;Data Card 26
+5531;Data Card 27
+5532;Jade Orb
+5533;Lock Capsule
+5534;Red Orb
+5535;Blue Orb
+5536;Enigma Stone
+5537;Prism Scale
+5538;Eviolite
+5539;Float Stone
+5540;Rocky Helmet
+5541;Air Balloon
+5542;Red Card
+5543;Ring Target
+5544;Binding Band
+5545;Absorb Bulb
+5546;Cell Battery
+5547;Eject Button
+5548;Fire Gem
+5549;Water Gem
+5550;Electric Gem
+5551;Grass Gem
+5552;Ice Gem
+5553;Fighting Gem
+5554;Poison Gem
+5555;Ground Gem
+5556;Flying Gem
+5557;Psychic Gem
+5558;Bug Gem
+5559;Rock Gem
+5560;Ghost Gem
+5561;Dragon Gem
+5562;Dark Gem
+5563;Steel Gem
+5564;Normal Gem
+5565;Health Wing
+5566;Muscle Wing
+5567;Resist Wing
+5568;Genius Wing
+5569;Clever Wing
+5570;Swift Wing
+5571;Pretty Wing
+5572;Cover Fossil
+5573;Plume Fossil
+5574;Liberty Pass
+5575;Pass Orb
+5576;Dream Ball
+5577;Poké Toy
+5578;Prop Case
+5579;Dragon Skull
+5580;BalmMushroom
+5581;Big Nugget
+5582;Pearl String
+5583;Comet Shard
+5584;Relic Copper
+5585;Relic Silver
+5586;Relic Gold
+5587;Relic Vase
+5588;Relic Band
+5589;Relic Statue
+5590;Relic Crown
+5591;Casteliacone
+5592;Dire Hit 2
+5593;X Speed 2
+5594;X Special 2
+5595;X Sp. Def 2
+5596;X Defend 2
+5597;X Attack 2
+5598;X Accuracy 2
+5599;X Speed 3
+5600;X Special 3
+5601;X Sp. Def 3
+5602;X Defend 3
+5603;X Attack 3
+5604;X Accuracy 3
+5605;X Speed 6
+5606;X Special 6
+5607;X Sp. Def 6
+5608;X Defend 6
+5609;X Attack 6
+5610;X Accuracy 6
+5611;Ability Urge
+5612;Item Drop
+5613;Item Urge
+5614;Reset Urge
+5615;Dire Hit 3
+5616;Light Stone
+5617;Dark Stone
+5618;TM93
+5619;TM94
+5620;TM95
+5621;Xtransceiver
+5622;???
+5623;Gram 1
+5624;Gram 2
+5625;Gram 3
+5626;Xtransceiver
+6002;Ultra Ball
+6003;Great Ball
+6004;Poké Ball
+6005;Safari Ball
+6006;Net Ball
+6007;Dive Ball
+6008;Nest Ball
+6009;Repeat Ball
+6010;Timer Ball
+6011;Luxury Ball
+6012;Premier Ball
+6013;Dusk Ball
+6014;Heal Ball
+6015;Quick Ball
+6016;Cherish Ball
+6017;Potion
+6018;Antidote
+6019;Burn Heal
+6020;Ice Heal
+6021;Awakening
+6022;Parlyz Heal
+6023;Full Restore
+6024;Max Potion
+6025;Hyper Potion
+6026;Super Potion
+6027;Full Heal
+6028;Revive
+6029;Max Revive
+6030;Fresh Water
+6031;Soda Pop
+6032;Lemonade
+6033;Moomoo Milk
+6034;EnergyPowder
+6035;Energy Root
+6036;Heal Powder
+6037;Revival Herb
+6038;Ether
+6039;Max Ether
+6040;Elixir
+6041;Max Elixir
+6042;Lava Cookie
+6043;Berry Juice
+6044;Sacred Ash
+6045;HP Up
+6046;Protein
+6047;Iron
+6048;Carbos
+6049;Calcium
+6050;Rare Candy
+6051;PP Up
+6052;Zinc
+6053;PP Max
+6054;Old Gateau
+6055;Guard Spec.
+6056;Dire Hit
+6057;X Attack
+6058;X Defend
+6059;X Speed
+6060;X Accuracy
+6061;X Special
+6062;X Sp. Def
+6063;Poké Doll
+6064;Fluffy Tail
+6065;Blue Flute
+6066;Yellow Flute
+6067;Red Flute
+6068;Black Flute
+6069;White Flute
+6070;Shoal Salt
+6071;Shoal Shell
+6072;Red Shard
+6073;Blue Shard
+6074;Yellow Shard
+6075;Green Shard
+6076;Super Repel
+6077;Max Repel
+6078;Escape Rope
+6079;Repel
+6080;Sun Stone
+6081;Moon Stone
+6082;Fire Stone
+6083;Thunderstone
+6084;Water Stone
+6085;Leaf Stone
+6086;TinyMushroom
+6087;Big Mushroom
+6088;Pearl
+6089;Big Pearl
+6090;Stardust
+6091;Star Piece
+6092;Nugget
+6093;Heart Scale
+6094;Honey
+6095;Growth Mulch
+6096;Damp Mulch
+6097;Stable Mulch
+6098;Gooey Mulch
+6104;Armor Fossil
+6105;Skull Fossil
+6106;Rare Bone
+6107;Shiny Stone
+6108;Dusk Stone
+6109;Dawn Stone
+6110;Oval Stone
+6134;Sweet Heart
+6149;Cheri Berry
+6150;Chesto Berry
+6151;Pecha Berry
+6152;Rawst Berry
+6153;Aspear Berry
+6154;Leppa Berry
+6155;Oran Berry
+6156;Persim Berry
+6157;Lum Berry
+6158;Sitrus Berry
+6159;Figy Berry
+6160;Wiki Berry
+6161;Mago Berry
+6162;Aguav Berry
+6163;Iapapa Berry
+6164;Razz Berry
+6165;Bluk Berry
+6166;Nanab Berry
+6167;Wepear Berry
+6168;Pinap Berry
+6169;Pomeg Berry
+6170;Kelpsy Berry
+6171;Qualot Berry
+6172;Hondew Berry
+6173;Grepa Berry
+6174;Tamato Berry
+6175;Cornn Berry
+6176;Magost Berry
+6177;Rabuta Berry
+6178;Nomel Berry
+6179;Spelon Berry
+6180;Pamtre Berry
+6181;Watmel Berry
+6182;Durin Berry
+6183;Belue Berry
+6184;Occa Berry
+6185;Passho Berry
+6186;Wacan Berry
+6187;Rindo Berry
+6188;Yache Berry
+6189;Chople Berry
+6190;Kebia Berry
+6191;Shuca Berry
+6192;Coba Berry
+6193;Payapa Berry
+6194;Tanga Berry
+6195;Charti Berry
+6196;Kasib Berry
+6197;Haban Berry
+6198;Colbur Berry
+6199;Babiri Berry
+6200;Chilan Berry
+6201;Liechi Berry
+6202;Ganlon Berry
+6203;Salac Berry
+6204;Petaya Berry
+6205;Apicot Berry
+6206;Lansat Berry
+6207;Starf Berry
+6208;Enigma Berry
+6209;Micle Berry
+6210;Custap Berry
+6211;Jaboca Berry
+6212;Rowap Berry
+6213;BrightPowder
+6214;White Herb
+6215;Macho Brace
+6216;Exp. Share
+6217;Quick Claw
+6218;Soothe Bell
+6219;Mental Herb
+6220;Choice Band
+6221;King's Rock
+6222;SilverPowder
+6223;Amulet Coin
+6224;Cleanse Tag
+6225;Soul Dew
+6226;DeepSeaTooth
+6227;DeepSeaScale
+6228;Smoke Ball
+6229;Everstone
+6230;Focus Band
+6231;Lucky Egg
+6232;Scope Lens
+6233;Metal Coat
+6234;Leftovers
+6235;Dragon Scale
+6236;Light Ball
+6237;Soft Sand
+6238;Hard Stone
+6239;Miracle Seed
+6240;BlackGlasses
+6241;Black Belt
+6242;Magnet
+6243;Mystic Water
+6244;Sharp Beak
+6245;Poison Barb
+6246;NeverMeltIce
+6247;Spell Tag
+6248;TwistedSpoon
+6249;Charcoal
+6250;Dragon Fang
+6251;Silk Scarf
+6252;Up-Grade
+6253;Shell Bell
+6254;Sea Incense
+6255;Lax Incense
+6256;Lucky Punch
+6257;Metal Powder
+6258;Thick Club
+6259;Stick
+6260;Red Scarf
+6261;Blue Scarf
+6262;Pink Scarf
+6263;Green Scarf
+6264;Yellow Scarf
+6265;Wide Lens
+6266;Muscle Band
+6267;Wise Glasses
+6268;Expert Belt
+6269;Light Clay
+6270;Life Orb
+6271;Power Herb
+6272;Toxic Orb
+6273;Flame Orb
+6274;Quick Powder
+6275;Focus Sash
+6276;Zoom Lens
+6277;Metronome
+6278;Iron Ball
+6279;Lagging Tail
+6280;Destiny Knot
+6281;Black Sludge
+6282;Icy Rock
+6283;Smooth Rock
+6284;Heat Rock
+6285;Damp Rock
+6286;Grip Claw
+6287;Choice Scarf
+6288;Sticky Barb
+6289;Power Bracer
+6290;Power Belt
+6291;Power Lens
+6292;Power Band
+6293;Power Anklet
+6294;Power Weight
+6295;Shed Shell
+6296;Big Root
+6297;Choice Specs
+6298;Flame Plate
+6299;Splash Plate
+6300;Zap Plate
+6301;Meadow Plate
+6302;Icicle Plate
+6303;Fist Plate
+6304;Toxic Plate
+6305;Earth Plate
+6306;Sky Plate
+6307;Mind Plate
+6308;Insect Plate
+6309;Stone Plate
+6310;Spooky Plate
+6311;Draco Plate
+6312;Dread Plate
+6313;Iron Plate
+6314;Odd Incense
+6315;Rock Incense
+6316;Full Incense
+6317;Wave Incense
+6318;Rose Incense
+6319;Luck Incense
+6320;Pure Incense
+6321;Protector
+6322;Electirizer
+6323;Magmarizer
+6324;Dubious Disc
+6325;Reaper Cloth
+6326;Razor Claw
+6327;Razor Fang
+6328;TM01
+6329;TM02
+6330;TM03
+6331;TM04
+6332;TM05
+6333;TM06
+6334;TM07
+6335;TM08
+6336;TM09
+6337;TM10
+6338;TM11
+6339;TM12
+6340;TM13
+6341;TM14
+6342;TM15
+6343;TM16
+6344;TM17
+6345;TM18
+6346;TM19
+6347;TM20
+6348;TM21
+6349;TM22
+6350;TM23
+6351;TM24
+6352;TM25
+6353;TM26
+6354;TM27
+6355;TM28
+6356;TM29
+6357;TM30
+6358;TM31
+6359;TM32
+6360;TM33
+6361;TM34
+6362;TM35
+6363;TM36
+6364;TM37
+6365;TM38
+6366;TM39
+6367;TM40
+6368;TM41
+6369;TM42
+6370;TM43
+6371;TM44
+6372;TM45
+6373;TM46
+6374;TM47
+6375;TM48
+6376;TM49
+6377;TM50
+6378;TM51
+6379;TM52
+6380;TM53
+6381;TM54
+6382;TM55
+6383;TM56
+6384;TM57
+6385;TM58
+6386;TM59
+6387;TM60
+6388;TM61
+6389;TM62
+6390;TM63
+6391;TM64
+6392;TM65
+6393;TM66
+6394;TM67
+6395;TM68
+6396;TM69
+6397;TM70
+6398;TM71
+6399;TM72
+6400;TM73
+6401;TM74
+6402;TM75
+6403;TM76
+6404;TM77
+6405;TM78
+6406;TM79
+6407;TM80
+6408;TM81
+6409;TM82
+6410;TM83
+6411;TM84
+6412;TM85
+6413;TM86
+6414;TM87
+6415;TM88
+6416;TM89
+6417;TM90
+6418;TM91
+6419;TM92
+6492;Fast Ball
+6493;Level Ball
+6494;Lure Ball
+6495;Heavy Ball
+6496;Love Ball
+6497;Friend Ball
+6498;Moon Ball
+6499;Sport Ball
+6500;Park Ball
+6537;Prism Scale
+6538;Eviolite
+6539;Float Stone
+6540;Rocky Helmet
+6541;Air Balloon
+6542;Red Card
+6543;Ring Target
+6544;Binding Band
+6545;Absorb Bulb
+6546;Cell Battery
+6547;Eject Button
+6548;Fire Gem
+6549;Water Gem
+6550;Electric Gem
+6551;Grass Gem
+6552;Ice Gem
+6553;Fighting Gem
+6554;Poison Gem
+6555;Ground Gem
+6556;Flying Gem
+6557;Psychic Gem
+6558;Bug Gem
+6559;Rock Gem
+6560;Ghost Gem
+6561;Dragon Gem
+6562;Dark Gem
+6563;Steel Gem
+6564;Normal Gem
+6565;Health Wing
+6566;Muscle Wing
+6567;Resist Wing
+6568;Genius Wing
+6569;Clever Wing
+6570;Swift Wing
+6571;Pretty Wing
+6572;Cover Fossil
+6573;Plume Fossil
+6580;BalmMushroom
+6581;Big Nugget
+6582;Pearl String
+6583;Comet Shard
+6618;TM93
+6619;TM94
+6620;TM95
+7001;Name Change Contract
+7003;Makeover Kit
+7004;Team Name Change Plaque
+7018;Ability Pill
+7025;Donator Status Ticket - 7 DAYS
+7026;Donator Status Ticket - 15 DAYS
+7027;Donator Status Ticket - 30 DAYS
+7030;Plain Spicy Seed
+7031;Very Spicy Seed
+7032;Plain Dry Seed
+7033;Very Dry Seed
+7034;Plain Sweet Seed
+7035;Very Sweet Seed
+7036;Plain Bitter Seed
+7037;Very Bitter Seed
+7038;Plain Sour Seed
+7039;Very Sour Seed
+7103;Genderswap Ticket
+7120;PC Expansion Drive
+7180;{STRING_110015} Ocarina
+7181;{STRING_110019} Ocarina
+7182;{STRING_110057} Ocarina
+7183;{STRING_110070} Ocarina
+7184;{STRING_110148} Ocarina
+7185;{STRING_110249} Ocarina
+7186;{STRING_110127} Ocarina
+7187;{STRING_110291} Ocarina
+7188;{STRING_110431} Ocarina
+7189;{STRING_110432} Ocarina
+7190;100RP Reward Point Voucher
+7191;500RP Reward Point Voucher
+7192;1,000RP Reward Point Voucher
+7193;{STRING_245231} (Small)
+7194;Battle Box Expansion Drive
+7195;{STRING_110250} Ocarina
+7196;{STRING_110091} Ocarina
+7197;{STRING_110100} Ocarina
+7198;{STRING_110029} Ocarina
+7236;Broom Cookie
+7237;Bat Cookie
+7238;Pumpkin Cookie
+7239;Ghost Cookie
+7240;Cat Cookie
+7250;Super HP Up
+7251;Hyper HP Up
+7252;Max HP Up
+7253;Super Protein
+7254;Hyper Protein
+7255;Max Protein
+7256;Super Iron
+7257;Hyper Iron
+7258;Max Iron
+7259;Super Carbos
+7260;Hyper Carbos
+7261;Max Carbos
+7262;Super Calcium
+7263;Hyper Calcium
+7264;Max Calcium
+7265;Super Zinc
+7266;Hyper Zinc
+7267;Max Zinc
+7409;{STRING_101126} (+10%)
+7410;{STRING_101126} (+15%)
+7411;{STRING_101126} (+20%)
+7570;Mystic Watch
+7600;Unknown Item
+7601;Unknown Item
+7602;Unknown Item
+7603;Unknown Item
+7604;Unknown Item
+7605;Unknown Item
+7606;Unknown Item
+7607;Unknown Item
+7608;Unknown Item
+7609;Unknown Item
+7610;Unknown Item
+7611;Unknown Item
+7612;Unknown Item
+7613;Unknown Item
+7614;Unknown Item
+7615;Unknown Item
+7616;Unknown Item
+7617;Unknown Item
+7618;Unknown Item
+7619;Unknown Item
+7620;Unknown Item
+7621;Unknown Item
+7622;Unknown Item
+7623;Unknown Item
+7624;Unknown Item
+7625;Unknown Item
+7626;Unknown Item
+7627;Unknown Item
+7628;Unknown Item
+7629;Unknown Item
+7630;Unknown Item
+7631;Unknown Item
+7632;Unknown Item
+7633;Unknown Item
+7634;Unknown Item
+7635;Unknown Item
+7636;Unknown Item
+7637;Unknown Item
+7638;Unknown Item
+7639;Unknown Item
+7640;Unknown Item
+7641;Unknown Item
+7642;Unknown Item
+7643;Unknown Item
+7644;Unknown Item
+7645;Unknown Item
+7646;Unknown Item
+7647;Unknown Item
+7648;Unknown Item
+7649;Unknown Item
+7650;Unknown Item
+7651;Unknown Item
+7652;Unknown Item
+7653;Unknown Item
+7654;Unknown Item
+7655;Unknown Item
+7656;Unknown Item
+7657;Unknown Item
+7658;Unknown Item
+7659;Unknown Item
+7660;Unknown Item
+7661;Unknown Item
+7662;Unknown Item
+7663;Unknown Item
+7664;Unknown Item
+7665;Unknown Item
+7666;Unknown Item
+7667;Unknown Item
+7668;Unknown Item
+7669;Unknown Item
+7670;Unknown Item
+7671;Unknown Item
+7672;Unknown Item
+7673;Unknown Item
+7674;Unknown Item
+7675;Unknown Item
+7676;Unknown Item
+7677;Unknown Item
+7678;Unknown Item
+7679;Unknown Item
+7680;Unknown Item
+7681;Unknown Item
+7682;Unknown Item
+7683;Unknown Item
+7684;Unknown Item
+7685;Unknown Item
+7686;Unknown Item
+7687;Unknown Item
+7688;Unknown Item
+7689;Unknown Item
+7690;Unknown Item
+7691;Unknown Item
+7692;Unknown Item
+7693;Unknown Item
+7694;Unknown Item
+7695;Unknown Item
+7696;Unknown Item
+7697;Unknown Item
+7698;Unknown Item
+7699;Unknown Item
+7700;Unknown Item
+7701;Unknown Item
+7702;Unknown Item
+7703;Unknown Item
+7704;Unknown Item
+7705;Unknown Item
+7706;Unknown Item
+7707;Unknown Item
+7708;Unknown Item
+7709;Unknown Item
+7710;Unknown Item
+7711;Unknown Item
+7712;Unknown Item
+7713;Unknown Item
+7714;Unknown Item
+7715;Unknown Item
+7716;Unknown Item
+7717;Unknown Item
+7718;Unknown Item
+7719;Unknown Item
+7720;Unknown Item
+7721;Unknown Item
+7722;Unknown Item
+7723;Unknown Item
+7724;Unknown Item
+7725;Unknown Item
+7726;Unknown Item
+7727;Unknown Item
+7728;Unknown Item
+7729;Unknown Item
+7730;Unknown Item
+7731;Unknown Item
+7732;Unknown Item
+7733;Unknown Item
+7734;Unknown Item
+7735;Unknown Item
+7736;Unknown Item
+7737;Unknown Item
+7738;Unknown Item
+7739;Unknown Item
+7740;Unknown Item
+7741;Unknown Item
+7742;Unknown Item
+7743;Unknown Item
+7744;Unknown Item
+7745;Unknown Item
+7746;Unknown Item
+7747;Unknown Item
+7748;Unknown Item
+7749;Unknown Item
+7750;Unknown Item
+7751;Unknown Item
+7752;Unknown Item
+7753;Unknown Item
+7754;Unknown Item
+7755;Unknown Item
+7756;Unknown Item
+7757;Unknown Item
+7758;Unknown Item
+7759;Unknown Item
+7760;Unknown Item
+7761;Unknown Item
+7762;Unknown Item
+7763;Unknown Item
+7764;Unknown Item
+7765;Unknown Item
+7766;Unknown Item
+7767;Unknown Item
+7768;Unknown Item
+7769;Unknown Item
+7770;Unknown Item
+7771;Unknown Item
+7772;Unknown Item
+7773;Unknown Item
+7774;Unknown Item
+7775;Unknown Item
+7776;Unknown Item
+7777;Unknown Item
+7778;Unknown Item
+7779;Unknown Item
+7780;Unknown Item
+7781;Unknown Item
+7782;Unknown Item
+8137;Grass Mail
+8138;Flame Mail
+8139;Bubble Mail
+8140;Bloom Mail
+8141;Tunnel Mail
+8142;Steel Mail
+8143;Heart Mail
+8144;Snow Mail
+8145;Space Mail
+8146;Air Mail
+8147;Mosaic Mail
+8148;Brick Mail
+8420;HM01
+8421;HM02
+8422;HM03
+8423;HM04
+8424;HM05
+8425;HM06
+8426;HM07
+8427;HM08
+8428;Explorer Kit
+8429;Loot Sack
+8430;Rule Book
+8431;Poké Radar
+8432;Point Card
+8433;Journal
+8434;Seal Case
+8435;Fashion Case
+8436;Seal Bag
+8437;Pal Pad
+8438;Works Key
+8439;Old Charm
+8440;Galactic Key
+8441;Red Chain
+8442;Town Map
+8443;Vs. Seeker
+8444;Coin Case
+8445;Old Rod
+8446;Good Rod
+8447;Super Rod
+8448;Sprayduck
+8449;Poffin Case
+8450;Bicycle
+8451;Suite Key
+8452;Oak's Letter
+8453;Lunar Wing
+8454;Member Card
+8455;Azure Flute
+8456;S.S. Ticket
+8457;Contest Pass
+8459;Parcel
+8460;Coupon 1
+8461;Coupon 2
+8462;Coupon 3
+8463;Storage Key
+8464;SecretPotion
+8465;Vs. Recorder
+8466;Gracidea
+8467;Secret Key
+9137;Grass Mail
+9138;Flame Mail
+9139;Bubble Mail
+9140;Bloom Mail
+9141;Tunnel Mail
+9142;Steel Mail
+9143;Heart Mail
+9144;Snow Mail
+9145;Space Mail
+9146;Air Mail
+9147;Mosaic Mail
+9148;Brick Mail
+9420;HM01
+9421;HM02
+9422;HM03
+9423;HM04
+9424;HM05
+9425;HM06
+9426;HM07
+9427;HM08
+9429;Loot Sack
+9430;Rule Book
+9431;Poké Radar
+9432;Point Card
+9433;Journal
+9434;Seal Case
+9435;Fashion Case
+9436;Seal Bag
+9437;Pal Pad
+9438;Works Key
+9439;Old Charm
+9440;Galactic Key
+9441;Red Chain
+9442;Town Map
+9443;Vs. Seeker
+9444;Coin Case
+9445;Old Rod
+9446;Good Rod
+9447;Super Rod
+9448;Sprayduck
+9449;Poffin Case
+9450;Bicycle
+9451;Suite Key
+9452;Oak's Letter
+9453;Lunar Wing
+9454;Member Card
+9455;Azure Flute
+9456;S.S. Ticket
+9457;Contest Pass
+9459;Parcel
+9460;Coupon 1
+9461;Coupon 2
+9462;Coupon 3
+9463;Storage Key
+9464;SecretPotion
+9465;Vs. Recorder
+9466;Gracidea
+9467;Secret Key
+9468;Apricorn Box
+9469;UNOWN Report
+9470;Berry Pots
+9471;Dowsing MCHN
+9472;Blue Card
+9473;SlowpokeTail
+9474;Clear Bell
+9475;Card Key
+9476;Basement Key
+9477;SquirtBottle
+9478;Red Scale
+9479;Lost Item
+9480;Pass
+9481;Machine Part
+9482;Silver Wing
+9483;Rainbow Wing
+9484;Mystery Egg
+9501;Photo Album
+9502;GB Sounds
+9503;Tidal Bell
+9504;RageCandyBar
+9532;Jade Orb
+9533;Lock Capsule
+9534;Red Orb
+9535;Blue Orb
+9536;Enigma Stone
+20000;TM101 Pound
+20010;TM111 Gust
+20011;TM112 Wing Attack
+20014;TM115 Bind
+20015;TM116 Vine Whip
+20016;TM117 Double Kick
+20018;TM119 Sand Attack
+20021;TM122 Tackle
+20025;TM126 Tail Whip
+20026;TM127 Poison Sting
+20028;TM129 Leer
+20029;TM130 Bite
+20030;TM131 Growl
+20033;TM134 Supersonic
+20034;TM135 Ember
+20036;TM137 Mist
+20045;TM146 Peck
+20051;TM152 Absorb
+20053;TM154 Leech Seed
+20054;TM155 Growth
+20055;TM156 Razor Leaf
+20057;TM158 Poison Powder
+20058;TM159 Stun Spore
+20059;TM160 Sleep Powder
+20061;TM162 String Shot
+20064;TM165 Thunder Shock
+20068;TM169 Rock Throw
+20073;TM174 Confusion
+20075;TM176 Hypnosis
+20077;TM178 Quick Attack
+20084;TM185 Recover
+20085;TM186 Harden
+20086;TM187 Smokescreen
+20088;TM189 Defense Curl
+20097;TM198 Lick
+20104;TM205 Glare
+20108;TM209 Transform
+20109;TM210 Spore
+20112;TM213 Splash
+20113;TM214 Acid Armor
+20115;TM216 Bonemerang
+20118;TM219 Conversion
+20121;TM222 Slash
+20124;TM225 Nightmare
+20125;TM226 Flame Wheel
+20126;TM227 Snore
+20128;TM229 Flail
+20129;TM230 Conversion 2
+20133;TM234 Mach Punch
+20139;TM240 Perish Song
+20150;TM251 Spark
+20155;TM256 Heal Bell
+20168;TM269 Morning Sun
+20169;TM270 Synthesis
+20170;TM271 Moonlight
+20172;TM273 Twister
+20177;TM278 Extreme Speed
+20197;TM298 Role Play
+20198;TM299 Wish
+20200;TM301 Magic Coat
+20204;TM305 Yawn
+20212;TM313 Luster Purge
+20213;TM314 Mist Ball
+20216;TM317 Ice Ball
+20219;TM320 Blast Burn
+20220;TM321 Hydro Cannon
+20228;TM329 Tickle
+20230;TM331 Signal Beam
+20239;TM340 Block
+20241;TM342 Frenzy Plant
+20243;TM344 Bounce
+20246;TM347 Covet
+20247;TM348 Volt Tackle
+20269;TM370 Gastro Acid
+20270;TM371 Copycat
+20273;TM374 Last Resort
+20274;TM375 Worry Seed
+20275;TM376 Sucker Punch
+20277;TM378 Aqua Ring
+20278;TM379 Magnet Rise
+20285;TM386 Aqua Tail
+20291;TM392 Dragon Rush
+20301;TM402 Bullet Punch
+20303;TM404 Ice Shard
+20308;TM409 Shadow Sneak
+20317;TM418 Lava Plume
+20330;TM431 Wood Hammer
+20331;TM432 Aqua Jet
+20332;TM433 Head Smash
+20334;TM435 Magma Storm
+20335;TM436 Dark Void
+20338;TM439 Wonder Room
+20342;TM443 Magic Room
+20352;TM453 After You
+20364;TM465 Reflect Type
+20366;TM467 Water Pledge
+20367;TM468 Fire Pledge
+20368;TM469 Grass Pledge
+20379;TM480 Horn Leech
+20380;TM481 Sacred Sword
+20383;TM484 Cotton Guard
+20384;TM485 Psystrike
+20387;TM488 Techno Blast
+20388;TM489 Relic Song
+20389;TM490 Secret Sword
+20391;TM492 Icicle Crash
+20392;TM493 Flying Press
+20393;TM494 Sticky Web
+20394;TM495 Phantom Force
+20395;TM496 Trick-or-Treat
+20396;TM497 Parabolic Charge
+20397;TM498 Petal Blizzard
+20398;TM499 Freeze-Dry
+20399;TM500 Disarming Voice
+20400;TM501 Parting Shot
+20401;TM502 Topsy-Turvy
+20402;TM503 Draining Kiss
+20403;TM504 Grassy Terrain
+20404;TM505 Misty Terrain
+20405;TM506 Play Rough
+20406;TM507 Fairy Wind
+20407;TM508 Moonblast
+20408;TM509 Boomburst
+20409;TM510 Confide
+20410;TM511 Diamond Storm
+20411;TM512 Steam Eruption
+20412;TM513 Water Shuriken
+20413;TM514 Mystical Fire
+20414;TM515 Spiky Shield
+20415;TM516 Eerie Impulse
+20416;TM517 Venom Drench
+20417;TM518 Geomancy
+20418;TM519 Electric Terrain
+20419;TM520 Dazzling Gleam
+20420;TM521 Baby-Doll Eyes
+20421;TM522 Nuzzle
+20422;TM523 Infestation
+20423;TM524 Power-Up Punch
+20424;TM525 Oblivion Wing
+20425;TM526 Thousand Arrows
+20426;TM527 Thousand Waves
+20427;TM528 Light Of Ruin
+20428;TM529 Origin Pulse
+20429;TM530 Precipice Blades
+20430;TM531 Dragon Ascent
+20431;TM532 Hyperspace Fury
+20432;TM533 Shore Up
+20433;TM534 First Impression
+20434;TM535 Darkest Lariat
+20435;TM536 Ice Hammer
+20436;TM537 High Horsepower
+20437;TM538 Solar Blade
+20438;TM539 Leafage
+20439;TM540 Laser Focus
+20440;TM541 Throat Chop
+20441;TM542 Pollen Puff
+20442;TM543 Psychic Terrain
+20443;TM544 Lunge
+20444;TM545 Speed Swap
+20445;TM546 Smart Strike
+20446;TM547 Core Enforcer
+20447;TM548 Brutal Swing
+20448;TM549 Aurora Veil
+20449;TM550 Fleur Cannon
+20450;TM551 Psychic Fangs
+20451;TM552 Stomping Tantrum
+20452;TM553 Shadow Bone
+20453;TM554 Liquidation
+20454;TM555 Spectral Thief
+20455;TM556 Plasma Fists
+20456;TM557 Double Iron Bash
+20457;TM558 No Retreat
+20458;TM559 Octolock
+20459;TM560 Body Press
+20460;TM561 Aura Wheel
+20461;TM562 Breaking Swipe
+20462;TM563 Overdrive
+20463;TM564 Life Dew
+20464;TM565 Meteor Assault
+20465;TM566 Steel Beam
+20466;TM567 Expanding Force
+20467;TM568 Steel Roller
+20468;TM569 Scale Shot
+20469;TM570 Meteor Beam
+20470;TM571 Misty Explosion
+20471;TM572 Grassy Glide
+20472;TM573 Rising Voltage
+20473;TM574 Terrain Pulse
+20474;TM575 Skitter Smack
+20475;TM576 Burning Jealousy
+20476;TM577 Lash Out
+20477;TM578 Poltergeist
+20478;TM579 Corrosive Gas
+20479;TM580 Coaching
+20480;TM581 Flip Turn
+20481;TM582 Triple Axel
+20482;TM583 Dual Wingbeat
+20483;TM584 Scorching Sands
+20484;TM585 Power Shift
+20485;TM586 Stone Axe
+20486;TM587 Barb Barrage
+20487;TM588 Tera Blast
+20488;TM589 Last Respects
+20489;TM590 Order Up
+20490;TM591 Spicy Extract
+20491;TM592 Ice Spinner
+20492;TM593 Glaive Rush
+20493;TM594 Salt Cure
+20494;TM595 Mortal Spin
+20495;TM596 Make It Rain
+20496;TM597 Shed Tail
+20497;TM598 Snowscape
+20498;TM599 Pounce
+20499;TM600 Trailblaze
+20500;TM601 Chilling Water
+20501;TM602 Rage Fist
+20502;TM603 Armor Cannon
+20503;TM604 Bitter Blade
+20504;TM605 Gigaton Hammer
+20505;TM606 Hard Press
+20506;TM607 Dragon Cheer
+20507;TM608 Alluring Voice
+20508;TM609 Temper Flare
+20509;TM610 Supercell Slam
+20510;TM611 Psychic Noise
+20511;TM612 Upper Hand
+21000;Ice Stone
+21001;Sachet
+21002;Whipped Dream
+21003;Tart Apple
+21004;Sweet Apple
+21005;Syrupy Apple
+21006;Cracked Pot
+21007;Chipped Pot
+21008;Galarica Cuff
+21009;Galarica Wreath
+21010;Linking Cord
+21011;Black Augurite
+21012;Peat Block
+21013;Malicious Armor
+21014;Auspicious Armor
+21015;Masterpiece Teacup
+21016;Unremarkable Teacup
+21017;Scroll of Darkness
+21018;Scroll of Waters
+21019;Metal Alloy

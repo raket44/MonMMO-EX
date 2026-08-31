@@ -11,7 +11,10 @@ import de.fiereu.openmmo.net.game.packets.BlockPlayerPacket
 import de.fiereu.openmmo.net.game.packets.CancelSocialInteractionPacket
 import de.fiereu.openmmo.net.game.packets.ChatMessagePacket
 import de.fiereu.openmmo.net.game.packets.ChatMessageSendPacket
+import de.fiereu.openmmo.net.game.packets.ContainerActionPacket
+import de.fiereu.openmmo.net.game.packets.CosmeticSlotApplyPacket
 import de.fiereu.openmmo.net.game.packets.CreateCharacterPacket
+import de.fiereu.openmmo.net.game.packets.CustomizeCharacterAppearancePacket
 import de.fiereu.openmmo.net.game.packets.DeleteCharacterPacket
 import de.fiereu.openmmo.net.game.packets.DialogChoicePacket
 import de.fiereu.openmmo.net.game.packets.EntityInteractPacket
@@ -22,6 +25,7 @@ import de.fiereu.openmmo.net.game.packets.KeepAlivePacket
 import de.fiereu.openmmo.net.game.packets.MapLoadedAckPacket
 import de.fiereu.openmmo.net.game.packets.MovementPacket
 import de.fiereu.openmmo.net.game.packets.NullPacket
+import de.fiereu.openmmo.net.game.packets.PartyReorderPacket
 import de.fiereu.openmmo.net.game.packets.RemoveFriendPacket
 import de.fiereu.openmmo.net.game.packets.RequestCharactersPacket
 import de.fiereu.openmmo.net.game.packets.RequestPlayerPacket
@@ -30,7 +34,6 @@ import de.fiereu.openmmo.net.game.packets.SelectCharacterPacket
 import de.fiereu.openmmo.net.game.packets.ShopSellRequestPacket
 import de.fiereu.openmmo.net.game.packets.TileInteractPacket
 import de.fiereu.openmmo.net.game.packets.UnblockPlayerPacket
-import de.fiereu.openmmo.net.game.packets.battle.BattleActionPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSubmitPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleAppearancePacket
@@ -63,10 +66,12 @@ import de.fiereu.openmmo.net.game.packets.guild.GuildMotdUpdatePacket
 import de.fiereu.openmmo.net.game.packets.guild.GuildRankLabelUpdatePacket
 import de.fiereu.openmmo.net.game.packets.guild.GuildRankPermissionUpdatePacket
 import de.fiereu.openmmo.server.game.script.ScriptRunner
+import de.fiereu.openmmo.server.game.services.AppearanceService
 import de.fiereu.openmmo.server.game.services.BattleService
 import de.fiereu.openmmo.server.game.services.DialogService
 import de.fiereu.openmmo.server.game.services.GuildService
 import de.fiereu.openmmo.server.game.services.InteractionService
+import de.fiereu.openmmo.server.game.services.InventoryActionService
 import de.fiereu.openmmo.server.game.services.LoginService
 import de.fiereu.openmmo.server.game.services.MovementService
 import de.fiereu.openmmo.server.game.services.MultiplayerService
@@ -99,9 +104,13 @@ constructor(
     private val battleService: BattleService,
     private val chatCommandService: ChatCommandService,
     private val shopService: ShopService,
+    private val inventoryActionService: InventoryActionService,
+    private val appearanceService: AppearanceService,
+    private val mapTourService: de.fiereu.openmmo.server.game.services.MapTourService,
     private val scriptRunner: ScriptRunner,
     private val sessionRegistry: SessionRegistry,
     private val characterStore: CharacterStore,
+    private val storyPlayerService: de.fiereu.openmmo.server.game.services.StoryPlayerService,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -122,6 +131,12 @@ constructor(
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
+
+    onSuspend<ContainerActionPacket> { event -> inventoryActionService.onContainerAction(event) }
+    on<PartyReorderPacket> { event -> inventoryActionService.onPartyReorder(event) }
+    on<CustomizeCharacterAppearancePacket> { event ->
+      appearanceService.onCustomizeAppearance(event)
+    }
 
     on<AddFriendPacket> { event -> socialService.onAddFriend(event) }
     on<RemoveFriendPacket> { event -> socialService.onRemoveFriend(event) }
@@ -147,7 +162,7 @@ constructor(
 
     onSuspend<MoveLearnReplyPacket> { event -> battleService.onMoveLearnReply(event) }
     on<BattlePartySwitchPacket> { event -> battleService.onBattlePacket(event) }
-    on<BattleActionPacket> { event -> battleService.onBattlePacket(event) }
+    on<CosmeticSlotApplyPacket> { event -> appearanceService.onSlotApply(event) }
     onSuspend<BattleActionSelectPacket> { event -> battleService.onBattleAction(event) }
     on<BattleLeavePacket> { event -> battleService.onBattlePacket(event) }
     on<BattleSequencePacket> { event -> battleService.onBattlePacket(event) }
@@ -166,16 +181,38 @@ constructor(
     on<BattleTransitionReadyPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleTeamPreviewConfirmPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleRewardSelectPacket> { event -> battleService.onBattlePacket(event) }
-    onSuspend<MapLoadedAckPacket> { event -> battleService.onClientReady(event) }
+    onSuspend<MapLoadedAckPacket> { event ->
+      // The payload was never decoded by OpenMMO; on NDS maps it may name the map the client just
+      // loaded, which would fix seam tracking. Logged raw until the format is pinned down.
+      if (event.packet.data.isNotEmpty()) {
+        log.info {
+          "MapLoadedAck payload (${event.packet.data.size}B): " +
+              event.packet.data.joinToString(" ") { "%02x".format(it) }
+        }
+      }
+      val result = battleService.onClientReady(event)
+      // GBA whiteout: a lost battle heals the party and returns to the last heal spot.
+      if (result == de.fiereu.openmmo.server.game.battle.BattleResult.DEFEAT) {
+        val state = event.session.attributes[PLAYER_STATE]
+        if (state != null) {
+          storyPlayerService.healParty(event.session, state)
+          movementService.respawnAfterWhiteout(event.session, state)
+        }
+      }
+    }
 
     // The client sends an empty heartbeat packet.
     on<NullPacket> {}
     on<KeepAlivePacket> { event -> event.session.send(event.packet) }
     onSuspend<ChatMessagePacket> { event -> onChatMessage(event) }
     // What the client sends when the player types. The text rides in target unless the mode
-    // carries a message of its own.
+    // carries a message of its own. During a map-directory tour, plain chat is the naming input.
     onSuspend<ChatMessageSendPacket> { event ->
-      chatCommandService.tryHandle(event.session, event.packet.message ?: event.packet.target)
+      val text = event.packet.message ?: event.packet.target
+      if (!chatCommandService.tryHandle(event.session, text)) {
+        val charId = event.session.attributes[PLAYER_STATE]?.characterId
+        if (charId != null) mapTourService.onChat(event.session, charId, text)
+      }
     }
   }
 
@@ -192,7 +229,9 @@ constructor(
       // Undo the interrupted script here rather than leaving it to the coroutine's own cleanup,
       // which runs on another thread and would race the flush below.
       scriptRunner.rollBack(session, state, entityId = -1)
-      state.inDialog = false
+      state.dialogVisible = false
+      state.scriptRunning = false
+      state.releaseScriptLock()
       presenceService.leave(session)
       sessionRegistry.unbindCharacter(charId)
       characterStore.unloadCharacterAsync(charId)

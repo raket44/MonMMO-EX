@@ -699,7 +699,7 @@
         },
         {
             "label": "BattleFrontier_BattleArenaLobby_Text_BagFullReturnForPrize",
-            "id": 270887384,
+            "id": 271339395,
             "text": "Oh?\\nYour BAG seems to be full.\\pI urge you to clear space and\\nreturn for your prize.$"
         },
         {
@@ -2224,7 +2224,7 @@
         },
         {
             "label": "BattleFrontier_BattlePikeLobby_Text_ShallRecordResults",
-            "id": 270909792,
+            "id": 270909919,
             "text": "I shall record your results.\\nPlease wait…$"
         },
         {
@@ -2419,7 +2419,7 @@
         },
         {
             "label": "BattleFrontier_BattlePikeRoomNormal_Text_Silence",
-            "id": 270741902,
+            "id": 270917094,
             "text": "… … … … … …\\n… … … … … …$"
         },
         {
@@ -3394,7 +3394,7 @@
         },
         {
             "label": "BattleFrontier_BattlePyramidLobby_Text_PickItemsToKeep",
-            "id": 270866691,
+            "id": 270866814,
             "text": "Please pick the items you'll keep in the\\nBATTLE BAG, and with your POKéMON.$"
         },
         {
@@ -4124,7 +4124,7 @@
         },
         {
             "label": "BattleFrontier_BattleTowerLobby_Text_ChooseDifferentMonsMatchLvlMode",
-            "id": 270799313,
+            "id": 270799838,
             "text": "Please choose two POKéMON different\\nfrom your friend's, match the level\\lyou wish to enter, and register again.$"
         },
         {
@@ -5774,7 +5774,7 @@
         },
         {
             "label": "BattleFrontier_BattleTowerMultiPartnerRoom_Text_PsychicFMon1",
-            "id": 270812470,
+            "id": 270828906,
             "text": "One {STR_VAR_2} with {STR_VAR_1} and$"
         },
         {
@@ -5794,12 +5794,12 @@
         },
         {
             "label": "BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFIntro",
-            "id": 270820137,
+            "id": 270829134,
             "text": "I'm SCHOOL KID {STR_VAR_1}!$"
         },
         {
             "label": "BattleFrontier_BattleTowerMultiPartnerRoom_Text_SchoolKidFMon1",
-            "id": 270812723,
+            "id": 270829153,
             "text": "One {STR_VAR_1}-using {STR_VAR_2}$"
         },
         {
@@ -5874,7 +5874,7 @@
         },
         {
             "label": "BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmerFMon1",
-            "id": 270812723,
+            "id": 270829153,
             "text": "One {STR_VAR_1}-using {STR_VAR_2}$"
         },
         {
@@ -5924,7 +5924,7 @@
         },
         {
             "label": "BattleFrontier_BattleTowerMultiPartnerRoom_Text_SwimmingTriathleteFMon1",
-            "id": 270812470,
+            "id": 270828906,
             "text": "One {STR_VAR_2} with {STR_VAR_1} and$"
         },
         {
@@ -11324,7 +11324,7 @@
         },
         {
             "label": "LittlerootTown_ProfessorBirchsLab_Text_BirchIsntOneForDeskWork",
-            "id": 270509492,
+            "id": 270509633,
             "text": "The PROF isn't one for doing desk work.\\nHe's the type of person who would\\lrather go outside and experience\\lthings than read about them here.$"
         },
         {
@@ -12804,7 +12804,7 @@
         },
         {
             "label": "RS_MysteryEventsHouse_Text_OldManGreeting",
-            "id": 270682982,
+            "id": 270695238,
             "text": "When I was young, I traveled the world\\nas a POKéMON TRAINER.\\pNow that I've become an old buzzard,\\nmy only amusement is watching young\\lTRAINERS battle.$"
         },
         {
@@ -12819,37 +12819,37 @@
         },
         {
             "label": "RS_MysteryEventsHouse_Text_YouWontBattle",
-            "id": 270683236,
+            "id": 270695492,
             "text": "You won't battle? I'm disappointed\\nthat I can't see you battle…$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_KeepItToA3On3",
-            "id": 270683300,
+            "id": 270695556,
             "text": "Oh, good, good!\\pBut my house isn't all that sturdy.\\pCould I ask you to keep it down to\\na 3-on-3 match?$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_SaveYourProgress",
-            "id": 270683403,
+            "id": 270695659,
             "text": "Before you two battle, you should\\nsave your progress.$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_HopeToSeeAGoodMatch",
-            "id": 270683457,
+            "id": 270695713,
             "text": "I hope to see a good match!$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_BattleTie",
-            "id": 270683485,
+            "id": 270695771,
             "text": "So, it became a standoff.\\pIt was a brilliant match in which\\nneither side conceded a step!$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_BattleWon",
-            "id": 270683575,
+            "id": 270695864,
             "text": "That was superlative!\\pWhy, it was like seeing myself in\\nmy youth again!$"
         },
         {
             "label": "RS_MysteryEventsHouse_Text_BattleLost",
-            "id": 270683647,
+            "id": 270695939,
             "text": "Ah, too bad for you!\\pBut it was a good match.\\nI hope you can win next time.$"
         },
         {
@@ -14304,7 +14304,7 @@
         },
         {
             "label": "OldaleTown_Text_DiscoveredFootprints",
-            "id": 270439228,
+            "id": 270439322,
             "text": "I just discovered the footprints of\\na rare POKéMON!\\pWait until I finish sketching\\nthem, okay?$"
         },
         {
@@ -17009,7 +17009,7 @@
         },
         {
             "label": "Route113_GlassWorkshop_Text_WhichWouldYouLike",
-            "id": 270988379,
+            "id": 270988469,
             "text": "Which one would you like, huff-puff?$"
         },
         {
@@ -18804,7 +18804,7 @@
         },
         {
             "label": "SeafloorCavern_Entrance_Text_HearMagmaNearMossdeepShort",
-            "id": 270747045,
+            "id": 270747336,
             "text": "A punk like you, do you really think\\nyou can take on TEAM AQUA?\\pI'd say you're too early by about\\na trillion years!\\pYou're a perfect fit for the likes of\\nTEAM MAGMA!\\pSpeaking of TEAM MAGMA, I hear they\\nwere spotted near MOSSDEEP.\\pThat bunch of goons, they sure don't\\nlook good near the sea!$"
         },
         {
@@ -20819,7 +20819,7 @@
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_OnlyAmusementWatchingBattles",
-            "id": 270682982,
+            "id": 270695238,
             "text": "When I was young, I traveled the world\\nas a POKéMON TRAINER.\\pNow that I've become an old buzzard,\\nmy only amusement is watching young\\lTRAINERS battle.$"
         },
         {
@@ -20834,27 +20834,27 @@
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_YouWontBattle",
-            "id": 270683236,
+            "id": 270695492,
             "text": "You won't battle? I'm disappointed\\nthat I can't see you battle…$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_KeepItTo3On3",
-            "id": 270683300,
+            "id": 270695556,
             "text": "Oh, good, good!\\pBut my house isn't all that sturdy.\\pCould I ask you to keep it down to\\na 3-on-3 match?$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_SaveProgressBeforeBattle",
-            "id": 270683403,
+            "id": 270695659,
             "text": "Before you two battle, you should\\nsave your progress.$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_HopeToSeeGoodMatch",
-            "id": 270683457,
+            "id": 270695713,
             "text": "I hope to see a good match!$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_StrVar1Tie",
-            "id": 270695741,
+            "id": 274649488,
             "text": "{STR_VAR_1}$"
         },
         {
@@ -20864,27 +20864,27 @@
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_BrilliantStandoff",
-            "id": 270683485,
+            "id": 270695771,
             "text": "So, it became a standoff.\\pIt was a brilliant match in which\\nneither side conceded a step!$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_StrVar1Won",
-            "id": 270695741,
+            "id": 274649488,
             "text": "{STR_VAR_1}$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_ThatWasSuperlative",
-            "id": 270683575,
+            "id": 270695864,
             "text": "That was superlative!\\pWhy, it was like seeing myself in\\nmy youth again!$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_StrVar1Lost",
-            "id": 270695741,
+            "id": 274649488,
             "text": "{STR_VAR_1}$"
         },
         {
             "label": "SootopolisCity_MysteryEventsHouse_1F_Text_TooBadForYou",
-            "id": 270683647,
+            "id": 270695939,
             "text": "Ah, too bad for you!\\pBut it was a good match.\\nI hope you can win next time.$"
         },
         {
@@ -22129,7 +22129,7 @@
         },
         {
             "label": "BerryTree_Text_ExclamationPoint",
-            "id": 268532837,
+            "id": 270533504,
             "text": "!$"
         },
         {
@@ -22144,7 +22144,7 @@
         },
         {
             "label": "LilycoveCity_ContestLobby_Text_ContestReception",
-            "id": 271036013,
+            "id": 271036072,
             "text": "Hello!\\pThis is the reception counter for\\nPOKéMON CONTESTS.$"
         },
         {
@@ -22339,7 +22339,7 @@
         },
         {
             "label": "LilycoveCity_ContestLobby_Text_EnterContest2",
-            "id": 271039866,
+            "id": 271040758,
             "text": "Would you like to enter a CONTEST?$"
         },
         {
@@ -22399,7 +22399,7 @@
         },
         {
             "label": "LilycoveCity_ContestLobby_Text_ContestBeginShortly",
-            "id": 271038003,
+            "id": 271040579,
             "text": "The CONTEST will begin shortly.$"
         },
         {
@@ -22414,7 +22414,7 @@
         },
         {
             "label": "LilycoveCity_ContestLobby_Text_EnterContest3",
-            "id": 271039866,
+            "id": 271040758,
             "text": "Would you like to enter a CONTEST?$"
         },
         {
@@ -22479,7 +22479,7 @@
         },
         {
             "label": "ContestHall_Text_ParticipantsAsFollows",
-            "id": 271038290,
+            "id": 271042930,
             "text": "The participating TRAINERS and their\\nPOKéMON are as follows:$"
         },
         {
@@ -22509,7 +22509,7 @@
         },
         {
             "label": "ContestHall_Text_LetsAppeal",
-            "id": 271038952,
+            "id": 271043413,
             "text": "Let's see a little enthusiasm!\\nLet's appeal!$"
         },
         {
@@ -22664,7 +22664,7 @@
         },
         {
             "label": "Text_EggHatchHuh",
-            "id": 270761253,
+            "id": 271132264,
             "text": "Huh?$"
         },
         {
@@ -22954,7 +22954,7 @@
         },
         {
             "label": "LilycoveCity_PokemonCenter_1F_Text_WaitForAnswer",
-            "id": 270741902,
+            "id": 270917094,
             "text": "… … … … … …\\n… … … … … …$"
         },
         {
@@ -24034,7 +24034,7 @@
         },
         {
             "label": "Route121_SafariZoneEntrance_Text_ComeInAndEnjoy",
-            "id": 271207971,
+            "id": 271208062,
             "text": "Come in and enjoy the SAFARI ZONE!$"
         },
         {
@@ -25379,7 +25379,7 @@
         },
         {
             "label": "gText_ApprenticeMonThanks4",
-            "id": 271307560,
+            "id": 271313641,
             "text": "{STR_VAR_1}? That's great!\\pKnowing that you made the decision,\\n{PLAYER}{KUN}, I won't be so upset if\\lI lose.\\pOkay, I'll look to you for advice again.\\nBye!$"
         },
         {
@@ -25539,7 +25539,7 @@
         },
         {
             "label": "gText_ApprenticeMoveThanks4",
-            "id": 271307560,
+            "id": 271313641,
             "text": "{STR_VAR_1}? That's great!\\pKnowing that you made the decision,\\n{PLAYER}{KUN}, I won't be so upset if\\lI lose.\\pOkay, I'll look to you for advice again.\\nBye!$"
         },
         {
@@ -26274,7 +26274,7 @@
         },
         {
             "label": "BattleDome_Text_LetTheBattleBegin",
-            "id": 270846376,
+            "id": 271334520,
             "text": "Let the battle begin!$"
         },
         {
@@ -26444,7 +26444,7 @@
         },
         {
             "label": "FallarborTown_BattleTentLobby_Text_WaitWhileSaveGame",
-            "id": 270887252,
+            "id": 271339263,
             "text": "Please wait while I save the game.$"
         },
         {
@@ -26459,7 +26459,7 @@
         },
         {
             "label": "FallarborTown_BattleTentLobby_Text_BagFullReturnForPrize",
-            "id": 270887384,
+            "id": 271339395,
             "text": "Oh?\\nYour BAG seems to be full.\\pI urge you to clear space and\\nreturn for your prize.$"
         },
         {
@@ -26669,7 +26669,7 @@
         },
         {
             "label": "VerdanturfTown_BattleTentLobby_Text_RulesAreListed2",
-            "id": 271344225,
+            "id": 271345784,
             "text": "The VERDANTURF BATTLE TENT\\nrules are listed.$"
         },
         {
@@ -26709,7 +26709,7 @@
         },
         {
             "label": "VerdanturfTown_BattleTentLobby_Text_RulesAreListed",
-            "id": 271344225,
+            "id": 271345784,
             "text": "The VERDANTURF BATTLE TENT\\nrules are listed.$"
         },
         {
@@ -27044,7 +27044,7 @@
         },
         {
             "label": "CableClub_Text_WhichService",
-            "id": 271023815,
+            "id": 271023857,
             "text": "Which of our services do you wish\\nto use?$"
         },
         {
@@ -27589,7 +27589,7 @@
         },
         {
             "label": "gContestPaintingContest",
-            "id": 271051287,
+            "id": 274319017,
             "text": "CONTEST$"
         },
         {
@@ -28154,7 +28154,7 @@
         },
         {
             "label": "gText_AnticipationSwelledForMonsAppealNext2",
-            "id": 271046661,
+            "id": 271047046,
             "text": "Anticipation swelled for\\n{STR_VAR_1}'s appeal next.$"
         },
         {
@@ -28214,7 +28214,7 @@
         },
         {
             "label": "gText_AnticipationSwelledForMonsAppealNext",
-            "id": 271046661,
+            "id": 271047046,
             "text": "Anticipation swelled for\\n{STR_VAR_1}'s appeal next.$"
         },
         {
@@ -28464,7 +28464,7 @@
         },
         {
             "label": "gText_AnabelDefeatGold",
-            "id": 271274361,
+            "id": 271352960,
             "text": "Thank you…$"
         },
         {
@@ -28519,7 +28519,7 @@
         },
         {
             "label": "gText_LucyWonGold",
-            "id": 271250284,
+            "id": 271353257,
             "text": "Hah!$"
         },
         {
@@ -30284,7 +30284,7 @@
         },
         {
             "label": "GiddyText_SoExciting",
-            "id": 271135219,
+            "id": 271139541,
             "text": " so exciting!$"
         },
         {
@@ -31354,7 +31354,7 @@
         },
         {
             "label": "Route102_Text_CalvinRegisterShort",
-            "id": 271140386,
+            "id": 271140456,
             "text": "I'd like to battle you again, so can\\nyou register me in your POKéNAV?$"
         },
         {
@@ -32209,7 +32209,7 @@
         },
         {
             "label": "Route108_Text_TaraDefeated",
-            "id": 270782032,
+            "id": 271150705,
             "text": "Oh, boo!$"
         },
         {
@@ -32384,7 +32384,7 @@
         },
         {
             "label": "Route109_Text_LolaDefeated",
-            "id": 270636250,
+            "id": 271152335,
             "text": "Mommy!$"
         },
         {
@@ -32404,7 +32404,7 @@
         },
         {
             "label": "Route109_Text_LolaRematchDefeated",
-            "id": 270636250,
+            "id": 271152335,
             "text": "Mommy!$"
         },
         {
@@ -34724,7 +34724,7 @@
         },
         {
             "label": "Route119_Text_HughDefeat",
-            "id": 271140939,
+            "id": 271179875,
             "text": "Down and out!$"
         },
         {
@@ -34754,7 +34754,7 @@
         },
         {
             "label": "Route119_Text_YasuDefeat",
-            "id": 271163479,
+            "id": 271180173,
             "text": "I admit defeat!$"
         },
         {
@@ -35144,7 +35144,7 @@
         },
         {
             "label": "Route121_Text_TammyDefeat",
-            "id": 270613765,
+            "id": 271184825,
             "text": "I have lost…$"
         },
         {
@@ -36959,7 +36959,7 @@
         },
         {
             "label": "Route134_Text_HitoshiDefeat",
-            "id": 270741902,
+            "id": 270917094,
             "text": "… … … … … …\\n… … … … … …$"
         },
         {
@@ -37214,57 +37214,57 @@
         },
         {
             "label": "gTrickHouse_Mechadoll_One",
-            "id": 268438398,
+            "id": 271052277,
             "text": "1$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Two",
-            "id": 268501660,
+            "id": 271052279,
             "text": "2$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Two2",
-            "id": 268501660,
+            "id": 271052279,
             "text": "2$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Three",
-            "id": 268481006,
+            "id": 271052283,
             "text": "3$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Four",
-            "id": 268509520,
+            "id": 271052285,
             "text": "4$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Six",
-            "id": 268439788,
+            "id": 271052287,
             "text": "6$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Seven",
-            "id": 268450425,
+            "id": 268962705,
             "text": "7$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Eight",
-            "id": 268525128,
+            "id": 271052291,
             "text": "8$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Six2",
-            "id": 268439788,
+            "id": 271052287,
             "text": "6$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Seven2",
-            "id": 268450425,
+            "id": 268962705,
             "text": "7$"
         },
         {
             "label": "gTrickHouse_Mechadoll_Eight2",
-            "id": 268525128,
+            "id": 271052291,
             "text": "8$"
         },
         {
@@ -37444,7 +37444,7 @@
         },
         {
             "label": "BravoTrainerBattleTower_Text_Response",
-            "id": 270523391,
+            "id": 271057072,
             "text": "“{STR_VAR_1}.”$"
         },
         {
@@ -37594,7 +37594,7 @@
         },
         {
             "label": "SlateportCity_OceanicMuseum_1F_Text_InterviewRequestShort",
-            "id": 271061480,
+            "id": 271061613,
             "text": "I'm gathering stories on POKéMON and\\nTRAINERS that occurred recently.\\pIf you don't mind, could you tell me\\nsomething about yourself?$"
         },
         {
@@ -37699,7 +37699,7 @@
         },
         {
             "label": "LilycoveCity_PokemonTrainerFanClub_Text_WhatsYourOpinionOfTrainer2",
-            "id": 271064022,
+            "id": 271064165,
             "text": "I'm a big fan of {STR_VAR_1}.\\nWhat's your opinion of {STR_VAR_1}?$"
         },
         {
@@ -38159,7 +38159,7 @@
         },
         {
             "label": "gTVFindThatGamerText03",
-            "id": 271078308,
+            "id": 271078656,
             "text": "Viewers, it's best to watch your COINS\\nlike {STR_VAR_1} if you visit the GAME\\lCORNER and play the {STR_VAR_2} game.\\pThis is live from the GAME CORNER--\\nwhere you can feel the excitement!\\pThat's all for today!$"
         },
         {
@@ -39139,7 +39139,7 @@
         },
         {
             "label": "GabbyAndTy_Text_InterviewAgain",
-            "id": 271102461,
+            "id": 271102963,
             "text": "Anyway, what do you think?\\nDo you want to be interviewed again?$"
         },
         {
@@ -39271,6 +39271,131 @@
             "label": "ContestLadyShow_Text_LostBadly",
             "id": 271107682,
             "text": "MC: Excuse me!\\nThanks for joining us on live TV!\\pHow did your CONTEST appearance go?\\pBEAUTY: Nothing went right…\\nFor some reason, my {STR_VAR_2}\\lcouldn't attract any popularity.\\pMC: I hate to say it, but the POKéMON's\\ncoloration is a little wanting.\\pBEAUTY: … … … … … …\\n…Sniff… Waaaaah!\\pSpectators: See that?\\nThe poor girl!\\pMC: Uh… Uh-oh…\\pUh… That's all the time we have today!\\nThanks for tuning in!$"
+        },
+        {
+            "label": "gText_PokemartSign",
+            "id": 271002474,
+            "text": "“Selected items for your convenience!”\\nPOKéMON MART$"
+        },
+        {
+            "label": "gText_PokemonCenterSign",
+            "id": 271002526,
+            "text": "“Rejuvenate your tired partners!”\\nPOKéMON CENTER$"
+        },
+        {
+            "label": "gText_MomOrDadMightLikeThisProgram",
+            "id": 271002575,
+            "text": "{STR_VAR_1} might like this program.\\n… … … … … … … … … … … … … … … …\\pBetter get going!$"
+        },
+        {
+            "label": "gText_WhichFloorWouldYouLike",
+            "id": 271002653,
+            "text": "Welcome to LILYCOVE DEPARTMENT STORE.\\pWhich floor would you like?$"
+        },
+        {
+            "label": "gText_SandstormIsVicious",
+            "id": 271002719,
+            "text": "The sandstorm is vicious.\\nIt's impossible to keep going.$"
+        },
+        {
+            "label": "gText_SelectWithoutRegisteredItem",
+            "id": 271002776,
+            "text": "An item in the BAG can be\\nregistered to SELECT for easy use.$"
+        },
+        {
+            "label": "gText_PokemonTrainerSchoolEmail",
+            "id": 271002837,
+            "text": "There's an e-mail from POKéMON TRAINER\\nSCHOOL.\\p… … … … … …\\pA POKéMON may learn up to four moves.\\pA TRAINER's expertise is tested on the\\nmove sets chosen for POKéMON.\\p… … … … … …$"
+        },
+        {
+            "label": "gText_PlayerHouseBootPC",
+            "id": 271001178,
+            "text": "{PLAYER} booted up the PC.$"
+        },
+        {
+            "label": "gText_PokeblockLinkCanceled",
+            "id": 271003036,
+            "text": "The link was canceled.$"
+        },
+        {
+            "label": "gText_UnusedNicknameReceivedPokemon",
+            "id": 271003059,
+            "text": "Want to give a nickname to\\nthe {STR_VAR_2} you received?$"
+        },
+        {
+            "label": "gText_PlayerWhitedOut",
+            "id": 271003107,
+            "text": "{PLAYER} is out of usable\\nPOKéMON!\\p{PLAYER} whited out!$"
+        },
+        {
+            "label": "gText_RegisteredTrainerinPokeNav",
+            "id": 271003151,
+            "text": "Registered {STR_VAR_1} {STR_VAR_2}\\nin the POKéNAV.$"
+        },
+        {
+            "label": "gText_ComeBackWithSecretPower",
+            "id": 271003184,
+            "text": "Do you know the TM SECRET POWER?\\pOur group, we love the TM SECRET\\nPOWER.\\pOne of our members will give it to you.\\nCome back and show me if you get it.\\pWe'll accept you as a member and sell\\nyou good stuff in secrecy.$"
+        },
+        {
+            "label": "gText_PokerusExplanation",
+            "id": 271003399,
+            "text": "Your POKéMON may be infected with\\nPOKéRUS.\\pLittle is known about the POKéRUS\\nexcept that they are microscopic life-\\lforms that attach to POKéMON.\\pWhile infected, POKéMON are said to\\ngrow exceptionally well.$"
+        },
+        {
+            "label": "gText_DoorOpenedFarAway",
+            "id": 271003675,
+            "text": "It sounded as if a door opened\\nsomewhere far away.$"
+        },
+        {
+            "label": "gText_BigHoleInTheWall",
+            "id": 271003726,
+            "text": "There is a big hole in the wall.$"
+        },
+        {
+            "label": "gText_SorryWirelessClubAdjustments",
+            "id": 271003759,
+            "text": "I'm terribly sorry.\\nThe POKéMON WIRELESS CLUB is\\lundergoing adjustments now.$"
+        },
+        {
+            "label": "gText_UndergoingAdjustments",
+            "id": 271003836,
+            "text": "It appears to be undergoing\\nadjustments…$"
+        },
+        {
+            "label": "gText_SorryTradeCenterInspections",
+            "id": 271003877,
+            "text": "I'm terribly sorry. The TRADE CENTER\\nis undergoing inspections.$"
+        },
+        {
+            "label": "gText_SorryRecordCornerPreparation",
+            "id": 271003941,
+            "text": "I'm terribly sorry. The RECORD CORNER\\nis under preparation.$"
+        },
+        {
+            "label": "gText_PlayerHandedOverTheItem",
+            "id": 271004001,
+            "text": "{PLAYER} handed over the\\n{STR_VAR_1}.$"
+        },
+        {
+            "label": "gText_ThankYouForAccessingMysteryGift",
+            "id": 271004024,
+            "text": "Thank you for accessing the\\nMYSTERY GIFT System.$"
+        },
+        {
+            "label": "gText_PlayerFoundOneTMHM",
+            "id": 271004073,
+            "text": "{PLAYER} found one {STR_VAR_1}\\n{STR_VAR_2}!$"
+        },
+        {
+            "label": "gText_Sudowoodo_Attacked",
+            "id": 271004093,
+            "text": "The weird tree doesn't like the\\nWAILMER PAIL!\\pThe weird tree attacked!$"
+        },
+        {
+            "label": "gText_LegendaryFlewAway",
+            "id": 271004164,
+            "text": "The {STR_VAR_1} flew away!$"
         }
     ]
 }

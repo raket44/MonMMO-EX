@@ -9,8 +9,36 @@ import java.io.File
  */
 class RomIndex private constructor(private val latin1: String) {
 
-  /** The first offset of [bytes] in the ROM, or -1 if absent. */
-  fun offsetOf(bytes: ByteArray): Int = latin1.indexOf(String(bytes, Charsets.ISO_8859_1))
+  /**
+   * The offset of [bytes] in the ROM, or -1 if absent. When the same encoded string occurs more
+   * than once, the client only accepts the copy the game actually points at, so occurrences whose
+   * GBA pointer (0x08000000 + offset, little-endian) appears in the ROM win over earlier ones.
+   */
+  fun offsetOf(bytes: ByteArray): Int {
+    val needle = String(bytes, Charsets.ISO_8859_1)
+    val first = latin1.indexOf(needle)
+    if (first < 0) return first
+    var offset = first
+    while (offset >= 0) {
+      if (isPointerReferenced(offset)) return offset
+      offset = latin1.indexOf(needle, offset + 1)
+    }
+    return first
+  }
+
+  private fun isPointerReferenced(offset: Int): Boolean {
+    val address = 0x08000000 + offset
+    val pointer =
+        String(
+            byteArrayOf(
+                (address and 0xFF).toByte(),
+                ((address shr 8) and 0xFF).toByte(),
+                ((address shr 16) and 0xFF).toByte(),
+                ((address shr 24) and 0xFF).toByte(),
+            ),
+            Charsets.ISO_8859_1)
+    return latin1.contains(pointer)
+  }
 
   companion object {
     private const val GAME_CODE_OFFSET = 0xAC

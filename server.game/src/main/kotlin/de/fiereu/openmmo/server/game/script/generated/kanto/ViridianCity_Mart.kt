@@ -24,7 +24,8 @@ internal object ViridianCity_Mart_EventScript_ParcelScene : Script {
     )
     ctx.sayNpc(LOCALID_MART_CLERK, ViridianCity_Mart.TakeThisToProfOak)
     ctx.setVar(KantoVars.VAR_MAP_SCENE_VIRIDIAN_CITY_MART, 1)
-    ctx.giveItem(Items.PARCEL)
+    // The real FireRed item, not the modern catalogue's Gen 4 parcel with the Twinleaf text.
+    ctx.giveItem(checkNotNull(ctx.resolveItem("ITEM_OAKS_PARCEL")))
     ctx.sign(ViridianCity_Mart.ReceivedOaksParcelFromClerk)
     ctx.setVar(KantoVars.VAR_MAP_SCENE_PALLET_TOWN_PROFESSOR_OAKS_LAB, 5)
   }

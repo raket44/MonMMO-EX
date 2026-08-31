@@ -1,0 +1,816 @@
+20000;TM101 Pound
+20001;TM102 Comet Punch
+20002;TM103 Mega Punch
+20003;TM104 Pay Day
+20004;TM105 Fire Punch
+20005;TM106 Ice Punch
+20006;TM107 Thunder Punch
+20007;TM108 Razor Wind
+20008;TM109 Swords Dance
+20009;TM110 Cut
+20010;TM111 Gust
+20011;TM112 Wing Attack
+20012;TM113 Whirlwind
+20013;TM114 Fly
+20014;TM115 Bind
+20015;TM116 Vine Whip
+20016;TM117 Double Kick
+20017;TM118 Mega Kick
+20018;TM119 Sand Attack
+20019;TM120 Headbutt
+20020;TM121 Horn Drill
+20021;TM122 Tackle
+20022;TM123 Body Slam
+20023;TM124 Take Down
+20024;TM125 Double-Edge
+20025;TM126 Tail Whip
+20026;TM127 Poison Sting
+20027;TM128 Pin Missile
+20028;TM129 Leer
+20029;TM130 Bite
+20030;TM131 Growl
+20031;TM132 Roar
+20032;TM133 Sing
+20033;TM134 Supersonic
+20034;TM135 Ember
+20035;TM136 Flamethrower
+20036;TM137 Mist
+20037;TM138 Water Gun
+20038;TM139 Hydro Pump
+20039;TM140 Surf
+20040;TM141 Ice Beam
+20041;TM142 Blizzard
+20042;TM143 Psybeam
+20043;TM144 Bubble Beam
+20044;TM145 Hyper Beam
+20045;TM146 Peck
+20046;TM147 Submission
+20047;TM148 Low Kick
+20048;TM149 Counter
+20049;TM150 Seismic Toss
+20050;TM151 Strength
+20051;TM152 Absorb
+20052;TM153 Mega Drain
+20053;TM154 Leech Seed
+20054;TM155 Growth
+20055;TM156 Razor Leaf
+20056;TM157 Solar Beam
+20057;TM158 Poison Powder
+20058;TM159 Stun Spore
+20059;TM160 Sleep Powder
+20060;TM161 Petal Dance
+20061;TM162 String Shot
+20062;TM163 Dragon Rage
+20063;TM164 Fire Spin
+20064;TM165 Thunder Shock
+20065;TM166 Thunderbolt
+20066;TM167 Thunder Wave
+20067;TM168 Thunder
+20068;TM169 Rock Throw
+20069;TM170 Earthquake
+20070;TM171 Fissure
+20071;TM172 Dig
+20072;TM173 Toxic
+20073;TM174 Confusion
+20074;TM175 Psychic
+20075;TM176 Hypnosis
+20076;TM177 Agility
+20077;TM178 Quick Attack
+20078;TM179 Rage
+20079;TM180 Teleport
+20080;TM181 Night Shade
+20081;TM182 Mimic
+20082;TM183 Screech
+20083;TM184 Double Team
+20084;TM185 Recover
+20085;TM186 Harden
+20086;TM187 Smokescreen
+20087;TM188 Confuse Ray
+20088;TM189 Defense Curl
+20089;TM190 Light Screen
+20090;TM191 Haze
+20091;TM192 Reflect
+20092;TM193 Focus Energy
+20093;TM194 Bide
+20094;TM195 Metronome
+20095;TM196 Self-Destruct
+20096;TM197 Egg Bomb
+20097;TM198 Lick
+20098;TM199 Fire Blast
+20099;TM200 Waterfall
+20100;TM201 Swift
+20101;TM202 Skull Bash
+20102;TM203 Amnesia
+20103;TM204 Soft-Boiled
+20104;TM205 Glare
+20105;TM206 Dream Eater
+20106;TM207 Leech Life
+20107;TM208 Sky Attack
+20108;TM209 Transform
+20109;TM210 Spore
+20110;TM211 Flash
+20111;TM212 Psywave
+20112;TM213 Splash
+20113;TM214 Acid Armor
+20114;TM215 Explosion
+20115;TM216 Bonemerang
+20116;TM217 Rest
+20117;TM218 Rock Slide
+20118;TM219 Conversion
+20119;TM220 Tri Attack
+20120;TM221 Super Fang
+20121;TM222 Slash
+20122;TM223 Substitute
+20123;TM224 Thief
+20124;TM225 Nightmare
+20125;TM226 Flame Wheel
+20126;TM227 Snore
+20127;TM228 Curse
+20128;TM229 Flail
+20129;TM230 Conversion 2
+20130;TM231 Reversal
+20131;TM232 Spite
+20132;TM233 Protect
+20133;TM234 Mach Punch
+20134;TM235 Scary Face
+20135;TM236 Sludge Bomb
+20136;TM237 Mud-Slap
+20137;TM238 Spikes
+20138;TM239 Zap Cannon
+20139;TM240 Perish Song
+20140;TM241 Icy Wind
+20141;TM242 Detect
+20142;TM243 Outrage
+20143;TM244 Sandstorm
+20144;TM245 Giga Drain
+20145;TM246 Endure
+20146;TM247 Charm
+20147;TM248 Rollout
+20148;TM249 False Swipe
+20149;TM250 Swagger
+20150;TM251 Spark
+20151;TM252 Fury Cutter
+20152;TM253 Steel Wing
+20153;TM254 Attract
+20154;TM255 Sleep Talk
+20155;TM256 Heal Bell
+20156;TM257 Return
+20157;TM258 Frustration
+20158;TM259 Safeguard
+20159;TM260 Pain Split
+20160;TM261 Dynamic Punch
+20161;TM262 Megahorn
+20162;TM263 Dragon Breath
+20163;TM264 Baton Pass
+20164;TM265 Encore
+20165;TM266 Sweet Scent
+20166;TM267 Iron Tail
+20167;TM268 Metal Claw
+20168;TM269 Morning Sun
+20169;TM270 Synthesis
+20170;TM271 Moonlight
+20171;TM272 Hidden Power
+20172;TM273 Twister
+20173;TM274 Rain Dance
+20174;TM275 Sunny Day
+20175;TM276 Crunch
+20176;TM277 Psych Up
+20177;TM278 Extreme Speed
+20178;TM279 Ancient Power
+20179;TM280 Shadow Ball
+20180;TM281 Future Sight
+20181;TM282 Rock Smash
+20182;TM283 Whirlpool
+20183;TM284 Beat Up
+20184;TM285 Fake Out
+20185;TM286 Uproar
+20186;TM287 Heat Wave
+20187;TM288 Hail
+20188;TM289 Torment
+20189;TM290 Will-O-Wisp
+20190;TM291 Facade
+20191;TM292 Focus Punch
+20192;TM293 Nature Power
+20193;TM294 Charge
+20194;TM295 Taunt
+20195;TM296 Helping Hand
+20196;TM297 Trick
+20197;TM298 Role Play
+20198;TM299 Wish
+20199;TM300 Superpower
+20200;TM301 Magic Coat
+20201;TM302 Recycle
+20202;TM303 Revenge
+20203;TM304 Brick Break
+20204;TM305 Yawn
+20205;TM306 Knock Off
+20206;TM307 Endeavor
+20207;TM308 Skill Swap
+20208;TM309 Imprison
+20209;TM310 Snatch
+20210;TM311 Secret Power
+20211;TM312 Dive
+20212;TM313 Luster Purge
+20213;TM314 Mist Ball
+20214;TM315 Feather Dance
+20215;TM316 Blaze Kick
+20216;TM317 Ice Ball
+20217;TM318 Hyper Voice
+20218;TM319 Poison Fang
+20219;TM320 Blast Burn
+20220;TM321 Hydro Cannon
+20221;TM322 Weather Ball
+20222;TM323 Fake Tears
+20223;TM324 Air Cutter
+20224;TM325 Overheat
+20225;TM326 Rock Tomb
+20226;TM327 Silver Wind
+20227;TM328 Metal Sound
+20228;TM329 Tickle
+20229;TM330 Cosmic Power
+20230;TM331 Signal Beam
+20231;TM332 Shadow Punch
+20232;TM333 Sand Tomb
+20233;TM334 Sheer Cold
+20234;TM335 Muddy Water
+20235;TM336 Bullet Seed
+20236;TM337 Aerial Ace
+20237;TM338 Icicle Spear
+20238;TM339 Iron Defense
+20239;TM340 Block
+20240;TM341 Dragon Claw
+20241;TM342 Frenzy Plant
+20242;TM343 Bulk Up
+20243;TM344 Bounce
+20244;TM345 Mud Shot
+20245;TM346 Poison Tail
+20246;TM347 Covet
+20247;TM348 Volt Tackle
+20248;TM349 Magical Leaf
+20249;TM350 Calm Mind
+20250;TM351 Leaf Blade
+20251;TM352 Dragon Dance
+20252;TM353 Rock Blast
+20253;TM354 Shock Wave
+20254;TM355 Water Pulse
+20255;TM356 Roost
+20256;TM357 Gravity
+20257;TM358 Gyro Ball
+20258;TM359 Brine
+20259;TM360 Natural Gift
+20260;TM361 Pluck
+20261;TM362 Tailwind
+20262;TM363 U-turn
+20263;TM364 Close Combat
+20264;TM365 Payback
+20265;TM366 Assurance
+20266;TM367 Embargo
+20267;TM368 Fling
+20268;TM369 Heal Block
+20269;TM370 Gastro Acid
+20270;TM371 Copycat
+20271;TM372 Power Swap
+20272;TM373 Guard Swap
+20273;TM374 Last Resort
+20274;TM375 Worry Seed
+20275;TM376 Sucker Punch
+20276;TM377 Toxic Spikes
+20277;TM378 Aqua Ring
+20278;TM379 Magnet Rise
+20279;TM380 Flare Blitz
+20280;TM381 Aura Sphere
+20281;TM382 Rock Polish
+20282;TM383 Poison Jab
+20283;TM384 Dark Pulse
+20284;TM385 Night Slash
+20285;TM386 Aqua Tail
+20286;TM387 Seed Bomb
+20287;TM388 Air Slash
+20288;TM389 X-Scissor
+20289;TM390 Bug Buzz
+20290;TM391 Dragon Pulse
+20291;TM392 Dragon Rush
+20292;TM393 Power Gem
+20293;TM394 Drain Punch
+20294;TM395 Vacuum Wave
+20295;TM396 Focus Blast
+20296;TM397 Energy Ball
+20297;TM398 Brave Bird
+20298;TM399 Earth Power
+20299;TM400 Giga Impact
+20300;TM401 Nasty Plot
+20301;TM402 Bullet Punch
+20302;TM403 Avalanche
+20303;TM404 Ice Shard
+20304;TM405 Shadow Claw
+20305;TM406 Thunder Fang
+20306;TM407 Ice Fang
+20307;TM408 Fire Fang
+20308;TM409 Shadow Sneak
+20309;TM410 Psycho Cut
+20310;TM411 Zen Headbutt
+20311;TM412 Flash Cannon
+20312;TM413 Rock Climb
+20313;TM414 Defog
+20314;TM415 Trick Room
+20315;TM416 Draco Meteor
+20316;TM417 Discharge
+20317;TM418 Lava Plume
+20318;TM419 Leaf Storm
+20319;TM420 Power Whip
+20320;TM421 Cross Poison
+20321;TM422 Gunk Shot
+20322;TM423 Iron Head
+20323;TM424 Magnet Bomb
+20324;TM425 Stone Edge
+20325;TM426 Captivate
+20326;TM427 Stealth Rock
+20327;TM428 Grass Knot
+20328;TM429 Bug Bite
+20329;TM430 Charge Beam
+20330;TM431 Wood Hammer
+20331;TM432 Aqua Jet
+20332;TM433 Head Smash
+20333;TM434 Double Hit
+20334;TM435 Magma Storm
+20335;TM436 Dark Void
+20336;TM437 Ominous Wind
+20337;TM438 Hone Claws
+20338;TM439 Wonder Room
+20339;TM440 Psyshock
+20340;TM441 Venoshock
+20341;TM442 Telekinesis
+20342;TM443 Magic Room
+20343;TM444 Smack Down
+20344;TM445 Storm Throw
+20345;TM446 Sludge Wave
+20346;TM447 Heavy Slam
+20347;TM448 Electro Ball
+20348;TM449 Flame Charge
+20349;TM450 Low Sweep
+20350;TM451 Acid Spray
+20351;TM452 Foul Play
+20352;TM453 After You
+20353;TM454 Round
+20354;TM455 Echoed Voice
+20355;TM456 Stored Power
+20356;TM457 Ally Switch
+20357;TM458 Scald
+20358;TM459 Hex
+20359;TM460 Sky Drop
+20360;TM461 Circle Throw
+20361;TM462 Incinerate
+20362;TM463 Quash
+20363;TM464 Acrobatics
+20364;TM465 Reflect Type
+20365;TM466 Retaliate
+20366;TM467 Water Pledge
+20367;TM468 Fire Pledge
+20368;TM469 Grass Pledge
+20369;TM470 Volt Switch
+20370;TM471 Struggle Bug
+20371;TM472 Bulldoze
+20372;TM473 Frost Breath
+20373;TM474 Dragon Tail
+20374;TM475 Work Up
+20375;TM476 Electroweb
+20376;TM477 Wild Charge
+20377;TM478 Drill Run
+20378;TM479 Dual Chop
+20379;TM480 Horn Leech
+20380;TM481 Sacred Sword
+20381;TM482 Razor Shell
+20382;TM483 Heat Crash
+20383;TM484 Cotton Guard
+20384;TM485 Psystrike
+20385;TM486 Tail Slap
+20386;TM487 Hurricane
+20387;TM488 Techno Blast
+20388;TM489 Relic Song
+20389;TM490 Secret Sword
+20390;TM491 Snarl
+20391;TM492 Icicle Crash
+20392;TM493 Flying Press
+20393;TM494 Sticky Web
+20394;TM495 Phantom Force
+20395;TM496 Trick-or-Treat
+20396;TM497 Parabolic Charge
+20397;TM498 Petal Blizzard
+20398;TM499 Freeze-Dry
+20399;TM500 Disarming Voice
+20400;TM501 Parting Shot
+20401;TM502 Topsy-Turvy
+20402;TM503 Draining Kiss
+20403;TM504 Grassy Terrain
+20404;TM505 Misty Terrain
+20405;TM506 Play Rough
+20406;TM507 Fairy Wind
+20407;TM508 Moonblast
+20408;TM509 Boomburst
+20409;TM510 Confide
+20410;TM511 Diamond Storm
+20411;TM512 Steam Eruption
+20412;TM513 Water Shuriken
+20413;TM514 Mystical Fire
+20414;TM515 Spiky Shield
+20415;TM516 Eerie Impulse
+20416;TM517 Venom Drench
+20417;TM518 Geomancy
+20418;TM519 Electric Terrain
+20419;TM520 Dazzling Gleam
+20420;TM521 Baby-Doll Eyes
+20421;TM522 Nuzzle
+20422;TM523 Infestation
+20423;TM524 Power-Up Punch
+20424;TM525 Oblivion Wing
+20425;TM526 Thousand Arrows
+20426;TM527 Thousand Waves
+20427;TM528 Light Of Ruin
+20428;TM529 Origin Pulse
+20429;TM530 Precipice Blades
+20430;TM531 Dragon Ascent
+20431;TM532 Hyperspace Fury
+20432;TM533 Shore Up
+20433;TM534 First Impression
+20434;TM535 Darkest Lariat
+20435;TM536 Ice Hammer
+20436;TM537 High Horsepower
+20437;TM538 Solar Blade
+20438;TM539 Leafage
+20439;TM540 Laser Focus
+20440;TM541 Throat Chop
+20441;TM542 Pollen Puff
+20442;TM543 Psychic Terrain
+20443;TM544 Lunge
+20444;TM545 Speed Swap
+20445;TM546 Smart Strike
+20446;TM547 Core Enforcer
+20447;TM548 Brutal Swing
+20448;TM549 Aurora Veil
+20449;TM550 Fleur Cannon
+20450;TM551 Psychic Fangs
+20451;TM552 Stomping Tantrum
+20452;TM553 Shadow Bone
+20453;TM554 Liquidation
+20454;TM555 Spectral Thief
+20455;TM556 Plasma Fists
+20456;TM557 Double Iron Bash
+20457;TM558 No Retreat
+20458;TM559 Octolock
+20459;TM560 Body Press
+20460;TM561 Aura Wheel
+20461;TM562 Breaking Swipe
+20462;TM563 Overdrive
+20463;TM564 Life Dew
+20464;TM565 Meteor Assault
+20465;TM566 Steel Beam
+20466;TM567 Expanding Force
+20467;TM568 Steel Roller
+20468;TM569 Scale Shot
+20469;TM570 Meteor Beam
+20470;TM571 Misty Explosion
+20471;TM572 Grassy Glide
+20472;TM573 Rising Voltage
+20473;TM574 Terrain Pulse
+20474;TM575 Skitter Smack
+20475;TM576 Burning Jealousy
+20476;TM577 Lash Out
+20477;TM578 Poltergeist
+20478;TM579 Corrosive Gas
+20479;TM580 Coaching
+20480;TM581 Flip Turn
+20481;TM582 Triple Axel
+20482;TM583 Dual Wingbeat
+20483;TM584 Scorching Sands
+20484;TM585 Power Shift
+20485;TM586 Stone Axe
+20486;TM587 Barb Barrage
+20487;TM588 Tera Blast
+20488;TM589 Last Respects
+20489;TM590 Order Up
+20490;TM591 Spicy Extract
+20491;TM592 Ice Spinner
+20492;TM593 Glaive Rush
+20493;TM594 Salt Cure
+20494;TM595 Mortal Spin
+20495;TM596 Make It Rain
+20496;TM597 Shed Tail
+20497;TM598 Snowscape
+20498;TM599 Pounce
+20499;TM600 Trailblaze
+20500;TM601 Chilling Water
+20501;TM602 Rage Fist
+20502;TM603 Armor Cannon
+20503;TM604 Bitter Blade
+20504;TM605 Gigaton Hammer
+20505;TM606 Hard Press
+20506;TM607 Dragon Cheer
+20507;TM608 Alluring Voice
+20508;TM609 Temper Flare
+20509;TM610 Supercell Slam
+20510;TM611 Psychic Noise
+20511;TM612 Upper Hand
+21000;Ice Stone
+21001;Sachet
+21002;Whipped Dream
+21003;Tart Apple
+21004;Sweet Apple
+21005;Syrupy Apple
+21006;Cracked Pot
+21007;Chipped Pot
+21008;Galarica Cuff
+21009;Galarica Wreath
+21010;Linking Cord
+21011;Black Augurite
+21012;Peat Block
+21013;Malicious Armor
+21014;Auspicious Armor
+21015;Masterpiece Teacup
+21016;Unremarkable Teacup
+21017;Scroll of Darkness
+21018;Scroll of Waters
+21019;Metal Alloy
+22000;Strange Ball
+22001;Beast Ball
+22002;Max Honey
+22003;Pewter Crunchies
+22004;Lumiose Galette
+22005;Shalour Sable
+22006;Big Malasada
+22007;Ability Capsule
+22008;Lonely Mint
+22009;Adamant Mint
+22010;Naughty Mint
+22011;Brave Mint
+22012;Bold Mint
+22013;Impish Mint
+22014;Lax Mint
+22015;Relaxed Mint
+22016;Modest Mint
+22017;Mild Mint
+22018;Rash Mint
+22019;Quiet Mint
+22020;Calm Mint
+22021;Gentle Mint
+22022;Careful Mint
+22023;Sassy Mint
+22024;Timid Mint
+22025;Hasty Mint
+22026;Jolly Mint
+22027;Naive Mint
+22028;Serious Mint
+22029;Dynamax Candy
+22030;Max Lure
+22031;Max Mushrooms
+22032;Bottle Cap
+22033;Gold Bottle Cap
+22034;Strange Souvenir
+22035;Jaw Fossil
+22036;Sail Fossil
+22037;Fossilized Bird
+22038;Fossilized Fish
+22039;Fossilized Drake
+22040;Fossilized Dino
+22041;Rich Mulch
+22042;Surprise Mulch
+22043;Boost Mulch
+22044;Amaze Mulch
+22045;Blue Apricorn
+22046;Yellow Apricorn
+22047;Green Apricorn
+22048;Pink Apricorn
+22049;White Apricorn
+22050;Black Apricorn
+22051;Wishing Piece
+22052;Galarica Twig
+22053;Armorite Ore
+22054;Dynite Ore
+22055;Strawberry Sweet
+22056;Love Sweet
+22057;Berry Sweet
+22058;Clover Sweet
+22059;Flower Sweet
+22060;Star Sweet
+22061;Ribbon Sweet
+22062;Red Nectar
+22063;Yellow Nectar
+22064;Pink Nectar
+22065;Purple Nectar
+22066;Pixie Plate
+22067;Fire Memory
+22068;Water Memory
+22069;Electric Memory
+22070;Grass Memory
+22071;Ice Memory
+22072;Fighting Memory
+22073;Poison Memory
+22074;Ground Memory
+22075;Flying Memory
+22076;Psychic Memory
+22077;Bug Memory
+22078;Rock Memory
+22079;Ghost Memory
+22080;Dragon Memory
+22081;Dark Memory
+22082;Steel Memory
+22083;Fairy Memory
+22084;Rusted Sword
+22085;Rusted Shield
+22086;Venusaurite
+22087;Charizardite X
+22088;Charizardite Y
+22089;Blastoisinite
+22090;Beedrillite
+22091;Pidgeotite
+22092;Alakazite
+22093;Slowbronite
+22094;Gengarite
+22095;Kangaskhanite
+22096;Pinsirite
+22097;Gyaradosite
+22098;Aerodactylite
+22099;Mewtwonite X
+22100;Mewtwonite Y
+22101;Ampharosite
+22102;Steelixite
+22103;Scizorite
+22104;Heracronite
+22105;Houndoominite
+22106;Tyranitarite
+22107;Sceptilite
+22108;Blazikenite
+22109;Swampertite
+22110;Gardevoirite
+22111;Sablenite
+22112;Mawilite
+22113;Aggronite
+22114;Medichamite
+22115;Manectite
+22116;Sharpedonite
+22117;Cameruptite
+22118;Altarianite
+22119;Banettite
+22120;Absolite
+22121;Glalitite
+22122;Salamencite
+22123;Metagrossite
+22124;Latiasite
+22125;Latiosite
+22126;Lopunnite
+22127;Garchompite
+22128;Lucarionite
+22129;Abomasite
+22130;Galladite
+22131;Audinite
+22132;Diancite
+22133;Clefablite
+22134;Victreebelite
+22135;Starminite
+22136;Dragoninite
+22137;Meganiumite
+22138;Feraligite
+22139;Skarmorite
+22140;Froslassite
+22141;Emboarite
+22142;Excadrite
+22143;Scolipite
+22144;Scraftinite
+22145;Eelektrossite
+22146;Chandelurite
+22147;Chesnaughtite
+22148;Delphoxite
+22149;Greninjite
+22150;Pyroarite
+22151;Floettite
+22152;Malamarite
+22153;Barbaracite
+22154;Dragalgite
+22155;Hawluchanite
+22156;Zygardite
+22157;Drampanite
+22158;Falinksite
+22159;Heatranite
+22160;Darkranite
+22161;Zeraorite
+22162;Raichunite X
+22163;Raichunite Y
+22164;Chimechite
+22165;Absolite Z
+22166;Staraptite
+22167;Garchompite Z
+22168;Lucarionite Z
+22169;Golurkite
+22170;Meowsticite
+22171;Crabominite
+22172;Golisopite
+22173;Magearnite
+22174;Scovillainite
+22175;Baxcalibrite
+22176;Tatsugirinite
+22177;Glimmoranite
+22178;Fairy Gem
+22179;Normalium Z
+22180;Firium Z
+22181;Waterium Z
+22182;Electrium Z
+22183;Grassium Z
+22184;Icium Z
+22185;Fightinium Z
+22186;Poisonium Z
+22187;Groundium Z
+22188;Flyinium Z
+22189;Psychium Z
+22190;Buginium Z
+22191;Rockium Z
+22192;Ghostium Z
+22193;Dragonium Z
+22194;Darkinium Z
+22195;Steelium Z
+22196;Fairium Z
+22197;Pikanium Z
+22198;Eevium Z
+22199;Snorlium Z
+22200;Mewnium Z
+22201;Decidium Z
+22202;Incinium Z
+22203;Primarium Z
+22204;Lycanium Z
+22205;Mimikium Z
+22206;Kommonium Z
+22207;Tapunium Z
+22208;Solganium Z
+22209;Lunalium Z
+22210;Marshadium Z
+22211;Aloraichium Z
+22212;Pikashunium Z
+22213;Ultranecrozium Z
+22214;Electric Seed
+22215;Psychic Seed
+22216;Misty Seed
+22217;Grassy Seed
+22218;Luminous Moss
+22219;Weakness Policy
+22220;Assault Vest
+22221;Adrenaline Orb
+22222;Terrain Extender
+22223;Heavy-Duty Boots
+22224;Blunder Policy
+22225;Roseli Berry
+22226;Kee Berry
+22227;Maranga Berry
+22228;Ability Shield
+22229;Clear Amulet
+22230;Punching Glove
+22231;Covert Cloak
+22232;Booster Energy
+22233;Big Bamboo Shoot
+22234;Gimmighoul Coin
+22235;Leader's Crest
+22236;Tiny Bamboo Shoot
+22237;Bug Tera Shard
+22238;Dark Tera Shard
+22239;Dragon Tera Shard
+22240;Electric Tera Shard
+22241;Fairy Tera Shard
+22242;Fighting Tera Shard
+22243;Fire Tera Shard
+22244;Flying Tera Shard
+22245;Ghost Tera Shard
+22246;Grass Tera Shard
+22247;Ground Tera Shard
+22248;Ice Tera Shard
+22249;Normal Tera Shard
+22250;Poison Tera Shard
+22251;Psychic Tera Shard
+22252;Rock Tera Shard
+22253;Steel Tera Shard
+22254;Water Tera Shard
+22255;Adamant Crystal
+22256;Griseous Core
+22257;Lustrous Globe
+22258;Berserk Gene
+22259;Fairy Feather
+22260;Cornerstone Mask
+22261;Wellspring Mask
+22262;Hearthflame Mask
+22263;Health Mochi
+22264;Muscle Mochi
+22265;Resist Mochi
+22266;Genius Mochi
+22267;Clever Mochi
+22268;Swift Mochi
+22269;Fresh-Start Mochi
+22270;Stellar Tera Shard
+22271;Jubilife Muffin
+22272;Remedy
+22273;Fine Remedy
+22274;Superb Remedy
+22275;Aux Evasion
+22276;Aux Guard
+22277;Aux Power
+22278;Aux Powerguard
+22279;Choice Dumpling
+22280;Swap Snack
+22281;Twice-Spiced Radish
+22282;Pokéshi Doll
+22283;Ability Pill

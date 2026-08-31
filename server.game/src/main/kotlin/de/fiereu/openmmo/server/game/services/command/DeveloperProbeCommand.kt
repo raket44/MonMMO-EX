@@ -25,7 +25,7 @@ constructor(
 ) : ChatCommand {
   override val name = "probe"
   override val usage =
-      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|pc|pcwin>"
+      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin>"
   override val description = "sends one candidate packet to see how the client renders it"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -150,6 +150,23 @@ constructor(
         val text = ctx.args.drop(2).joinToString(" ").ifEmpty { "Probe notice type $type" }
         ctx.session.send(ServerNoticePacket(type.toShort(), 0, text))
         ctx.reply("Sent ServerNoticePacket type=$type.")
+      }
+      // Raw 0x2A story-flag send, bypassing the key mapping: the tool for decoding what each
+      // whitelisted client id renders (drawbridge state? gate opening? fly spot?). Stand where
+      // the effect would show, flip the id, watch. Ids outside the client's whitelist are
+      // rejected client-side with a logged WARN, so probing is safe but pointless there.
+      "storyflag" -> {
+        val region = ctx.args.getOrNull(1)?.toIntOrNull()
+        val id = ctx.args.getOrNull(2)?.toIntOrNull()
+        val value = ctx.args.getOrNull(3)?.toIntOrNull() ?: 1
+        if (region == null || id == null) {
+          ctx.reply("/probe storyflag <region> <id> [value=1]")
+          return
+        }
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.StoryFlagUpdatePacket(region.toByte(), id, value))
+        val listed = de.fiereu.openmmo.server.game.services.ClientStoryWhitelist.accepts(region, id)
+        ctx.reply("Sent 0x2A region=$region id=$id value=$value (whitelisted=$listed)")
       }
       "msg" -> {
         val stringId = ctx.args.getOrNull(1)?.toIntOrNull()

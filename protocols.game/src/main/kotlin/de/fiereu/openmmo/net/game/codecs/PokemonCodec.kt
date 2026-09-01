@@ -21,14 +21,15 @@ private fun reserved(hex: String): Codec<Unit> =
       }
     }
 
-// Fixed 4-byte U8 list at the start of trailer A, purpose unknown, always zero here.
-private const val LIST4 = "00000000"
-// Trailer A bytes between the EVs and the IV word, purpose unknown (includes the ff/03 markers).
-// NOT constant: game/s2c/13/party_scrubbed.bin has ...01...040502... here while
-// game/s2c/14/monster_record_32710.bin has ...00...580500..., so at least three of these bytes are
-// per-monster fields still modelled as fixed bytes. Both captures keep the region the same width,
-// so a wrong value cannot desync a reader; it only sends the client incorrect data.
-private const val TAIL_A_REST = "00000100000000000000040502ffffffff0300"
+// Four shorts the client reads into k91.CQ (f/tK0.wG, bytecode-walked against the captures),
+// purpose unknown - q00(i)/vm1() expose them, always zero in both captures.
+private const val CQ_SHORTS = "0000000000000000"
+// Bytes between the EVs and the IV word, client fields Vx/Ik/TJ/LC/js + 1 discarded byte +
+// wY0/pub/YJ1 + the cT0 int + dg1/Jw1 (wG's read order). Semantics unknown; the capture values
+// are written back for every monster. NOT constant across captures: monster_record_32710.bin has
+// 580500 where this writes 040502, so wY0/pub/YJ1 are per-monster fields still modelled as fixed
+// bytes - same width either way, so a wrong value cannot desync the reader.
+private const val TAIL_A_REST = "000000000000040502ffffffff0300"
 // Trailer B long that follows the unknown byte, purpose unknown. Species-dependent, so the captured
 // value is written back for now.
 private const val TRAILER_B_LONG = 0x200000L
@@ -83,12 +84,17 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     field(reserved("0000")) {}
     val level = field(S8, Pokemon::level)
     val hp = field(S16LE, Pokemon::hp)
-    field(reserved("0000")) {}
+    // Held item id, 0 for none. Client field k91.eE0: the held-item getter vh1() returns the
+    // battle override z21 when set and falls back to THIS short (bytecode-verified via the breed
+    // window's "Held Item: {00}" render chain, f/pM1 -> vh1 -> f/YY0.lPt9 registry lookup).
+    val heldItem = field(S16LE) { it.heldItem.toShort() }
     val xp = field(S32LE, Pokemon::xp)
     field(reserved("003200")) {}
     val moveIds = List(4) { i -> field(S16LE) { it.moves[i].id } }
     val movePps = List(4) { i -> field(S8) { it.moves[i].pp } }
-    field(reserved(LIST4)) {}
+    // The client reads FOUR SHORTS here (k91.CQ) and only THEN the six EV bytes - the old
+    // 4-byte-list guess had the EVs starting 4 bytes early, so the client showed them shifted.
+    field(reserved(CQ_SHORTS)) {}
     val evHp = field(U8) { it.eVs.hp and 0xFF }
     val evAtk = field(U8) { it.eVs.atk and 0xFF }
     val evDef = field(U8) { it.eVs.def and 0xFF }
@@ -115,6 +121,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
         level = level,
         hp = hp,
         xp = xp,
+        heldItem = heldItem.toInt(),
         eVs = evsFromWire(evHp, evAtk, evDef, evSpd, evSpAtk, evSpDef),
         iVs = ivsFromBits(ivBits),
         moves = List(4) { PokemonMove(moveIds[it], movePps[it]) },

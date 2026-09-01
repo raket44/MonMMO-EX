@@ -348,6 +348,7 @@ constructor(
           isRaidEncounter = isRaidEncounter,
           isEgg = isEgg,
           caughtAt = caughtAt,
+          heldItem = heldItem,
       )
 
   private fun PokemonRecord.toPokemon(): Pokemon =
@@ -380,6 +381,7 @@ constructor(
           isRaidEncounter = isRaidEncounter ?: false,
           isEgg = isEgg ?: false,
           caughtAt = caughtAt,
+          heldItem = heldItem ?: 0,
       )
 
   private fun PokemonRecord.hydrateEvs(): EVs =

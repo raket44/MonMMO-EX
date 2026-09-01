@@ -63,35 +63,12 @@ constructor(
             // The renderer walks its six stat constants and indexes THIS array by stat id
             // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
             // entry per stat. Per the operator, each row shows the roll RANGE between the two
-            // parents' IVs (a brace will pin one parent's value once held items exist); the
-            // renderer formats a contribution's byte as the IV number and its float as a
-            // percentage, so each parent contributes its value at even odds. Wire stat order
-            // is the GBA one: hp, atk, def, SPEED, spAtk, spDef.
-            statEntries =
-                buildList {
-                  val a = with(first.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
-                  val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
-                  repeat(6) { stat ->
-                    add(
-                        de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
-                            guaranteed = false,
-                            statId = stat.toShort(),
-                            contributions =
-                                listOf(
-                                    de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
-                                        source = a[stat].toByte(),
-                                        weight = 0.5f,
-                                        amount = 0,
-                                    ),
-                                    de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
-                                        source = b[stat].toByte(),
-                                        weight = 0.5f,
-                                        amount = 1,
-                                    ),
-                                ),
-                        ))
-                  }
-                },
+            // parents' IVs; the renderer formats a contribution's byte as the IV number and its
+            // float as a percentage, so each parent contributes its value at even odds. A held
+            // Power item braces its stat: the row turns guaranteed and only the braced parent's
+            // value remains (both braced the same stat = a 50/50 between them, still pinned).
+            // Wire stat order is the GBA one: hp, atk, def, SPEED, spAtk, spDef.
+            statEntries = forecastStatEntries(first, second),
             shininessTypes = listOf(0),
             valueIds = emptyList(),
             valueSources = emptyList(),
@@ -120,6 +97,35 @@ constructor(
     sendNotice(event.session, "Breeding is coming soon - your pair was noted.")
   }
 
+  private fun forecastStatEntries(
+      first: de.fiereu.openmmo.common.Pokemon,
+      second: de.fiereu.openmmo.common.Pokemon,
+  ): List<de.fiereu.openmmo.net.game.packets.BreedingStatEntry> {
+    val a = with(first.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+    val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+    val bracedA = POWER_BRACES[first.heldItem]
+    val bracedB = POWER_BRACES[second.heldItem]
+    return List(6) { stat ->
+      val braced = (stat == bracedA) || (stat == bracedB)
+      val parents = buildList {
+        if (!braced || stat == bracedA) add(a[stat])
+        if (!braced || stat == bracedB) add(b[stat])
+      }
+      de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
+          guaranteed = braced,
+          statId = stat.toShort(),
+          contributions =
+              parents.mapIndexed { index, value ->
+                de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
+                    source = value.toByte(),
+                    weight = 1.0f / parents.size,
+                    amount = index,
+                )
+              },
+      )
+    }
+  }
+
   private fun emptyForecast(a: Long, b: Long) =
       BreedingForecastPacket(
           parentA = a,
@@ -144,5 +150,26 @@ constructor(
     const val DITTO = 132
     /** Retail's price for pinning the offspring's gender. */
     const val GENDER_CHOICE_COST = 5000
+
+    /**
+     * Client item id of each Power brace to the wire stat index it pins (hp, atk, def, spd, spAtk,
+     * spDef). Ids are the 5xxx held-item catalog; the 6xxx duplicates map identically. The
+     * Everstone (5229/6229) braces the NATURE, which the forecast does not display yet.
+     */
+    val POWER_BRACES =
+        mapOf(
+            5294 to 0,
+            6294 to 0, // Power Weight - HP
+            5289 to 1,
+            6289 to 1, // Power Bracer - Attack
+            5290 to 2,
+            6290 to 2, // Power Belt - Defense
+            5293 to 3,
+            6293 to 3, // Power Anklet - Speed
+            5291 to 4,
+            6291 to 4, // Power Lens - Sp. Attack
+            5292 to 5,
+            6292 to 5, // Power Band - Sp. Defense
+        )
   }
 }

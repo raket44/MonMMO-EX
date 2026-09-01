@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.PacketEvent
+import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.Skin
 import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.PokemonContainer
@@ -178,6 +179,74 @@ constructor(
     }
 
     ctx.reply("$itemName cannot be used that way yet.")
+  }
+
+  /**
+   * The bag's Give flow: after picking an item and a target monster the client sends c2s 0x0F with
+   * the monster's uid, a short and a byte. The short is treated as the item id (validated against
+   * the bag like the use-item flow - a non-bag value turns into a log line, not a wrong item), 0 as
+   * a take-back. The held item itself rides the monster record's eE0 short, so the refreshed party
+   * container is what makes it show up. Every packet is logged raw until the fields are
+   * capture-confirmed.
+   */
+  suspend fun onGiveHeldItem(
+      event: PacketEvent<de.fiereu.openmmo.net.game.packets.PokemonListAddPacket>
+  ) {
+    val ctx = event.session
+    val state = ctx.attributes[PLAYER_STATE] ?: return
+    val charId = state.characterId ?: return
+    val p = event.packet
+    val stored = characters.getCharacter(charId) ?: return
+    val target = (stored.pokemon + stored.pcStorage).firstOrNull { it.id == p.entityId }
+    val code = p.slot.toInt()
+    log.info {
+      "[GiveItem] char=$charId monster=${p.entityId}(${target?.dexId}) code=$code " +
+          "listType=${p.listType} held=${target?.heldItem}"
+    }
+    if (target == null) {
+      ctx.reply("That is not one of your monsters.")
+      return
+    }
+    if (code <= 0) {
+      takeHeldItem(ctx, charId, target)
+      return
+    }
+    val itemId =
+        listOf(code, code + ITEM_CODE_OFFSET).firstOrNull {
+          it in stored.items && it !in COSMETIC_ITEM_BAND
+        }
+    if (itemId == null) {
+      ctx.reply("That item could not be matched to anything in the bag (code $code).")
+      return
+    }
+    val previous = target.heldItem
+    characters.updatePokemon(charId, target.copy(heldItem = itemId))
+    characters.addItem(charId, itemId, -1)
+    if (previous != 0) characters.addItem(charId, previous, 1)
+    sendStack(ctx, charId, itemId)
+    if (previous != 0) sendStack(ctx, charId, previous)
+    sendParty(ctx, charId)
+    val itemName = items.get(itemId)?.name ?: "Item $itemId"
+    ctx.reply(
+        if (previous != 0) "$itemName was given; the old held item went back to the bag."
+        else "$itemName is now being held.")
+  }
+
+  private suspend fun takeHeldItem(
+      ctx: de.fiereu.network.SessionContext,
+      charId: Long,
+      target: Pokemon,
+  ) {
+    if (target.heldItem == 0) {
+      ctx.reply("It isn't holding anything.")
+      return
+    }
+    val taken = target.heldItem
+    characters.updatePokemon(charId, target.copy(heldItem = 0))
+    characters.addItem(charId, taken, 1)
+    sendStack(ctx, charId, taken)
+    sendParty(ctx, charId)
+    ctx.reply("${items.get(taken)?.name ?: "Item $taken"} was taken back.")
   }
 
   /**

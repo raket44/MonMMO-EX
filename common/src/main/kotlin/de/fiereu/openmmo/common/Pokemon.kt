@@ -43,7 +43,13 @@ data class Pokemon(
     val isFatefulEncounter: Boolean,
     val isRaidEncounter: Boolean,
     val caughtAt: LocalDateTime,
-    val isEgg: Boolean = false
+    val isEgg: Boolean = false,
+    /**
+     * Client item id of the held item, 0 for none. Rides the monster record in the short right
+     * after current HP (client field k91.eE0; the held-item getter vh1() falls back to it whenever
+     * the battle override z21 is -1, bytecode-verified).
+     */
+    val heldItem: Int = 0,
 ) {
   // seed is an unsigned 32-bit value on the wire, so mask before the modulo to avoid a negative
   // index when the high bit is set.

@@ -597,6 +597,15 @@ constructor(
     // delayed the walk long enough for input to slip in.
     sendEmergenceStep(ctx, state, charId, info)
 
+    // The story flags from the character-select world-state block never land: the client's
+    // 0x2A handler drops updates until its game state exists. Re-send them ONCE, now that the
+    // client is demonstrably in-world (it asked for its player) - badges, fly points and gates
+    // survive a relog because of this, not the login block.
+    if (!state.storyFlagsSynced) {
+      state.storyFlagsSynced = true
+      StoryClientState.flags(info.positionRegionId, stored.storyFlags).forEach(ctx::send)
+    }
+
     npcService.spawnNpcsWithNeighbors(
         ctx,
         info.positionBankId.toInt() and 0xFF,

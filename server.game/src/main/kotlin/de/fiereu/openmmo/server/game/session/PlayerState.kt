@@ -54,6 +54,12 @@ data class PlayerState(
     /** Trusts one source tile after scripted movement. */
     @field:Volatile var acceptNextMoveSource: Boolean = false,
     /**
+     * The client's 0x2A story-flag handler silently DROPS updates until its game state exists
+     * (f/eO0.X91 bails on a null Sw()), so the login-time world-state block never lands - badges
+     * looked reset on every relog. The first RequestPlayer re-sends the flags once, in-world.
+     */
+    @field:Volatile var storyFlagsSynced: Boolean = false,
+    /**
      * Set after an NDS warp or teleport whose arrival tile is itself a warp (the norm: paired doors
      * land on the partner's mat). Warps stay quiet until the player reports one position with no
      * warp under it, which stops arrive-and-bounce loops on wide warp boxes.

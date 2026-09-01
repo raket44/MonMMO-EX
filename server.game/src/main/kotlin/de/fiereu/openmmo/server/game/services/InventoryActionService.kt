@@ -52,6 +52,7 @@ constructor(
     private val species: SpeciesRegistry,
     private val expansion: ExpansionSpeciesRegistry,
     private val dexProgress: DexProgressService,
+    private val breedingService: BreedingService,
 ) {
 
   suspend fun onContainerAction(event: PacketEvent<ContainerActionPacket>) {
@@ -226,6 +227,7 @@ constructor(
     sendStack(ctx, charId, itemId)
     if (previous != 0) sendStack(ctx, charId, previous)
     sendParty(ctx, charId)
+    breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     val itemName = items.get(itemId)?.name ?: "Item $itemId"
     ctx.reply(
         if (previous != 0) "$itemName was given; the old held item went back to the bag."
@@ -246,6 +248,7 @@ constructor(
     characters.addItem(charId, taken, 1)
     sendStack(ctx, charId, taken)
     sendParty(ctx, charId)
+    breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     ctx.reply("${items.get(taken)?.name ?: "Item $taken"} was taken back.")
   }
 

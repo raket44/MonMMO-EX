@@ -31,10 +31,28 @@ constructor(
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
 ) {
 
+  /** The last assigned pair per character, so held-item changes can refresh the open window. */
+  private val activePairs = java.util.concurrent.ConcurrentHashMap<Long, AssignBreedingSlotPacket>()
+
   fun onAssignSlot(event: PacketEvent<AssignBreedingSlotPacket>) {
-    val session = event.session
-    val p = event.packet
-    val charId = session.attributes[PLAYER_STATE]?.characterId ?: return
+    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
+    activePairs[charId] = event.packet
+    sendForecast(event.session, charId, event.packet)
+  }
+
+  /**
+   * Re-sends the current forecast when [monId]'s held item changed while its breed window is open -
+   * the window only repaints on a forecast, so without this a removed brace stayed on screen
+   * (operator-reported). A stale re-send after the window closed is harmless: the client's handler
+   * no-ops without an open window.
+   */
+  fun refreshAfterHeldItemChange(session: SessionContext, charId: Long, monId: Long) {
+    val pair = activePairs[charId] ?: return
+    if (monId != pair.ownPokemonEntityId && monId != pair.partnerPokemonEntityId) return
+    sendForecast(session, charId, pair)
+  }
+
+  private fun sendForecast(session: SessionContext, charId: Long, p: AssignBreedingSlotPacket) {
     val stored = characterStore.getCharacter(charId) ?: return
     val owned = stored.pokemon + stored.pcStorage
     val first = owned.firstOrNull { it.id == p.ownPokemonEntityId }
@@ -88,6 +106,7 @@ constructor(
 
   fun onSubmit(event: PacketEvent<SubmitBreedingPartyPacket>) {
     val p = event.packet
+    event.session.attributes[PLAYER_STATE]?.characterId?.let { activePairs.remove(it) }
     log.info {
       "Breeding submit: session=${p.sessionId} mons=${p.pokemonEntityIds} " +
           "gender=${p.slotIndex} valueId=${p.stateFlag} - egg creation not modeled yet"

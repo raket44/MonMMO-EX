@@ -60,7 +60,17 @@ constructor(
             hasPreview = true,
             species = clientSpeciesId(offspringDex).toShort(),
             form = 0,
-            statEntries = emptyList(),
+            // The renderer walks its six stat constants and indexes THIS array by stat id
+            // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
+            // entry per stat. Inheritance contributions come with the real breeding rules.
+            statEntries =
+                List(6) {
+                  de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
+                      guaranteed = false,
+                      statId = it.toShort(),
+                      contributions = emptyList(),
+                  )
+                },
             shininessTypes = listOf(0),
             valueIds = emptyList(),
             valueSources = emptyList(),

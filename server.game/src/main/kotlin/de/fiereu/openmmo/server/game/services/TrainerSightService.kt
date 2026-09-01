@@ -137,13 +137,10 @@ constructor(
   ) {
     val walk = walkStep(dir) ?: return
     val face = faceStep(dir) ?: return
-    // Vanilla rhythm: the trainer notices (a beat where the "!" bubble shows), then walks to
-    // the tile adjacent to the player and makes sure the gaze lands on them. The bubble byte
-    // itself is still unverified - the pause carries the rhythm until it is.
-    val steps =
-        listOf(face, MovementStep.DELAY_16, MovementStep.DELAY_16) +
-            List(distance - 1) { walk } +
-            face
+    // Vanilla rhythm: the trainer turns, the "!" bubble pops with its spot sound (bytecode-
+    // verified action 0x62), then they walk to the tile adjacent to the player and the gaze
+    // lands on them.
+    val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
     // Freeze the client's overworld input NOW, on the packet thread - the script launches on
     // another coroutine, and every step the client takes in that gap becomes a rubber-band.

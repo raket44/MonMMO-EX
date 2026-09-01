@@ -14,6 +14,8 @@ enum class MovementStep(
     val action: Int,
     val changesFacing: Boolean = true,
     val fast: Boolean = false,
+    /** Client-side duration override in ms, for actions that hold (emote bubbles run 750ms). */
+    val holdMs: Long? = null,
 ) {
   FACE_DOWN(Direction.DOWN, false, 0x00),
   FACE_UP(Direction.UP, false, 0x01),
@@ -44,7 +46,11 @@ enum class MovementStep(
   DELAY_8(Direction.DOWN, false, 0x1B, changesFacing = false),
   DELAY_16(Direction.DOWN, false, 0x1C, changesFacing = false),
   // Hides the entity in place, used at the end of a walk into a door (decomp set_invisible).
-  SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false);
+  SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false),
+  // Bytecode-verified (f/l31 G5 -> f/yy.CG -> balloon model 50 + spot SFX): the "!" bubble,
+  // 750ms. 0x63 is the silent "?" bubble. Emerald ids 0x56/0x57 shifted +12 like set_invisible.
+  EMOTE_EXCLAMATION(Direction.DOWN, false, 0x62, changesFacing = false, holdMs = 750),
+  EMOTE_QUESTION(Direction.DOWN, false, 0x63, changesFacing = false, holdMs = 750);
 
   companion object {
     /** Translates source-level pret action names into the existing client movement vocabulary. */

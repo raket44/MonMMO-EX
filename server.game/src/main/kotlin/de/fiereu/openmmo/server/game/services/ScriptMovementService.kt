@@ -447,7 +447,9 @@ constructor(
   }
 
   private fun durationMs(steps: List<MovementStep>): Long =
-      steps.sumOf { if (it.fast) FAST_STEP_MS else if (it.walks) WALK_STEP_MS else FACE_STEP_MS }
+      steps.sumOf {
+        it.holdMs ?: if (it.fast) FAST_STEP_MS else if (it.walks) WALK_STEP_MS else FACE_STEP_MS
+      }
 
   private companion object {
     // Rough client step timings, tune if the animation and server drift apart.

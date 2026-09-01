@@ -145,14 +145,12 @@ data class PlayerState(
      */
     @field:Volatile var suppressNpcSpawns: Boolean = false,
     /**
-     * The facing this session's SERVER-DRIVEN trainers currently show, by entity id. Spinners and
-     * look-around trainers spawn with their client-side animation off and the server turns them on
-     * a timer instead - so line of sight always matches what this player's screen shows.
-     * Per-session on purpose: npc state is per-player (story flags move and hide them).
+     * Leniency window after a trainer-sight lock (epoch ms): steps already in flight from the
+     * client when the lock landed are ACCEPTED instead of snapped back, killing the rubber-band.
+     * The trainer then walks to wherever the player actually stopped. Only sight-triggers set this;
+     * dialogs and cutscenes keep the strict lock.
      */
-    val drivenNpcFacings: MutableMap<Long, Direction> = ConcurrentHashMap(),
-    /** The per-session coroutine turning the driven trainers; replaced on every map arrival. */
-    @field:Volatile var npcFacingDriverJob: kotlinx.coroutines.Job? = null,
+    @field:Volatile var lockGraceUntil: Long = 0,
     /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.

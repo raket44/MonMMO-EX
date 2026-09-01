@@ -64,7 +64,6 @@ constructor(
     private val ndsWarps: NdsWarps,
     private val warpRules: WarpRules,
     private val trainerSight: TrainerSightService,
-    private val trainerFacingDriver: TrainerFacingDriver,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -307,6 +306,25 @@ constructor(
       state.justWarped -> return
       // A script owns the player, like the decomp's lockall.
       state.blocksPlayerInput -> {
+        // Sight-trigger leniency: steps that were already in flight when the lock landed are
+        // ACCEPTED instead of snapped back - the rubber-band came from rejecting them. Plain
+        // walk only, no events; the approaching trainer finds the player where they stopped.
+        if (System.currentTimeMillis() < state.lockGraceUntil && msg.x == fromX && msg.y == fromY) {
+          val gx = fromX + msg.direction.dx
+          val gy = fromY + msg.direction.dy
+          if (gx in 0 until currentMap.width &&
+              gy in 0 until currentMap.height &&
+              isWalkable(currentMap, gx, gy)) {
+            characterStore.updatePosition(
+                charId, gx.toShort(), gy.toShort(), facing = msg.direction)
+            state.x = gx.toShort()
+            state.y = gy.toShort()
+            state.facingDirection = msg.direction
+            presenceService.broadcastToObservers(
+                ctx, gbaMovePacket(charId, currentMap, gx, gy, msg.direction))
+          }
+          return
+        }
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, state.facingDirection)
         return
       }
@@ -565,8 +583,7 @@ constructor(
     presenceService.refresh(ctx)
 
     mapLoadService.preloadConnectedMaps(ctx, map, depth = 1)
-    npcService.spawnNpcsForMap(ctx, targetBank.toInt(), targetMap.toInt(), regionId.toInt())
-    trainerFacingDriver.restart(ctx, regionId.toInt(), targetBank.toInt(), targetMap.toInt())
+    npcService.spawnNpcsWithNeighbors(ctx, targetBank.toInt(), targetMap.toInt(), regionId.toInt())
 
     if (state != null) mapScriptService.onMapEnter(ctx, state, map)
 

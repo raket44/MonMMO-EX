@@ -64,17 +64,12 @@ constructor(
       if (npc.trainerType != TRAINER_TYPE_NORMAL && npc.trainerType != TRAINER_TYPE_ALL_DIRS)
           continue
       if (npc.hideFlag.isNotEmpty() && npc.hideFlag in storyFlags) continue
-      val entityIdForFacing = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-      // A server-driven spinner's gaze IS the facing the driver last sent this player - sight
-      // exactly matches their screen. Before the first tick, any cycled direction can show.
-      val drivenCycle = drivenFacingCycle(npc)
+      // Spinners and multi-face trainers keep their CLIENT-side animation (per-player, like
+      // retail) and take the operator's "unfair sight" rule: they catch along every direction
+      // they cycle through, whatever their sprite happened to show that frame.
       val directions =
-          when {
-            drivenCycle != null ->
-                state.drivenNpcFacings[entityIdForFacing]?.let(::listOf) ?: drivenCycle
-            npc.trainerType == TRAINER_TYPE_ALL_DIRS -> CARDINALS
-            else -> sightDirections(npc) ?: continue
-          }
+          if (npc.trainerType == TRAINER_TYPE_ALL_DIRS) CARDINALS
+          else sightDirections(npc) ?: continue
       val eff = npcService.effectiveNpc(regionId, bankId, mapId, npc, storyFlags, storyVars)
 
       for (dir in directions) {
@@ -142,19 +137,13 @@ constructor(
     // lands on them.
     val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-    // Freeze the client's overworld input NOW, on the packet thread - the script launches on
-    // another coroutine, and every step the client takes in that gap becomes a rubber-band.
-    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    // Leniency instead of a freeze (0xFB proved unable to stop the client's walking - only its
+    // own dialog/battle UI does): steps already in flight are ACCEPTED during this window, so
+    // nothing gets snapped back, and the trainer walks to where the player really stopped.
+    state.lockGraceUntil = System.currentTimeMillis() + SIGHT_LOCK_GRACE_MS
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      try {
-        scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
-      } finally {
-        // Input back before the intro dialog - whether the freeze also gates dialog clicking
-        // is unverified, and the server-side lock still refuses movement till the script ends.
-        // In a finally so a failed walk can never leave the client frozen.
-        scriptCtx.setClientInput(true)
-      }
+      scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
       script.run(scriptCtx)
     }
     scriptRunner.run(ctx, state, approach, entityId)
@@ -211,6 +200,8 @@ constructor(
   private companion object {
     const val TRAINER_TYPE_NORMAL = 1
     const val TRAINER_TYPE_ALL_DIRS = 2
+    /** How long in-flight client steps are accepted after a sight lock lands. */
+    const val SIGHT_LOCK_GRACE_MS = 700L
     val CARDINALS = listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)
   }
 }

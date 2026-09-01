@@ -33,10 +33,25 @@ constructor(
     return npcEntityIds[key(regionId, bankId, mapId, entityIdx)]
   }
 
+  /**
+   * Spawns the map's npcs plus every connected neighbour's: the zoomed-out camera sees across
+   * connections, and without the neighbours their people popped into existence at the border. The
+   * per-session spawned-set stops duplicates when connections are re-crossed; a warp's cache reset
+   * clears it.
+   */
+  fun spawnNpcsWithNeighbors(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {
+    spawnNpcsForMap(ctx, bankId, mapId, regionId)
+    val map = mapManager.getMap(regionId, bankId, mapId) ?: return
+    for (connection in map.connections) {
+      spawnNpcsForMap(ctx, connection.targetBank, connection.targetMap, regionId)
+    }
+  }
+
   fun spawnNpcsForMap(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {
+    val state = ctx.attributes[PLAYER_STATE]
     // The /probe npcs experiment: with spawns suppressed, an empty map proves NPCs are
     // server-fed; a populated one proves the client spawns its own.
-    if (ctx.attributes[PLAYER_STATE]?.suppressNpcSpawns == true) {
+    if (state?.suppressNpcSpawns == true) {
       log.info { "NPC spawns suppressed for $regionId:$bankId:$mapId (probe)" }
       return
     }
@@ -256,10 +271,7 @@ constructor(
       mapId: Int,
   ): NpcSpawnPacket {
     val region = requireNotNull(Region.byId(regionId)) { "Unknown region id $regionId" }
-    // Server-driven trainers (spinners, look-arounds with sight) spawn with the client-side
-    // animation OFF - the TrainerFacingDriver turns them, so gaze and sprite always agree.
-    val movementId =
-        if (drivenFacingCycle(npc) != null) 0 else npc.movementType.forRegion(region).id
+    val movementId = npc.movementType.forRegion(region).id
     val unk3 = ((movementId and 0xFF) shl 8) or 0x02
     val unk4 =
         if (movementId in 1..6 || (movementId in 25..52)) {

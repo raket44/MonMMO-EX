@@ -1,0 +1,9 @@
+C:\Users\raket\Downloads\decomps\MonMMO-EX
+ Container login-db Running 
+ Container game-db Running 
+Started MonMMO login and game server tasks.
+Logs:
+  logs\server-login.log
+  logs\server-login.err.log
+  logs\server-game.log
+  logs\server-game.err.log

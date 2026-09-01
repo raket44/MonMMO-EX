@@ -497,14 +497,10 @@ constructor(
         state.x = tx.toShort()
         state.y = ty.toShort()
       } else {
-        state.acceptNextMoveSource = true
         // The client may play this walk LATE (queued behind the map load) and never reports
-        // server-commanded moves back - until the next warp, both tiles of this pair are
-        // legitimate places for the client to claim, and the validator resyncs between them.
-        state.emergenceMatX = info.positionX.toInt()
-        state.emergenceMatY = info.positionY.toInt()
-        state.emergenceStepX = tx
-        state.emergenceStepY = ty
+        // server-commanded moves back; the validator's one-tile heal reconciles whichever
+        // tile the client's first real move claims.
+        state.acceptNextMoveSource = true
       }
       if (railLine >= 0) {
         log.info { "Emergence step (rail): char=$charId -> ($tx, $ty) dir=$stepDir line=$railLine" }

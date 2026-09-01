@@ -332,22 +332,18 @@ constructor(
     }
 
     if (msg.x != fromX || msg.y != fromY) {
-      // The emergence pair heal: the client plays the emergence walk on its OWN schedule -
-      // queued behind a still-loading map it lands late, and server-commanded walks are never
-      // echoed back as reports. So a claim from either tile of the last emergence pair while
-      // the server holds the other is the client telling the truth about a walk the server
-      // could not observe; resync silently and process the move, or the press that should
-      // re-enter the door gets desync-reset instead of warping.
-      val pairHeals =
-          (msg.x == state.emergenceMatX &&
-              msg.y == state.emergenceMatY &&
-              fromX == state.emergenceStepX &&
-              fromY == state.emergenceStepY) ||
-              (msg.x == state.emergenceStepX &&
-                  msg.y == state.emergenceStepY &&
-                  fromX == state.emergenceMatX &&
-                  fromY == state.emergenceMatY)
-      if (!pairHeals) {
+      // The one-tile heal. The client is the emulator running the real ROM's collision and it
+      // resolves movement the server cannot fully observe: the emergence walk plays on its own
+      // schedule (queued behind a loading map, never echoed back as a report), it bonks on
+      // things the server does not model, and quick input reversals cancel steps the server
+      // already committed. Every one of those leaves the truth exactly one tile from the
+      // server's guess - so an adjacent claim onto a walkable tile IS the truth: resync and
+      // process the move. Fighting it desync-reset the very press that should have fired the
+      // door warp. A claim further than one tile (or into a wall) is still a real desync.
+      val adjacent =
+          Math.abs(msg.x - fromX) + Math.abs(msg.y - fromY) == 1 &&
+              isWalkable(currentMap, msg.x, msg.y)
+      if (!adjacent) {
         log.info {
           "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
               "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
@@ -355,7 +351,7 @@ constructor(
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
         return
       }
-      log.info { "Emergence heal: char=$charId resynced to (${msg.x}, ${msg.y})" }
+      log.info { "One-tile heal: char=$charId resynced to (${msg.x}, ${msg.y})" }
       fromX = msg.x
       fromY = msg.y
       characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())

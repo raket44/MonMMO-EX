@@ -62,6 +62,11 @@ constructor(
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1
+    // The old map's emergence pair is meaningless on the destination.
+    state?.emergenceMatX = -1
+    state?.emergenceMatY = -1
+    state?.emergenceStepX = -1
+    state?.emergenceStepY = -1
     // Leave now, so the old map's observers do not keep a ghost for the whole transition.
     presenceService.leave(ctx)
 
@@ -229,6 +234,10 @@ constructor(
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1
+    state?.emergenceMatX = -1
+    state?.emergenceMatY = -1
+    state?.emergenceStepX = -1
+    state?.emergenceStepY = -1
     // Arrivals land on the partner warp's own tile; hold NDS warps until the player has stood on
     // a warp-free tile once, or wide boxes bounce the player straight back.
     state?.ndsWarpGuard = true

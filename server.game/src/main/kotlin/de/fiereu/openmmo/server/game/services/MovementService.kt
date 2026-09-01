@@ -332,12 +332,35 @@ constructor(
     }
 
     if (msg.x != fromX || msg.y != fromY) {
-      log.info {
-        "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
-            "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
+      // The emergence pair heal: the client plays the emergence walk on its OWN schedule -
+      // queued behind a still-loading map it lands late, and server-commanded walks are never
+      // echoed back as reports. So a claim from either tile of the last emergence pair while
+      // the server holds the other is the client telling the truth about a walk the server
+      // could not observe; resync silently and process the move, or the press that should
+      // re-enter the door gets desync-reset instead of warping.
+      val pairHeals =
+          (msg.x == state.emergenceMatX &&
+              msg.y == state.emergenceMatY &&
+              fromX == state.emergenceStepX &&
+              fromY == state.emergenceStepY) ||
+              (msg.x == state.emergenceStepX &&
+                  msg.y == state.emergenceStepY &&
+                  fromX == state.emergenceMatX &&
+                  fromY == state.emergenceMatY)
+      if (!pairHeals) {
+        log.info {
+          "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
+              "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
+        }
+        sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
+        return
       }
-      sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-      return
+      log.info { "Emergence heal: char=$charId resynced to (${msg.x}, ${msg.y})" }
+      fromX = msg.x
+      fromY = msg.y
+      characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())
+      state.x = fromX.toShort()
+      state.y = fromY.toShort()
     }
 
     // Only once the step is accepted, so a locked player keeps the facing its script left.

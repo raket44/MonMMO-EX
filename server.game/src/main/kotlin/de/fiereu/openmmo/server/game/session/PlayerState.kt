@@ -112,6 +112,17 @@ data class PlayerState(
     @field:Volatile var pendingStepX: Int = -1,
     @field:Volatile var pendingStepY: Int = -1,
     /**
+     * The GBA emergence pair: the arrival mat and the stepped tile of the LAST emergence walk (-1 =
+     * none). The client plays the walk on its own schedule - queued behind a still-loading map it
+     * can land SECONDS late, and server-commanded walks are never echoed back as movement reports.
+     * Until the next warp, a move claiming either tile of the pair while the server holds the other
+     * is a legitimate claim, resynced silently instead of desync-reset.
+     */
+    @field:Volatile var emergenceMatX: Int = -1,
+    @field:Volatile var emergenceMatY: Int = -1,
+    @field:Volatile var emergenceStepX: Int = -1,
+    @field:Volatile var emergenceStepY: Int = -1,
+    /**
      * Movement reports are DROPPED until this clock time (epoch ms): the arrival-step choreography
      * window. Stale client moves that raced the input-lock packet used to land here and fire fresh
      * warps off tiles the player never really stood on.

@@ -88,6 +88,9 @@ internal object ClientStoryWhitelist {
   /** True when the client's `LG0.Yw1` accepts this (region, id) - i.e. a 0x2A send is safe. */
   fun accepts(regionId: Int, id: Int): Boolean = id == 0 || byRegion[regionId]?.contains(id) == true
 
+  /** Every id the client mirrors for a region - the set a full re-sync must account for. */
+  fun ids(regionId: Int): Set<Int> = byRegion[regionId] ?: emptySet()
+
   /**
    * The client's own badge tables (`f/qK.O9` static initializer, bytecode-verified): per region,
    * the client ids of badges 1..8 plus a ninth champion/game-clear slot. Its badge HUD counts set

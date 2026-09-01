@@ -5,6 +5,7 @@ import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.net.game.packets.LocalPlayerStatePacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
+import de.fiereu.openmmo.net.game.packets.StoryFlagUpdatePacket
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,7 +28,21 @@ class WorldStateService @Inject constructor(private val dexProgress: DexProgress
     // dump of one early session used to be replayed here for every character. Real progress now.
     ctx.send(dexProgress.resetPacket(stored))
     ctx.send(localPlayerState(stored, fullVars))
-    StoryClientState.flags(stored.info.positionRegionId, stored.storyFlags).forEach { ctx.send(it) }
+    val setFlags = StoryClientState.flags(stored.info.positionRegionId, stored.storyFlags)
+    if (fullVars) {
+      // A full re-sync must also CLEAR what the client already mirrors: /story reset used to
+      // send only the set flags, so the badges a wiped save no longer held stayed lit
+      // client-side (badge HUD, level cap) until relog. Explicit zeroes first, truth after.
+      val region = stored.info.positionRegionId.toInt()
+      val keep = setFlags.map { it.flagId }.toSet()
+      ClientStoryWhitelist.ids(region)
+          .filter { it !in keep }
+          .sorted()
+          .forEach {
+            ctx.send(StoryFlagUpdatePacket(stored.info.positionRegionId, it, enabled = false))
+          }
+    }
+    setFlags.forEach { ctx.send(it) }
 
     val containers =
         mapOf(

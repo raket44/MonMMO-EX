@@ -139,7 +139,7 @@ class MovementInterpreterTest :
           runCurrent()
           job.isActive shouldBe true
           fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 0
-          advanceTimeBy(249)
+          advanceTimeBy(269)
           runCurrent()
           fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 0
           advanceTimeBy(1)
@@ -303,7 +303,7 @@ class MovementInterpreterTest :
           runner.run(fixture.session, fixture.session.state(), waiting, fixture.npcEntityId)
           runCurrent()
           runner.run(fixture.session, fixture.session.state(), competing, fixture.npcEntityId)
-          advanceTimeBy(250)
+          advanceTimeBy(280)
           runCurrent()
 
           fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 1

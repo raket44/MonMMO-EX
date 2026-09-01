@@ -39,12 +39,14 @@ enum class MovementStep(
   WALK_IN_PLACE_FASTER_UP(Direction.UP, false, 0x2E, fast = true),
   WALK_IN_PLACE_FASTER_LEFT(Direction.LEFT, false, 0x2F, fast = true),
   WALK_IN_PLACE_FASTER_RIGHT(Direction.RIGHT, false, 0x30, fast = true),
-  // Captured delay actions use Emerald ids plus eight.
-  DELAY_1(Direction.DOWN, false, 0x18, changesFacing = false),
-  DELAY_2(Direction.DOWN, false, 0x19, changesFacing = false),
-  DELAY_4(Direction.DOWN, false, 0x1A, changesFacing = false),
-  DELAY_8(Direction.DOWN, false, 0x1B, changesFacing = false),
-  DELAY_16(Direction.DOWN, false, 0x1C, changesFacing = false),
+  // Captured delay actions use Emerald ids plus eight. holdMs is the real client time (the
+  // name's frame count at ~60fps) - counting delays as face-turns starved the duration
+  // estimate and made script-end queue clears cut walks short.
+  DELAY_1(Direction.DOWN, false, 0x18, changesFacing = false, holdMs = 17),
+  DELAY_2(Direction.DOWN, false, 0x19, changesFacing = false, holdMs = 34),
+  DELAY_4(Direction.DOWN, false, 0x1A, changesFacing = false, holdMs = 67),
+  DELAY_8(Direction.DOWN, false, 0x1B, changesFacing = false, holdMs = 134),
+  DELAY_16(Direction.DOWN, false, 0x1C, changesFacing = false, holdMs = 268),
   // Hides the entity in place, used at the end of a walk into a door (decomp set_invisible).
   SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false),
   // Bytecode-verified (f/l31 G5 -> f/yy.CG -> balloon model 50 + spot SFX): the "!" bubble,

@@ -149,8 +149,12 @@ constructor(
         }
     // The queue appends, so a standing hold would run BEFORE these steps - clear it first,
     // then re-seize once the scripted walk is done and the pose is committed.
+    awaitSelfActions(state)
     releasePlayerHold(session, state)
-    state.selfActionsEndAt = System.currentTimeMillis() + durationMs(selfSteps) + CLIENT_LAG_PAD_MS
+    state.selfActionsEndAt =
+        maxOf(System.currentTimeMillis(), state.selfActionsEndAt) +
+            durationMs(selfSteps) +
+            CLIENT_LAG_PAD_MS
     sendActions(session, info.id, selfSteps)
     resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
     delay(
@@ -374,8 +378,13 @@ constructor(
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
     // The queue appends: clear the standing hold so these steps run now, re-seize afterwards.
+    // But never clear while a previous walk is still animating - that cuts IT short too.
+    awaitSelfActions(state)
     releasePlayerHold(session, state)
-    state.selfActionsEndAt = System.currentTimeMillis() + durationMs(steps) + CLIENT_LAG_PAD_MS
+    state.selfActionsEndAt =
+        maxOf(System.currentTimeMillis(), state.selfActionsEndAt) +
+            durationMs(steps) +
+            CLIENT_LAG_PAD_MS
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
     // A player walked off the map means the scene ran from a position it never expected (a login
@@ -486,6 +495,12 @@ constructor(
         ))
   }
 
+  /** Waits until the client should be done animating the last scripted player movement. */
+  suspend fun awaitSelfActions(state: PlayerState) {
+    val remaining = state.selfActionsEndAt - System.currentTimeMillis()
+    if (remaining > 0) delay(remaining.coerceAtMost(3000))
+  }
+
   private fun faceStepOf(direction: Direction): MovementStep? =
       when (direction) {
         Direction.UP -> MovementStep.FACE_UP
@@ -525,10 +540,12 @@ constructor(
       }
 
   private companion object {
-    // Rough client step timings, tune if the animation and server drift apart.
-    const val WALK_STEP_MS = 250L
-    const val FAST_STEP_MS = 130L
-    const val FACE_STEP_MS = 120L
+    // GBA-frame-accurate client step timings (walk_normal 16 frames, fast/face 8 frames at
+    // ~60fps). The old rounded-down values under-counted by ~7% per step, which accumulated
+    // across long scenes until the script-end queue clear cut the final steps of a walk.
+    const val WALK_STEP_MS = 270L
+    const val FAST_STEP_MS = 135L
+    const val FACE_STEP_MS = 135L
     /** ~10s of client-side controller seize (40 x DELAY_16); renewed before it can expire. */
     val HOLD_TAIL = List(40) { MovementStep.DELAY_16 }
 

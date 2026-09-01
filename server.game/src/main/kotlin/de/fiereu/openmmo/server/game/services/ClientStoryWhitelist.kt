@@ -92,8 +92,8 @@ internal object ClientStoryWhitelist {
    * The client's own badge tables (`f/qK.O9` static initializer, bytecode-verified): per region,
    * the client ids of badges 1..8 plus a ninth champion/game-clear slot. Its badge HUD counts set
    * flags among exactly these ids, so a region's story engine syncs "badge N earned" by sending
-   * 0x2A for badgeIds[region][N] - no probing needed, the semantics are the client's own code.
-   * GBA ids are the ROM's real flag ids; NDS ids are the client's numbering (Sinnoh's order is
+   * 0x2A for badgeIds[region][N] - no probing needed, the semantics are the client's own code. GBA
+   * ids are the ROM's real flag ids; NDS ids are the client's numbering (Sinnoh's order is
    * scrambled on purpose - it mirrors the client's badge-index remap in LG0.tA1).
    */
   val badgeIds: Map<Int, List<Int>> =

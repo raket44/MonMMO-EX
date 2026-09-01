@@ -79,6 +79,8 @@ data class ParsedNpc(
     val movementRangeX: Int,
     val movementRangeY: Int,
     val trainerType: Int,
+    // Tiles of line-of-sight for a trainer (trainer_sight_or_berry_tree_id); 0 = talk only.
+    val sightRange: Int,
     val facing: String,
     val script: String,
     // Namespaced story flag that hides this npc by default, or "" when it is always shown.

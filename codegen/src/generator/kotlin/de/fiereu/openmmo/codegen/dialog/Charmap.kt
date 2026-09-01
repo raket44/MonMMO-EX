@@ -45,10 +45,10 @@ private constructor(
   }
 
   /**
-   * Control codes that carry inline arguments, like `{PAUSE 0xFE}`: the charmap maps the bare
-   * name to its control bytes (the charmap comment says "manually print the wait byte after
-   * this") and the argument bytes follow verbatim. This is what Brock's badge-fanfare defeat
-   * text needs to encode.
+   * Control codes that carry inline arguments, like `{PAUSE 0xFE}`: the charmap maps the bare name
+   * to its control bytes (the charmap comment says "manually print the wait byte after this") and
+   * the argument bytes follow verbatim. This is what Brock's badge-fanfare defeat text needs to
+   * encode.
    */
   private fun encodeArgumented(token: String): ByteArray? {
     val space = token.indexOf(' ')

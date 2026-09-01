@@ -106,6 +106,26 @@ class ScriptRegistry(
 
   fun forId(scriptId: String): Script? = interpretedById[scriptId]
 
+  /**
+   * The first trainer constant a label's interpreted program battles, or null when the label has no
+   * interpreted program or no trainerbattle. The line-of-sight engine uses it to check the defeated
+   * flag BEFORE approaching - a beaten trainer must neither approach nor auto-talk.
+   */
+  fun trainerConstant(scriptLabel: String, source: String? = null): String? {
+    val candidates = interpretedCandidates[scriptLabel].orEmpty()
+    val interpreted =
+        if (source == null) {
+          interpretedByBareLabel[scriptLabel] ?: candidates.singleOrNull()
+        } else {
+          candidates.singleOrNull { it.program.id.source == source }
+        }
+    val program = (interpreted as? InterpretedScript)?.program ?: return null
+    return program.instructions.firstNotNullOfOrNull { instruction ->
+      if (!instruction.command.startsWith("trainerbattle")) null
+      else instruction.args.firstOrNull()?.token
+    }
+  }
+
   fun hasInterpreted(scriptIdOrLabel: String): Boolean =
       if (':' in scriptIdOrLabel) interpretedById.containsKey(scriptIdOrLabel)
       else

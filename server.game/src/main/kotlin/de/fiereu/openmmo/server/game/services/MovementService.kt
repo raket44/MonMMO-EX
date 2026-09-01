@@ -63,6 +63,7 @@ constructor(
     private val customWarps: CustomWarps,
     private val ndsWarps: NdsWarps,
     private val warpRules: WarpRules,
+    private val trainerSight: TrainerSightService,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -423,6 +424,9 @@ constructor(
     // Story coordinate events take precedence over random encounters on the same step. Creative
     // mode meets nothing - a world builder mid-placement does not want a Zubat.
     if (!state.creative && !mapScriptService.onStep(ctx, state, currentMap, toX, toY)) {
+      // A trainer whose gaze crosses the landing tile approaches and battles; the encounter
+      // roll is skipped for that step, like vanilla.
+      if (trainerSight.onStep(ctx, state, currentMap, toX, toY)) return
       encounterService.onStep(ctx, charId, currentMap, toX, toY)
     }
   }

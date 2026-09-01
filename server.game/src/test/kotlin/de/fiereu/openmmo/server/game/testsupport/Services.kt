@@ -66,6 +66,14 @@ fun movementService(
       de.fiereu.openmmo.server.game.services.CustomWarps(),
       de.fiereu.openmmo.server.game.services.NdsWarps(),
       de.fiereu.openmmo.server.game.services.WarpRules(),
+      de.fiereu.openmmo.server.game.services.TrainerSightService(
+          npcs,
+          store,
+          story,
+          ScriptRegistry(emptyMap()),
+          scriptRunner(store, mapManager, interest, battles),
+          battles,
+      ),
   )
 }
 

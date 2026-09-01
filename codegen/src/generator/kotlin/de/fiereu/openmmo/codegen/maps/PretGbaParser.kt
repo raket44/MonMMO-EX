@@ -287,8 +287,17 @@ class PretGbaParser(
           movementRangeX = npc["movement_range_x"]?.jsonPrimitive?.intOrNull ?: 0,
           movementRangeY = npc["movement_range_y"]?.jsonPrimitive?.intOrNull ?: 0,
           trainerType =
-              if (npc["trainer_type"]?.jsonPrimitive?.contentOrNull == "TRAINER_TYPE_NONE") 0
-              else 1,
+              when (npc["trainer_type"]?.jsonPrimitive?.contentOrNull) {
+                "TRAINER_TYPE_NONE",
+                null -> 0
+                "TRAINER_TYPE_NORMAL" -> 1
+                "TRAINER_TYPE_SEE_ALL_DIRECTIONS" -> 2
+                "TRAINER_TYPE_BURIED" -> 3
+                else -> 1
+              },
+          sightRange =
+              npc["trainer_sight_or_berry_tree_id"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                  ?: 0,
           facing = movementTypes.facingRef(movementName),
           script = npc["script"]?.jsonPrimitive?.contentOrNull ?: "0x0",
           hideFlag = if (shownByDefault) "" else "${region.name}/$flag",

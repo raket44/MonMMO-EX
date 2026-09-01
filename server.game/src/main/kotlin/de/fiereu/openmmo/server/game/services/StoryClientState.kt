@@ -47,6 +47,42 @@ internal object StoryClientState {
         .map { PlayerVariableEntry(it.key.toShort(), it.value) }
   }
 
+  /**
+   * The retail badge popup - the same grey server-message box item pickups use. String 5964: "Your
+   * {STRING_0} feel you've grown stronger from your adventure!\n{STRING_0} up to lv. {00} will now
+   * obey you." - {STRING_0} ("Pokemon") resolves client-side, {00} is our arg: the new obedience
+   * cap. Sent when a SET flag is one of the region's badge ids; the cap comes from the client's own
+   * per-badge-count table (f/LG0.cU1, docs/client-story-ids.md).
+   */
+  fun badgeAnnouncement(
+      regionId: Byte,
+      flagId: Int,
+      setFlagKeys: Collection<String>,
+  ): de.fiereu.openmmo.net.game.packets.ServerMessagePacket? {
+    val region = regionId.toInt()
+    val badges = ClientStoryWhitelist.badgeIds[region] ?: return null
+    if (flagId !in badges) return null
+    val setIds = flags(regionId, setFlagKeys).map { it.flagId }.toSet()
+    val caps = LEVEL_CAPS[region] ?: return null
+    val cap = caps.getOrNull(badges.count { it in setIds }) ?: return null
+    return de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
+        OBEY_CAP_STRING,
+        listOf(
+            de.fiereu.openmmo.net.game.packets.ServerMessageArg(
+                argId = 0,
+                type = 5,
+                hasExtra = false,
+                extra = 0,
+                longValue = null,
+                intValue = null,
+                stringValue = cap.toString(),
+                shortValues = null,
+            )),
+        showOnMap = true,
+        mode = null,
+    )
+  }
+
   private fun flagId(regionId: Byte, key: String): Int? =
       when (regionId.toInt()) {
         // GBA regions: the client's whitelisted ids ARE the ROM flag ids, so the generated
@@ -71,4 +107,21 @@ internal object StoryClientState {
   private const val HOENN_REGION = 1
   private const val GBA_VARS_START = 0x4000
   private const val GBA_VARS_END = 0x40ff
+
+  /** "Your Pokemon feel you've grown stronger..." - the retail badge/obedience popup. */
+  private const val OBEY_CAP_STRING = 5964
+
+  /**
+   * Obedience cap per SET badge count (index 0 = no badges), the client's own tables (`f/LG0.cU1` +
+   * `LG0.HA`). The count includes the ninth champion/game-clear slot. Johto's conditional overrides
+   * (flag-gated 39/40/55) are not modeled; the base table is what the popup quotes.
+   */
+  private val LEVEL_CAPS: Map<Int, List<Int>> =
+      mapOf(
+          0 to listOf(20, 26, 32, 37, 46, 47, 50, 55, 62, 100),
+          1 to listOf(20, 24, 28, 33, 35, 38, 44, 48, 58, 100),
+          2 to listOf(20, 24, 27, 31, 35, 38, 43, 46, 56, 100),
+          3 to listOf(20, 27, 29, 34, 37, 43, 46, 52, 60, 100),
+          4 to listOf(20, 24, 29, 32, 37, 39, 41, 46, 48, 100),
+      )
 }

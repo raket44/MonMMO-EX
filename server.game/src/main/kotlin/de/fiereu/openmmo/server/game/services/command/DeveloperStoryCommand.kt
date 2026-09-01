@@ -49,7 +49,15 @@ constructor(
 
   private fun changeFlag(ctx: CommandContext, key: String, enabled: Boolean) {
     if (enabled) story.setFlag(ctx.characterId, key) else story.clearFlag(ctx.characterId, key)
-    StoryClientState.flagUpdate(ctx.state.regionId.toByte(), key, enabled)?.let(ctx.session::send)
+    val update = StoryClientState.flagUpdate(ctx.state.regionId.toByte(), key, enabled)
+    update?.let(ctx.session::send)
+    // Manually granted badges get the same retail popup the script path sends.
+    if (enabled && update != null) {
+      characters.getCharacter(ctx.characterId)?.storyFlags?.let { flags ->
+        StoryClientState.badgeAnnouncement(ctx.state.regionId.toByte(), update.flagId, flags)
+            ?.let(ctx.session::send)
+      }
+    }
     characters.flushCharacterAsync(ctx.characterId)
     ctx.reply("$key = $enabled")
   }

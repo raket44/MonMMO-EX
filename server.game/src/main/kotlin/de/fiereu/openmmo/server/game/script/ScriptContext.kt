@@ -169,9 +169,18 @@ internal constructor(
   fun isFlagSet(flag: String): Boolean = characterId?.let { story.isFlagSet(it, flag) } ?: false
 
   fun setFlag(flag: String) {
-    characterId?.let {
-      story.setFlag(it, flag)
-      StoryClientState.flagUpdate(state.regionId.toByte(), flag, enabled = true)?.let(session::send)
+    characterId?.let { charId ->
+      story.setFlag(charId, flag)
+      val update = StoryClientState.flagUpdate(state.regionId.toByte(), flag, enabled = true)
+      if (update != null) {
+        session.send(update)
+        // A badge flag also gets the retail grey popup ("Pokemon up to lv. N will now obey
+        // you") - the visible badge-obtained moment for the first four regions.
+        characters?.getCharacter(charId)?.storyFlags?.let { flags ->
+          StoryClientState.badgeAnnouncement(state.regionId.toByte(), update.flagId, flags)
+              ?.let(session::send)
+        }
+      }
     }
   }
 

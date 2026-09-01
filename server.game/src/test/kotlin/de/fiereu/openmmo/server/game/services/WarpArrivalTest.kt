@@ -169,10 +169,10 @@ class WarpArrivalTest :
           advanceTimeBy(ARRIVAL_DEADLINE_PASSED)
           runCurrent()
 
-          // The unconditional input-unlock failsafe may fire; the stale deadline itself must not
-          // reset or re-gate the player.
+          // The input-unlock failsafe (scripted-state OFF) may fire; the stale deadline itself
+          // must not reset or re-gate the player.
           session.sent.filterNot {
-            it is de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket
+            it is de.fiereu.openmmo.net.game.packets.DialogStatePacket
           } shouldBe emptyList()
         }
       }

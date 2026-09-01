@@ -202,15 +202,6 @@ internal constructor(
     movement.holdPlayer(session, state)
   }
 
-  /**
-   * Freeze or release the CLIENT's overworld input (0xFB, the warp choreography packet). Applied
-   * around scripted npc movement windows - a sight-approach walk with input live lets the player
-   * zip a tile past the trigger and get snapped back. NOT wired into lock()/release() wholesale:
-   * whether 0xFB also gates dialog clicking is unverified, so it stays away from message flows.
-   */
-  fun setClientInput(enabled: Boolean) =
-      session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(enabled))
-
   /** Release a local lifecycle lock and close any visible message, without ending the script. */
   fun release() {
     dialog.close(session, state)

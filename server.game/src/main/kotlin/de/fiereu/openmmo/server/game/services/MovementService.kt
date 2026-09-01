@@ -307,6 +307,10 @@ constructor(
     val atServerTile = msg.x == fromX && msg.y == fromY
 
     when {
+      // The arrival-step choreography window refuses ALL movement, same as the unhosted branch:
+      // the scripted-state lock removes input client-side, but a move already in flight when it
+      // was sent can still land here and must not commit or fire warps mid-emergence.
+      System.currentTimeMillis() < state.moveIgnoreUntil -> return
       // Drop every step until the client asks for its player, else one left over from the old map
       // can fire a second warp.
       state.justWarped -> return
@@ -508,6 +512,10 @@ constructor(
     val ctx = event.session
     val state = ctx.attributes[PLAYER_STATE] ?: return
     val charId = state.characterId ?: return
+    // A turn that raced the arrival lock is dropped without a correction - a face action sent
+    // now would join the queue the emergence walk owns and disturb it; the walk sets the
+    // facing itself anyway.
+    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
     if (state.blocksPlayerInput) {
       // The client already turned itself; a position reset does NOT override the local player's
       // facing (proved during the Oak scene). The scripted face action does - it seizes the

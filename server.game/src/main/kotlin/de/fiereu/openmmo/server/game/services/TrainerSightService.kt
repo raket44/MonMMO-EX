@@ -137,20 +137,13 @@ constructor(
     // lands on them.
     val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-    // THE true stop, operator-identified via the Pewter gym guide: a scripted movement on the
-    // PLAYER'S OWN entity seizes the client's movement controller - input cannot move the
-    // player until the sequence finishes. The player turns to face the spotting trainer
-    // (vanilla behavior) and then HOLDS with delays sized past the whole approach, so control
-    // only comes back once the intro dialog has already taken over the input.
+    // The scripted-state lock (taken by the runner at script start) removes the player's input
+    // for the whole approach; all the player themselves needs is the vanilla turn toward the
+    // spotting trainer.
     val playerFace = faceStep(dir.opposite()) ?: return
-    val approachMs = 135L + 750L + (distance - 1) * 275L + 135L
-    val holdCount = (approachMs / DELAY_16_CLIENT_MS + 2).toInt()
-    // Face the trainer at the start AND re-face at the end of the hold - the closing face
-    // guarantees the gaze lands on them even if something disturbed the first turn.
-    val playerHold = listOf(playerFace) + List(holdCount) { MovementStep.DELAY_16 } + playerFace
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      scriptCtx.moveSelfAndNpcs(playerHold, npc.entityIdx to steps)
+      scriptCtx.moveSelfAndNpcs(listOf(playerFace), npc.entityIdx to steps)
       script.run(scriptCtx)
     }
     scriptRunner.run(ctx, state, approach, entityId)
@@ -207,8 +200,6 @@ constructor(
   private companion object {
     const val TRAINER_TYPE_NORMAL = 1
     const val TRAINER_TYPE_ALL_DIRS = 2
-    /** Roughly what one DELAY_16 action holds the client's movement controller for. */
-    const val DELAY_16_CLIENT_MS = 250L
     val CARDINALS = listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)
   }
 }

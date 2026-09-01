@@ -455,7 +455,6 @@ constructor(
 
   /** A single facing re-assert with no hold - the scripted-state flag does the actual locking. */
   fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
     val charId = state.characterId ?: return
     val face = faceStepOf(state.facingDirection) ?: return
     sendActions(session, charId, listOf(face))
@@ -470,7 +469,6 @@ constructor(
    * facing.
    */
   fun holdPlayer(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
     val charId = state.characterId ?: return
     log.info { "HOLD scripted-state ON facing=${state.facingDirection}" }
     session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
@@ -482,14 +480,18 @@ constructor(
 
   /** The ROM freed the player: scripted state OFF. Nothing else to undo. */
   fun releasePlayerHold(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
     log.info { "RELEASE scripted-state OFF at (${state.x}, ${state.y})" }
     session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
   }
 
-  /** Waits until the client should be done animating the last scripted player movement. */
+  /**
+   * Waits until the client should be done animating the last scripted player movement AND until the
+   * warp-arrival choreography window has passed - the emergence walk shares the client's action
+   * queue and its timing, so scripted steps and the final release both wait it out.
+   */
   suspend fun awaitSelfActions(state: PlayerState) {
-    val remaining = state.selfActionsEndAt - System.currentTimeMillis()
+    val remaining =
+        maxOf(state.selfActionsEndAt, state.moveIgnoreUntil) - System.currentTimeMillis()
     if (remaining > 0) delay(remaining.coerceAtMost(8000))
   }
 

@@ -445,8 +445,11 @@ constructor(
       state.pendingStepX = -1
       state.pendingStepY = -1
       // No step on this arrival (GBA warps, logins) - release the warp-start lock right away.
-      // Idempotent when no lock was sent, and it heals any stale lock as a bonus.
-      ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+      // Idempotent when no lock was sent, and it heals any stale lock as a bonus. Never over a
+      // running script though: an entry cutscene that already started owns the lock now.
+      if (!state.scriptRunning && !state.blocksPlayerInput) {
+        ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
+      }
       return
     }
     // RAIL maps mirror BOTH axes relative to normal maps (observed live on the Castelia plaza:
@@ -464,12 +467,12 @@ constructor(
     // during the black screen and reads as "spawned one tile down, no animation". Delay the
     // walk past the fade-in there; NDS keeps the same-flush send that beats buffered input.
     val stepDelay = if (regionId in 2..4) 0L else GBA_STEP_DELAY_MS
-    // Movement stays refused server-side for the whole choreography window - the input-lock
-    // packet races in-flight moves on the wire, and a stale move used to fire a fresh warp.
+    // Movement stays refused server-side for the whole choreography window - the lock packet
+    // races in-flight moves on the wire, and a stale move used to fire a fresh warp.
     state.moveIgnoreUntil = System.currentTimeMillis() + stepDelay + EMERGENCE_STEP_WALK_MS + 100
-    // Re-assert the lock AT arrival: map transitions reset the client's input state, so the
-    // warp-start lock may have been wiped by the time the new map is up.
-    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    // Re-assert the scripted-state lock AT arrival: map transitions reset client state, so
+    // the warp-start lock may have been wiped by the time the new map is up.
+    ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
     val railLine = state.pendingRailLine
     // Position commits WHEN THE WALK IS SENT, never before: GBA re-requests the player several
     // times while its map loads, and an early commit made a re-request inside the delay window
@@ -507,22 +510,27 @@ constructor(
         ctx.attributes.getOrPut(SCRIPT_SCOPE) {
           CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
+    // The release only fires once the walk has played, and never over a running script - an
+    // entry cutscene that started during the choreography owns the lock and releases it itself.
+    val releaseLock: () -> Unit = {
+      if (ctx.channel.isActive && !state.scriptRunning && !state.blocksPlayerInput) {
+        ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
+      }
+    }
+    // The +120ms keeps the release AFTER the server's own move-refusal window closes - freed
+    // input whose first step lands inside the window would be dropped and read as a desync.
     if (stepDelay == 0L) {
       sendStep()
       scope.launch {
-        delay(EMERGENCE_STEP_WALK_MS)
-        if (ctx.channel.isActive) {
-          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
-        }
+        delay(EMERGENCE_STEP_WALK_MS + 120)
+        releaseLock()
       }
     } else {
       scope.launch {
         delay(stepDelay)
         if (ctx.channel.isActive) sendStep()
-        delay(EMERGENCE_STEP_WALK_MS)
-        if (ctx.channel.isActive) {
-          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
-        }
+        delay(EMERGENCE_STEP_WALK_MS + 120)
+        releaseLock()
       }
     }
   }

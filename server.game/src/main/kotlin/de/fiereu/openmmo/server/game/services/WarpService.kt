@@ -166,11 +166,11 @@ constructor(
     // Only fade out and send the map. onRequestPlayer does the arrival and fades back in.
     ctx.send(MapTransitionPacket())
     ctx.send(RenderScreenPacket(false))
-    // Input lock AFTER the transition sequence - the transition resets the screen's input
-    // state, so a lock sent before it was wiped instantly (verified: no locking effect at
-    // all). onRequestPlayer re-asserts it for the step and releases after; the failsafe
-    // covers a lost arrival.
-    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    // The scripted-state lock (the same input removal every script uses) covers the whole
+    // transition: ON here, re-asserted at arrival for the emergence step, OFF after the walk
+    // plays. Sent after the transition packets in case the map change resets client state;
+    // the failsafe covers a lost arrival, but never while a script owns the player.
+    ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
     run {
       val scope =
           ctx.attributes.getOrPut(SCRIPT_SCOPE) {
@@ -178,8 +178,10 @@ constructor(
           }
       scope.launch {
         delay(5000)
-        if (ctx.channel.isActive) {
-          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+        if (ctx.channel.isActive &&
+            state?.blocksPlayerInput != true &&
+            state?.scriptRunning != true) {
+          ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
         }
       }
     }
@@ -255,9 +257,9 @@ constructor(
     }
     ctx.send(MapTransitionPacket())
     ctx.send(RenderScreenPacket(false))
-    // Lock AFTER the transition sequence (it resets the screen's input state and wiped an
-    // earlier lock); re-asserted at arrival for the step, failsafe below for lost arrivals.
-    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
+    // The scripted-state lock, same discipline as executeWarp: ON for the transition,
+    // re-asserted at arrival, released after the emergence walk; failsafe for lost arrivals.
+    ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
     run {
       val scope =
           ctx.attributes.getOrPut(SCRIPT_SCOPE) {
@@ -265,8 +267,10 @@ constructor(
           }
       scope.launch {
         delay(5000)
-        if (ctx.channel.isActive) {
-          ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+        if (ctx.channel.isActive &&
+            state?.blocksPlayerInput != true &&
+            state?.scriptRunning != true) {
+          ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
         }
       }
     }

@@ -118,7 +118,7 @@ constructor(
       // Pokecenter PCs are engine tiles (MB_PC), not bg events - the behavior is the trigger.
       if (currentMap.tileAt(facingX, facingY)?.behavior ==
           de.fiereu.openmmo.common.enums.TileBehavior.PC) {
-        openPcStorage(session, stored)
+        openPcStorage(session, state, stored)
         return
       }
       log.debug { "Tile interaction at ($facingX, $facingY) has no bg event" }
@@ -127,7 +127,7 @@ constructor(
     // House PCs are bg events whose ROM script drives the GBA storage engine; this server's
     // storage is the client's own UI, so any PC script routes there instead.
     if (bgEvent.script.endsWith("_EventScript_PC")) {
-      openPcStorage(session, stored)
+      openPcStorage(session, state, stored)
       return
     }
     val script =
@@ -144,18 +144,35 @@ constructor(
     }
   }
 
-  /** Opens the client's own storage UI on the player's PC boxes. */
-  private fun openPcStorage(session: SessionContext, stored: StoredCharacter) {
+  /**
+   * The vanilla PC beat, built from the same dialog machinery the nurse's box uses: the ROM's own
+   * "POKeMON Storage System opened." line, and the client's storage window when it is closed.
+   */
+  private fun openPcStorage(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
     log.info { "PC interaction: opening storage with ${stored.pcStorage.size} boxed pokemon" }
-    // Fresh contents first, then the toggle that shows the window.
-    session.send(
-        de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
-            container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
-            hasChange = true,
-            delete = false,
-            pokemon = stored.pcStorage,
-        ))
-    session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
+    val storageOpenedText =
+        if (state.regionId == HOENN_REGION_ID) HOENN_STORAGE_OPENED else KANTO_STORAGE_OPENED
+    val line =
+        object : de.fiereu.openmmo.common.dialog.DialogLine {
+          override val textId = storageOpenedText
+        }
+    runScript(
+        session,
+        state,
+        Script { ctx ->
+          ctx.sign(line)
+          // Fresh contents first, then the toggle that shows the window.
+          session.send(
+              de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
+                  container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
+                  hasChange = true,
+                  delete = false,
+                  pokemon = stored.pcStorage,
+              ))
+          session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
+        },
+        entityId = -1,
+    )
   }
 
   private fun currentCharacter(state: PlayerState): StoredCharacter? {
@@ -177,3 +194,7 @@ constructor(
       entityId: Long,
   ) = scriptRunner.run(session, state, script, entityId)
 }
+
+private const val KANTO_STORAGE_OPENED = 1724606
+private const val HOENN_STORAGE_OPENED = 271001251
+private const val HOENN_REGION_ID = 1

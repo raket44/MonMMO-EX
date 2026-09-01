@@ -74,6 +74,11 @@ internal object InterpreterSupport {
           "ShakeScreen",
           "DoPokemonLeagueLightingEffect",
           "PlayerFaceTrainerAfterBattle",
+          // Buffers "big guy"/"cute girl" into STR_VAR_1 for a handful of Route 104 intros. No
+          // dialog channel carries plain string vars yet, so the buffered word goes unfilled -
+          // a cosmetic gap in one line, against whole trainers doing nothing (the pre-battle
+          // approach with no battle). Revisit with the text-override pipeline.
+          "GetPlayerBigGuyGirlString",
       )
 
   /** Specials the executor implements for real. */
@@ -96,6 +101,9 @@ internal object InterpreterSupport {
           // No Vs Seeker / Match Call rematch offers until the server models them; scripts fall
           // through to their ordinary already-defeated dialog.
           "ShouldTryRematchBattle" to 0,
+          // Match Call registration is not modeled either, so no trainer is ever registered;
+          // post-battle scripts take their plain-dialog branch, which is the truthful answer.
+          "IsTrainerRegistered" to 0,
       )
 
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */

@@ -109,6 +109,19 @@ constructor(
             shopService,
             developerTools,
         )
+    // Renews the short (~0.5s) hold every 400ms for the script's whole life. The queue appends
+    // and holds interleave harmlessly with scripted walks; when the script ends this stops and
+    // the residue drains invisibly - no queue clear (the 0x11 clear on the local player fires
+    // camera work in the client, which WAS the visible phantom step at every release).
+    val renewal =
+        scope.launch {
+          while (isActive && state.scriptRunning) {
+            kotlinx.coroutines.delay(400)
+            if (!state.scriptRunning) break
+            if (System.currentTimeMillis() < state.moveIgnoreUntil) continue
+            movementService.holdPlayer(session, state)
+          }
+        }
     scope.launch {
       var finished = false
       var cancelled = false
@@ -143,11 +156,9 @@ constructor(
         dialogService.close(session, state)
         state.releaseScriptLock()
         state.scriptRunning = false
-        // Let a still-animating scripted walk finish before clearing the queue - the clear
-        // snaps the player to the endpoint of whatever it interrupts (the lab pull-back
-        // "poof"). Hold delays carry no such risk; clearing them is the point.
-        runCatching { movementService.awaitSelfActions(state) }
-        movementService.releasePlayerHold(session, state)
+        renewal.cancel()
+        // No queue clear - the short hold drains on its own within ~0.5s; just restore input.
+        movementService.enableClientInput(session)
       }
     }
   }

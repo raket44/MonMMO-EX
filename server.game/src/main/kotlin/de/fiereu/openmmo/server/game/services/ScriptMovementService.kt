@@ -14,7 +14,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 private val log = KotlinLogging.logger {}
 
@@ -113,8 +112,6 @@ constructor(
             if (dy >= 0) Direction.DOWN else Direction.UP
           }
       faceStepOf(toward)?.let { glance ->
-        awaitSelfActions(state)
-        releasePlayerHold(session, state)
         state.facingDirection = toward
         characterStore.updatePosition(charId, info.positionX, info.positionY, facing = toward)
         sendActions(session, info.id, listOf(glance) + HOLD_TAIL)
@@ -168,14 +165,7 @@ constructor(
               localId,
           ) to steps
         }
-    // The queue appends, so a standing hold would run BEFORE these steps - clear it first,
-    // then re-seize once the scripted walk is done and the pose is committed.
-    awaitSelfActions(state)
-    releasePlayerHold(session, state)
-    state.selfActionsEndAt =
-        maxOf(System.currentTimeMillis(), state.selfActionsEndAt) +
-            durationMs(selfSteps) +
-            CLIENT_LAG_PAD_MS
+    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue.
     sendActions(session, info.id, selfSteps)
     resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
     delay(
@@ -398,14 +388,7 @@ constructor(
     val info = characterStore.getCharacter(charId)?.info ?: return
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
-    // The queue appends: clear the standing hold so these steps run now, re-seize afterwards.
-    // But never clear while a previous walk is still animating - that cuts IT short too.
-    awaitSelfActions(state)
-    releasePlayerHold(session, state)
-    state.selfActionsEndAt =
-        maxOf(System.currentTimeMillis(), state.selfActionsEndAt) +
-            durationMs(steps) +
-            CLIENT_LAG_PAD_MS
+    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue.
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
     // A player walked off the map means the scene ran from a position it never expected (a login
@@ -474,82 +457,31 @@ constructor(
    * SEIZES the player's movement controller: a face action in the held direction plus ~10s of delay
    * actions. While the queue runs, the client cannot move OR turn the player at all - no
    * twirl-and-snap-back, just a statue, the vanilla look. Renewed at every dialog, scripted player
-   * movement and blocked-input report so it never expires mid-scene; [releasePlayerHold] clears it
-   * instantly when the script lets go.
+   * movement and blocked-input report; the runner renews it every 400ms while the script runs, and
+   * simply stopping the renewals drains it in under half a second - no queue clear needed.
    */
   fun holdPlayer(session: SessionContext, state: PlayerState) {
     if (state.regionId > 1) return
     val charId = state.characterId ?: return
     // Input DISABLED for the whole locked stretch (the warp choreography's 0xFB): without it
-    // the client BUFFERS held direction keys during the hold and replays them the moment the
-    // queue clears - the phantom steps between scripts. Queue-safe, so it always sends, even
-    // in the arrival window. Re-enabled by releasePlayerHold once the lock is really gone.
+    // the client BUFFERS held direction keys and replays them when the hold drains. Queue-safe,
+    // so it sends even in the arrival window; enableClientInput restores it at script end.
     session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
-    // The seize ACTIONS must never join the queue during the arrival choreography - the
-    // emergence walk lives there. Scenes that start on arrival (the starter scene, warp-in
-    // triggers) DEFER the seize to land right after the window instead of dropping it: the
-    // dropped hold was exactly the phantom-step gap after warps.
-    val wait = state.moveIgnoreUntil - System.currentTimeMillis()
-    if (wait <= 0) {
-      val face = faceStepOf(state.facingDirection) ?: return
-      log.info { "HOLD player now facing=${state.facingDirection}" }
-      sendActions(session, charId, listOf(face) + HOLD_TAIL)
-      return
-    }
-    log.info { "HOLD deferred ${wait}ms (arrival window)" }
-    val scope =
-        session.attributes.getOrPut(de.fiereu.openmmo.server.game.session.SCRIPT_SCOPE) {
-          kotlinx.coroutines.CoroutineScope(
-              kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
-        }
-    scope.launch {
-      delay(wait + 50)
-      // Only if the script still holds the player - a scene that already released must not
-      // leave a stray 10s hold behind.
-      if (!state.blocksPlayerInput) return@launch
-      val face = faceStepOf(state.facingDirection) ?: return@launch
-      sendActions(session, charId, listOf(face) + HOLD_TAIL)
-    }
+    // The seize ACTIONS never join the queue during the arrival choreography (the emergence
+    // walk lives there); the renewal loop lands the first hold right after the window.
+    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
+    val face = faceStepOf(state.facingDirection) ?: return
+    sendActions(session, charId, listOf(face) + HOLD_TAIL)
   }
 
   /**
-   * Instantly releases a held player: the position-set move (mode 2) CLEARS the client's action
-   * queue (NV0.yN0, bytecode-verified - the append-only queue has no other cancel), dropping every
-   * queued hold delay and returning control on the spot.
+   * Restores the client's input at script end. There is NO queue clear: the 0x11 clear on the local
+   * player triggers camera/screen work in the client (the visible "phantom step" at every release).
+   * Holds are short (~0.5s) and renewed by the runner's loop, so simply not renewing lets the
+   * residue drain invisibly.
    */
-  fun releasePlayerHold(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
-    // Same choreography guard as holdPlayer: the clear would cancel the emergence walk.
-    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
-    log.info { "RELEASE queue clear at (${state.x}, ${state.y}) facing=${state.facingDirection}" }
-    val charId = state.characterId ?: return
-    val info = characterStore.getCharacter(charId)?.info ?: return
-    // The 0x11 entity update is THE packet whose handler clears the client's action queue
-    // (f/Tp0.X91 -> NV0.yN0, bytecode-verified). The first attempt used the mode-2 move, whose
-    // handler does NOT clear - the player stayed frozen until the queued delays ran out. Same
-    // field encoding as the proven repositionSelf teleport, at the player's current pose.
-    session.send(
-        NpcUpdatePacket(
-            entityId = info.id,
-            regionId = info.positionRegionId.toInt(),
-            bankId = info.positionBankId.toInt(),
-            mapId = info.positionMapId.toInt(),
-            x = info.positionX.toInt(),
-            y = info.positionY.toInt(),
-            facing = 0xF6,
-            unk = state.facingDirection.ordinal,
-        ))
-    // Input stays disabled through mid-script clears (scripted walks between holds); it comes
-    // back only when the script lock is truly gone.
-    if (!state.blocksPlayerInput) {
-      session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
-    }
-  }
-
-  /** Waits until the client should be done animating the last scripted player movement. */
-  suspend fun awaitSelfActions(state: PlayerState) {
-    val remaining = state.selfActionsEndAt - System.currentTimeMillis()
-    if (remaining > 0) delay(remaining.coerceAtMost(8000))
+  fun enableClientInput(session: SessionContext) {
+    session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
   }
 
   private fun faceStepOf(direction: Direction): MovementStep? =
@@ -598,7 +530,7 @@ constructor(
     const val FAST_STEP_MS = 135L
     const val FACE_STEP_MS = 135L
     /** ~10s of client-side controller seize (40 x DELAY_16); renewed before it can expire. */
-    val HOLD_TAIL = List(40) { MovementStep.DELAY_16 }
+    val HOLD_TAIL = List(2) { MovementStep.DELAY_16 }
 
     /** Extra margin the client gets to finish animating past the server's step-time estimate. */
     const val CLIENT_LAG_PAD_MS = 500L

@@ -98,6 +98,7 @@ class LoginService
 constructor(
     private val mapLoadService: MapLoadService,
     private val npcService: NpcService,
+    private val trainerFacingDriver: TrainerFacingDriver,
     private val multiplayerService: MultiplayerService,
     private val socialService: SocialService,
     private val sessionRegistry: SessionRegistry,
@@ -575,6 +576,12 @@ constructor(
         info.positionBankId.toInt() and 0xFF,
         info.positionMapId.toInt() and 0xFF,
         info.positionRegionId.toInt() and 0xFF,
+    )
+    trainerFacingDriver.restart(
+        ctx,
+        info.positionRegionId.toInt() and 0xFF,
+        info.positionBankId.toInt() and 0xFF,
+        info.positionMapId.toInt() and 0xFF,
     )
 
     // Unsigned on purpose: NDS banks run past 127 (see preloadMapAndJoin).

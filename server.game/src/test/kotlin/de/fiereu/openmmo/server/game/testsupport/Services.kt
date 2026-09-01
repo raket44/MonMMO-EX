@@ -74,6 +74,12 @@ fun movementService(
           scriptRunner(store, mapManager, interest, battles),
           battles,
       ),
+      de.fiereu.openmmo.server.game.services.TrainerFacingDriver(
+          mapManager,
+          npcs,
+          store,
+          ScriptMovementService(mapManager, npcs, store),
+      ),
   )
 }
 

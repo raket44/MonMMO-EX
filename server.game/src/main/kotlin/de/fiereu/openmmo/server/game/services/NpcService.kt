@@ -256,7 +256,10 @@ constructor(
       mapId: Int,
   ): NpcSpawnPacket {
     val region = requireNotNull(Region.byId(regionId)) { "Unknown region id $regionId" }
-    val movementId = npc.movementType.forRegion(region).id
+    // Server-driven trainers (spinners, look-arounds with sight) spawn with the client-side
+    // animation OFF - the TrainerFacingDriver turns them, so gaze and sprite always agree.
+    val movementId =
+        if (drivenFacingCycle(npc) != null) 0 else npc.movementType.forRegion(region).id
     val unk3 = ((movementId and 0xFF) shl 8) or 0x02
     val unk4 =
         if (movementId in 1..6 || (movementId in 25..52)) {

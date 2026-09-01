@@ -145,6 +145,15 @@ data class PlayerState(
      */
     @field:Volatile var suppressNpcSpawns: Boolean = false,
     /**
+     * The facing this session's SERVER-DRIVEN trainers currently show, by entity id. Spinners and
+     * look-around trainers spawn with their client-side animation off and the server turns them on
+     * a timer instead - so line of sight always matches what this player's screen shows.
+     * Per-session on purpose: npc state is per-player (story flags move and hide them).
+     */
+    val drivenNpcFacings: MutableMap<Long, Direction> = ConcurrentHashMap(),
+    /** The per-session coroutine turning the driven trainers; replaced on every map arrival. */
+    @field:Volatile var npcFacingDriverJob: kotlinx.coroutines.Job? = null,
+    /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.
      */

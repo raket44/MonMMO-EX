@@ -64,9 +64,17 @@ constructor(
       if (npc.trainerType != TRAINER_TYPE_NORMAL && npc.trainerType != TRAINER_TYPE_ALL_DIRS)
           continue
       if (npc.hideFlag.isNotEmpty() && npc.hideFlag in storyFlags) continue
+      val entityIdForFacing = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
+      // A server-driven spinner's gaze IS the facing the driver last sent this player - sight
+      // exactly matches their screen. Before the first tick, any cycled direction can show.
+      val drivenCycle = drivenFacingCycle(npc)
       val directions =
-          if (npc.trainerType == TRAINER_TYPE_ALL_DIRS) CARDINALS
-          else sightDirections(npc) ?: continue
+          when {
+            drivenCycle != null ->
+                state.drivenNpcFacings[entityIdForFacing]?.let(::listOf) ?: drivenCycle
+            npc.trainerType == TRAINER_TYPE_ALL_DIRS -> CARDINALS
+            else -> sightDirections(npc) ?: continue
+          }
       val eff = npcService.effectiveNpc(regionId, bankId, mapId, npc, storyFlags, storyVars)
 
       for (dir in directions) {
@@ -153,9 +161,9 @@ constructor(
           name == "WALK_DOWN_AND_UP" ||
           name == "WALK_LEFT_AND_RIGHT" ||
           name == "WALK_RIGHT_AND_LEFT" -> null
+      // Spinner/multi-face types are server-driven now and handled before this is called;
+      // reaching here with one means the driver classified it out - fall back to its cycle.
       name == "LOOK_AROUND" || name.startsWith("ROTATE") -> CARDINALS
-      // FACE_DOWN_AND_UP, FACE_DOWN_UP_AND_LEFT, ...: the trainer cycles those facings
-      // client-side, so any of them can be the live one - check every named direction.
       name.startsWith("FACE_") && name.contains("_AND_") ->
           name.split('_').mapNotNull(::directionToken).distinct().ifEmpty { listOf(npc.facing) }
       else -> listOf(npc.facing)

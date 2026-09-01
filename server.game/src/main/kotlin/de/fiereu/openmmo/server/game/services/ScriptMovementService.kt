@@ -422,6 +422,19 @@ constructor(
     return pose
   }
 
+  /** One facing change with no wait - the trainer-facing driver's whole vocabulary. */
+  fun turnNpc(session: SessionContext, entityId: Long, direction: Direction) {
+    val step =
+        when (direction) {
+          Direction.UP -> MovementStep.FACE_UP
+          Direction.DOWN -> MovementStep.FACE_DOWN
+          Direction.LEFT -> MovementStep.FACE_LEFT
+          Direction.RIGHT -> MovementStep.FACE_RIGHT
+          else -> return
+        }
+    sendActions(session, entityId, listOf(step))
+  }
+
   private fun sendActions(
       session: SessionContext,
       entityId: Long,

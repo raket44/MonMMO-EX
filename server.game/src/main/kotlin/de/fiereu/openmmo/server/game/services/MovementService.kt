@@ -64,6 +64,7 @@ constructor(
     private val ndsWarps: NdsWarps,
     private val warpRules: WarpRules,
     private val trainerSight: TrainerSightService,
+    private val trainerFacingDriver: TrainerFacingDriver,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -565,6 +566,7 @@ constructor(
 
     mapLoadService.preloadConnectedMaps(ctx, map, depth = 1)
     npcService.spawnNpcsForMap(ctx, targetBank.toInt(), targetMap.toInt(), regionId.toInt())
+    trainerFacingDriver.restart(ctx, regionId.toInt(), targetBank.toInt(), targetMap.toInt())
 
     if (state != null) mapScriptService.onMapEnter(ctx, state, map)
 

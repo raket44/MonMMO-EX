@@ -14,6 +14,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val log = KotlinLogging.logger {}
 
@@ -478,18 +479,35 @@ constructor(
    */
   fun holdPlayer(session: SessionContext, state: PlayerState) {
     if (state.regionId > 1) return
-    // Never touch the player's action queue during the arrival choreography - the emergence
-    // walk lives in the same queue, and a hold or clear here would swallow the door walk-out
-    // (ON_TRANSITION scripts run exactly in this window).
-    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
     val charId = state.characterId ?: return
-    val face = faceStepOf(state.facingDirection) ?: return
     // Input DISABLED for the whole locked stretch (the warp choreography's 0xFB): without it
     // the client BUFFERS held direction keys during the hold and replays them the moment the
-    // queue clears - the phantom steps between scripts. Re-enabled by releasePlayerHold once
-    // the lock is really gone.
+    // queue clears - the phantom steps between scripts. Queue-safe, so it always sends, even
+    // in the arrival window. Re-enabled by releasePlayerHold once the lock is really gone.
     session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
-    sendActions(session, charId, listOf(face) + HOLD_TAIL)
+    // The seize ACTIONS must never join the queue during the arrival choreography - the
+    // emergence walk lives there. Scenes that start on arrival (the starter scene, warp-in
+    // triggers) DEFER the seize to land right after the window instead of dropping it: the
+    // dropped hold was exactly the phantom-step gap after warps.
+    val wait = state.moveIgnoreUntil - System.currentTimeMillis()
+    if (wait <= 0) {
+      val face = faceStepOf(state.facingDirection) ?: return
+      sendActions(session, charId, listOf(face) + HOLD_TAIL)
+      return
+    }
+    val scope =
+        session.attributes.getOrPut(de.fiereu.openmmo.server.game.session.SCRIPT_SCOPE) {
+          kotlinx.coroutines.CoroutineScope(
+              kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+        }
+    scope.launch {
+      delay(wait + 50)
+      // Only if the script still holds the player - a scene that already released must not
+      // leave a stray 10s hold behind.
+      if (!state.blocksPlayerInput) return@launch
+      val face = faceStepOf(state.facingDirection) ?: return@launch
+      sendActions(session, charId, listOf(face) + HOLD_TAIL)
+    }
   }
 
   /**

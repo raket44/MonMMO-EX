@@ -84,9 +84,14 @@ class CutsceneMovementLockTest :
               .onFaceDirection(PacketEvent(FaceDirectionPacket(Direction.LEFT), session))
 
           session.state().facingDirection shouldBe Direction.DOWN
-          val reset = session.sent.filterIsInstance<GbaEntityMovePacket>().single()
-          reset.direction shouldBe Direction.DOWN
-          (reset.x to reset.y) shouldBe (START_X.toInt() to START_Y.toInt())
+          // The correction is a scripted face action (movement-controller seize) - a position
+          // reset does not override the local player's facing.
+          val correction =
+              session.sent
+                  .filterIsInstance<de.fiereu.openmmo.net.game.packets.DialogDataPacket>()
+                  .single()
+          correction.data.single() shouldBe
+              de.fiereu.openmmo.server.game.script.MovementStep.FACE_DOWN.action.toByte()
         }
       }
 

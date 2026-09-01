@@ -64,6 +64,7 @@ constructor(
     private val ndsWarps: NdsWarps,
     private val warpRules: WarpRules,
     private val trainerSight: TrainerSightService,
+    private val scriptMovement: ScriptMovementService,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -304,11 +305,13 @@ constructor(
       // Drop every step until the client asks for its player, else one left over from the old map
       // can fire a second warp.
       state.justWarped -> return
-      // A script owns the player, like the decomp's lockall. The sight trigger freezes the
-      // client itself with the battle-presence packet, so stray in-flight steps are rare and
-      // this reset just re-asserts the tile the client already shows.
+      // A script owns the player, like the decomp's lockall. The position reset re-asserts the
+      // tile; the scripted face action after it SEIZES the movement controller (the only
+      // channel proven to control the local player), interrupting the walk-in-place animation
+      // and snapping the facing back to what the script holds.
       state.blocksPlayerInput -> {
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, state.facingDirection)
+        scriptMovement.reassertScriptedFacing(ctx, state)
         return
       }
       !atServerTile -> {
@@ -501,23 +504,10 @@ constructor(
     val state = ctx.attributes[PLAYER_STATE] ?: return
     val charId = state.characterId ?: return
     if (state.blocksPlayerInput) {
-      // The client already turned itself, so put it back. A face turn is only ever sent about
-      // other entities, so the correction rides on the same packet a blocked step uses.
-      val stored = characterStore.getCharacter(charId) ?: return
-      val map =
-          mapManager.getMap(
-              stored.info.positionRegionId,
-              stored.info.positionBankId,
-              stored.info.positionMapId,
-          ) ?: return
-      sendPositionReset(
-          ctx,
-          charId,
-          map,
-          stored.info.positionX.toInt(),
-          stored.info.positionY.toInt(),
-          state.facingDirection,
-      )
+      // The client already turned itself; a position reset does NOT override the local player's
+      // facing (proved during the Oak scene). The scripted face action does - it seizes the
+      // movement controller and turns the sprite back to the facing the script holds.
+      scriptMovement.reassertScriptedFacing(ctx, state)
       return
     }
     val msg = event.packet

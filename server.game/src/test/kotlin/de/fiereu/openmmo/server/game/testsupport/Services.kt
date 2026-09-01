@@ -74,6 +74,7 @@ fun movementService(
           scriptRunner(store, mapManager, interest, battles),
           battles,
       ),
+      ScriptMovementService(mapManager, npcs, store),
   )
 }
 

@@ -291,12 +291,14 @@ class DialogService @Inject constructor() {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
     /**
-     * A built-in client menu addressed by (category, set). The qM1 table REMAPS wire bytes to parse
-     * cases (qM1 ctor args are (internalId, wireByte)): the 3-byte menu payload is parse case 22,
-     * whose wire byte is 26 - sending 22 hit the case that reads an entity ref and underflowed the
-     * packet, freezing the dialog (client log: "Buffer underflow ... 0x21").
+     * A built-in client menu addressed by (category, set). Three maps stand between the wire byte
+     * and the behavior (all bytecode-decoded): wire -> qM1 constant (ctor args (internal, wire)),
+     * XN1.kW[internal] -> parse case, UX.bV[internal] -> renderer. The registry-menu constant is
+     * qM1.oU: internal 31, parse case 22 ([category, set, extra]), renderer 14 = f/Nq1, WIRE 36.
+     * Wire 22 underflowed (an entity-ref parse) and wire 26 opened the daycare breed window - both
+     * misreads of the same table.
      */
-    const val BUILTIN_MENU = 26
+    const val BUILTIN_MENU = 36
     const val BUILTIN_MENU_CATEGORY: Byte = 10
     /** f/Lx.R40 set 3: "{01}'s PC" / "Global Trade Link" / "Mail" / Cancel. */
     const val PC_MENU_SET = 3

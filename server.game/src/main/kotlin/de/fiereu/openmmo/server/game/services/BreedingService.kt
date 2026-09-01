@@ -75,18 +75,18 @@ constructor(
             valueIds = emptyList(),
             valueSources = emptyList(),
             gender = p.slotIndex,
-            // -1 = no braced nature: the roll is random and the preview shows question marks.
-            // A parent holding an Everstone guarantees its nature here - held items are not
-            // modeled yet, so every pair rolls random for now.
-            nature = -1,
+            // Capture-mislabeled TWICE over: this short is the offspring's APPEARANCE FLAGS
+            // bitfield (k91.Zl1 - bit 0 shiny, bit 3 secret, more for alpha; -1 rendered a
+            // secret shiny alpha, operator-verified). 0 = plain until shininess rules exist.
+            nature = 0,
             // Capture-mislabeled: this boolean is the GENDER-CHOOSER toggle, not shininess.
             // The renderer (Cm0 param 11) sets the gender buttons' visibility from it and
             // resets the preference to "any" when false - the section only exists while true.
             shiny = true,
-            // The 'cost' int renders inside the gender section (Cm0: os1 <- format(param 12)):
-            // it is the price of CHOOSING a gender, retail 5000.
+            // The two cost ints are the PER-GENDER prices rendered in the chooser: cost = male,
+            // secondaryCost = female (operator-verified when only male showed 5000).
             cost = GENDER_CHOICE_COST,
-            secondaryCost = 0,
+            secondaryCost = GENDER_CHOICE_COST,
         ))
   }
 

@@ -62,12 +62,8 @@ constructor(
             form = 0,
             // The renderer walks its six stat constants and indexes THIS array by stat id
             // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
-            // entry per stat. Per the operator, each row shows the roll RANGE between the two
-            // parents' IVs; the renderer formats a contribution's byte as the IV number and its
-            // float as a percentage, so each parent contributes its value at even odds. A held
-            // Power item braces its stat: the row turns guaranteed and only the braced parent's
-            // value remains (both braced the same stat = a 50/50 between them, still pinned).
-            // Wire stat order is the GBA one: hp, atk, def, SPEED, spAtk, spDef.
+            // entry per stat, in the GBA wire order hp, atk, def, SPEED, spAtk, spDef. The
+            // inheritance model behind the rows is documented on forecastStatEntries.
             statEntries = forecastStatEntries(first, second),
             shininessTypes = listOf(0),
             valueIds = emptyList(),

@@ -97,6 +97,20 @@ constructor(
     sendNotice(event.session, "Breeding is coming soon - your pair was noted.")
   }
 
+  /**
+   * The inheritance model follows the CLIENT'S OWN headers (operator-confirmed as the spec): base
+   * is string 2547 "3 IVs will be passed. 3 IVs will average."; with a shiny/secret parent the
+   * client itself switches to string 2548 "4 IVs will be passed. 2 are always from the better
+   * parent." (the header choice is k91.z3() - rarity bits 0|9 - so the math here must use the same
+   * condition). The passed stats are chosen at random, a pass is 50/50 which parent (except the
+   * shiny-forced ones, always the higher value), and a NON-passed stat rolls uniformly across the
+   * whole min-to-max range - every value in between is possible, endpoints included. A held Power
+   * brace pins its stat to the holder's value and occupies one of the pass slots.
+   *
+   * The forecast shows the per-stat marginals of that process: pass shares as labeled "High pass" /
+   * "Low pass" lines (strings 2541/2542) plus one line per rollable value. The renderer accumulates
+   * same-value lines into a total, and its TreeSet of values renders the "min - max" range.
+   */
   private fun forecastStatEntries(
       first: de.fiereu.openmmo.common.Pokemon,
       second: de.fiereu.openmmo.common.Pokemon,
@@ -105,12 +119,51 @@ constructor(
     val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
     val bracedA = POWER_BRACES[first.heldItem]
     val bracedB = POWER_BRACES[second.heldItem]
+    val bracedStats = setOfNotNull(bracedA, bracedB)
+    val shinyPair = first.isShiny || first.isSecret || second.isShiny || second.isSecret
+    val passSlots = ((if (shinyPair) 4 else 3) - bracedStats.size).coerceAtLeast(0)
+    val forcedHigh = if (shinyPair) minOf(2, passSlots) else 0
+    val freeStats = 6 - bracedStats.size
+    val pPass = if (freeStats > 0) passSlots.toFloat() / freeStats else 0f
+    val pForcedHigh = if (freeStats > 0) forcedHigh.toFloat() / freeStats else 0f
+    val pNormalPass = pPass - pForcedHigh
+    val pRoll = 1f - pPass
+
+    fun contribution(value: Int, percent: Float, label: Int) =
+        de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
+            value = value.toByte(),
+            // Already percent-scaled - the client suffixes "%" without multiplying.
+            percent = percent,
+            labelStringId = label,
+        )
+
     return List(6) { stat ->
-      val braced = (stat == bracedA) || (stat == bracedB)
-      val parents = buildList {
-        if (!braced || stat == bracedA) add(a[stat])
-        if (!braced || stat == bracedB) add(b[stat])
-      }
+      val braced = stat in bracedStats
+      val hi = maxOf(a[stat], b[stat])
+      val lo = minOf(a[stat], b[stat])
+      val contributions =
+          when {
+            braced -> {
+              // Pinned to the brace holder's value; both parents bracing the same stat is a
+              // 50/50 between their values (usually the same item, possibly different IVs).
+              val holders = buildList {
+                if (stat == bracedA) add(a[stat])
+                if (stat == bracedB) add(b[stat])
+              }
+              holders.map { contribution(it, 100.0f / holders.size, 0) }
+            }
+            hi == lo -> listOf(contribution(hi, 100.0f, 0))
+            else ->
+                buildList {
+                  if (pForcedHigh + pNormalPass / 2 > 0f)
+                      add(contribution(hi, (pForcedHigh + pNormalPass / 2) * 100f, HIGH_PASS))
+                  if (pNormalPass > 0f) add(contribution(lo, pNormalPass / 2 * 100f, LOW_PASS))
+                  if (pRoll > 0f) {
+                    val rollShare = pRoll * 100f / (hi - lo + 1)
+                    for (v in lo..hi) add(contribution(v, rollShare, 0))
+                  }
+                }
+          }
       de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
           guaranteed = braced,
           // The item CAUSING the guarantee - any nonzero value renders "Guaranteed inheritance
@@ -122,16 +175,7 @@ constructor(
                 stat == bracedB -> second.heldItem.toShort()
                 else -> 0
               },
-          contributions =
-              parents.map { value ->
-                de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
-                    value = value.toByte(),
-                    // Already percent-scaled - the client suffixes "%" without multiplying.
-                    percent = 100.0f / parents.size,
-                    // 0 = the plain "{value}: {percent}%" tooltip line.
-                    labelStringId = 0,
-                )
-              },
+          contributions = contributions,
       )
     }
   }
@@ -160,6 +204,10 @@ constructor(
     const val DITTO = 132
     /** Retail's price for pinning the offspring's gender. */
     const val GENDER_CHOICE_COST = 5000
+
+    /** Client string ids for the pass-outcome tooltip labels. */
+    const val HIGH_PASS = 2541
+    const val LOW_PASS = 2542
 
     /**
      * Client item id of each Power brace to the wire stat index it pins (hp, atk, def, spd, spAtk,

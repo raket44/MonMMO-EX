@@ -76,7 +76,10 @@ constructor(
             valueSources = emptyList(),
             gender = p.slotIndex,
             nature = 0,
-            shiny = false,
+            // Capture-mislabeled: this boolean is the GENDER-CHOOSER toggle, not shininess.
+            // The renderer (Cm0 param 11) sets the gender buttons' visibility from it and
+            // resets the preference to "any" when false - the section only exists while true.
+            shiny = true,
             cost = 0,
             secondaryCost = 0,
         ))

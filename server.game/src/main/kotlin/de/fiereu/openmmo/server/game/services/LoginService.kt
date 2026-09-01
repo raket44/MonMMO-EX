@@ -444,9 +444,18 @@ constructor(
     if (stepDir == null) {
       state.pendingStepX = -1
       state.pendingStepY = -1
-      // No step on this arrival (GBA warps, logins) - release the warp-start lock right away.
-      // Idempotent when no lock was sent, and it heals any stale lock as a bonus. Never over a
-      // running script though: an entry cutscene that already started owns the lock now.
+      if (System.currentTimeMillis() < state.moveIgnoreUntil) {
+        // A DUPLICATE RequestPlayer inside the choreography window - outdoor GBA maps ask for
+        // their player once per map connection, and the first request already consumed the
+        // step and started the walk. Releasing here freed the player mid-emergence (run off,
+        // rubber-band back); re-assert instead and let the choreography's own timed release
+        // fire when the walk is done.
+        ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
+        return
+      }
+      // No step on this arrival (GBA rest-on-tile warps, logins) - release the warp-start lock
+      // right away. Idempotent when no lock was sent, and it heals any stale lock as a bonus.
+      // Never over a running script though: an entry cutscene that started owns the lock now.
       if (!state.scriptRunning && !state.blocksPlayerInput) {
         ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
       }

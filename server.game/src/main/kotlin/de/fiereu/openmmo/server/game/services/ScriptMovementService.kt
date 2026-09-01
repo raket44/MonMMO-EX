@@ -422,6 +422,25 @@ constructor(
     return pose
   }
 
+  /**
+   * Re-seizes the player's movement controller with the facing the script last gave them. Between
+   * dialog boxes the client briefly returns control and lets the player twirl in place while the
+   * server rejects the steps - a face action re-takes the controller and snaps the sprite back to
+   * the held direction. Called before every dialog shown under a script lock.
+   */
+  fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
+    val charId = state.characterId ?: return
+    val face =
+        when (state.facingDirection) {
+          Direction.UP -> MovementStep.FACE_UP
+          Direction.DOWN -> MovementStep.FACE_DOWN
+          Direction.LEFT -> MovementStep.FACE_LEFT
+          Direction.RIGHT -> MovementStep.FACE_RIGHT
+          else -> return
+        }
+    sendActions(session, charId, listOf(face))
+  }
+
   /** One facing change with no wait - the trainer-facing driver's whole vocabulary. */
   fun turnNpc(session: SessionContext, entityId: Long, direction: Direction) {
     val step =

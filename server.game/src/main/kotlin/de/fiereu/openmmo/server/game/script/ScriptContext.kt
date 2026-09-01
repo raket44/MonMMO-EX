@@ -69,14 +69,29 @@ internal constructor(
 
   internal fun traceInterpreter(message: () -> String) = developerTools?.trace(message)
 
+  /**
+   * Between dialog boxes the client returns the movement controller and lets the player twirl in
+   * place while the script still holds them. Every dialog a script shows re-takes the controller
+   * first with the facing the script last gave the player, so the sprite snaps back and stays put
+   * until the script releases.
+   */
+  private fun holdScriptedFacing() = movement.reassertScriptedFacing(session, state)
+
   /** Show [line] as a sign and wait for the player to close it. */
-  suspend fun sign(line: DialogLine) = dialog.showAndWait(session, state, line.textId, SIGN, -1)
+  suspend fun sign(line: DialogLine) {
+    holdScriptedFacing()
+    dialog.showAndWait(session, state, line.textId, SIGN, -1)
+  }
 
   /** Show [line] from the interacted entity and wait for the player to go on. */
-  suspend fun say(line: DialogLine) = dialog.showAndWait(session, state, line.textId, NPC, entityId)
+  suspend fun say(line: DialogLine) {
+    holdScriptedFacing()
+    dialog.showAndWait(session, state, line.textId, NPC, entityId)
+  }
 
   /** Begin a pret `message`; the following wait command owns the client acknowledgement. */
   internal fun showMessage(line: DialogLine) {
+    holdScriptedFacing()
     val sign = state.dialogMessageMode == DialogMessageMode.SIGN
     dialog.show(
         session,
@@ -96,48 +111,59 @@ internal constructor(
   }
 
   /** Show [line] from a cutscene npc addressed by its decomp local id. */
-  suspend fun sayNpc(localId: Int, line: DialogLine) =
-      dialog.showAndWait(
-          session,
-          state,
-          line.textId,
-          NPC,
-          movement.npcEntityId(state, localId) ?: -1,
-      )
+  suspend fun sayNpc(localId: Int, line: DialogLine) {
+    holdScriptedFacing()
+    dialog.showAndWait(
+        session,
+        state,
+        line.textId,
+        NPC,
+        movement.npcEntityId(state, localId) ?: -1,
+    )
+  }
 
   /** Shows dialog with a species-name variable. */
-  suspend fun sayNpcWithSpeciesName(localId: Int, line: DialogLine, speciesId: Int) =
-      dialog.showAndWait(
-          session,
-          state,
-          line.textId,
-          NPC,
-          movement.npcEntityId(state, localId) ?: -1,
-          DialogPresentation(
-              messageArgs =
-                  listOf(
-                      TextPokemonSpeciesArg(
-                          partySlot = 1,
-                          stringVariable = 1,
-                          speciesId = speciesId.toShort(),
-                      ))),
-      )
+  suspend fun sayNpcWithSpeciesName(localId: Int, line: DialogLine, speciesId: Int) {
+    holdScriptedFacing()
+    dialog.showAndWait(
+        session,
+        state,
+        line.textId,
+        NPC,
+        movement.npcEntityId(state, localId) ?: -1,
+        DialogPresentation(
+            messageArgs =
+                listOf(
+                    TextPokemonSpeciesArg(
+                        partySlot = 1,
+                        stringVariable = 1,
+                        speciesId = speciesId.toShort(),
+                    ))),
+    )
+  }
 
   /** Opens the Emerald starter picker. */
-  suspend fun chooseHoennStarter(): Int = dialog.chooseHoennStarter(session, state)
+  suspend fun chooseHoennStarter(): Int {
+    holdScriptedFacing()
+    return dialog.chooseHoennStarter(session, state)
+  }
 
   /** Ask a ROM-backed yes/no question from the interacted entity. */
-  suspend fun askYesNo(line: DialogLine): Boolean =
-      dialog.askYesNo(session, state, line.textId, entityId)
+  suspend fun askYesNo(line: DialogLine): Boolean {
+    holdScriptedFacing()
+    return dialog.askYesNo(session, state, line.textId, entityId)
+  }
 
   /** Ask a ROM-backed yes/no question from a cutscene npc. */
-  suspend fun askYesNoNpc(localId: Int, line: DialogLine): Boolean =
-      dialog.askYesNo(
-          session,
-          state,
-          line.textId,
-          movement.npcEntityId(state, localId) ?: -1,
-      )
+  suspend fun askYesNoNpc(localId: Int, line: DialogLine): Boolean {
+    holdScriptedFacing()
+    return dialog.askYesNo(
+        session,
+        state,
+        line.textId,
+        movement.npcEntityId(state, localId) ?: -1,
+    )
+  }
 
   /** True if the story [flag] is set. Keys come from the content layer, for example HoennFlags. */
   fun isFlagSet(flag: String): Boolean = characterId?.let { story.isFlagSet(it, flag) } ?: false

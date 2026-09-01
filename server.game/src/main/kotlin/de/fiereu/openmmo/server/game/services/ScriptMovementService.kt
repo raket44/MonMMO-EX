@@ -484,6 +484,11 @@ constructor(
     if (System.currentTimeMillis() < state.moveIgnoreUntil) return
     val charId = state.characterId ?: return
     val face = faceStepOf(state.facingDirection) ?: return
+    // Input DISABLED for the whole locked stretch (the warp choreography's 0xFB): without it
+    // the client BUFFERS held direction keys during the hold and replays them the moment the
+    // queue clears - the phantom steps between scripts. Re-enabled by releasePlayerHold once
+    // the lock is really gone.
+    session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
     sendActions(session, charId, listOf(face) + HOLD_TAIL)
   }
 
@@ -513,6 +518,11 @@ constructor(
             facing = 0xF6,
             unk = state.facingDirection.ordinal,
         ))
+    // Input stays disabled through mid-script clears (scripted walks between holds); it comes
+    // back only when the script lock is truly gone.
+    if (!state.blocksPlayerInput) {
+      session.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = true))
+    }
   }
 
   /** Waits until the client should be done animating the last scripted player movement. */

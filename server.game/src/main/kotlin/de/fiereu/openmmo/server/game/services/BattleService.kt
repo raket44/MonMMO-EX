@@ -223,7 +223,11 @@ constructor(
   }
 
   /** Runs a battle against a trainer's whole team and waits for its scene. */
-  suspend fun startTrainerBattle(session: SessionContext, trainer: TrainerDef): BattleResult {
+  suspend fun startTrainerBattle(
+      session: SessionContext,
+      trainer: TrainerDef,
+      defeatTextId: Int? = null,
+  ): BattleResult {
     val battle =
         createBattle(
             session,
@@ -231,6 +235,7 @@ constructor(
             catchable = false,
             escapable = false,
             trainer = trainer,
+            defeatTextId = defeatTextId,
         ) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
@@ -264,6 +269,7 @@ constructor(
       catchable: Boolean,
       escapable: Boolean,
       trainer: TrainerDef? = null,
+      defeatTextId: Int? = null,
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {
@@ -340,7 +346,12 @@ constructor(
     }
     val battle =
         battles.create(
-            charId, session, party, enemies, rng, BattleRules(catchable, escapable, trainer))
+            charId,
+            session,
+            party,
+            enemies,
+            rng,
+            BattleRules(catchable, escapable, trainer, defeatTextId))
     val firstAlive = party.indexOfFirst { !it.fainted }
     battle.activeSlot = firstAlive
     battle.seenActive.clear()

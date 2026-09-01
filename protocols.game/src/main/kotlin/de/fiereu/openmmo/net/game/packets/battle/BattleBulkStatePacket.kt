@@ -179,11 +179,18 @@ data class BattleBulkStatePacket(
   companion object {
     /**
      * Terminal marker sent when a wild encounter resolves, telling the client to leave the scene.
+     * [defeatTextId] rides in the winner-side message group: the client's end-of-battle sequence
+     * (f/ju.Aj1 -> YS.hR1) shows each entry in the battle text box before the prize-money line, and
+     * its id resolver (f/mk1.zD1) falls through to the GBA ROM-text converter (f/W7.OH) for ids
+     * outside the XML string table - so a ROM dialog id renders the trainer's real defeat speech,
+     * bytecode-verified.
      */
-    fun battleEnd(prizeMoney: Int = 0): BattleBulkStatePacket =
+    fun battleEnd(prizeMoney: Int = 0, defeatTextId: Int? = null): BattleBulkStatePacket =
         BattleBulkStatePacket(
             phase = 0,
-            firstGroup = listOf(NullSerializedEntry),
+            firstGroup =
+                if (defeatTextId != null) listOf(CreatureDataEntry(defeatTextId, emptyList()))
+                else listOf(NullSerializedEntry),
             secondGroup = listOf(NullSerializedEntry),
             prizeMoney = prizeMoney,
             valueB = 0,

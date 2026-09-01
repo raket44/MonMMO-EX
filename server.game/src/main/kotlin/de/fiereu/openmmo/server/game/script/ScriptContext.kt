@@ -300,8 +300,12 @@ internal constructor(
         ?: error("No $region trainer resolves from id $id")
   }
 
-  internal suspend fun trainerBattle(trainer: TrainerDef): BattleResult =
-      checkNotNull(battles) { "Battle service is unavailable" }.startTrainerBattle(session, trainer)
+  internal suspend fun trainerBattle(
+      trainer: TrainerDef,
+      defeatTextId: Int? = null,
+  ): BattleResult =
+      checkNotNull(battles) { "Battle service is unavailable" }
+          .startTrainerBattle(session, trainer, defeatTextId)
 
   /**
    * Walk the map npc with decomp local id [localId] (its entityIdx) through [steps] and wait for

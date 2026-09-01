@@ -702,15 +702,17 @@ class InterpretedScript(
       instruction: ScriptInstruction,
   ): Boolean {
     val trainer = resolveTrainer(ctx, trainerArg(instruction, 0), instruction)
-    // Resolve the defeat text now so a broken binding fails before the battle starts.
-    textLine(textArg(instruction, 1).token, instruction)
+    // The in-battle defeat speech, shown by the battle end packet before the prize money.
+    val defeat = textLine(textArg(instruction, 1).token, instruction)
     val defeatedKey = TrainerStoryState.defeated(program.storyNamespace, trainer.id)
     if (ctx.isFlagSet(defeatedKey)) {
       state.pc++
       return true
     }
     return when (val result =
-        tracedWait(ctx, "battle ${trainer.constant}") { ctx.trainerBattle(trainer) }) {
+        tracedWait(ctx, "battle ${trainer.constant}") {
+          ctx.trainerBattle(trainer, defeat.textId)
+        }) {
       BattleResult.VICTORY -> {
         ctx.setFlag(defeatedKey)
         state.pc++
@@ -901,9 +903,10 @@ class InterpretedScript(
 
     val base = resolveTrainer(ctx, trainerArg(instruction, 0), instruction)
     val intro = textLine(textArg(instruction, 1).token, instruction)
-    // BattleService currently accepts a trainer, not a text pointer. Resolve the defeat reference
-    // now so a broken source binding still fails before entering a battle.
-    textLine(textArg(instruction, 2).token, instruction)
+    // The trainerbattle macro's third argument is the trainer's IN-BATTLE defeat speech - the
+    // GBA engine shows it in the battle screen before control returns to the script. The battle
+    // end packet carries its ROM dialog id and the client renders it before the prize money.
+    val defeat = textLine(textArg(instruction, 2).token, instruction)
     instruction.args.getOrNull(4)?.let { music ->
       check(music.token in setOf("NO_MUSIC", "FALSE", "TRUE")) {
         "Script ${program.id.stable} cannot resolve trainer battle music ${music.token} from " +
@@ -926,7 +929,9 @@ class InterpretedScript(
     val opponent = if (rematch) resolveRematchTrainer(ctx, base, instruction) else base
     tracedWait(ctx, "trainer dialog") { ctx.say(intro) }
     return when (val result =
-        tracedWait(ctx, "battle ${opponent.constant}") { ctx.trainerBattle(opponent) }) {
+        tracedWait(ctx, "battle ${opponent.constant}") {
+          ctx.trainerBattle(opponent, defeat.textId)
+        }) {
       BattleResult.VICTORY -> {
         ctx.setFlag(TrainerStoryState.defeated(program.storyNamespace, opponent.id))
         if (rematch) ctx.setVar(readyKey, 0)

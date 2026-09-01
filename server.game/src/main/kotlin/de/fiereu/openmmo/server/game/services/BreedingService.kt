@@ -64,7 +64,7 @@ constructor(
             form = 0,
             // The renderer walks its six stat constants and indexes THIS array by stat id
             // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
-            // entry per stat, in RC0.Df0 order: hp, atk, def, spAtk, spDef, SPEED. The
+            // entry per stat, in RC0.Df0 order: hp, atk, def, SPEED, spAtk, spDef. The
             // inheritance model behind the rows is documented on forecastStatEntries.
             statEntries = forecastStatEntries(first, second),
             possibleNatures = pinnedNatures.distinct(),
@@ -110,17 +110,17 @@ constructor(
    * at the range midpoint - enumerating every rollable value cluttered the window. The renderer's
    * TreeSet of contribution values renders the "min - max" range, so the endpoints keep it honest.
    *
-   * ROW ORDER: the renderer indexes statEntries[RC0.Df0] and the enum's Df0 bytes are hp 0, atk 1,
-   * def 2, spAtk 3, spDef 4, SPEED 5 (bytecode: the SPEED constant is built with 5) - the same
-   * order as the IV word's 5-bit groups. NOT the GBA hp/atk/def/speed order: sending that rotated
-   * the last three rows, and the Speed brace showed Sp.Def's value.
+   * ROW ORDER: the renderer indexes statEntries[RC0.Df0], and Df0 is the ENUM order hp 0, atk 1,
+   * def 2, SPEED 3, spAtk 4, spDef 5 - the GBA order, play-verified twice via which row the Anklet
+   * brace landed on. (RC0 carries a SECOND index, nw, with Speed LAST - the on-screen row order -
+   * which was briefly mistaken for Df0.) The IV word's 5-bit groups follow the same Df0 order.
    */
   private fun forecastStatEntries(
       first: de.fiereu.openmmo.common.Pokemon,
       second: de.fiereu.openmmo.common.Pokemon,
   ): List<de.fiereu.openmmo.net.game.packets.BreedingStatEntry> {
-    val a = with(first.iVs) { listOf(hp, atk, def, spAtk, spDef, spd) }
-    val b = with(second.iVs) { listOf(hp, atk, def, spAtk, spDef, spd) }
+    val a = with(first.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+    val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
     val bracedA = POWER_BRACES[first.heldItem]
     val bracedB = POWER_BRACES[second.heldItem]
     val bracedStats = setOfNotNull(bracedA, bracedB)
@@ -223,19 +223,19 @@ constructor(
      */
     val POWER_BRACES =
         mapOf(
-            // Indices are RC0.Df0 order: hp, atk, def, spAtk, spDef, SPEED.
+            // Indices are RC0.Df0 order: hp, atk, def, SPEED, spAtk, spDef.
             5294 to 0,
             6294 to 0, // Power Weight - HP
             5289 to 1,
             6289 to 1, // Power Bracer - Attack
             5290 to 2,
             6290 to 2, // Power Belt - Defense
-            5291 to 3,
-            6291 to 3, // Power Lens - Sp. Attack
-            5292 to 4,
-            6292 to 4, // Power Band - Sp. Defense
-            5293 to 5,
-            6293 to 5, // Power Anklet - Speed
+            5293 to 3,
+            6293 to 3, // Power Anklet - Speed
+            5291 to 4,
+            6291 to 4, // Power Lens - Sp. Attack
+            5292 to 5,
+            6292 to 5, // Power Band - Sp. Defense
         )
   }
 }

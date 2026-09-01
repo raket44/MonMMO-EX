@@ -56,20 +56,25 @@ const val MAX_IV = 31
 
 class IVs : PokemonStats(MAX_IV, 186)
 
+// The 5-bit groups are read by the client as word >> (RC0.Df0 * 5) with Df0 in ENUM order:
+// hp 0, atk 1, def 2, SPEED 3, spAtk 4, spDef 5 - the standard GBA IV word. The old mapping
+// wrote spAtk into the Speed group (and so on), which rotated every displayed special/speed IV:
+// play-verified twice through the breeding forecast (the Anklet-braced value tracked the wrong
+// row exactly as this scramble predicts).
 fun IVs.compress(): Int =
     (((hp and 31) shl 0) or
         ((atk and 31) shl 5) or
         ((def and 31) shl 10) or
-        ((spAtk and 31) shl 15) or
-        ((spDef and 31) shl 20) or
-        ((spd and 31) shl 25))
+        ((spd and 31) shl 15) or
+        ((spAtk and 31) shl 20) or
+        ((spDef and 31) shl 25))
 
 fun decompressIVs(value: Int): IVs =
     IVs().apply {
       hp = (value shr 0) and 31
       atk = (value shr 5) and 31
       def = (value shr 10) and 31
-      spAtk = (value shr 15) and 31
-      spDef = (value shr 20) and 31
-      spd = (value shr 25) and 31
+      spd = (value shr 15) and 31
+      spAtk = (value shr 20) and 31
+      spDef = (value shr 25) and 31
     }

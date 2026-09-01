@@ -27,12 +27,15 @@ if errorlevel 1 (
     exit /b 1
   )
   powershell.exe -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\Docker\Docker\Docker Desktop.exe' -WindowStyle Hidden"
-  for /l %%I in (1,1,45) do (
+  rem A cold Docker Desktop start regularly needs several minutes; the old 2-minute budget gave
+  rem up mid-boot and stranded the Play button. Wait up to ~10 minutes, announcing progress.
+  for /l %%I in (1,1,120) do (
     docker info >nul 2>&1
     if not errorlevel 1 goto docker_ready
-    ping 127.0.0.1 -n 3 >nul
+    if %%I==24 echo Still waiting for Docker Desktop - a cold start can take a few minutes...
+    ping 127.0.0.1 -n 6 >nul
   )
-  echo Docker Desktop did not finish starting.
+  echo Docker Desktop did not finish starting after 10 minutes.
   pause
   exit /b 1
 )

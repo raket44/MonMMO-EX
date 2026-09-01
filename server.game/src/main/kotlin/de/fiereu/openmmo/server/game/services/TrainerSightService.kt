@@ -143,9 +143,11 @@ constructor(
     // (vanilla behavior) and then HOLDS with delays sized past the whole approach, so control
     // only comes back once the intro dialog has already taken over the input.
     val playerFace = faceStep(dir.opposite()) ?: return
-    val approachMs = 120L + 750L + (distance - 1) * 250L + 120L
+    val approachMs = 135L + 750L + (distance - 1) * 275L + 135L
     val holdCount = (approachMs / DELAY_16_CLIENT_MS + 2).toInt()
-    val playerHold = listOf(playerFace) + List(holdCount) { MovementStep.DELAY_16 }
+    // Face the trainer at the start AND re-face at the end of the hold - the closing face
+    // guarantees the gaze lands on them even if something disturbed the first turn.
+    val playerHold = listOf(playerFace) + List(holdCount) { MovementStep.DELAY_16 } + playerFace
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
       scriptCtx.moveSelfAndNpcs(playerHold, npc.entityIdx to steps)

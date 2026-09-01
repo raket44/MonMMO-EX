@@ -99,6 +99,26 @@ constructor(
             info.positionMapId.toInt(),
             localId,
         )
+    // The glance: a held player turns to WATCH an npc that walks during the scene (Oak heading
+    // for his desk, the gym guide marching off), like the source games. Facing-only shuffles
+    // are ignored - only a real walk earns the look.
+    if (state.blocksPlayerInput && steps.any { it.walks }) {
+      val dx = npc.x - info.positionX.toInt()
+      val dy = npc.y - info.positionY.toInt()
+      val toward =
+          if (kotlin.math.abs(dx) >= kotlin.math.abs(dy)) {
+            if (dx >= 0) Direction.RIGHT else Direction.LEFT
+          } else {
+            if (dy >= 0) Direction.DOWN else Direction.UP
+          }
+      faceStepOf(toward)?.let { glance ->
+        awaitSelfActions(state)
+        releasePlayerHold(session, state)
+        state.facingDirection = toward
+        characterStore.updatePosition(charId, info.positionX, info.positionY, facing = toward)
+        sendActions(session, info.id, listOf(glance) + HOLD_TAIL)
+      }
+    }
     drive(session, entityId, Pose(npc.x, npc.y, npc.facing), steps)
   }
 
@@ -498,7 +518,7 @@ constructor(
   /** Waits until the client should be done animating the last scripted player movement. */
   suspend fun awaitSelfActions(state: PlayerState) {
     val remaining = state.selfActionsEndAt - System.currentTimeMillis()
-    if (remaining > 0) delay(remaining.coerceAtMost(3000))
+    if (remaining > 0) delay(remaining.coerceAtMost(8000))
   }
 
   private fun faceStepOf(direction: Direction): MovementStep? =
@@ -543,13 +563,13 @@ constructor(
     // GBA-frame-accurate client step timings (walk_normal 16 frames, fast/face 8 frames at
     // ~60fps). The old rounded-down values under-counted by ~7% per step, which accumulated
     // across long scenes until the script-end queue clear cut the final steps of a walk.
-    const val WALK_STEP_MS = 270L
+    const val WALK_STEP_MS = 275L
     const val FAST_STEP_MS = 135L
     const val FACE_STEP_MS = 135L
     /** ~10s of client-side controller seize (40 x DELAY_16); renewed before it can expire. */
     val HOLD_TAIL = List(40) { MovementStep.DELAY_16 }
 
     /** Extra margin the client gets to finish animating past the server's step-time estimate. */
-    const val CLIENT_LAG_PAD_MS = 250L
+    const val CLIENT_LAG_PAD_MS = 500L
   }
 }

@@ -139,7 +139,7 @@ class MovementInterpreterTest :
           runCurrent()
           job.isActive shouldBe true
           fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 0
-          advanceTimeBy(269)
+          advanceTimeBy(274)
           runCurrent()
           fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 0
           advanceTimeBy(1)

@@ -13,7 +13,7 @@ private const val FAINT = 0x10
 private const val SPECIES = 0x20
 private const val LISTING = 0x40
 private const val EVS = 0x80
-private const val LEVEL = 0x100
+private const val HELD_ITEM = 0x100
 private const val HAPPINESS = 0x200
 private const val POSITION = 0x400
 private const val STATUS_FLAGS = 0x800
@@ -63,7 +63,10 @@ data class BattleEntityDeltaPacket(
     // The client reads these as a facing and a heading. No capture either way yet.
     val listing: Listing? = null,
     val evValues: List<Short>? = null,
-    val level: Short? = null,
+    // Bit 0x100 is the HELD ITEM, not a level (capture-mislabeled): the client's handler f/Y9
+    // writes this short straight into k91.eE0 on the entity and marks the container UI dirty,
+    // repainting the party/PC item icon in place. Send 0 to clear.
+    val heldItem: Short? = null,
     val happiness: Short? = null,
     val position: Position? = null,
     val statusFlagsValue: Short? = null,
@@ -91,7 +94,7 @@ private fun BattleEntityDeltaPacket.mask(): Int {
   if (species != null) m = m or SPECIES
   if (listing != null) m = m or LISTING
   if (evValues != null) m = m or EVS
-  if (level != null) m = m or LEVEL
+  if (heldItem != null) m = m or HELD_ITEM
   if (happiness != null) m = m or HAPPINESS
   if (position != null) m = m or POSITION
   if (statusFlagsValue != null) m = m or STATUS_FLAGS
@@ -141,7 +144,7 @@ object BattleEntityDeltaPacketCodec : PacketCodec<BattleEntityDeltaPacket>() {
             Listing(field(S8) { it.listing!!.listType }, field(S16LE) { it.listing!!.sortKey })
         else null
     val evValues = optionalField(m and EVS != 0, S16LE.repeat(6)) { it.evValues }
-    val level = optionalField(m and LEVEL != 0, S16LE) { it.level }
+    val heldItem = optionalField(m and HELD_ITEM != 0, S16LE) { it.heldItem }
     val happiness = optionalField(m and HAPPINESS != 0, S16LE) { it.happiness }
     val position =
         if (m and POSITION != 0)
@@ -194,7 +197,7 @@ object BattleEntityDeltaPacketCodec : PacketCodec<BattleEntityDeltaPacket>() {
         species = species,
         listing = listing,
         evValues = evValues,
-        level = level,
+        heldItem = heldItem,
         happiness = happiness,
         position = position,
         statusFlagsValue = statusFlagsValue,

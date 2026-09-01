@@ -227,6 +227,7 @@ constructor(
     sendStack(ctx, charId, itemId)
     if (previous != 0) sendStack(ctx, charId, previous)
     sendParty(ctx, charId)
+    sendHeldItemDelta(ctx, target.id, itemId)
     breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     val itemName = items.get(itemId)?.name ?: "Item $itemId"
     ctx.reply(
@@ -248,6 +249,7 @@ constructor(
     characters.addItem(charId, taken, 1)
     sendStack(ctx, charId, taken)
     sendParty(ctx, charId)
+    sendHeldItemDelta(ctx, target.id, 0)
     breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     ctx.reply("${items.get(taken)?.name ?: "Item $taken"} was taken back.")
   }
@@ -278,6 +280,19 @@ constructor(
   private fun sendStack(ctx: de.fiereu.network.SessionContext, charId: Long, itemId: Int) {
     val quantity = characters.getCharacter(charId)?.items?.get(itemId) ?: 0
     ctx.send(itemStackUpdatePacket(itemId, quantity))
+  }
+
+  /**
+   * Updates the held item on the client's LIVE record: delta bit 0x100 writes k91.eE0 in place and
+   * marks the container UI dirty, so the party/PC item icon and any open window showing it repaint
+   * without waiting for a full container packet (which open windows keep stale references across).
+   */
+  private fun sendHeldItemDelta(ctx: de.fiereu.network.SessionContext, monId: Long, itemId: Int) {
+    ctx.send(
+        de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket(
+            entityId = monId,
+            heldItem = itemId.toShort(),
+        ))
   }
 
   private fun sendParty(ctx: de.fiereu.network.SessionContext, charId: Long) {

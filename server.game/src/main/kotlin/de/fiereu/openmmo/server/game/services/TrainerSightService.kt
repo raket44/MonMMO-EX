@@ -5,7 +5,6 @@ import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.NpcDef
-import de.fiereu.openmmo.net.game.packets.EntityPresencePacket
 import de.fiereu.openmmo.server.game.script.MovementStep
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
@@ -138,22 +137,19 @@ constructor(
     // lands on them.
     val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-    val charId = state.characterId ?: return
-    // THE battle freeze, sent instantly on the packet thread: the first packet of every battle
-    // is presence=IN_BATTLE on the player's own entity, and it is what stops the client dead in
-    // its tracks. Same mechanism here - the player freezes on the spotted tile, exactly like a
-    // wild encounter. The battle that follows re-sends it; battle end restores OVERWORLD.
-    ctx.send(EntityPresencePacket(entityId = charId, status = PRESENCE_IN_BATTLE))
+    // THE true stop, operator-identified via the Pewter gym guide: a scripted movement on the
+    // PLAYER'S OWN entity seizes the client's movement controller - input cannot move the
+    // player until the sequence finishes. The player turns to face the spotting trainer
+    // (vanilla behavior) and then HOLDS with delays sized past the whole approach, so control
+    // only comes back once the intro dialog has already taken over the input.
+    val playerFace = faceStep(dir.opposite()) ?: return
+    val approachMs = 120L + 750L + (distance - 1) * 250L + 120L
+    val holdCount = (approachMs / DELAY_16_CLIENT_MS + 2).toInt()
+    val playerHold = listOf(playerFace) + List(holdCount) { MovementStep.DELAY_16 }
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      try {
-        scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
-        script.run(scriptCtx)
-      } finally {
-        // The battle's own end already restores presence; this covers a script that never
-        // reaches its battle (error, unresolved text) so the player is never left frozen.
-        scriptCtx.send(EntityPresencePacket(entityId = charId, status = PRESENCE_OVERWORLD))
-      }
+      scriptCtx.moveSelfAndNpcs(playerHold, npc.entityIdx to steps)
+      script.run(scriptCtx)
     }
     scriptRunner.run(ctx, state, approach, entityId)
   }
@@ -209,9 +205,8 @@ constructor(
   private companion object {
     const val TRAINER_TYPE_NORMAL = 1
     const val TRAINER_TYPE_ALL_DIRS = 2
-    /** EntityPresencePacket statuses, mirroring BattlePacketEmitter's. */
-    const val PRESENCE_IN_BATTLE: Byte = 1
-    const val PRESENCE_OVERWORLD: Byte = 0
+    /** Roughly what one DELAY_16 action holds the client's movement controller for. */
+    const val DELAY_16_CLIENT_MS = 250L
     val CARDINALS = listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)
   }
 }

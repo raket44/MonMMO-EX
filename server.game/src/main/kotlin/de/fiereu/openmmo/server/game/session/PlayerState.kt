@@ -150,6 +150,7 @@ data class PlayerState(
      * and clearing mid-walk snapped the player to the endpoint (the lab pull-back "poof"). Hold
      * delays are exempt - clearing those instantly is the whole point.
      */
+    @field:Volatile var selfActionsEndAt: Long = 0,
     /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.

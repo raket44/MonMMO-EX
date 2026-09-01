@@ -310,10 +310,6 @@ constructor(
       // Drop every step until the client asks for its player, else one left over from the old map
       // can fire a second warp.
       state.justWarped -> return
-      // The arrival-choreography window: the NDS branch always dropped these, the GBA branch
-      // never did - which is how the player could move and turn during the emergence walk-out
-      // (log-verified: a step was ACCEPTED 74ms before the emergence step fired).
-      System.currentTimeMillis() < state.moveIgnoreUntil -> return
       // A script owns the player, like the decomp's lockall. The position reset re-asserts the
       // tile; the scripted face action after it SEIZES the movement controller (the only
       // channel proven to control the local player), interrupting the walk-in-place animation

@@ -86,10 +86,6 @@ constructor(
     state.scriptRunning = true
     // Existing Kotlin scripts rely on the runner's historical whole-script player lock.
     state.lockLocal(entityId)
-    // Seize the client's movement controller IMMEDIATELY, on the packet thread - this is what
-    // stops the player dead when a coord event (Oak's walk-up, the gym guide) fires mid-stride.
-    // The hold is renewed by every dialog and scripted move; the finally below releases it.
-    movementService.holdPlayer(session, state)
     val snapshot = state.characterId?.let(characterStore::getCharacter)
     if (snapshot != null) session.attributes[SCRIPT_SNAPSHOT] = snapshot
     val ctx =
@@ -143,8 +139,6 @@ constructor(
         dialogService.close(session, state)
         state.releaseScriptLock()
         state.scriptRunning = false
-        // Clears any queued hold delays instantly - control returns the moment the script ends.
-        movementService.releasePlayerHold(session, state)
       }
     }
   }

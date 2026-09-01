@@ -147,9 +147,6 @@ constructor(
               localId,
           ) to steps
         }
-    // The queue appends, so a standing hold would run BEFORE these steps - clear it first,
-    // then re-seize once the scripted walk is done and the pose is committed.
-    releasePlayerHold(session, state)
     sendActions(session, info.id, selfSteps)
     resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
     delay(
@@ -162,7 +159,6 @@ constructor(
     check(commitPose(charId, state, map, applySteps(start, selfSteps))) {
       "Scripted player movement ended off the map"
     }
-    if (state.blocksPlayerInput) holdPlayer(session, state)
   }
 
   /** Show a normally hidden map npc to the player for a cutscene (the decomp addobject). */
@@ -372,8 +368,6 @@ constructor(
     val info = characterStore.getCharacter(charId)?.info ?: return
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
-    // The queue appends: clear the standing hold so these steps run now, re-seize afterwards.
-    releasePlayerHold(session, state)
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
     // A player walked off the map means the scene ran from a position it never expected (a login
@@ -382,7 +376,6 @@ constructor(
     check(commitPose(charId, state, map, end)) {
       "Scripted player movement ended off the map at (${end.x}, ${end.y})"
     }
-    if (state.blocksPlayerInput) holdPlayer(session, state)
   }
 
   /** Sends one packet per step from [start] and waits between them. Returns the final pose. */
@@ -435,58 +428,18 @@ constructor(
    * server rejects the steps - a face action re-takes the controller and snaps the sprite back to
    * the held direction. Called before every dialog shown under a script lock.
    */
-  fun reassertScriptedFacing(session: SessionContext, state: PlayerState) =
-      holdPlayer(session, state)
-
-  /**
-   * SEIZES the player's movement controller: a face action in the held direction plus ~10s of delay
-   * actions. While the queue runs, the client cannot move OR turn the player at all - no
-   * twirl-and-snap-back, just a statue, the vanilla look. Renewed at every dialog, scripted player
-   * movement and blocked-input report so it never expires mid-scene; [releasePlayerHold] clears it
-   * instantly when the script lets go.
-   */
-  fun holdPlayer(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
-    // Never touch the player's action queue during the arrival choreography - the emergence
-    // walk lives in the same queue, and a hold or clear here would swallow the door walk-out
-    // (ON_TRANSITION scripts run exactly in this window).
-    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
+  fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return
-    val face = faceStepOf(state.facingDirection) ?: return
-    sendActions(session, charId, listOf(face) + HOLD_TAIL)
+    val face =
+        when (state.facingDirection) {
+          Direction.UP -> MovementStep.FACE_UP
+          Direction.DOWN -> MovementStep.FACE_DOWN
+          Direction.LEFT -> MovementStep.FACE_LEFT
+          Direction.RIGHT -> MovementStep.FACE_RIGHT
+          else -> return
+        }
+    sendActions(session, charId, listOf(face))
   }
-
-  /**
-   * Instantly releases a held player: the position-set move (mode 2) CLEARS the client's action
-   * queue (NV0.yN0, bytecode-verified - the append-only queue has no other cancel), dropping every
-   * queued hold delay and returning control on the spot.
-   */
-  fun releasePlayerHold(session: SessionContext, state: PlayerState) {
-    if (state.regionId > 1) return
-    // Same choreography guard as holdPlayer: the clear would cancel the emergence walk.
-    if (System.currentTimeMillis() < state.moveIgnoreUntil) return
-    val charId = state.characterId ?: return
-    val info = characterStore.getCharacter(charId)?.info ?: return
-    session.send(
-        de.fiereu.openmmo.net.game.packets.GbaEntityMovePacket(
-            entityId = charId,
-            bankId = info.positionBankId.toInt() and 0xff,
-            mapId = info.positionMapId.toInt() and 0xff,
-            x = info.positionX.toInt(),
-            y = info.positionY.toInt(),
-            movementMode = 2,
-            direction = state.facingDirection,
-        ))
-  }
-
-  private fun faceStepOf(direction: Direction): MovementStep? =
-      when (direction) {
-        Direction.UP -> MovementStep.FACE_UP
-        Direction.DOWN -> MovementStep.FACE_DOWN
-        Direction.LEFT -> MovementStep.FACE_LEFT
-        Direction.RIGHT -> MovementStep.FACE_RIGHT
-        else -> null
-      }
 
   /** One facing change with no wait - the trainer-facing driver's whole vocabulary. */
   fun turnNpc(session: SessionContext, entityId: Long, direction: Direction) {
@@ -522,7 +475,5 @@ constructor(
     const val WALK_STEP_MS = 250L
     const val FAST_STEP_MS = 130L
     const val FACE_STEP_MS = 120L
-    /** ~10s of client-side controller seize (40 x DELAY_16); renewed before it can expire. */
-    val HOLD_TAIL = List(40) { MovementStep.DELAY_16 }
   }
 }

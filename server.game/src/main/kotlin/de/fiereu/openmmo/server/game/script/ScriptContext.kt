@@ -191,16 +191,10 @@ internal constructor(
   }
 
   /** Record the local player/interacted-object lock used by this script. */
-  fun lock() {
-    state.lockLocal(entityId)
-    movement.holdPlayer(session, state)
-  }
+  fun lock() = state.lockLocal(entityId)
 
   /** Record the stronger all-object lifecycle lock used by cutscenes. */
-  fun lockAll() {
-    state.lockAll()
-    movement.holdPlayer(session, state)
-  }
+  fun lockAll() = state.lockAll()
 
   /**
    * Freeze or release the CLIENT's overworld input (0xFB, the warp choreography packet). Applied
@@ -215,14 +209,12 @@ internal constructor(
   fun release() {
     dialog.close(session, state)
     state.releaseScriptLock()
-    movement.releasePlayerHold(session, state)
   }
 
   /** Release an all-object lifecycle lock and close any visible message. */
   fun releaseAll() {
     dialog.close(session, state)
     state.releaseScriptLock()
-    movement.releasePlayerHold(session, state)
   }
 
   /** Close only the visible message. Script execution and lifecycle ownership continue. */

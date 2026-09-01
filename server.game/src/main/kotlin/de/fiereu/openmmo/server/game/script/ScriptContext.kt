@@ -215,14 +215,14 @@ internal constructor(
   fun release() {
     dialog.close(session, state)
     state.releaseScriptLock()
-    movement.releasePlayerHold(session, state)
+    // The queue clear is left to the runner: it waits out any still-animating player walk
+    // first, or a release right after a scripted walk clears it mid-step (the lab "poof").
   }
 
   /** Release an all-object lifecycle lock and close any visible message. */
   fun releaseAll() {
     dialog.close(session, state)
     state.releaseScriptLock()
-    movement.releasePlayerHold(session, state)
   }
 
   /** Close only the visible message. Script execution and lifecycle ownership continue. */

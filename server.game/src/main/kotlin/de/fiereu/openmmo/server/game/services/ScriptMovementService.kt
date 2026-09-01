@@ -150,6 +150,7 @@ constructor(
     // The queue appends, so a standing hold would run BEFORE these steps - clear it first,
     // then re-seize once the scripted walk is done and the pose is committed.
     releasePlayerHold(session, state)
+    state.selfActionsEndAt = System.currentTimeMillis() + durationMs(selfSteps) + CLIENT_LAG_PAD_MS
     sendActions(session, info.id, selfSteps)
     resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
     delay(
@@ -374,6 +375,7 @@ constructor(
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
     // The queue appends: clear the standing hold so these steps run now, re-seize afterwards.
     releasePlayerHold(session, state)
+    state.selfActionsEndAt = System.currentTimeMillis() + durationMs(steps) + CLIENT_LAG_PAD_MS
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
     // A player walked off the map means the scene ran from a position it never expected (a login
@@ -529,5 +531,8 @@ constructor(
     const val FACE_STEP_MS = 120L
     /** ~10s of client-side controller seize (40 x DELAY_16); renewed before it can expire. */
     val HOLD_TAIL = List(40) { MovementStep.DELAY_16 }
+
+    /** Extra margin the client gets to finish animating past the server's step-time estimate. */
+    const val CLIENT_LAG_PAD_MS = 250L
   }
 }

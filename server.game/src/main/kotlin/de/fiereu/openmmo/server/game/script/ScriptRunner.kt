@@ -143,7 +143,13 @@ constructor(
         dialogService.close(session, state)
         state.releaseScriptLock()
         state.scriptRunning = false
-        // Clears any queued hold delays instantly - control returns the moment the script ends.
+        // Let a still-animating scripted walk finish before clearing the queue - the clear
+        // snaps the player to the endpoint of whatever it interrupts (the lab pull-back
+        // "poof"). Hold delays carry no such risk; clearing them is the point.
+        runCatching {
+          val remaining = state.selfActionsEndAt - System.currentTimeMillis()
+          if (remaining > 0) kotlinx.coroutines.delay(remaining.coerceAtMost(3000))
+        }
         movementService.releasePlayerHold(session, state)
       }
     }

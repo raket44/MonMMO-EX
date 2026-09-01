@@ -145,6 +145,13 @@ data class PlayerState(
      */
     @field:Volatile var suppressNpcSpawns: Boolean = false,
     /**
+     * When the client should be done ANIMATING the last scripted player movement (epoch ms). The
+     * hold-release queue clear must not fire before this: server-side step timing is an estimate,
+     * and clearing mid-walk snapped the player to the endpoint (the lab pull-back "poof"). Hold
+     * delays are exempt - clearing those instantly is the whole point.
+     */
+    @field:Volatile var selfActionsEndAt: Long = 0,
+    /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.
      */

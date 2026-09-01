@@ -467,15 +467,20 @@ constructor(
     if (System.currentTimeMillis() < state.moveIgnoreUntil) return
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
+    // The 0x11 entity update is THE packet whose handler clears the client's action queue
+    // (f/Tp0.X91 -> NV0.yN0, bytecode-verified). The first attempt used the mode-2 move, whose
+    // handler does NOT clear - the player stayed frozen until the queued delays ran out. Same
+    // field encoding as the proven repositionSelf teleport, at the player's current pose.
     session.send(
-        de.fiereu.openmmo.net.game.packets.GbaEntityMovePacket(
-            entityId = charId,
-            bankId = info.positionBankId.toInt() and 0xff,
-            mapId = info.positionMapId.toInt() and 0xff,
+        NpcUpdatePacket(
+            entityId = info.id,
+            regionId = info.positionRegionId.toInt(),
+            bankId = info.positionBankId.toInt(),
+            mapId = info.positionMapId.toInt(),
             x = info.positionX.toInt(),
             y = info.positionY.toInt(),
-            movementMode = 2,
-            direction = state.facingDirection,
+            facing = 0xF6,
+            unk = state.facingDirection.ordinal,
         ))
   }
 

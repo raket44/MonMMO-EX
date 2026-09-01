@@ -288,7 +288,11 @@ class MapTransitionScriptTest :
           advanceUntilIdle()
           cutscene.join()
 
-          session.sent.filterIsInstance<NpcUpdatePacket>() shouldBe
+          // The player's own 0x11 (the hold-release queue clear at script end) is not part of
+          // the npc choreography under test.
+          session.sent.filterIsInstance<NpcUpdatePacket>().filter {
+            it.entityId != session.state().characterId
+          } shouldBe
               listOf(
                   NpcUpdatePacket(birchId, 1, 50, 16, 0, 15, 0xF6, 3),
                   NpcUpdatePacket(zigzagoonId, 1, 50, 16, 0, 16, 0xF6, 2),

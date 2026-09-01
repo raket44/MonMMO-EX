@@ -29,7 +29,8 @@ private constructor(
         c == '{' -> {
           val end = text.indexOf('}', i)
           if (end < 0) return null
-          val bytes = placeholders[text.substring(i + 1, end)] ?: return null
+          val token = text.substring(i + 1, end)
+          val bytes = placeholders[token] ?: encodeArgumented(token) ?: return null
           out.addAll(bytes.toList())
           i = end + 1
         }
@@ -41,6 +42,27 @@ private constructor(
       }
     }
     return out.toByteArray()
+  }
+
+  /**
+   * Control codes that carry inline arguments, like `{PAUSE 0xFE}`: the charmap maps the bare
+   * name to its control bytes (the charmap comment says "manually print the wait byte after
+   * this") and the argument bytes follow verbatim. This is what Brock's badge-fanfare defeat
+   * text needs to encode.
+   */
+  private fun encodeArgumented(token: String): ByteArray? {
+    val space = token.indexOf(' ')
+    if (space < 0) return null
+    val head = placeholders[token.substring(0, space)] ?: return null
+    val args =
+        token.substring(space + 1).trim().split(Regex("\\s+")).map { arg ->
+          val value =
+              if (arg.startsWith("0x", ignoreCase = true)) arg.drop(2).toIntOrNull(16)
+              else arg.toIntOrNull()
+          if (value == null || value !in 0..0xFF) return null
+          value.toByte()
+        }
+    return head + args.toByteArray()
   }
 
   companion object {

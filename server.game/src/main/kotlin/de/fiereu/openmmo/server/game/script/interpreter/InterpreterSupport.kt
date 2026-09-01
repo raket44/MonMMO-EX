@@ -34,6 +34,9 @@ internal object InterpreterSupport {
           "setobjectmovementtype",
           "turnobject",
           "famechecker",
+          // Seeds the gym-statue "trainers defeated" bookkeeping (setvar VAR_0x8008 + call).
+          // Statue text is cosmetic; blocking every gym leader on it was the real cost.
+          "set_gym_trainers",
           "waitstate",
           "showmoneybox",
           "hidemoneybox",

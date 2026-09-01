@@ -5138,6 +5138,11 @@
             "text": "So, you're here. I'm BROCK.\\nI'm PEWTER's GYM LEADER.\\pMy rock-hard willpower is evident\\neven in my POKéMON.\\pMy POKéMON are all rock hard, and\\nhave true-grit determination.\\pThat's right - my POKéMON are all\\nthe ROCK type!\\pFuhaha! You're going to challenge\\nme knowing that you'll lose?\\pThat's the TRAINER's honor that\\ncompels you to challenge me.\\pFine, then!\\nShow me your best!{PLAY_BGM}{MUS_ENCOUNTER_GYM_LEADER}$"
         },
         {
+            "label": "PewterCity_Gym_Text_BrockDefeat",
+            "id": 1642063,
+            "text": "I took you for granted, and so\\nI lost.\\pAs proof of your victory, I confer\\non you this…the official POKéMON\\lLEAGUE BOULDERBADGE.\\p{FONT_NORMAL}{PLAYER} received the BOULDERBADGE\\nfrom BROCK!{PAUSE_MUSIC}{PLAY_BGM}{MUS_OBTAIN_BADGE}{PAUSE 0xFE}{PAUSE 0x56}{RESUME_MUSIC}\\p{FONT_MALE}Just having the BOULDERBADGE makes\\nyour POKéMON more powerful.\\pIt also enables the use of the\\nmove FLASH outside of battle.\\pOf course, a POKéMON must know the\\nmove FLASH to use it.$"
+        },
+        {
             "label": "PewterCity_Gym_Text_TakeThisWithYou",
             "id": 1642433,
             "text": "Wait!\\nTake this with you.$"
@@ -15098,6 +15103,11 @@
             "text": "Fwahahaha!\\nWelcome to my hideout!\\pIt shall be so until I can restore\\nTEAM ROCKET to its former glory.\\pBut, you have found me again.\\nSo be it.\\lThis time, I'm not holding back!\\pOnce more, you shall face\\nGIOVANNI, the greatest TRAINER!{PLAY_BGM}{MUS_ENCOUNTER_ROCKET}$"
         },
         {
+            "label": "ViridianCity_Gym_Text_GiovanniDefeat",
+            "id": 1635391,
+            "text": "Ha!\\nThat was a truly intense fight.\\lYou have won!\\pAs proof, here is the EARTHBADGE!\\n{PAUSE_MUSIC}{PLAY_BGM}{MUS_OBTAIN_BADGE}{PAUSE 0xFE}{PAUSE 0x56}{RESUME_MUSIC}$"
+        },
+        {
             "label": "ViridianCity_Gym_Text_GiovanniPostBattle",
             "id": 1635490,
             "text": "Having lost in this fashion, \\nI can't face my followers.\\lI have betrayed their trust.\\pAs of today, TEAM ROCKET is\\nfinished forever!\\pAs for myself, I shall dedicate\\nmy life to training again.\\pLet us meet again someday!\\nFarewell!$"
@@ -20416,6 +20426,11 @@
             "label": "Text_OnlyPassWithBadgeDontHaveYet",
             "id": 1726401,
             "text": "You can pass here only if you have\\nthe {STR_VAR_1}.\\pYou don't have the {STR_VAR_1}\\nyet.\\pYou have to have it to get to\\nthe POKéMON LEAGUE.$"
+        },
+        {
+            "label": "Text_OnlyPassWithBadgeOhGoAhead",
+            "id": 1726521,
+            "text": "You can pass here only if you have\\nthe {STR_VAR_1}.\\pOh! That is the {STR_VAR_1}!{PAUSE_MUSIC}{PLAY_BGM}{MUS_LEVEL_UP}{PAUSE 0x60}{RESUME_MUSIC}\\pOkay, then.\\nPlease, go right ahead.$"
         },
         {
             "label": "SafariZone_Text_WouldYouLikeToExit",

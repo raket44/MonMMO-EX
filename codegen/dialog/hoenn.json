@@ -17793,6 +17793,11 @@
             "text": "No? That's a downer.\\nWell, if you change your mind, come back.$"
         },
         {
+            "label": "Route124_DivingTreasureHuntersHouse_Text_ShardTradeBoard",
+            "id": 270995991,
+            "text": "{CLEAR_TO 10}Wanted item{CLEAR_TO 124}Trade item\\n{CLEAR_TO 15}RED SHARD{CLEAR_TO 89}{LEFT_ARROW}{RIGHT_ARROW}{CLEAR_TO 123}FIRE STONE{CLEAR_TO 200}\\p{CLEAR_TO 10}Wanted item{CLEAR_TO 124}Trade item\\n{CLEAR_TO 6}YELLOW SHARD{CLEAR_TO 89}{LEFT_ARROW}{RIGHT_ARROW}{CLEAR_TO 115}THUNDERSTONE{CLEAR_TO 200}\\p{CLEAR_TO 10}Wanted item{CLEAR_TO 124}Trade item\\n{CLEAR_TO 12}BLUE SHARD{CLEAR_TO 89}{LEFT_ARROW}{RIGHT_ARROW}{CLEAR_TO 121}WATER STONE{CLEAR_TO 200}\\p{CLEAR_TO 10}Wanted item{CLEAR_TO 124}Trade item\\n{CLEAR_TO 8}GREEN SHARD{CLEAR_TO 89}{LEFT_ARROW}{RIGHT_ARROW}{CLEAR_TO 123}LEAF STONE$"
+        },
+        {
             "label": "Route128_Text_ArchieWhatHappened",
             "id": 270495221,
             "text": "ARCHIE: What happened…\\nWhat is this wretched scene…\\pDid I…make a horrible mistake?$"
@@ -28063,6 +28068,16 @@
             "text": "{STR_VAR_1} appealed with\\n{STR_VAR_2}!$"
         },
         {
+            "label": "gText_MonWasWatchingOthers",
+            "id": 271045999,
+            "text": "{STR_VAR_1} was watching\\nthe others.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AllOutOfAppealTime",
+            "id": 271046039,
+            "text": "We're all out of\\nAppeal Time!{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
             "label": "gText_ButAppealWasJammed",
             "id": 271046081,
             "text": "But the appeal was\\njammed.$"
@@ -28271,6 +28286,356 @@
             "label": "gText_EveryonesAppealsMadeSame",
             "id": 271047502,
             "text": "Everyone's appeals were\\nmade the same.$"
+        },
+        {
+            "label": "gText_BecameMoreConsciousOfOtherMons",
+            "id": 271047541,
+            "text": "It became more conscious\\nof the other POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonCantMakeAnAppealAfterThis",
+            "id": 271047600,
+            "text": "{STR_VAR_1} can't make an\\nappeal after this.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_SettledDownJustLittleBit",
+            "id": 271047648,
+            "text": "It settled down just a\\nlittle bit.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_BecameObliviousToOtherMons",
+            "id": 271047695,
+            "text": "It became oblivious to\\nthe other POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_BecameLessAwareOfOtherMons",
+            "id": 271047749,
+            "text": "It became less aware of\\nthe other POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_StoppedCaringAboutOtherMons",
+            "id": 271047804,
+            "text": "It stopped caring about\\nother POKéMON much.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TriedToStartleOtherMons",
+            "id": 271047860,
+            "text": "It tried to startle the\\nother POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TriedToDazzleOthers",
+            "id": 271047911,
+            "text": "It tried to dazzle the\\nothers.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_JudgeLookedAwayFromMon",
+            "id": 271047954,
+            "text": "The JUDGE looked away\\nfrom {STR_VAR_1}.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TriedToUnnerveNextMon",
+            "id": 271047997,
+            "text": "It tried to unnerve the\\nnext POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonBecameNervous",
+            "id": 271048047,
+            "text": "{STR_VAR_1} became\\nnervous.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AppealTriedToUnnerveWaitingMons",
+            "id": 271048078,
+            "text": "The appeal tried to\\nunnerve waiting POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TauntedMonsDoingWell",
+            "id": 271048135,
+            "text": "It taunted POKéMON\\ndoing well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonRegainedItsForm",
+            "id": 271048178,
+            "text": "{STR_VAR_1} regained its\\nform.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TriedToJamMonDoingWell",
+            "id": 271048212,
+            "text": "It tried to jam POKéMON\\ndoing well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_StandoutMonHustledEvenMore",
+            "id": 271048260,
+            "text": "The standout {STR_VAR_1}\\nhustled even more.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_LargelyUnnoticedMonWorkedHard",
+            "id": 271048307,
+            "text": "The largely unnoticed\\n{STR_VAR_1} worked hard.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_WorkedAsMuchAsMonBefore",
+            "id": 271048357,
+            "text": "It worked as much as\\nPOKéMON before it.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealDidNotGoWell",
+            "id": 271048409,
+            "text": "{STR_VAR_1}'s appeal did\\nnot go well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_WorkedAsMuchAsPrecedingMon",
+            "id": 271048450,
+            "text": "It worked as much as the\\npreceding POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealDidNotGoWell2",
+            "id": 271048409,
+            "text": "{STR_VAR_1}'s appeal did\\nnot go well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealDidNotGoWell3",
+            "id": 271048409,
+            "text": "{STR_VAR_1}'s appeal did\\nnot go well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentSlightlyWell",
+            "id": 271048588,
+            "text": "{STR_VAR_1}'s appeal\\nwent slightly well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentPrettyWell",
+            "id": 271048632,
+            "text": "{STR_VAR_1}'s appeal\\nwent pretty well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentExcellently",
+            "id": 271048674,
+            "text": "{STR_VAR_1}'s appeal\\nwent excellently.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWasDud",
+            "id": 271048716,
+            "text": "{STR_VAR_1}'s appeal was\\na dud.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealDidNotWorkVeryWell",
+            "id": 271048751,
+            "text": "{STR_VAR_1}'s appeal did\\nnot work very well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentSlightlyWell2",
+            "id": 271048588,
+            "text": "{STR_VAR_1}'s appeal\\nwent slightly well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentPrettyWell2",
+            "id": 271048632,
+            "text": "{STR_VAR_1}'s appeal\\nwent pretty well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentVeryWell",
+            "id": 271048885,
+            "text": "{STR_VAR_1}'s appeal\\nwent very well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsAppealWentExcellently2",
+            "id": 271048674,
+            "text": "{STR_VAR_1}'s appeal\\nwent excellently.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_SameTypeAsOneBeforeGood",
+            "id": 271048967,
+            "text": "It's the same type as the\\nPOKéMON before--good!{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_NotSameTypeAsOneBeforeGood",
+            "id": 271049027,
+            "text": "It's not the same type as\\nthe one before--good!{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_StoodOutMuchMoreThanMonBefore",
+            "id": 271049087,
+            "text": "It stood out much more\\nthan the POKéMON before.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_DidntDoAsWellAsMonBefore",
+            "id": 271049147,
+            "text": "It didn't do as well as the\\nPOKéMON before.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsConditionRoseAboveUsual",
+            "id": 271049203,
+            "text": "{STR_VAR_1}'s condition\\nrose above usual.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsHotStatusMadeGreatAppeal",
+            "id": 271049248,
+            "text": "{STR_VAR_1}'s hot status\\nmade it a great appeal!{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MovedUpInLineForNextAppeal",
+            "id": 271049300,
+            "text": "It moved up in line for\\nthe next appeal.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MovedBackInLineForNextAppeal",
+            "id": 271049353,
+            "text": "It moved back in line once\\nfor the next appeal.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_ScrambledUpOrderForNextTurn",
+            "id": 271049413,
+            "text": "It scrambled up the\\norder for the next turn.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_JudgeLookedAtMonExpectantly",
+            "id": 271049470,
+            "text": "The JUDGE looked at\\n{STR_VAR_1} expectantly.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AppealComboWentOverWell",
+            "id": 271049518,
+            "text": "The appeal combo went\\nover well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AppealComboWentOverVeryWell",
+            "id": 271049563,
+            "text": "The appeal combo went\\nover very well.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AppealComboWentOverExcellently",
+            "id": 271049613,
+            "text": "The appeal combo went\\nover excellently.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonManagedToAvertGaze",
+            "id": 271049665,
+            "text": "{STR_VAR_1} managed to\\navert its gaze.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonManagedToAvoidSeeingIt",
+            "id": 271049707,
+            "text": "{STR_VAR_1} managed to\\navoid seeing it.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonIsntFazedByThatSortOfThing",
+            "id": 271049750,
+            "text": "{STR_VAR_1} isn't fazed\\nby that sort of thing.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonBecameALittleDistracted",
+            "id": 271049800,
+            "text": "{STR_VAR_1} became a\\nlittle distracted.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_TriedToStartleOtherPokemon",
+            "id": 271047860,
+            "text": "It tried to startle the\\nother POKéMON.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonLookedDownOutOfDistraction",
+            "id": 271049894,
+            "text": "{STR_VAR_1} looked down\\nout of distraction.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonTurnedBackOutOfDistraction",
+            "id": 271049941,
+            "text": "{STR_VAR_1} turned back\\nout of distraction.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonCouldntHelpUtteringCry",
+            "id": 271049988,
+            "text": "{STR_VAR_1} couldn't help\\nuttering a cry.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonCouldntHelpLeapingUp",
+            "id": 271050033,
+            "text": "{STR_VAR_1} couldn't help\\nleaping up.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonTrippedOutOfDistraction",
+            "id": 271050074,
+            "text": "{STR_VAR_1} tripped over\\nout of distraction.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonWasTooNervousToMove",
+            "id": 271050122,
+            "text": "{STR_VAR_1} was too\\nnervous to move.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_ButItMessedUp2",
+            "id": 271050162,
+            "text": "But it messed up.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_ButItFailedToMakeTargetNervous",
+            "id": 271050192,
+            "text": "But it failed to make\\nthe target nervous.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_ButItFailedToMakeAnyoneNervous",
+            "id": 271050246,
+            "text": "But it failed to make\\nanyone nervous.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_ButItWasIgnored",
+            "id": 271050296,
+            "text": "But it was ignored…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_CouldntImproveItsCondition",
+            "id": 271050328,
+            "text": "But it couldn't improve\\nits condition…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_BadConditionResultedInWeakAppeal",
+            "id": 271050379,
+            "text": "Its bad condition\\nresulted in a weak appeal.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonWasUnaffected",
+            "id": 271050436,
+            "text": "{STR_VAR_1} was\\nunaffected.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_RepeatedAppeal",
+            "id": 271050467,
+            "text": "{STR_VAR_1} disappointed\\nby repeating an appeal.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsXWentOverGreat",
+            "id": 271050519,
+            "text": "{STR_VAR_1}'s {STR_VAR_3}\\nwent over great.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsXDidntGoOverWell",
+            "id": 271050556,
+            "text": "{STR_VAR_1}'s {STR_VAR_3}\\ndidn't go over well here…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsXGotTheCrowdGoing",
+            "id": 271050602,
+            "text": "{STR_VAR_1}'s {STR_VAR_3}\\ngot the crowd going.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonCantAppealNextTurn",
+            "id": 271050643,
+            "text": "{STR_VAR_1} can't appeal\\nnext turn…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_AttractedCrowdsAttention",
+            "id": 271050682,
+            "text": "It attracted the crowd's\\nattention.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_CrowdContinuesToWatchMon",
+            "id": 271050730,
+            "text": "The crowd continues to\\nwatch {STR_VAR_3}.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
+        },
+        {
+            "label": "gText_MonsMoveIsIgnored",
+            "id": 271050775,
+            "text": "{STR_VAR_1}'s\\n{STR_VAR_2} is ignored.{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
         },
         {
             "label": "gText_Contest_Shyness",
@@ -28601,6 +28966,11 @@
             "label": "LilycoveCity_DepartmentStore_1F_Text_PleaseVisitAgain",
             "id": 271024785,
             "text": "Please do visit again.$"
+        },
+        {
+            "label": "LilycoveCity_DepartmentStore_1F_Text_PleasePickTicket",
+            "id": 271213768,
+            "text": "Please pick a LOTO TICKET.\\n…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}…{PAUSE 15}{PAUSE 15}{PAUSE 15}{PAUSE 15}$"
         },
         {
             "label": "LilycoveCity_DepartmentStore_1F_Text_TicketNumberIsXPleaseWait",

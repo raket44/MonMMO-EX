@@ -165,18 +165,24 @@ constructor(
               localId,
           ) to steps
         }
-    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue.
-    sendActions(session, info.id, selfSteps)
-    resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
-    delay(
-        maxOf(
-            durationMs(selfSteps),
-            resolved.maxOfOrNull { (_, steps) -> durationMs(steps) } ?: 0,
-        ))
+    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue; renewals
+    // pause while the walk is in flight or they would splice turns and freezes into it.
+    state.scriptMovingSelf = true
+    try {
+      sendActions(session, info.id, selfSteps)
+      resolved.forEach { (entityId, steps) -> sendActions(session, entityId, steps) }
+      delay(
+          maxOf(
+              durationMs(selfSteps),
+              resolved.maxOfOrNull { (_, steps) -> durationMs(steps) } ?: 0,
+          ))
 
-    val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
-    check(commitPose(charId, state, map, applySteps(start, selfSteps))) {
-      "Scripted player movement ended off the map"
+      val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
+      check(commitPose(charId, state, map, applySteps(start, selfSteps))) {
+        "Scripted player movement ended off the map"
+      }
+    } finally {
+      state.scriptMovingSelf = false
     }
     if (state.blocksPlayerInput) holdPlayer(session, state)
   }
@@ -388,9 +394,16 @@ constructor(
     val info = characterStore.getCharacter(charId)?.info ?: return
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
-    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue.
+    // Holds are short (~0.5s) and simply drain ahead of these steps in the queue; renewals
+    // pause while the walk is in flight or they would splice turns and freezes into it.
+    state.scriptMovingSelf = true
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
-    val end = drive(session, info.id, start, steps)
+    val end =
+        try {
+          drive(session, info.id, start, steps)
+        } finally {
+          state.scriptMovingSelf = false
+        }
     // A player walked off the map means the scene ran from a position it never expected (a login
     // in the middle of a cutscene map). Failing the script rolls its writes back for a clean
     // retry from the proper entry.

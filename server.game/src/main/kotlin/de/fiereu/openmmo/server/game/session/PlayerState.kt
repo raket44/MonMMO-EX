@@ -145,6 +145,12 @@ data class PlayerState(
      */
     @field:Volatile var suppressNpcSpawns: Boolean = false,
     /**
+     * A script is currently walking the PLAYER (moveSelf/moveSelfAndNpcs in flight). The hold
+     * renewal loop must pause: a renewal mid-walk injects a stale-facing turn and a half-second
+     * freeze into the walk (the Oak walk-to-the-lab stutter).
+     */
+    @field:Volatile var scriptMovingSelf: Boolean = false,
+    /**
      * When the client should be done ANIMATING the last scripted player movement (epoch ms). The
      * hold-release queue clear must not fire before this: server-side step timing is an estimate,
      * and clearing mid-walk snapped the player to the endpoint (the lab pull-back "poof"). Hold

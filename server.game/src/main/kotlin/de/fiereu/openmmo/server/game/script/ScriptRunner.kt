@@ -119,6 +119,9 @@ constructor(
             kotlinx.coroutines.delay(400)
             if (!state.scriptRunning) break
             if (System.currentTimeMillis() < state.moveIgnoreUntil) continue
+            // A renewal mid-scripted-walk splices a stale turn and a freeze into the walk
+            // (the Oak walk-to-the-lab stutter) - pause while the script moves the player.
+            if (state.scriptMovingSelf) continue
             movementService.holdPlayer(session, state)
           }
         }
@@ -158,7 +161,12 @@ constructor(
         state.scriptRunning = false
         renewal.cancel()
         // No queue clear - the short hold drains on its own within ~0.5s; just restore input.
-        movementService.enableClientInput(session)
+        // EXCEPT during the arrival choreography, which owns input timing itself: a trivial
+        // ON_TRANSITION script ending mid-window re-enabled input under the emergence walk
+        // (log-verified desync reset right after arrival).
+        if (System.currentTimeMillis() >= state.moveIgnoreUntil) {
+          movementService.enableClientInput(session)
+        }
       }
     }
   }

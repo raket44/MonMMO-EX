@@ -137,13 +137,27 @@ constructor(
   ) {
     val walk = walkStep(dir) ?: return
     val face = faceStep(dir) ?: return
-    // Walk to the tile adjacent to the player, then make sure the gaze lands on them (a zero-walk
-    // adjacent spot for an all-directions trainer still needs the turn).
-    val steps = List(distance - 1) { walk } + face
+    // Vanilla rhythm: the trainer notices (a beat where the "!" bubble shows), then walks to
+    // the tile adjacent to the player and makes sure the gaze lands on them. The bubble byte
+    // itself is still unverified - the pause carries the rhythm until it is.
+    val steps =
+        listOf(face, MovementStep.DELAY_16, MovementStep.DELAY_16) +
+            List(distance - 1) { walk } +
+            face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
+    // Freeze the client's overworld input NOW, on the packet thread - the script launches on
+    // another coroutine, and every step the client takes in that gap becomes a rubber-band.
+    ctx.send(de.fiereu.openmmo.net.game.packets.PlayerInputLockPacket(inputEnabled = false))
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
+      try {
+        scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
+      } finally {
+        // Input back before the intro dialog - whether the freeze also gates dialog clicking
+        // is unverified, and the server-side lock still refuses movement till the script ends.
+        // In a finally so a failed walk can never leave the client frozen.
+        scriptCtx.setClientInput(true)
+      }
       script.run(scriptCtx)
     }
     scriptRunner.run(ctx, state, approach, entityId)

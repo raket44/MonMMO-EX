@@ -290,8 +290,13 @@ class DialogService @Inject constructor() {
   private companion object {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
-    /** Dialog action 0x16: a built-in client menu addressed by (category, set). */
-    const val BUILTIN_MENU = 0x16
+    /**
+     * A built-in client menu addressed by (category, set). The qM1 table REMAPS wire bytes to parse
+     * cases (qM1 ctor args are (internalId, wireByte)): the 3-byte menu payload is parse case 22,
+     * whose wire byte is 26 - sending 22 hit the case that reads an entity ref and underflowed the
+     * packet, freezing the dialog (client log: "Buffer underflow ... 0x21").
+     */
+    const val BUILTIN_MENU = 26
     const val BUILTIN_MENU_CATEGORY: Byte = 10
     /** f/Lx.R40 set 3: "{01}'s PC" / "Global Trade Link" / "Mail" / Cancel. */
     const val PC_MENU_SET = 3

@@ -149,6 +149,12 @@ class InterpretedScript(
         "trainerbattle_rematch" -> {
           if (!runTrainerBattle(ctx, state, instruction, rematch = true)) return
         }
+        "trainerbattle_double" -> {
+          if (!runTrainerBattleDouble(ctx, state, instruction, rematch = false)) return
+        }
+        "trainerbattle_rematch_double" -> {
+          if (!runTrainerBattleDouble(ctx, state, instruction, rematch = true)) return
+        }
         "setflag",
         // Marks a location visited on the Town Map - a persisted flag like any other. Leaving it
         // unsupported failed every town's on-enter script whole, Vermilion City's included.
@@ -937,6 +943,83 @@ class InterpretedScript(
         if (rematch) ctx.setVar(readyKey, 0)
         val continuation =
             (instruction.args.getOrNull(3) as? LabelArg)?.takeUnless { it.token == "FALSE" }
+        if (continuation == null) {
+          false
+        } else {
+          jumpTo(state, instruction, continuation)
+          true
+        }
+      }
+      BattleResult.DEFEAT,
+      BattleResult.DISCONNECTED -> false
+      BattleResult.FAILED,
+      BattleResult.FLED,
+      BattleResult.CAUGHT ->
+          error(
+              "Script ${program.id.stable} trainer battle ${opponent.constant} ended with " +
+                  "$result at `${instruction.sourceLine}`")
+    }
+  }
+
+  /**
+   * The double-battle macros: same lifecycle as [runTrainerBattle] plus the vanilla two-able-mons
+   * gate (fewer shows the NotEnoughMons text and no battle happens). The FIGHT itself currently
+   * runs in the single format against the pair's whole team - the client renders true 2v2 (it is
+   * the retail battle engine), but the server's turn engine tracks one active slot per side; the
+   * doubles format is engine work, tracked separately. Continuation rides at arg 4, music at 5.
+   */
+  private suspend fun runTrainerBattleDouble(
+      ctx: ScriptContext,
+      state: RuntimeState,
+      instruction: ScriptInstruction,
+      rematch: Boolean,
+  ): Boolean {
+    val expectedArgs = if (rematch) setOf(4) else setOf(4, 5, 6)
+    check(instruction.args.size in expectedArgs) {
+      "Script ${program.id.stable} expected ${expectedArgs.joinToString(" or ")} arguments in " +
+          "`${instruction.sourceLine}`"
+    }
+
+    val base = resolveTrainer(ctx, trainerArg(instruction, 0), instruction)
+    val intro = textLine(textArg(instruction, 1).token, instruction)
+    val defeat = textLine(textArg(instruction, 2).token, instruction)
+    val needTwoMons = textLine(textArg(instruction, 3).token, instruction)
+    instruction.args.getOrNull(5)?.let { music ->
+      check(music.token in setOf("NO_MUSIC", "FALSE", "TRUE")) {
+        "Script ${program.id.stable} cannot resolve trainer battle music ${music.token} from " +
+            "`${instruction.sourceLine}`"
+      }
+    }
+
+    val baseDefeated = TrainerStoryState.defeated(program.storyNamespace, base.id)
+    if (!rematch && ctx.isFlagSet(baseDefeated)) {
+      state.pc++
+      return true
+    }
+    val readyKey = TrainerStoryState.rematchReady(program.storyNamespace, base.id)
+    if (rematch && ctx.getVar(readyKey) == 0) {
+      state.pc++
+      return true
+    }
+
+    // Vanilla gates a double battle on two able monsters - with fewer the pair shows their
+    // "come back with two" line and no battle fires; the trainer stays undefeated.
+    if (ctx.ablePartyCount() < 2) {
+      tracedWait(ctx, "need-two-mons dialog") { ctx.say(needTwoMons) }
+      return false
+    }
+
+    val opponent = if (rematch) resolveRematchTrainer(ctx, base, instruction) else base
+    tracedWait(ctx, "trainer dialog") { ctx.say(intro) }
+    return when (val result =
+        tracedWait(ctx, "battle ${opponent.constant}") {
+          ctx.trainerBattle(opponent, defeat.textId)
+        }) {
+      BattleResult.VICTORY -> {
+        ctx.setFlag(TrainerStoryState.defeated(program.storyNamespace, opponent.id))
+        if (rematch) ctx.setVar(readyKey, 0)
+        val continuation =
+            (instruction.args.getOrNull(4) as? LabelArg)?.takeUnless { it.token == "FALSE" }
         if (continuation == null) {
           false
         } else {

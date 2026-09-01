@@ -282,6 +282,10 @@ internal constructor(
         .startTrainerBattle(session, region, trainerId)
   }
 
+  /** How many party monsters can still fight - the vanilla double-battle entry gate reads it. */
+  internal fun ablePartyCount(): Int =
+      characterId?.let { id -> characters?.getCharacter(id)?.pokemon?.count { it.hp > 0 } } ?: 0
+
   internal fun resolveTrainer(constant: String): TrainerDef {
     val region =
         checkNotNull(Region.byWireValue(state.regionId.toByte())) {

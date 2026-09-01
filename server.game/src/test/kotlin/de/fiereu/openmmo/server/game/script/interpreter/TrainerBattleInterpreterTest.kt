@@ -115,6 +115,7 @@ private class TrainerBattleFixture private constructor(scope: CoroutineScope) {
             story = story,
             movement = ScriptMovementService(maps, NpcService(maps, store), store),
             battles = battles,
+            characters = store,
         )
   }
 
@@ -151,6 +152,8 @@ private class TrainerBattleFixture private constructor(scope: CoroutineScope) {
 }
 
 private val TEXT = mapOf("Intro_Text" to TestLine(100), "Defeat_Text" to TestLine(101))
+
+private val TEXT_DOUBLE = TEXT + ("NeedTwo_Text" to TestLine(102))
 
 private fun battleCommand(continuation: String? = null): String =
     "trainerbattle_single $BASE_TRAINER, Intro_Text, Defeat_Text" +
@@ -494,18 +497,41 @@ class TrainerBattleInterpreterTest :
         }
       }
 
-      test("unsupported trainer battle variants still fail loudly") {
+      test("double battle with two able monsters runs and marks the pair defeated") {
+        runTest {
+          val fixture = TrainerBattleFixture.create(backgroundScope)
+          fixture.store.addPokemon(
+              fixture.charId, bulbasaur(fixture.charId).copy(id = 424242L, containerSlot = 1))
+          val line = "trainerbattle_double $BASE_TRAINER, Intro_Text, Defeat_Text, NeedTwo_Text"
+          val job = launch {
+            fixture.interpreted(listOf(line, "end"), TEXT_DOUBLE).run(fixture.ctx)
+          }
+          runCurrent()
+          fixture.acknowledgeIntro()
+          runCurrent()
+
+          fixture.activeBattleTrainerId() shouldBe BASE_TRAINER_ID
+          fixture.finish(BattleResult.VICTORY)
+          job.join()
+
+          fixture.ctx.isFlagSet("kanto/trainer/$BASE_TRAINER_ID/defeated").shouldBeTrue()
+        }
+      }
+
+      test("double battle with one able monster shows the need-two line and no battle") {
         runTest {
           val fixture = TrainerBattleFixture.create(backgroundScope)
           val line = "trainerbattle_double $BASE_TRAINER, Intro_Text, Defeat_Text, NeedTwo_Text"
-          val error =
-              shouldThrow<UnsupportedScriptCommandException> {
-                fixture.interpreted(listOf(line, "end")).run(fixture.ctx)
-              }
+          val job = launch {
+            fixture.interpreted(listOf(line, "end"), TEXT_DOUBLE).run(fixture.ctx)
+          }
+          runCurrent()
+          // The only dialog is the pair's "come back with two" line; closing it ends the script.
+          fixture.acknowledgeIntro()
+          job.join()
 
-          error.message shouldBe
-              "Unsupported script command in gba:firered:BPRE:TrainerTest: " +
-                  "trainerbattle_double from `$line`"
+          fixture.battleRegistry.byChar(fixture.charId) shouldBe null
+          fixture.ctx.isFlagSet("kanto/trainer/$BASE_TRAINER_ID/defeated").shouldBeFalse()
         }
       }
     })

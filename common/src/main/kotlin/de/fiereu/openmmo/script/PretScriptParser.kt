@@ -133,6 +133,9 @@ object PretScriptParser {
         command in TRAINER_BATTLE_COMMANDS && index == 0 -> TrainerArg(token)
         command in TRAINER_BATTLE_COMMANDS && index in 1..2 -> TextArg(token)
         command == "trainerbattle_single" && index == 3 -> LabelArg(token)
+        // The double macros carry the NotEnoughMons text at 3 and the continuation at 4.
+        command in DOUBLE_BATTLE_COMMANDS && index == 3 -> TextArg(token)
+        command == "trainerbattle_double" && index == 4 -> LabelArg(token)
         command in setOf("setflag", "clearflag") + flagBranches && index == 0 -> FlagArg(token)
         command in setOf("setvar", "compare", "setorcopyvar", "addvar", "subvar") && index == 0 ->
             VarArg(token)
@@ -192,6 +195,9 @@ object PretScriptParser {
     return out.filter { it.isNotEmpty() }
   }
 
+  private val DOUBLE_BATTLE_COMMANDS = setOf("trainerbattle_double", "trainerbattle_rematch_double")
+
   private val TRAINER_BATTLE_COMMANDS =
-      setOf("trainerbattle_single", "trainerbattle_rematch", "trainerbattle_no_intro")
+      setOf("trainerbattle_single", "trainerbattle_rematch", "trainerbattle_no_intro") +
+          DOUBLE_BATTLE_COMMANDS
 }

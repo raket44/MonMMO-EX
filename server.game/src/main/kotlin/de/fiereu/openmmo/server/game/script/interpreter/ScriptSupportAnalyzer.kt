@@ -130,7 +130,9 @@ class ScriptSupportAnalyzer(
     val trainer =
         trainers.get(region, trainerRef.token)
             ?: return sourceReason(instruction, "unresolved trainer ${trainerRef.token}")
-    if (instruction.command != "trainerbattle_rematch") return null
+    if (instruction.command !in setOf("trainerbattle_rematch", "trainerbattle_rematch_double")) {
+      return null
+    }
     val rematches = trainer.rematchIds.drop(1).filterNotNull()
     if (rematches.isEmpty()) {
       return sourceReason(instruction, "trainer ${trainerRef.token} has no rematch chain")
@@ -197,6 +199,8 @@ class ScriptSupportAnalyzer(
           "waitmovement" -> args.size <= 1
           "trainerbattle_single" -> args.size in setOf(3, 4, 5)
           "trainerbattle_rematch" -> args.size == 3
+          "trainerbattle_double" -> args.size in setOf(4, 5, 6)
+          "trainerbattle_rematch_double" -> args.size == 4
           in COMPARISON_BRANCHES -> args.size == 1 || args.size == 3
           else -> false
         }
@@ -305,6 +309,18 @@ class ScriptSupportAnalyzer(
                   (args.size < 5 || args[4].token in SUPPORTED_TRAINER_MUSIC)
           "trainerbattle_rematch" ->
               args[0] is TrainerArg && args[1] is TextArg && args[2] is TextArg
+          "trainerbattle_double" ->
+              args[0] is TrainerArg &&
+                  args[1] is TextArg &&
+                  args[2] is TextArg &&
+                  args[3] is TextArg &&
+                  (args.size < 5 || args[4] is LabelArg) &&
+                  (args.size < 6 || args[5].token in SUPPORTED_TRAINER_MUSIC)
+          "trainerbattle_rematch_double" ->
+              args[0] is TrainerArg &&
+                  args[1] is TextArg &&
+                  args[2] is TextArg &&
+                  args[3] is TextArg
           else -> true
         }
     return if (valid) null else sourceReason(instruction, "unsupported argument types")
@@ -345,6 +361,11 @@ class ScriptSupportAnalyzer(
         val continuation = instruction.args.getOrNull(3) as? LabelArg
         if (continuation == null || continuation.token == "FALSE") listOf(next)
         else listOf(target(script, activeProgram, instruction, 3), next)
+      }
+      "trainerbattle_double" -> {
+        val continuation = instruction.args.getOrNull(4) as? LabelArg
+        if (continuation == null || continuation.token == "FALSE") listOf(next)
+        else listOf(target(script, activeProgram, instruction, 4), next)
       }
       else -> listOf(next)
     }
@@ -443,6 +464,8 @@ class ScriptSupportAnalyzer(
             "faceplayer",
             "trainerbattle_single",
             "trainerbattle_rematch",
+            "trainerbattle_double",
+            "trainerbattle_rematch_double",
             "setflag",
             "setworldmapflag",
             "clearflag",

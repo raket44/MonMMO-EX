@@ -62,14 +62,35 @@ constructor(
             form = 0,
             // The renderer walks its six stat constants and indexes THIS array by stat id
             // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
-            // entry per stat. Inheritance contributions come with the real breeding rules.
+            // entry per stat. Per the operator, each row shows the roll RANGE between the two
+            // parents' IVs (a brace will pin one parent's value once held items exist); the
+            // renderer formats a contribution's byte as the IV number and its float as a
+            // percentage, so each parent contributes its value at even odds. Wire stat order
+            // is the GBA one: hp, atk, def, SPEED, spAtk, spDef.
             statEntries =
-                List(6) {
-                  de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
-                      guaranteed = false,
-                      statId = it.toShort(),
-                      contributions = emptyList(),
-                  )
+                buildList {
+                  val a = with(first.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+                  val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+                  repeat(6) { stat ->
+                    add(
+                        de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
+                            guaranteed = false,
+                            statId = stat.toShort(),
+                            contributions =
+                                listOf(
+                                    de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
+                                        source = a[stat].toByte(),
+                                        weight = 0.5f,
+                                        amount = 0,
+                                    ),
+                                    de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
+                                        source = b[stat].toByte(),
+                                        weight = 0.5f,
+                                        amount = 1,
+                                    ),
+                                ),
+                        ))
+                  }
                 },
             shininessTypes = listOf(0),
             valueIds = emptyList(),

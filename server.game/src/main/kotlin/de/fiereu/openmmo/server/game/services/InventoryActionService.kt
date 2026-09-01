@@ -226,7 +226,9 @@ constructor(
     if (previous != 0) characters.addItem(charId, previous, 1)
     sendStack(ctx, charId, itemId)
     if (previous != 0) sendStack(ctx, charId, previous)
-    sendParty(ctx, charId)
+    // Deliberately NO full container resend: that replaces the client's k91 instances, orphaning
+    // the references an open breed window captured at pair-select time - its "Held Item" lines
+    // then keep rendering the old objects. The delta mutates the records IN PLACE instead.
     sendHeldItemDelta(ctx, target.id, itemId)
     breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     val itemName = items.get(itemId)?.name ?: "Item $itemId"
@@ -248,7 +250,7 @@ constructor(
     characters.updatePokemon(charId, target.copy(heldItem = 0))
     characters.addItem(charId, taken, 1)
     sendStack(ctx, charId, taken)
-    sendParty(ctx, charId)
+    // No full container resend here either - see the give path.
     sendHeldItemDelta(ctx, target.id, 0)
     breedingService.refreshAfterHeldItemChange(ctx, charId, target.id)
     ctx.reply("${items.get(taken)?.name ?: "Item $taken"} was taken back.")

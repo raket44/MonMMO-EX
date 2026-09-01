@@ -75,12 +75,17 @@ constructor(
             valueIds = emptyList(),
             valueSources = emptyList(),
             gender = p.slotIndex,
-            nature = 0,
+            // -1 = no braced nature: the roll is random and the preview shows question marks.
+            // A parent holding an Everstone guarantees its nature here - held items are not
+            // modeled yet, so every pair rolls random for now.
+            nature = -1,
             // Capture-mislabeled: this boolean is the GENDER-CHOOSER toggle, not shininess.
             // The renderer (Cm0 param 11) sets the gender buttons' visibility from it and
             // resets the preference to "any" when false - the section only exists while true.
             shiny = true,
-            cost = 0,
+            // The 'cost' int renders inside the gender section (Cm0: os1 <- format(param 12)):
+            // it is the price of CHOOSING a gender, retail 5000.
+            cost = GENDER_CHOICE_COST,
             secondaryCost = 0,
         ))
   }
@@ -116,5 +121,7 @@ constructor(
 
   private companion object {
     const val DITTO = 132
+    /** Retail's price for pinning the offspring's gender. */
+    const val GENDER_CHOICE_COST = 5000
   }
 }

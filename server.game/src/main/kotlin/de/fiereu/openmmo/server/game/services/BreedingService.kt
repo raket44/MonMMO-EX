@@ -113,13 +113,23 @@ constructor(
       }
       de.fiereu.openmmo.net.game.packets.BreedingStatEntry(
           guaranteed = braced,
-          statId = stat.toShort(),
+          // The item CAUSING the guarantee - any nonzero value renders "Guaranteed inheritance
+          // due to {item}", so unbraced rows must send 0 (stat indices here showed as Poke
+          // Balls: index 5 = the Safari Ball).
+          braceItemId =
+              when {
+                stat == bracedA -> first.heldItem.toShort()
+                stat == bracedB -> second.heldItem.toShort()
+                else -> 0
+              },
           contributions =
-              parents.mapIndexed { index, value ->
+              parents.map { value ->
                 de.fiereu.openmmo.net.game.packets.BreedingStatContribution(
-                    source = value.toByte(),
-                    weight = 1.0f / parents.size,
-                    amount = index,
+                    value = value.toByte(),
+                    // Already percent-scaled - the client suffixes "%" without multiplying.
+                    percent = 100.0f / parents.size,
+                    // 0 = the plain "{value}: {percent}%" tooltip line.
+                    labelStringId = 0,
                 )
               },
       )

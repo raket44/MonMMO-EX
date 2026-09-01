@@ -2,15 +2,29 @@ package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
 
+/**
+ * One possible IV outcome for a stat, client class f/dm (parser sB1.qP1, renderer pM1.Cm0, both
+ * bytecode-walked): [value] is the IV number (dm.k41 - the renderer's TreeSet of these makes the
+ * "min - max" range and equal values merge), [percent] is the chance ALREADY SCALED to 0-100 (dm.hS
+ * is formatted with a "%" suffix as-is), and [labelStringId] is an optional client string id
+ * rendered as the row's tooltip label (dm.rA0; <= 0 falls back to string 2546 "{value}:
+ * {percent}%", retail uses ids like 2541 "High pass" / 2542 "Low pass" / 2544 "Average").
+ */
 data class BreedingStatContribution(
-    val source: Byte,
-    val weight: Float,
-    val amount: Int,
+    val value: Byte,
+    val percent: Float,
+    val labelStringId: Int,
 )
 
+/**
+ * Per-stat forecast row, client class f/Cp. The stat itself is the ARRAY POSITION (the renderer
+ * indexes statEntries[stat.Df0]); [braceItemId] (Cp.FC1) is the held Power item causing a
+ * guaranteed pass - any value > 0 renders "Guaranteed inheritance due to {item}", so it MUST stay 0
+ * on unbraced rows (stat indices sent here once rendered as Poke Ball names).
+ */
 data class BreedingStatEntry(
     val guaranteed: Boolean,
-    val statId: Short,
+    val braceItemId: Short,
     val contributions: List<BreedingStatContribution>,
 )
 
@@ -33,10 +47,10 @@ data class BreedingForecastPacket(
 
 private object BreedingStatContributionCodec : PacketCodec<BreedingStatContribution>() {
   override fun CodecScope<BreedingStatContribution>.body(): BreedingStatContribution {
-    val source = field(S8, BreedingStatContribution::source)
-    val weight = field(F32LE, BreedingStatContribution::weight)
-    val amount = field(S32LE, BreedingStatContribution::amount)
-    return BreedingStatContribution(source, weight, amount)
+    val value = field(S8, BreedingStatContribution::value)
+    val percent = field(F32LE, BreedingStatContribution::percent)
+    val labelStringId = field(S32LE, BreedingStatContribution::labelStringId)
+    return BreedingStatContribution(value, percent, labelStringId)
   }
 }
 
@@ -56,10 +70,10 @@ private val BreedingStatContributionListPrefixedU8: Codec<List<BreedingStatContr
 private object BreedingStatEntryCodec : PacketCodec<BreedingStatEntry>() {
   override fun CodecScope<BreedingStatEntry>.body(): BreedingStatEntry {
     val guaranteed = field(Bool, BreedingStatEntry::guaranteed)
-    val statId = field(S16LE, BreedingStatEntry::statId)
+    val braceItemId = field(S16LE, BreedingStatEntry::braceItemId)
     val contributions =
         field(BreedingStatContributionListPrefixedU8, BreedingStatEntry::contributions)
-    return BreedingStatEntry(guaranteed, statId, contributions)
+    return BreedingStatEntry(guaranteed, braceItemId, contributions)
   }
 }
 

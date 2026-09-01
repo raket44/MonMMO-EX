@@ -97,7 +97,10 @@ class ScriptLifecycleTest :
           fixture.ctx.state.dialogVisible shouldBe false
           fixture.ctx.state.scriptLockScope shouldBe ScriptLockScope.LOCAL
           fixture.ctx.state.scriptLockedEntityId shouldBe TEST_ENTITY_ID
-          fixture.session.sent.filterIsInstance<DialogStatePacket>().size shouldBe 1
+          // lock turns the scripted state ON; closemessage turns it OFF here because this
+          // fixture runs the script directly (no runner, so scriptRunning stays false).
+          fixture.session.sent.filterIsInstance<DialogStatePacket>().map { it.active } shouldBe
+              listOf(true, false)
         }
       }
 

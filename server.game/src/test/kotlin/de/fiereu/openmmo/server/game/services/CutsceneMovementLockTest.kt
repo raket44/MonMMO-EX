@@ -84,16 +84,15 @@ class CutsceneMovementLockTest :
               .onFaceDirection(PacketEvent(FaceDirectionPacket(Direction.LEFT), session))
 
           session.state().facingDirection shouldBe Direction.DOWN
-          // The correction is a scripted hold (movement-controller seize): a face action in the
-          // held direction followed by delay actions - a position reset does not override the
-          // local player's facing, and the delays stop the next turn from even starting.
+          // The correction is a single scripted face action in the held direction - a position
+          // reset does not override the local player's facing. Input removal itself is the
+          // dialog-state flag, not queued delays.
           val correction =
               session.sent
                   .filterIsInstance<de.fiereu.openmmo.net.game.packets.DialogDataPacket>()
                   .single()
-          correction.data.first() shouldBe
+          correction.data.single() shouldBe
               de.fiereu.openmmo.server.game.script.MovementStep.FACE_DOWN.action.toByte()
-          (correction.data.size > 1) shouldBe true
         }
       }
 

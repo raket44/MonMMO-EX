@@ -173,7 +173,10 @@ class DialogService @Inject constructor() {
     session.attributes.remove(PENDING_DIALOG)
     session.attributes.remove(PENDING_DIALOG_RESPONSE)
     if (state.dialogVisible) {
-      session.send(DialogStatePacket(false))
+      // The dialog-state OFF also clears the client's scripted-input-removal flag (ln1.A70) -
+      // while a script still owns the player it must NOT be sent; the runner sends the one
+      // definitive OFF after the script's final walks have played out.
+      if (!state.scriptRunning) session.send(DialogStatePacket(false))
       state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }
@@ -209,7 +212,7 @@ class DialogService @Inject constructor() {
     // No script is driving this dialog, just close whatever is open.
     val state = session.attributes[PLAYER_STATE] ?: return
     if (state.dialogVisible) {
-      session.send(DialogStatePacket(false))
+      if (!state.scriptRunning) session.send(DialogStatePacket(false))
       state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }
@@ -225,7 +228,7 @@ class DialogService @Inject constructor() {
     }
     val state = session.attributes[PLAYER_STATE] ?: return
     if (state.dialogVisible) {
-      session.send(DialogStatePacket(false))
+      if (!state.scriptRunning) session.send(DialogStatePacket(false))
       state.dialogVisible = false
       state.dialogNpcEntityId = 0
     }

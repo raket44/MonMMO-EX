@@ -148,6 +148,12 @@ internal constructor(
     return dialog.chooseHoennStarter(session, state)
   }
 
+  /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
+  suspend fun builtinMenu(line: DialogLine, menuSet: Int): Int {
+    holdScriptedFacing()
+    return dialog.builtinMenu(session, state, line.textId, menuSet)
+  }
+
   /** Ask a ROM-backed yes/no question from the interacted entity. */
   suspend fun askYesNo(line: DialogLine): Boolean {
     holdScriptedFacing()

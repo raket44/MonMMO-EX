@@ -77,6 +77,30 @@ class DialogService @Inject constructor() {
     }
   }
 
+  /**
+   * Shows one of the client's BUILT-IN choice menus over the ROM question [textId] and returns the
+   * 1-BASED picked option, 0 when the box is closed without choosing. The menus live in the
+   * client's own registry (f/Lx.R40 fills category 10; bytecode-verified): the dialog action 0x16
+   * carries [category, setId, 0] and the buttons send index+1. Set 3 is the PC menu - "{01}'s PC" /
+   * "Global Trade Link" / "Mail" / Cancel.
+   */
+  suspend fun builtinMenu(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      menuSet: Int,
+  ): Int =
+      showChoiceAndWait(
+              session,
+              state,
+              textId,
+              BUILTIN_MENU,
+              NO_ENTITY,
+              contextValue = 0,
+              detail = byteArrayOf(BUILTIN_MENU_CATEGORY, menuSet.toByte(), 0),
+          )
+          .unk
+
   /** Show a ROM-backed yes/no box and return true for YES. */
   suspend fun askYesNo(
       session: SessionContext,
@@ -266,6 +290,11 @@ class DialogService @Inject constructor() {
   private companion object {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
+    /** Dialog action 0x16: a built-in client menu addressed by (category, set). */
+    const val BUILTIN_MENU = 0x16
+    const val BUILTIN_MENU_CATEGORY: Byte = 10
+    /** f/Lx.R40 set 3: "{01}'s PC" / "Global Trade Link" / "Mail" / Cancel. */
+    const val PC_MENU_SET = 3
     const val STARTER_PICK = 0x23
     const val STARTER_CONTEXT = 700
 

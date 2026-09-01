@@ -145,35 +145,49 @@ constructor(
   }
 
   /**
-   * The vanilla PC beat, built from the same dialog machinery the nurse's box uses: the ROM's own
-   * "POKeMON Storage System opened." line, and the client's storage window when it is closed.
+   * The vanilla PC beat: "{PLAYER} booted up the PC.", the client's own built-in PC menu ("{01}'s
+   * PC" / Global Trade Link / Mail / Cancel) over the ROM's which-PC question, then the storage
+   * window for the PC choice. GTL and Mail notice until their windows can be opened server-side.
    */
   private fun openPcStorage(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
-    log.info { "PC interaction: opening storage with ${stored.pcStorage.size} boxed pokemon" }
-    val storageOpenedText =
-        if (state.regionId == HOENN_REGION_ID) HOENN_STORAGE_OPENED else KANTO_STORAGE_OPENED
-    val line =
-        object : de.fiereu.openmmo.common.dialog.DialogLine {
-          override val textId = storageOpenedText
-        }
+    val kanto = state.regionId != HOENN_REGION_ID
+    val boot = lineOf(if (kanto) KANTO_BOOTED_PC else HOENN_BOOTED_PC)
+    val question = lineOf(if (kanto) KANTO_WHICH_PC else HOENN_WHICH_PC)
+    val opened = lineOf(if (kanto) KANTO_STORAGE_OPENED else HOENN_STORAGE_OPENED)
     runScript(
         session,
         state,
         Script { ctx ->
-          ctx.sign(line)
-          // Fresh contents first, then the toggle that shows the window.
-          session.send(
-              de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
-                  container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
-                  hasChange = true,
-                  delete = false,
-                  pokemon = stored.pcStorage,
-              ))
-          session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
+          ctx.sign(boot)
+          val choice = ctx.builtinMenu(question, PC_MENU_SET)
+          log.info { "PC menu choice=$choice (${stored.pcStorage.size} boxed pokemon)" }
+          when (choice) {
+            1 -> {
+              ctx.sign(opened)
+              // Fresh contents first, then the toggle that shows the window.
+              session.send(
+                  de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
+                      container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
+                      hasChange = true,
+                      delete = false,
+                      pokemon = stored.pcStorage,
+                  ))
+              session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
+            }
+            2 ->
+                session.send(notice("The Global Trade Link is opened from the Trade menu for now."))
+            3 -> session.send(notice("Mail is not implemented yet."))
+            else -> Unit
+          }
         },
         entityId = -1,
     )
   }
+
+  private fun lineOf(id: Int) =
+      object : de.fiereu.openmmo.common.dialog.DialogLine {
+        override val textId = id
+      }
 
   private fun currentCharacter(state: PlayerState): StoredCharacter? {
     val charId = state.characterId ?: return null
@@ -198,3 +212,10 @@ constructor(
 private const val KANTO_STORAGE_OPENED = 1724606
 private const val HOENN_STORAGE_OPENED = 271001251
 private const val HOENN_REGION_ID = 1
+
+/** The client's built-in menu registry set 3: "{01}'s PC" / Global Trade Link / Mail / Cancel. */
+private const val PC_MENU_SET = 3
+private const val KANTO_BOOTED_PC = 1724533
+private const val KANTO_WHICH_PC = 1724554
+private const val HOENN_BOOTED_PC = 271001178
+private const val HOENN_WHICH_PC = 271001199

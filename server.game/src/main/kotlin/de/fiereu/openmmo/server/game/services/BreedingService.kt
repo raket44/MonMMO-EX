@@ -48,20 +48,11 @@ constructor(
       return
     }
     val offspringDex = if (first.dexId == DITTO) second.dexId else first.dexId
-    // The "shininessTypes" bytes are really the offspring's TYPE ICONS - the client renderer
-    // (f/pM1.Cm0) indexes [0] unconditionally and an empty list crashed it (client log:
-    // ArrayIndexOutOfBoundsException at pM1.Cm0). Type bytes are PokemonType ordinals, the
-    // same enum the data.pak species records use.
-    val offspringDef = speciesRegistry.get(offspringDex)
-    val typeBytes =
-        if (offspringDef == null) listOf(0.toByte())
-        else
-            listOfNotNull(
-                offspringDef.type1.ordinal.toByte(),
-                offspringDef.type2.ordinal.toByte().takeIf {
-                  offspringDef.type2 != offspringDef.type1
-                },
-            )
+    // shininessTypes was labeled correctly by the captures (operator-confirmed): its bytes are
+    // f/ns0 SHININESS VARIANT ids - the enum's entries carry color pairs and particle refs
+    // (normal/shiny/secret each with a tint and sparkle), and retail lists the pairing's
+    // possible outcomes here (shiny x shiny etc). The renderer indexes [0] unconditionally,
+    // so an empty list crashed it; until shininess rules exist, the one outcome is variant 0.
     session.send(
         BreedingForecastPacket(
             parentA = p.ownPokemonEntityId,
@@ -70,7 +61,7 @@ constructor(
             species = clientSpeciesId(offspringDex).toShort(),
             form = 0,
             statEntries = emptyList(),
-            shininessTypes = typeBytes,
+            shininessTypes = listOf(0),
             valueIds = emptyList(),
             valueSources = emptyList(),
             gender = p.slotIndex,

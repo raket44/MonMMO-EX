@@ -35,7 +35,15 @@ data class BreedingForecastPacket(
     val species: Short,
     val form: Byte,
     val statEntries: List<BreedingStatEntry>,
-    val shininessTypes: List<Byte>,
+    /**
+     * The offspring's possible NATURES, as f/ns0 ids 0-24 (each enum constant carries a raised and
+     * lowered RC0 stat and two flavors - it was misread as shininess variants for a while). EMPTY
+     * means a random roll: the window shows "???" (tooltip string 2532). A non-empty list renders
+     * the names at 100/n% each with "Guaranteed inheritance due to Everstone" (the client hardcodes
+     * item 195 for the label), so only fill it when a parent actually holds one. The client shows a
+     * mon's nature as (seed & 0xFFFFFFFF) % 25 (k91.xH), the same derivation as Pokemon.nature.
+     */
+    val possibleNatures: List<Byte>,
     val valueIds: List<Short>,
     val valueSources: List<Byte>,
     val gender: Byte,
@@ -104,8 +112,8 @@ object BreedingForecastPacketCodec : PacketCodec<BreedingForecastPacket>() {
     val form = field(S8, BreedingForecastPacket::form)
     val statCount = field(U8) { it.statEntries.size }
     val statEntries = List(statCount) { i -> field(BreedingStatEntryCodec) { it.statEntries[i] } }
-    val shininessCount = field(U8) { it.shininessTypes.size }
-    val shininessTypes = List(shininessCount) { i -> field(S8) { it.shininessTypes[i] } }
+    val natureCount = field(U8) { it.possibleNatures.size }
+    val possibleNatures = List(natureCount) { i -> field(S8) { it.possibleNatures[i] } }
     val valueCount = field(U8) { it.valueIds.size }
     val valueIds = List(valueCount) { i -> field(S16LE) { it.valueIds[i] } }
     val valueSources = List(valueCount) { i -> field(S8) { it.valueSources[i] } }
@@ -121,7 +129,7 @@ object BreedingForecastPacketCodec : PacketCodec<BreedingForecastPacket>() {
         species,
         form,
         statEntries,
-        shininessTypes,
+        possibleNatures,
         valueIds,
         valueSources,
         gender,

@@ -48,11 +48,13 @@ constructor(
       return
     }
     val offspringDex = if (first.dexId == DITTO) second.dexId else first.dexId
-    // shininessTypes was labeled correctly by the captures (operator-confirmed): its bytes are
-    // f/ns0 SHININESS VARIANT ids - the enum's entries carry color pairs and particle refs
-    // (normal/shiny/secret each with a tint and sparkle), and retail lists the pairing's
-    // possible outcomes here (shiny x shiny etc). The renderer indexes [0] unconditionally,
-    // so an empty list crashed it; until shininess rules exist, the one outcome is variant 0.
+    // The nature line: an EMPTY possibleNatures list renders "???" (a random roll - the earlier
+    // crash blamed on this list was really the statEntries indexing). An Everstone holder pins
+    // their nature; both holding one is a 50/50 between theirs.
+    val pinnedNatures = buildList {
+      if (first.heldItem in EVERSTONES) add(first.nature.ordinal.toByte())
+      if (second.heldItem in EVERSTONES) add(second.nature.ordinal.toByte())
+    }
     session.send(
         BreedingForecastPacket(
             parentA = p.ownPokemonEntityId,
@@ -65,7 +67,7 @@ constructor(
             // entry per stat, in RC0.Df0 order: hp, atk, def, spAtk, spDef, SPEED. The
             // inheritance model behind the rows is documented on forecastStatEntries.
             statEntries = forecastStatEntries(first, second),
-            shininessTypes = listOf(0),
+            possibleNatures = pinnedNatures.distinct(),
             valueIds = emptyList(),
             valueSources = emptyList(),
             gender = p.slotIndex,
@@ -189,7 +191,7 @@ constructor(
           species = 0,
           form = 0,
           statEntries = emptyList(),
-          shininessTypes = emptyList(),
+          possibleNatures = emptyList(),
           valueIds = emptyList(),
           valueSources = emptyList(),
           gender = 0,
@@ -210,6 +212,9 @@ constructor(
     const val HIGH_PASS = 2541
     const val LOW_PASS = 2542
     const val AVERAGE = 2544
+
+    /** Everstone ids in both held-item catalogs - the holder's nature is pinned on the baby. */
+    val EVERSTONES = setOf(5229, 6229)
 
     /**
      * Client item id of each Power brace to the wire stat index it pins (hp, atk, def, spd, spAtk,

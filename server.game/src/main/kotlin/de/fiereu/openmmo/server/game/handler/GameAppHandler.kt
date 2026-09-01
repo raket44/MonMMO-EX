@@ -68,6 +68,7 @@ import de.fiereu.openmmo.net.game.packets.guild.GuildRankPermissionUpdatePacket
 import de.fiereu.openmmo.server.game.script.ScriptRunner
 import de.fiereu.openmmo.server.game.services.AppearanceService
 import de.fiereu.openmmo.server.game.services.BattleService
+import de.fiereu.openmmo.server.game.services.BreedingService
 import de.fiereu.openmmo.server.game.services.DialogService
 import de.fiereu.openmmo.server.game.services.GuildService
 import de.fiereu.openmmo.server.game.services.InteractionService
@@ -104,6 +105,7 @@ constructor(
     private val battleService: BattleService,
     private val chatCommandService: ChatCommandService,
     private val shopService: ShopService,
+    private val breedingService: BreedingService,
     private val inventoryActionService: InventoryActionService,
     private val appearanceService: AppearanceService,
     private val mapTourService: de.fiereu.openmmo.server.game.services.MapTourService,
@@ -131,6 +133,13 @@ constructor(
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
+
+    on<de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket> { event ->
+      breedingService.onAssignSlot(event)
+    }
+    on<de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket> { event ->
+      breedingService.onSubmit(event)
+    }
 
     onSuspend<ContainerActionPacket> { event -> inventoryActionService.onContainerAction(event) }
     on<PartyReorderPacket> { event -> inventoryActionService.onPartyReorder(event) }

@@ -8,14 +8,19 @@ private val log = KotlinLogging.logger {}
 private data class Line(override val textId: Int) : DialogLine
 
 /**
- * One shared daycare interaction for EVERY daycare npc, per the operator: the ROM's
- * would-you-like-us-to-raise question, and a YES opens the client's own breed-selection window
- * (pick two party monsters). A NO gets the ROM's come-again line. Breeding RESULTS are not modeled
- * yet - the window's response is logged so the egg system can build on real payloads.
+ * The daycare pair, split the way retail splits them (operator-specified):
+ * - the MEN offer BREEDING - their yes leads to the client's breed-selection window (pick two).
+ *   Retail gives them custom lead-up dialog; until the text-override pipeline exists they ask with
+ *   the ROM's would-you-like-us-to-raise line, the closest yes/no the ROM offers.
+ * - the WOMEN offer RAISING - the ROM's ask, and a yes opens the storage window to choose a
+ *   monster.
+ *
+ * Neither result is modeled yet: the breed window's response and the storage picks are logged so
+ * the egg/raising systems can build on real payloads.
  */
 internal object DaycareScripts {
 
-  private fun daycare(ask: Int, whichMon: Int, decline: Int) = Script { ctx ->
+  private fun daycareMan(ask: Int, whichMon: Int, decline: Int) = Script { ctx ->
     if (ctx.askYesNo(Line(ask))) {
       val response = ctx.breedSelection(Line(whichMon))
       log.info { "Daycare breed selection responded $response" }
@@ -24,14 +29,24 @@ internal object DaycareScripts {
     }
   }
 
+  private fun daycareWoman(ask: Int, decline: Int) = Script { ctx ->
+    if (ctx.askYesNo(Line(ask))) {
+      ctx.openPcStorageWindow()
+    } else {
+      ctx.say(Line(decline))
+    }
+  }
+
   val byLabel: Map<String, Script> = buildMap {
     // FRLG day_care.inc shared texts serve both Kanto daycares.
-    val kanto = daycare(ask = 1832932, whichMon = 1833017, decline = 1833238)
-    val hoenn = daycare(ask = 271131380, whichMon = 271131465, decline = 271131670)
-    put("Route5_PokemonDayCare_EventScript_DaycareMan", kanto)
-    put("FourIsland_EventScript_DaycareMan", kanto)
-    put("FourIsland_PokemonDayCare_EventScript_DaycareWoman", kanto)
-    put("Route117_EventScript_DaycareMan", hoenn)
-    put("Route117_PokemonDayCare_EventScript_DaycareWoman", hoenn)
+    val kantoMan = daycareMan(ask = 1832932, whichMon = 1833017, decline = 1833238)
+    val kantoWoman = daycareWoman(ask = 1832932, decline = 1833238)
+    val hoennMan = daycareMan(ask = 271131380, whichMon = 271131465, decline = 271131670)
+    val hoennWoman = daycareWoman(ask = 271131380, decline = 271131670)
+    put("Route5_PokemonDayCare_EventScript_DaycareMan", kantoMan)
+    put("FourIsland_EventScript_DaycareMan", kantoMan)
+    put("FourIsland_PokemonDayCare_EventScript_DaycareWoman", kantoWoman)
+    put("Route117_EventScript_DaycareMan", hoennMan)
+    put("Route117_PokemonDayCare_EventScript_DaycareWoman", hoennWoman)
   }
 }

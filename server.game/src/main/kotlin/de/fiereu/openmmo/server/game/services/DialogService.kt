@@ -101,6 +101,24 @@ class DialogService @Inject constructor() {
           )
           .unk
 
+  /**
+   * Opens the client's daycare BREED-SELECTION window (pick two party monsters) over the ROM
+   * question [textId] and returns the client's acknowledgement value. Dialog action wire 26 -
+   * discovered live when the byte was mistaken for the registry menu and the breed window appeared
+   * instead; the 3-byte payload below is the exact play-verified one.
+   */
+  suspend fun breedSelection(session: SessionContext, state: PlayerState, textId: Int): Int =
+      showChoiceAndWait(
+              session,
+              state,
+              textId,
+              BREED_SELECT,
+              NO_ENTITY,
+              contextValue = 0,
+              detail = byteArrayOf(10, 3, 0),
+          )
+          .unk
+
   /** Show a ROM-backed yes/no box and return true for YES. */
   suspend fun askYesNo(
       session: SessionContext,
@@ -299,6 +317,8 @@ class DialogService @Inject constructor() {
      * misreads of the same table.
      */
     const val BUILTIN_MENU = 36
+    /** The daycare breed-selection window (wire 26 = internal 22 in the qM1 table). */
+    const val BREED_SELECT = 26
     const val BUILTIN_MENU_CATEGORY: Byte = 10
     /** f/Lx.R40 set 3: "{01}'s PC" / "Global Trade Link" / "Mail" / Cancel. */
     const val PC_MENU_SET = 3

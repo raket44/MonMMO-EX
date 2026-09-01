@@ -26,6 +26,9 @@ internal object GeneratedScripts {
         chunk14()
         chunk15()
         chunk16()
+        // LAST so the shared daycare interaction beats any per-map stub for the same labels -
+        // one script for every daycare npc, both regions.
+        putAll(de.fiereu.openmmo.server.game.script.DaycareScripts.byLabel)
       }
 
   private fun MutableMap<String, Script>.chunk0() {

@@ -154,6 +154,12 @@ internal constructor(
     return dialog.builtinMenu(session, state, line.textId, menuSet)
   }
 
+  /** Opens the client's daycare breed-selection window over [line]; returns its response. */
+  suspend fun breedSelection(line: DialogLine): Int {
+    holdScriptedFacing()
+    return dialog.breedSelection(session, state, line.textId)
+  }
+
   /** Ask a ROM-backed yes/no question from the interacted entity. */
   suspend fun askYesNo(line: DialogLine): Boolean {
     holdScriptedFacing()

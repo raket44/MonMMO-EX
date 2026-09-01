@@ -483,15 +483,22 @@ constructor(
     // the warp-start lock may have been wiped by the time the new map is up.
     ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
     val railLine = state.pendingRailLine
-    // Position commits WHEN THE WALK IS SENT, never before: GBA re-requests the player several
-    // times while its map loads, and an early commit made a re-request inside the delay window
-    // re-spawn the player at the STEPPED tile - off the door, walk invisible. The validator
-    // moves at the same moment (acceptNextMoveSource, GBA scripted movement's own mechanism).
+    // NDS commits the stepped tile at send (its move handling overwrites from the client's own
+    // reports anyway, so a dropped walk self-heals). GBA does NOT commit: under rapid in/out
+    // cycling the client sometimes never plays the EntityMove (still loading the re-sent map),
+    // and a pre-committed stepped tile then disagreed with the client's real mat position -
+    // the desync fight ended with the client's door fade waiting on a warp the server refused
+    // (the black screen). The server stays on the mat and the client's FIRST move confirms the
+    // real tile (acceptNextMoveSource): walked = syncs to the stepped tile, dropped = already
+    // agrees. Either way both sides match and every door entry stays a client-walked entry.
     val sendStep: () -> Unit = {
-      characterStore.updatePosition(charId, tx.toShort(), ty.toShort())
-      state.x = tx.toShort()
-      state.y = ty.toShort()
-      if (regionId !in 2..4) state.acceptNextMoveSource = true
+      if (regionId in 2..4) {
+        characterStore.updatePosition(charId, tx.toShort(), ty.toShort())
+        state.x = tx.toShort()
+        state.y = ty.toShort()
+      } else {
+        state.acceptNextMoveSource = true
+      }
       if (railLine >= 0) {
         log.info { "Emergence step (rail): char=$charId -> ($tx, $ty) dir=$stepDir line=$railLine" }
         ctx.send(

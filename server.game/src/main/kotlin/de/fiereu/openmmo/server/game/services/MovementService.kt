@@ -292,20 +292,11 @@ constructor(
     }
     var fromX = stored.info.positionX.toInt()
     var fromY = stored.info.positionY.toInt()
-    if (state.acceptNextMoveSource &&
-        msg.x in 0 until currentMap.width &&
-        msg.y in 0 until currentMap.height) {
-      // Trust the client after scripted movement.
-      fromX = msg.x
-      fromY = msg.y
-      characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())
-      state.x = fromX.toShort()
-      state.y = fromY.toShort()
-      state.acceptNextMoveSource = false
-    }
 
-    val atServerTile = msg.x == fromX && msg.y == fromY
-
+    // The drop guards run BEFORE the one-shot source trust: a stale move landing inside the
+    // window (or while a script owns the player) used to consume the trust AND rewrite the
+    // stored position to its claim while pretending to be dropped - the seed of the
+    // door-cycling desyncs.
     when {
       // The arrival-step choreography window refuses ALL movement, same as the unhosted branch:
       // the scripted-state lock removes input client-side, but a move already in flight when it
@@ -323,14 +314,30 @@ constructor(
         scriptMovement.reassertScriptedFacing(ctx, state)
         return
       }
-      !atServerTile -> {
-        log.info {
-          "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
-              "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
-        }
-        sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-        return
+    }
+
+    if (state.acceptNextMoveSource &&
+        msg.x in 0 until currentMap.width &&
+        msg.y in 0 until currentMap.height) {
+      // Trust the client's claimed source tile after scripted movement and the emergence step -
+      // this is where a dropped emergence walk reconciles: the server held the mat, the client
+      // reports where it really stands (the stepped tile if it walked, the mat if it did not),
+      // and both sides agree from here on.
+      fromX = msg.x
+      fromY = msg.y
+      characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())
+      state.x = fromX.toShort()
+      state.y = fromY.toShort()
+      state.acceptNextMoveSource = false
+    }
+
+    if (msg.x != fromX || msg.y != fromY) {
+      log.info {
+        "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
+            "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
       }
+      sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
+      return
     }
 
     // Only once the step is accepted, so a locked player keeps the facing its script left.

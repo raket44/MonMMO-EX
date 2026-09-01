@@ -145,13 +145,6 @@ data class PlayerState(
      */
     @field:Volatile var suppressNpcSpawns: Boolean = false,
     /**
-     * Leniency window after a trainer-sight lock (epoch ms): steps already in flight from the
-     * client when the lock landed are ACCEPTED instead of snapped back, killing the rubber-band.
-     * The trainer then walks to wherever the player actually stopped. Only sight-triggers set this;
-     * dialogs and cutscenes keep the strict lock.
-     */
-    @field:Volatile var lockGraceUntil: Long = 0,
-    /**
      * Map-directory tour: the server auto-warps through raw map ids and the player's next plain
      * chat line names the map on screen. Chat is captured, not broadcast, while this is on.
      */

@@ -5,6 +5,7 @@ import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.NpcDef
+import de.fiereu.openmmo.net.game.packets.EntityPresencePacket
 import de.fiereu.openmmo.server.game.script.MovementStep
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRegistry
@@ -137,14 +138,22 @@ constructor(
     // lands on them.
     val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
     val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-    // Leniency instead of a freeze (0xFB proved unable to stop the client's walking - only its
-    // own dialog/battle UI does): steps already in flight are ACCEPTED during this window, so
-    // nothing gets snapped back, and the trainer walks to where the player really stopped.
-    state.lockGraceUntil = System.currentTimeMillis() + SIGHT_LOCK_GRACE_MS
+    val charId = state.characterId ?: return
+    // THE battle freeze, sent instantly on the packet thread: the first packet of every battle
+    // is presence=IN_BATTLE on the player's own entity, and it is what stops the client dead in
+    // its tracks. Same mechanism here - the player freezes on the spotted tile, exactly like a
+    // wild encounter. The battle that follows re-sends it; battle end restores OVERWORLD.
+    ctx.send(EntityPresencePacket(entityId = charId, status = PRESENCE_IN_BATTLE))
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
-      script.run(scriptCtx)
+      try {
+        scriptCtx.moveNpc(npc.entityIdx, *steps.toTypedArray())
+        script.run(scriptCtx)
+      } finally {
+        // The battle's own end already restores presence; this covers a script that never
+        // reaches its battle (error, unresolved text) so the player is never left frozen.
+        scriptCtx.send(EntityPresencePacket(entityId = charId, status = PRESENCE_OVERWORLD))
+      }
     }
     scriptRunner.run(ctx, state, approach, entityId)
   }
@@ -200,8 +209,9 @@ constructor(
   private companion object {
     const val TRAINER_TYPE_NORMAL = 1
     const val TRAINER_TYPE_ALL_DIRS = 2
-    /** How long in-flight client steps are accepted after a sight lock lands. */
-    const val SIGHT_LOCK_GRACE_MS = 700L
+    /** EntityPresencePacket statuses, mirroring BattlePacketEmitter's. */
+    const val PRESENCE_IN_BATTLE: Byte = 1
+    const val PRESENCE_OVERWORLD: Byte = 0
     val CARDINALS = listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)
   }
 }

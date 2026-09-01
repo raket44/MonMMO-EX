@@ -304,27 +304,10 @@ constructor(
       // Drop every step until the client asks for its player, else one left over from the old map
       // can fire a second warp.
       state.justWarped -> return
-      // A script owns the player, like the decomp's lockall.
+      // A script owns the player, like the decomp's lockall. The sight trigger freezes the
+      // client itself with the battle-presence packet, so stray in-flight steps are rare and
+      // this reset just re-asserts the tile the client already shows.
       state.blocksPlayerInput -> {
-        // Sight-trigger leniency: steps that were already in flight when the lock landed are
-        // ACCEPTED instead of snapped back - the rubber-band came from rejecting them. Plain
-        // walk only, no events; the approaching trainer finds the player where they stopped.
-        if (System.currentTimeMillis() < state.lockGraceUntil && msg.x == fromX && msg.y == fromY) {
-          val gx = fromX + msg.direction.dx
-          val gy = fromY + msg.direction.dy
-          if (gx in 0 until currentMap.width &&
-              gy in 0 until currentMap.height &&
-              isWalkable(currentMap, gx, gy)) {
-            characterStore.updatePosition(
-                charId, gx.toShort(), gy.toShort(), facing = msg.direction)
-            state.x = gx.toShort()
-            state.y = gy.toShort()
-            state.facingDirection = msg.direction
-            presenceService.broadcastToObservers(
-                ctx, gbaMovePacket(charId, currentMap, gx, gy, msg.direction))
-          }
-          return
-        }
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, state.facingDirection)
         return
       }

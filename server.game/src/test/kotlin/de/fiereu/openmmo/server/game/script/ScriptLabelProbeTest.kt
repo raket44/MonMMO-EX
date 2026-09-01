@@ -14,6 +14,10 @@ class ScriptLabelProbeTest :
       test("print analyzer verdicts for probe labels") {
         val labels =
             listOf(
+                "OldaleTown_Mart_EventScript_Clerk",
+                "SlateportCity_Mart_EventScript_Clerk",
+                "ViridianCity_Mart_EventScript_Clerk",
+                "CeladonCity_DepartmentStore_2F_EventScript_Clerk1",
                 "PewterCity_Gym_EventScript_Brock",
                 "CeruleanCity_Gym_EventScript_Misty",
                 "VermilionCity_Gym_EventScript_LtSurge",

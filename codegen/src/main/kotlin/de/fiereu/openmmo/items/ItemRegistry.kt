@@ -128,7 +128,14 @@ class ItemRegistry @Inject constructor() {
   fun byScriptConstant(token: String): ItemDef? {
     if (!token.startsWith("ITEM_")) return null
     val constant = token.removePrefix("ITEM_")
-    return byConstantName.value[GEN3_ALIASES[constant] ?: constant] ?: byGbaConstant[constant]
+    // The aliases run BOTH ways: FRLG scripts spell gen-3 (ITEM_PARLYZ_HEAL) against modern
+    // catalogue names, while pret's Emerald uses modern constants (ITEM_PARALYZE_HEAL) against
+    // catalogue entries that kept the gen-3 spelling. One direction stranded whole mart shelves.
+    val alias = GEN3_ALIASES[constant] ?: GEN3_REVERSE[constant]
+    return byConstantName.value[constant]
+        ?: alias?.let { byConstantName.value[it] }
+        ?: byGbaConstant[constant]
+        ?: alias?.let { byGbaConstant[it] }
   }
 
   // The same mangling ItemDataParser.identifierOf applies, so the script constant for a retail
@@ -166,5 +173,6 @@ class ItemRegistry @Inject constructor() {
             "KINGS_ROCK" to "KING_S_ROCK",
             "SS_TICKET" to "S_S_TICKET",
         )
+    val GEN3_REVERSE = GEN3_ALIASES.entries.associate { (gen3, modern) -> modern to gen3 }
   }
 }

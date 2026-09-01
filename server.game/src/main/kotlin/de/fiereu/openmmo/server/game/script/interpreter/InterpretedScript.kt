@@ -155,6 +155,16 @@ class InterpretedScript(
         "trainerbattle_rematch_double" -> {
           if (!runTrainerBattleDouble(ctx, state, instruction, rematch = true)) return
         }
+        "pokemart" -> {
+          openMart(ctx, state, instruction)
+          // Vanilla blocks until the shop window closes; nothing on the wire reports that
+          // close, so the script ends with the shelf open and the come-again line is skipped.
+          return
+        }
+        "mart_item" ->
+            error(
+                "Script ${program.id.stable} executed a mart data row at " +
+                    "`${instruction.sourceLine}`")
         "setflag",
         // Marks a location visited on the Town Map - a persisted flag like any other. Leaving it
         // unsupported failed every town's on-enter script whole, Vermilion City's included.
@@ -959,6 +969,43 @@ class InterpretedScript(
               "Script ${program.id.stable} trainer battle ${opponent.constant} ended with " +
                   "$result at `${instruction.sourceLine}`")
     }
+  }
+
+  /**
+   * The decomp pokemart: resolves the shelf's data label (kept as synthetic mart_item rows by the
+   * parser) and opens the client's own mart window on it.
+   */
+  private fun openMart(ctx: ScriptContext, state: RuntimeState, instruction: ScriptInstruction) {
+    val label = labelArg(instruction, 0).token
+    val holder =
+        if (state.activeProgram.labels.containsKey(label)) state.activeProgram
+        else
+            programLibrary[label]
+                ?: error(
+                    "Script ${program.id.stable} has no mart shelf $label from " +
+                        "`${instruction.sourceLine}`")
+    val start =
+        holder.labels[label]
+            ?: error(
+                "Script ${program.id.stable} has no mart shelf $label from " +
+                    "`${instruction.sourceLine}`")
+    val shelf = mutableListOf<de.fiereu.openmmo.items.ItemDef>()
+    var index = start
+    shelfWalk@ while (index < holder.instructions.size &&
+        holder.instructions[index].command == "mart_item") {
+      for (arg in holder.instructions[index].args) {
+        val token = arg.token
+        if (token == "ITEM_NONE" || token == "0") break@shelfWalk
+        // Mail is not in the retail catalogue; the shelf omits it like PokeMMO's own marts.
+        if (token.endsWith("_MAIL")) continue
+        shelf +=
+            ctx.resolveItem(token)
+                ?: error("Script ${program.id.stable} mart shelf $label offers unknown item $token")
+      }
+      index++
+    }
+    check(shelf.isNotEmpty()) { "Script ${program.id.stable} mart shelf $label is empty" }
+    ctx.pokemart(*shelf.toTypedArray())
   }
 
   /**

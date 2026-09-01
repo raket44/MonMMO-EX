@@ -23,7 +23,9 @@ enum class TileBehavior {
   NORTH_ARROW_WARP,
   SOUTH_ARROW_WARP,
   EAST_ARROW_WARP,
-  WEST_ARROW_WARP;
+  WEST_ARROW_WARP,
+  /** A storage PC (MB_PC): pressing A while facing it opens the client's storage UI. */
+  PC;
 
   /** The direction the player must walk while standing here to be warped. */
   val warpsWhenWalking: Direction?

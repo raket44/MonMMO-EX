@@ -111,8 +111,50 @@ class ScriptSupportAnalyzer(
         return it
       }
     }
+    if (instruction.command == "pokemart") {
+      validateMart(script, activeProgram, instruction)?.let {
+        return it
+      }
+    }
 
     return validateShape(script, instruction) ?: validateTypes(instruction)
+  }
+
+  /** Proves the pokemart shelf label resolves to mart_item rows this build can all sell. */
+  private fun validateMart(
+      script: InterpretedScript,
+      activeProgram: ScriptProgram,
+      instruction: ScriptInstruction,
+  ): String? {
+    val label =
+        (instruction.args.getOrNull(0) as? LabelArg)?.token
+            ?: return sourceReason(instruction, "pokemart requires a shelf label")
+    val holder =
+        if (activeProgram.labels.containsKey(label)) activeProgram
+        else
+            script.programLibrary[label]
+                ?: return sourceReason(instruction, "unresolved mart shelf $label")
+    val start =
+        holder.labels[label] ?: return sourceReason(instruction, "unresolved mart shelf $label")
+    var index = start
+    var count = 0
+    while (index < holder.instructions.size && holder.instructions[index].command == "mart_item") {
+      for (arg in holder.instructions[index].args) {
+        val token = arg.token
+        if (token == "ITEM_NONE" || token == "0") {
+          return if (count > 0) null else sourceReason(instruction, "mart shelf $label is empty")
+        }
+        // Mail does not exist in the retail catalogue - the retail-accurate shelf simply
+        // omits it, the way PokeMMO's own marts do.
+        if (token.endsWith("_MAIL")) continue
+        if (items.byScriptConstant(token) == null) {
+          return sourceReason(instruction, "mart shelf $label offers unknown item $token")
+        }
+        count++
+      }
+      index++
+    }
+    return if (count > 0) null else sourceReason(instruction, "mart shelf $label has no items")
   }
 
   private fun validateTrainer(
@@ -201,6 +243,8 @@ class ScriptSupportAnalyzer(
           "trainerbattle_rematch" -> args.size == 3
           "trainerbattle_double" -> args.size in setOf(4, 5, 6)
           "trainerbattle_rematch_double" -> args.size == 4
+          "pokemart" -> args.size == 1
+          "mart_item" -> args.isNotEmpty()
           in COMPARISON_BRANCHES -> args.size == 1 || args.size == 3
           else -> false
         }
@@ -321,6 +365,7 @@ class ScriptSupportAnalyzer(
                   args[1] is TextArg &&
                   args[2] is TextArg &&
                   args[3] is TextArg
+          "pokemart" -> args[0] is LabelArg
           else -> true
         }
     return if (valid) null else sourceReason(instruction, "unsupported argument types")
@@ -466,6 +511,8 @@ class ScriptSupportAnalyzer(
             "trainerbattle_rematch",
             "trainerbattle_double",
             "trainerbattle_rematch_double",
+            "pokemart",
+            "mart_item",
             "setflag",
             "setworldmapflag",
             "clearflag",

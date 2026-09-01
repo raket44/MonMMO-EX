@@ -115,7 +115,19 @@ constructor(
           it.x == facingX && it.y == facingY && facingDirOk(it.facingDir, state.facingDirection)
         }
     if (bgEvent == null) {
+      // Pokecenter PCs are engine tiles (MB_PC), not bg events - the behavior is the trigger.
+      if (currentMap.tileAt(facingX, facingY)?.behavior ==
+          de.fiereu.openmmo.common.enums.TileBehavior.PC) {
+        openPcStorage(session, stored)
+        return
+      }
       log.debug { "Tile interaction at ($facingX, $facingY) has no bg event" }
+      return
+    }
+    // House PCs are bg events whose ROM script drives the GBA storage engine; this server's
+    // storage is the client's own UI, so any PC script routes there instead.
+    if (bgEvent.script.endsWith("_EventScript_PC")) {
+      openPcStorage(session, stored)
       return
     }
     val script =
@@ -130,6 +142,20 @@ constructor(
     } else {
       log.info { "Bg event at ($facingX, $facingY) script=${bgEvent.script} has no wired dialog" }
     }
+  }
+
+  /** Opens the client's own storage UI on the player's PC boxes. */
+  private fun openPcStorage(session: SessionContext, stored: StoredCharacter) {
+    log.info { "PC interaction: opening storage with ${stored.pcStorage.size} boxed pokemon" }
+    // Fresh contents first, then the toggle that shows the window.
+    session.send(
+        de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
+            container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
+            hasChange = true,
+            delete = false,
+            pokemon = stored.pcStorage,
+        ))
+    session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
   }
 
   private fun currentCharacter(state: PlayerState): StoredCharacter? {

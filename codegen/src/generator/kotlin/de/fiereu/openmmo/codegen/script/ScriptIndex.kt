@@ -102,10 +102,14 @@ private constructor(
     private fun parseFile(file: File, lines: List<String>, out: MutableMap<String, ScriptBody>) {
       // Labels stacked with no commands between them are aliases for the same body.
       val pending = mutableListOf<String>()
+      // A single-colon label whose block is `.2byte` rows - Emerald's mart shelves. FireRed
+      // declares its shelves with `::` and they come through the ordinary path.
+      var dataLabel: String? = null
       for (raw in lines) {
         val line = raw.trim()
         val match = labelLine.matchEntire(line)
         if (match != null) {
+          dataLabel = null
           if (line.endsWith("::")) {
             val label = match.groupValues[1]
             out.getOrPut(label) { ScriptBody(file.path, mutableListOf()) }
@@ -113,15 +117,26 @@ private constructor(
           } else {
             // A data label ends the current script body.
             pending.clear()
+            dataLabel = match.groupValues[1]
           }
           continue
         }
         if (line.isEmpty()) {
           // A blank line separates one script from the next.
           pending.clear()
+          dataLabel = null
           continue
         }
         if (line.startsWith("@")) continue
+        if (dataLabel != null) {
+          if (line.startsWith(".2byte")) {
+            out.getOrPut(dataLabel) { ScriptBody(file.path, mutableListOf()) }.commands.add(line)
+          } else {
+            // Anything else under a data label is text or tables the server does not read.
+            dataLabel = null
+          }
+          continue
+        }
         for (label in pending) out.getValue(label).commands.add(line)
       }
     }

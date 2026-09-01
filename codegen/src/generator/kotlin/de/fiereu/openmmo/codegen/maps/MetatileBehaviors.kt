@@ -89,6 +89,8 @@ private constructor(
         when (name) {
           "MB_TALL_GRASS" -> TileBehavior.TALL_GRASS
           "MB_LONG_GRASS" -> TileBehavior.LONG_GRASS
+          // Pokecenter PCs are engine tiles, not bg events - interaction needs the behavior.
+          "MB_PC" -> TileBehavior.PC
           "MB_JUMP_EAST" -> TileBehavior.JUMP_EAST
           "MB_JUMP_WEST" -> TileBehavior.JUMP_WEST
           "MB_JUMP_NORTH" -> TileBehavior.JUMP_NORTH

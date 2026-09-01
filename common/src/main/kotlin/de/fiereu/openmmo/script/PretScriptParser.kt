@@ -45,6 +45,15 @@ object PretScriptParser {
         labels[label.groupValues[1]] = instructions.size
         continue
       }
+      if (line.startsWith(".2byte")) {
+        // Mart shelves are `.2byte ITEM_X` rows under a data label; keeping them as synthetic
+        // mart_item instructions lets pokemart walk its shelf. Other directives stay skipped.
+        val values = splitArgs(line.removePrefix(".2byte").trim()).filter { it.isNotEmpty() }
+        if (values.isNotEmpty()) {
+          instructions += instruction("mart_item", values, line, constants)
+        }
+        continue
+      }
       if (line.startsWith(".")) continue
       val command = line.substringBefore(' ').substringBefore('\t').trim()
       val rest = line.removePrefix(command).trim()
@@ -136,6 +145,8 @@ object PretScriptParser {
         // The double macros carry the NotEnoughMons text at 3 and the continuation at 4.
         command in DOUBLE_BATTLE_COMMANDS && index == 3 -> TextArg(token)
         command == "trainerbattle_double" && index == 4 -> LabelArg(token)
+        // The shelf reference is a data label, never a jump target.
+        command == "pokemart" && index == 0 -> LabelArg(token)
         command in setOf("setflag", "clearflag") + flagBranches && index == 0 -> FlagArg(token)
         command in setOf("setvar", "compare", "setorcopyvar", "addvar", "subvar") && index == 0 ->
             VarArg(token)

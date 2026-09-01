@@ -492,9 +492,11 @@ constructor(
     val wait = state.moveIgnoreUntil - System.currentTimeMillis()
     if (wait <= 0) {
       val face = faceStepOf(state.facingDirection) ?: return
+      log.info { "HOLD player now facing=${state.facingDirection}" }
       sendActions(session, charId, listOf(face) + HOLD_TAIL)
       return
     }
+    log.info { "HOLD deferred ${wait}ms (arrival window)" }
     val scope =
         session.attributes.getOrPut(de.fiereu.openmmo.server.game.session.SCRIPT_SCOPE) {
           kotlinx.coroutines.CoroutineScope(
@@ -519,6 +521,7 @@ constructor(
     if (state.regionId > 1) return
     // Same choreography guard as holdPlayer: the clear would cancel the emergence walk.
     if (System.currentTimeMillis() < state.moveIgnoreUntil) return
+    log.info { "RELEASE queue clear at (${state.x}, ${state.y}) facing=${state.facingDirection}" }
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
     // The 0x11 entity update is THE packet whose handler clears the client's action queue

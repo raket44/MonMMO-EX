@@ -73,7 +73,12 @@ constructor(
     val state = ctx.attributes[PLAYER_STATE] ?: return
     val charId = state.characterId ?: return
     val msg = event.packet
-    log.debug { "Movement: char=$charId from (${msg.x}, ${msg.y}) dir=${msg.direction}" }
+    // Temporarily INFO: hunting the phantom steps around script locks - shows every client
+    // step with the lock state it met.
+    log.info {
+      "Movement: (${msg.x}, ${msg.y}) dir=${msg.direction} locked=${state.blocksPlayerInput} " +
+          "script=${state.scriptRunning}"
+    }
 
     val stored = characterStore.getCharacter(charId) ?: return
     val currentMap =

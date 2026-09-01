@@ -55,3 +55,4 @@ logs/
 
 # extracted retail client (Windows reserved names break git; not ours to track)
 reference/client-31914/
+launcher-out.txt

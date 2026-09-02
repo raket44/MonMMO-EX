@@ -252,7 +252,11 @@ tasks.register<JavaExec>("mergeMonstersJson") {
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   args(
-      rootProject.layout.projectDirectory.file("data/pokemmo/monsters.json").asFile.absolutePath,
+      rootProject.layout.projectDirectory
+          .file("reference/monsters-retail.json")
+          .asFile
+          .absolutePath,
       rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.file("data/pokemmo/monsters.json").asFile.absolutePath,
   )
 }

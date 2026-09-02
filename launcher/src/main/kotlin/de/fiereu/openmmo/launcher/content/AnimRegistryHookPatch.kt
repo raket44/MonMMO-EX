@@ -14,9 +14,9 @@ import org.objectweb.asm.Opcodes
  * entries registered at data.pak-fixup time were silently discarded before the first move ever
  * played: registration logged 173 applied, and Moonblast still hit with the generic thump.
  *
- * The patch appends `DexPatch.animRegistryRebuilt(this)` at every return of m7(), so each rebuild -
- * including the very first one during class initialization - re-applies the movevfx and moveanim
- * fixups onto the instance being built, before anything can read it.
+ * The patch inserts `DexPatch.animRegistryRebuilt(this)` in the constructor right after its m7()
+ * call, so each rebuild - including the very first one during class initialization - re-applies the
+ * movevfx and moveanim fixups onto the instance being built, before anything can read it.
  */
 object AnimRegistryHookPatch {
   private const val HELPER = "monmmo/DexPatch"
@@ -58,6 +58,14 @@ object AnimRegistryHookPatch {
     return hasApo && hasKp1 && hasBuilder
   }
 
+  /**
+   * The hook rides in the CONSTRUCTOR, immediately after its call to the builder - not at the
+   * builder's own returns. The builder's exit is a branch join whose stack-map frame declares ZERO
+   * locals, so an inserted ALOAD 0 there is a verifier error: the first attempt took the client
+   * down with a fatal VerifyError at boot. Right after `invokevirtual m7()` inside `<init>` the
+   * receiver is provably live (it was just used) and the tiny constructor has no branch targets, so
+   * no stack-map juggling is needed.
+   */
   fun patch(classBytes: ByteArray): ByteArray {
     val reader = ClassReader(classBytes)
     val writer = ClassWriter(reader, ClassWriter.COMPUTE_MAXS)
@@ -72,10 +80,19 @@ object AnimRegistryHookPatch {
               exceptions: Array<out String>?,
           ): MethodVisitor {
             val next = super.visitMethod(access, name, descriptor, signature, exceptions)
-            if (name != BUILDER || descriptor != "()V") return next
+            if (name != "<init>") return next
             return object : MethodVisitor(Opcodes.ASM9, next) {
-              override fun visitInsn(opcode: Int) {
-                if (opcode == Opcodes.RETURN) {
+              override fun visitMethodInsn(
+                  opcode: Int,
+                  owner: String,
+                  methodName: String,
+                  methodDescriptor: String,
+                  isInterface: Boolean,
+              ) {
+                super.visitMethodInsn(opcode, owner, methodName, methodDescriptor, isInterface)
+                if (opcode == Opcodes.INVOKEVIRTUAL &&
+                    methodName == BUILDER &&
+                    methodDescriptor == "()V") {
                   super.visitVarInsn(Opcodes.ALOAD, 0)
                   super.visitMethodInsn(
                       Opcodes.INVOKESTATIC,
@@ -86,14 +103,13 @@ object AnimRegistryHookPatch {
                   )
                   calls++
                 }
-                super.visitInsn(opcode)
               }
             }
           }
         },
         0,
     )
-    check(calls > 0) { "The registry builder had no return to hook" }
+    check(calls > 0) { "The registry constructor never calls the builder" }
     return writer.toByteArray()
   }
 }

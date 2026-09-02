@@ -44,8 +44,11 @@ public final class VfxAnim extends f.Dm0 {
     // the caster-to-target anchors attached, and self-guards (empty timeline) past the last
     // index. The generic animation anchors only index 0, which is why multi-phase effects -
     // Moonblast carries six controllers - played as a sliver of themselves.
+    // Anchor pair (9, 1) = CASTER to ENEMY (cOM9 decode), so controllers travel toward the
+    // target instead of parking at an absolute point - the operator's "not directing towards
+    // the target" verdict on the (9, 8) CASTER-to-ABSOLUTE pairing.
     for (int controller = 0; controller < 12; controller++) {
-      chain = chain.Ix0(j00(-1, moveId, controller, 9, 8, 0.0f));
+      chain = chain.Ix0(j00(-1, moveId, controller, 9, 1, 0.0f));
     }
     chain
         .Ix0(Oh(14, 0.5f, 0.0f, 0.5f, f.N31.kA0(31)))

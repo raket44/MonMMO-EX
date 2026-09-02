@@ -320,15 +320,38 @@ fun main(args: Array<String>) {
             )
             .map { (move, donor) -> "moveanim:$move:$donor" }
     val retailMoves = parsedMoves.filter { it.id in 1..559 }
+    // Donor choice reads the Expansion's own animation scripts (goto targets and shared
+    // primitives) - see AnimScriptMatcher. The stat heuristic survives only as the last fallback
+    // for moves whose script matched nothing, and every choice lands in a review file.
+    val structural = AnimScriptMatcher.matches(moveRoot, parsedMoves)
+    val donorReview = StringBuilder("move;name;donor;donorName;how\n")
     val moveAnimLines =
         parsedMoves
             .filter { it.id in (LAST_SHIPPED_VFX_MOVE + 1)..999 }
             .mapNotNull { move ->
-              val sameType = retailMoves.filter { it.type == move.type }
-              val pool = sameType.filter { it.category == move.category }.ifEmpty { sameType }
-              val donor = pool.minByOrNull { kotlin.math.abs(it.power - move.power) * 1000 + it.id }
-              donor?.let { "moveanim:${move.id}:${it.id}" }
+              val structuralChoice = structural[move.id]
+              val donor: Int?
+              val how: String
+              if (structuralChoice != null) {
+                donor = structuralChoice.donor
+                how = structuralChoice.reason
+              } else {
+                val sameType = retailMoves.filter { it.type == move.type }
+                val pool = sameType.filter { it.category == move.category }.ifEmpty { sameType }
+                donor =
+                    pool.minByOrNull { kotlin.math.abs(it.power - move.power) * 1000 + it.id }?.id
+                how = "stat fallback"
+              }
+              donor?.also {
+                val donorName = parsedMoves.firstOrNull { m -> m.id == it }?.name ?: "vfx tier $it"
+                donorReview.append("${move.id};${move.name};$it;$donorName;$how\n")
+              }
+              donor?.let { "moveanim:${move.id}:$it" }
             }
+    val reviewFile = Path.of("build/expansion-client/anim-donors.csv")
+    Files.createDirectories(reviewFile.parent)
+    Files.writeString(reviewFile, donorReview.toString())
+    println("[fairy-type] anim donors: ${moveAnimLines.size} chosen, review at $reviewFile")
     // Evolution entries where either end is a species we add; chains fully inside the canonical
     // range already come from the ROM. Eevee to Sylveon starts from a canonical species, which an
     // ours-only pass silently skipped.

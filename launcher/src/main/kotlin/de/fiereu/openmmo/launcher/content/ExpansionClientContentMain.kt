@@ -179,7 +179,7 @@ fun main(args: Array<String>) {
                     ?.distinct()
         listOfNotNull(
                 taught?.takeIf { it.isNotEmpty() }?.let { ExtraLearnset.MOVE_LEARNER_TOOLS to it },
-                prevo?.takeIf { it.isNotEmpty() }?.let { ExtraLearnset.MOVE_TUTOR to it },
+                prevo?.takeIf { it.isNotEmpty() }?.let { ExtraLearnset.PREVO_MOVES to it },
                 egg?.takeIf { it.isNotEmpty() }?.let { ExtraLearnset.EGG_MOVES to it },
             )
             .map { (category, moves) -> ExtraLearnset(wireId, category, moves) }
@@ -516,11 +516,13 @@ private fun patchNames(
   // The RETAIL tools get the same treatment: their names live at string 240000 + itemId
   // (measured - f/Gc0.fb on the live client), and a strings_en.xml entry at that id overrides
   // the name everywhere it renders. "TM24" becomes "TM Thunderbolt", "HM03" becomes "HM Surf".
-  RetailTools.renames().forEach { (stringId, moveId) ->
+  // TM and HM lists are separate because item id no longer decides the class: the ids right
+  // after TM92 are the Unova HM block, and the higher regions keep HM blocks of their own.
+  (RetailTools.renames().map { it to "TM" } + RetailTools.hmRenames().map { it to "HM" }).forEach {
+      (rename, prefix) ->
+    val (stringId, moveId) = rename
     if (stringId in occupied) return@forEach
     val moveName = moveNamesById[moveId]?.name ?: return@forEach
-    val prefix =
-        if (stringId >= RetailTools.ITEM_NAME_STRING_BASE + RetailTools.TM_ITEM_BASE) "TM" else "HM"
     root.appendChild(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())

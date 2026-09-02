@@ -161,6 +161,15 @@ fun main(args: Array<String>) {
         PokedexAvailabilityPatch::isPokedexScreen,
         PokedexAvailabilityPatch::patch,
     )
+    // The detail panel reads its category box, dex paragraph, height and weight lines straight
+    // from the ROM text archives (nV0.f7, tables 235/236/260/245/268 by species id), which no
+    // string-table work can reach - imported ids simply have no ROM row. Redirect every read
+    // through the overlay, which packs those texts and delegates retail ids back to the ROM.
+    applyOne(
+        "Pokedex detail text redirect",
+        DexTextRedirectPatch::isDetailPanel,
+        DexTextRedirectPatch::patch,
+    )
 
     // The hidden-ability line is gated on a whitelist baked into the client that imported
     // species can never join; the record carries the ability, the screen just refuses to say so.
@@ -496,6 +505,49 @@ fun main(args: Array<String>) {
           locationBytes += built.payload.size
         }
     println("[fairy-type] wild-location tables packed: 4 seasons, $locationBytes bytes")
+
+    // The detail-panel texts the ROM cannot provide, one row per table/species/text. Category
+    // and paragraph come from the Expansion's own species_info; height and weight are formatted
+    // from the catalogue's decimeters and hectograms.
+    val dexDescriptions = ExpansionDexText.parse(expansionRootPath)
+    val dexTextRows = StringBuilder()
+    var dexTextCount = 0
+    expansion.forEach { entry ->
+      val wire = entry.clientWireId ?: return@forEach
+      if (wire in 1..667 || wire in 1000..1052) return@forEach
+      val clean = { value: String -> value.replace("\t", " ").replace("\n", "\\n") }
+      if (entry.categoryName.isNotBlank()) {
+        val category = clean(entry.categoryName + " Pokémon")
+        dexTextRows.append("235\t").append(wire).append("\t").append(category).append("\n")
+        dexTextRows.append("236\t").append(wire).append("\t").append(category).append("\n")
+        dexTextCount++
+      }
+      ExpansionDexText.forSymbol(dexDescriptions, entry.symbol)?.let { paragraph ->
+        dexTextRows.append("260\t").append(wire).append("\t").append(clean(paragraph)).append("\n")
+        dexTextCount++
+      }
+      dexTextRows
+          .append("245\t")
+          .append(wire)
+          .append("\t")
+          .append(entry.height / 10)
+          .append(".")
+          .append(entry.height % 10)
+          .append(" m\n")
+      dexTextRows
+          .append("268\t")
+          .append(wire)
+          .append("\t")
+          .append(entry.weight / 10)
+          .append(".")
+          .append(entry.weight % 10)
+          .append(" kg\n")
+    }
+
+    jar.putNextEntry(ZipEntry("monmmo/dex-text.tsv"))
+    jar.write(dexTextRows.toString().toByteArray())
+    jar.closeEntry()
+    println("[fairy-type] dex texts packed: " + dexTextCount + " category/paragraph rows")
 
     jar.putNextEntry(ZipEntry("monmmo/fixups.txt"))
     jar.write(fixups.joinToString("\n").toByteArray())

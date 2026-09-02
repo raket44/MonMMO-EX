@@ -112,6 +112,71 @@ public final class DexPatch {
     }
   }
 
+  /** Dex detail texts for imported species, keyed table*100000+speciesId; loaded on first use. */
+  private static java.util.Map<Integer, String> dexTexts;
+
+  /** nV0.f7, resolved once for the delegate path. */
+  private static Method romText;
+
+  private static boolean dexTextSampled;
+
+  /**
+   * Serves the Pokedex detail panel's ROM-archive reads (category, dex entry, height, weight).
+   * The panel is bytecode-patched to call this instead of nV0.f7: an imported species answers
+   * from the packed table, anything else falls straight through to the ROM.
+   */
+  public static String dexText(byte source, Object language, int table, int index, String[] args) {
+    try {
+      if (dexTexts == null) {
+        java.util.Map<Integer, String> loaded = new java.util.HashMap<>();
+        InputStream stream = DexPatch.class.getResourceAsStream("/monmmo/dex-text.tsv");
+        if (stream != null) {
+          try (BufferedReader reader =
+              new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+              String[] cells = line.split("\t", 3);
+              if (cells.length == 3) {
+                loaded.put(
+                    Integer.parseInt(cells[0]) * 100000 + Integer.parseInt(cells[1]),
+                    cells[2].replace("\\n", "\n"));
+              }
+            }
+          }
+        }
+        dexTexts = loaded;
+        log("[monmmo] dex texts loaded: " + loaded.size());
+      }
+      String packed = dexTexts.get(table * 100000 + index);
+      if (packed != null) {
+        return packed;
+      }
+      if (romText == null) {
+        romText =
+            Class.forName("f.nV0")
+                .getMethod(
+                    "f7", byte.class, Class.forName("f.cX"), int.class, int.class, String[].class);
+      }
+      // One-time calibration: what the ROM really returns per table, so packed text can match
+      // the retail wording and units exactly.
+      if (!dexTextSampled) {
+        dexTextSampled = true;
+        for (int sample : new int[] {235, 236, 245, 260, 268}) {
+          try {
+            Object text = romText.invoke(null, source, language, sample, 25, args);
+            log("[monmmo] dexText sample table=" + sample + " id=25 -> " + text);
+          } catch (Throwable sampleError) {
+            log("[monmmo] dexText sample table=" + sample + " failed: " + sampleError);
+          }
+        }
+      }
+      return (String) romText.invoke(null, source, language, table, index, args);
+    } catch (Throwable failure) {
+      log("[monmmo] dexText failed table=" + table + " index=" + index + ": " + failure);
+      return "";
+    }
+  }
+
   /** Moves some existing tool already teaches, built once from the live registry. */
   private static java.util.Set<Short> toolTeaches;
 

@@ -302,7 +302,7 @@ constructor(
 
   private fun sendNotice(session: SessionContext, message: String) = session.send(notice(message))
 
-  private companion object {
+  companion object {
     const val DITTO = 132
 
     /**

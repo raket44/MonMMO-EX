@@ -65,6 +65,13 @@ object RetailMonsterData {
       val rarityNight: String,
   )
 
+  /**
+   * One evolution row exactly as the dump spells it: the client evolution-method word (LEVEL, ITEM,
+   * HAPPINESS, ATK_GREATER_THAN_DEF...), its parameter (a level, or a CLIENT item id for the item
+   * methods), and the target species wire id.
+   */
+  data class RetailEvolution(val method: String, val value: Int, val toId: Int)
+
   data class RetailMonster(
       val id: Int,
       val name: String,
@@ -84,6 +91,7 @@ object RetailMonsterData {
       /** Level-up learnset, sorted and deduplicated. */
       val levelUpLearnset: List<LevelUpMove>,
       val encounters: List<RetailEncounter>,
+      val evolutions: List<RetailEvolution>,
   )
 
   /**
@@ -180,6 +188,15 @@ object RetailMonsterData {
                 .map { LevelUpMove(it.int("level"), it.int("id")) }
                 .distinct()
                 .sortedBy { it.level },
+        evolutions =
+            m["evolutions"]?.jsonArray?.mapNotNull { row ->
+              val evo = row.jsonObject
+              val method = evo["type"]?.jsonPrimitive?.content ?: return@mapNotNull null
+              val target =
+                  evo["id"]?.jsonPrimitive?.content?.toIntOrNull() ?: return@mapNotNull null
+              RetailEvolution(
+                  method, evo["val"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0, target)
+            } ?: emptyList(),
         encounters =
             m["locations"]?.jsonArray?.map { loc ->
               val l = loc.jsonObject

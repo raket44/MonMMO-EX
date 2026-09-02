@@ -59,11 +59,11 @@ constructor(
   fun size(): Int = species.size
 
   /**
-   * Economy fields are RETAIL-FIRST (operator-directed): PokeMMO hand-tuned its exp and EV
-   * yields for its own leveling economy - Pikachu pays 105, matching no cartridge table - so
-   * the dump's values override the Expansion's modern ones wherever the dump knows the
-   * species. The Expansion (then the decomp) only fills species retail never had, and a zero
-   * in any of these fields is never valid data.
+   * Economy fields are RETAIL-FIRST (operator-directed): PokeMMO hand-tuned its exp and EV yields
+   * for its own leveling economy - Pikachu pays 105, matching no cartridge table - so the dump's
+   * values override the Expansion's modern ones wherever the dump knows the species. The Expansion
+   * (then the decomp) only fills species retail never had, and a zero in any of these fields is
+   * never valid data.
    */
   private fun backfillEconomy(def: SpeciesDef, id: Int): SpeciesDef {
     val retail = RetailMonsterData.get(id)

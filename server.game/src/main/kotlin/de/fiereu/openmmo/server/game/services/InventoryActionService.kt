@@ -337,20 +337,75 @@ object EvolutionTable {
   /** ROM methods where the player uses an item on the monster directly. */
   private val ITEM_METHODS = setOf(8, 16, 17)
 
+  /** The client evolution-method enum (f/kx) by ordinal - the words the dump uses. */
+  private val METHOD_WORDS =
+      listOf(
+          "BREEDING_ONLY",
+          "HAPPINESS",
+          "HAPPINESS_DAY",
+          "HAPPINESS_NIGHT",
+          "LEVEL",
+          "TRADE",
+          "TRADE_WITH_ITEM",
+          "TRADE_FOR_OPPOSITE",
+          "ITEM",
+          "ATK_GREATER_THAN_DEF",
+          "ATK_EQUAL_TO_DEF",
+          "ATK_LESS_THAN_DEF",
+          "PERSONALITY_HIGH",
+          "PERSONALITY_LOW",
+          "ALLOW_MONSTER_CREATION",
+          "CREATE_EXTRA_MONSTER",
+          "MAX_BEAUTY",
+          "ITEM_MALE",
+          "ITEM_FEMALE",
+          "LEVEL_ITEM_DAY",
+          "LEVEL_ITEM_NIGHT",
+          "LEVEL_WITH_SKILL",
+          "LEVEL_WITH_MONSTER",
+          "LEVEL_MALE",
+          "LEVEL_FEMALE",
+          "LEVEL_LOCATION_1",
+          "LEVEL_LOCATION_2",
+          "LEVEL_LOCATION_3",
+      )
+
+  /**
+   * Every species' evolutions, sourced from monsters.json - the operator-designated authority on
+   * evolution rules, covering the retail chains the old expansion-only csv never had (which is why
+   * a Squirtle sat unevolved at 16 and a Pikachu's forecast never devolved to Pichu). The csv still
+   * contributes any line the json lacks. Item-method values in the json are CLIENT item ids
+   * already; csv item params carry the pre-shift ROM value.
+   */
   private val entries: List<Entry> by lazy {
-    val stream =
-        EvolutionTable::class.java.getResourceAsStream("/monmmo/evolutions.csv")
-            ?: return@lazy emptyList()
-    stream.bufferedReader().useLines { lines ->
-      lines
-          .mapNotNull { line ->
-            val parts = line.split(':')
-            if (parts.size != 4) return@mapNotNull null
-            val numbers = parts.map { it.toIntOrNull() ?: return@mapNotNull null }
-            Entry(numbers[0], numbers[1], numbers[2], numbers[3])
+    val fromJson =
+        de.fiereu.openmmo.pokemon.retail.RetailMonsterData.all().flatMap { monster ->
+          monster.evolutions.mapNotNull { evo ->
+            val method = METHOD_WORDS.indexOf(evo.method)
+            if (method < 0) return@mapNotNull null
+            val param =
+                if (method in ITEM_METHODS && evo.value > 5000) evo.value - 5000 else evo.value
+            Entry(monster.id, method, param, evo.toId)
           }
-          .toList()
-    }
+        }
+    val known = fromJson.map { Triple(it.from, it.method, it.to) }.toHashSet()
+    val fromCsv =
+        (EvolutionTable::class
+                .java
+                .getResourceAsStream("/monmmo/evolutions.csv")
+                ?.bufferedReader()
+                ?.useLines { lines ->
+                  lines
+                      .mapNotNull { line ->
+                        val parts = line.split(':')
+                        if (parts.size != 4) return@mapNotNull null
+                        val numbers = parts.map { it.toIntOrNull() ?: return@mapNotNull null }
+                        Entry(numbers[0], numbers[1], numbers[2], numbers[3])
+                      }
+                      .toList()
+                } ?: emptyList())
+            .filter { Triple(it.from, it.method, it.to) !in known }
+    fromJson + fromCsv
   }
 
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
@@ -367,6 +422,45 @@ object EvolutionTable {
     }
     return wire
   }
+
+  /** Facts about the monster that level-driven evolution conditions read. */
+  data class LevelContext(
+      val level: Int,
+      val attack: Int,
+      val defense: Int,
+      val seed: Long,
+      val female: Boolean,
+      val heldItem: Int,
+  )
+
+  /**
+   * The species [fromWire] becomes on reaching [context], or null. Covers the level-driven methods:
+   * plain level, gender-gated level, the Hitmon attack/defense split, the Wurmple personality split
+   * ((seed shr 16) % 10, the cartridge rule), and held-item level methods. Happiness, trade, beauty
+   * and location methods need systems that do not exist yet and never match here.
+   */
+  fun levelEvolution(fromWire: Int, context: LevelContext): Int? =
+      entries
+          .firstOrNull { entry ->
+            entry.from == fromWire &&
+                when (entry.method) {
+                  4 -> context.level >= entry.param // LEVEL
+                  9 -> context.level >= entry.param && context.attack > context.defense
+                  10 -> context.level >= entry.param && context.attack == context.defense
+                  11 -> context.level >= entry.param && context.attack < context.defense
+                  12 -> context.level >= entry.param && (context.seed shr 16) % 10 >= 5
+                  13 -> context.level >= entry.param && (context.seed shr 16) % 10 < 5
+                  19, // LEVEL_ITEM_DAY and NIGHT: the held item is the condition; the server
+                  20 -> // has no day cycle, so either time works.
+                  context.heldItem != 0 &&
+                          (context.heldItem == entry.param ||
+                              context.heldItem == entry.param + 5000)
+                  23 -> context.level >= entry.param && !context.female // LEVEL_MALE
+                  24 -> context.level >= entry.param && context.female // LEVEL_FEMALE
+                  else -> false
+                }
+          }
+          ?.to
 
   /** The wire id this species becomes when [clientItemId] is used on it, or null. */
   fun itemEvolution(fromWire: Int, clientItemId: Int): Int? =

@@ -501,6 +501,7 @@ constructor(
 
   private suspend fun endVictory(battle: BattleInstance) {
     awardXp(battle, battle.opponentMon())
+    evolveEligible(battle)
     val prize = battle.trainer?.let { rewards.trainerPrize(it, battle.opponent.last().level) } ?: 0
     val paid = prize > 0 && characterStore.addMoney(battle.charId, prize)
     if (prize > 0 && !paid) {
@@ -559,6 +560,53 @@ constructor(
     val party = characterStore.getCharacter(battle.charId)?.pokemon ?: emptyList()
     emitter.sendBattleEnd(battle, party, prizeMoney)
     battle.pendingResult = result
+  }
+
+  /**
+   * Evolution happens when a victorious battle ends, the way the cartridges stage it. Every party
+   * member is checked, not only the one that just leveled, so a monster that was already past its
+   * threshold - like an unevolved level-16+ Squirtle from before evolutions existed - catches up on
+   * the next win. An Everstone holds a monster back; happiness, trade and location methods never
+   * match until those systems exist.
+   */
+  private fun evolveEligible(battle: BattleInstance) {
+    for (state in battle.party) {
+      val mon = state.source
+      if (mon.heldItem in BreedingService.EVERSTONES) continue
+      val wire = clientSpeciesId(mon.dexId)
+      val def = speciesRegistry.get(mon.dexId) ?: continue
+      val female =
+          when (def.genderRatio) {
+            0 -> false
+            254,
+            255 -> def.genderRatio == 254
+            else -> (mon.seed and 0xFF) < def.genderRatio
+          }
+      val target =
+          EvolutionTable.levelEvolution(
+              wire,
+              EvolutionTable.LevelContext(
+                  level = mon.level.toInt(),
+                  attack = state.stats.atk,
+                  defense = state.stats.def,
+                  seed = mon.seed.toLong() and 0xFFFFFFFFL,
+                  female = female,
+                  heldItem = mon.heldItem,
+              ),
+          ) ?: continue
+      val evolvedDef = speciesRegistry.get(target) ?: continue
+      val fromName = def.name
+      val evolved = mon.copy(dexId = target)
+      val stats = StatCalculator.computeAll(evolvedDef, evolved)
+      state.source = evolved.copy(hp = minOf(state.currentHp, stats.hp.toInt()).toShort())
+      state.currentHp = minOf(state.currentHp, stats.hp.toInt())
+      state.stats = stats
+      characterStore.updatePokemon(battle.charId, state.source)
+      emitter.sendNotice(battle, "$fromName evolved into ${evolvedDef.name}!")
+      log.info {
+        "char=${battle.charId} $fromName (wire $wire) evolved into ${evolvedDef.name} (wire $target)"
+      }
+    }
   }
 
   /** Write the battle's live hp and pp back into the party and flush the character. */

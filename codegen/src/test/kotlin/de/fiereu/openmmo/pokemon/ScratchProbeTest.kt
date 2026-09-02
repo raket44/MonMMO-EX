@@ -9,7 +9,8 @@ class ScratchProbeTest :
         val expansion = ExpansionSpeciesRegistry()
         val byWire = expansion.getByClientWireId(39)
         val byServer = expansion.getByServerId(0x10000 + 39)
-        println("PROBE byWire39: ${byWire?.symbol} ${byWire?.displayName} server=${byWire?.serverId}")
+        println(
+            "PROBE byWire39: ${byWire?.symbol} ${byWire?.displayName} server=${byWire?.serverId}")
         println("PROBE byServer: ${byServer?.symbol} ${byServer?.displayName}")
         val entry = byServer ?: byWire
         println("PROBE types: ${entry?.typeSymbols}")
@@ -18,6 +19,7 @@ class ScratchProbeTest :
         val learnsets = LearnsetRegistry()
         println("PROBE registry.get(39): ${learnsets.get(39).map { "L${it.level}:${it.moveId}" }}")
         val def = SpeciesRegistry().get(39)
-        println("PROBE speciesDef: ${def?.name} ${def?.type1}/${def?.type2} yields=${def?.expYield}")
+        println(
+            "PROBE speciesDef: ${def?.name} ${def?.type1}/${def?.type2} yields=${def?.expYield}")
       }
     })

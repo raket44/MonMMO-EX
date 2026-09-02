@@ -444,15 +444,15 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
 
   /**
    * Keeps client ids in National Dex order instead of jumping to a separate block, stepping over
-   * every id the client has already claimed. There are TWO such blocks, not one: 1000-1052 for
-   * the client's own event species, and **650-667 for its retail FORM records** - Deoxys,
-   * Wormadam, Shaymin, Giratina, Rotom, Castform, Basculin, Darmanitan and Meloetta. Missing the
-   * second block put the eighteen Kalos species from Chespin to Litleo straight on top of those
-   * forms, so a Greninja was a Rotom form as far as the client was concerned.
+   * every id the client has already claimed. There are TWO such blocks, not one: 1000-1052 for the
+   * client's own event species, and **650-667 for its retail FORM records** - Deoxys, Wormadam,
+   * Shaymin, Giratina, Rotom, Castform, Basculin, Darmanitan and Meloetta. Missing the second block
+   * put the eighteen Kalos species from Chespin to Litleo straight on top of those forms, so a
+   * Greninja was a Rotom form as far as the client was concerned.
    *
-   * A wire id is an identity, not a Dex number: the dex TAB order comes from the regional dex
-   * lists (section 11), where a species' position in the list is the number it displays. So the
-   * Kalos species still read 1, 2, 3... in their own tab while living at free ids.
+   * A wire id is an identity, not a Dex number: the dex TAB order comes from the regional dex lists
+   * (section 11), where a species' position in the list is the number it displays. So the Kalos
+   * species still read 1, 2, 3... in their own tab while living at free ids.
    */
   private fun clientWireId(entry: RawSpecies, isBaseSpecies: Boolean, formOrdinal: Int?): Int {
     val dex = entry.nationalDexId
@@ -663,4 +663,5 @@ object ExpansionSpeciesBinary {
 
 // Exp-yield gates wrap the condition in parens; the optional close-paren admits both shapes.
 private val STAT_TERNARY =
-    Regex("""(\w+)\s*(>=|<=|==|!=|>|<)\s*(\w+)\s*\)?\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")
+    Regex(
+        """(\w+)\s*(>=|<=|==|!=|>|<)\s*(\w+)\s*\)?\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")

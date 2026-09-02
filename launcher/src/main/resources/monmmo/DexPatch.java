@@ -362,14 +362,17 @@ public final class DexPatch {
               if (taught > 0) {
                 toolTeaches.add(taught);
               }
-              if (tmDonor == null) {
-                // Measured on the live client: a genuine TM is named like "TM29" and its BP1
-                // flag is FALSE - requiring true here is why zero items were created.
-                String name = (String) tool.getClass().getMethod("getName").invoke(tool);
-                if (name != null && name.matches("TM[0-9]+")) {
-                  tmDonor = tool;
-                }
-              }
+
+            }
+          }
+          if (tmDonor == null) {
+            // The donor is a FIXED item, not a name search: renaming the retail tools
+            // numberless removed every stock "TM29"-style name, which silently killed the
+            // old name-matched search and created zero items. Item 5351 is TM Thunderbolt,
+            // measured live (teaches move 85, tool category 2) and always present.
+            tmDonor = toolMap.get((short) 5351);
+            if (tmDonor == null) {
+              log("[monmmo] tmitem donor 5351 missing; no tools can be created");
             }
           }
           if (toolTeaches.contains(moveId) || tmDonor == null) {
@@ -498,6 +501,31 @@ public final class DexPatch {
           }
           speciesClass.getField("JI").setBoolean(target, false);
           speciesData++;
+        }
+        case "dumplabels" -> {
+          // The move-list source column disagrees with the patched bytecode on screen, so
+          // measure the whole chain live: which zD0 the JVM loaded, what the name string
+          // really contains, and what the strip produces on it.
+          try {
+            java.security.CodeSource paintSource =
+                Class.forName("f.zD0").getProtectionDomain().getCodeSource();
+            java.security.CodeSource controlSource =
+                Class.forName("f.C6").getProtectionDomain().getCodeSource();
+            log("[monmmo] zD0 from " + (paintSource == null ? "bootstrap" : paintSource.getLocation()));
+            log("[monmmo] C6  from " + (controlSource == null ? "bootstrap" : controlSource.getLocation()));
+            Method text = Class.forName("f.nV0").getMethod("Id1", int.class);
+            for (int stringId : new int[] {245351, 700134, 700000}) {
+              String name = (String) text.invoke(null, stringId);
+              StringBuilder codes = new StringBuilder();
+              for (int i = 0; i < Math.min(name.length(), 8); i++) {
+                codes.append((int) name.charAt(i)).append(",");
+              }
+              log("[monmmo] label probe id=" + stringId + " raw=" + name
+                  + " stripped=" + name.replaceAll(" .*", "") + " chars=" + codes);
+            }
+          } catch (Throwable probeFail) {
+            log("[monmmo] label probe failed: " + probeFail);
+          }
         }
         case "dumpspecies" -> {
           // EVERY field of the live species record, generically: the ground truth for what a

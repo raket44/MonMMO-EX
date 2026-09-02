@@ -450,6 +450,7 @@ fun main(args: Array<String>) {
             "dumptools",
             "dumpitems",
             // What the client holds for an imported species once every section and fixup ran.
+            "dumplabels",
             "dumpspecies:7",
             "dumpspecies:25",
             "dumpspecies:668",

@@ -162,6 +162,14 @@ fun main(args: Array<String>) {
         PokedexAvailabilityPatch::patch,
     )
 
+    // The hidden-ability line is gated on a whitelist baked into the client that imported
+    // species can never join; the record carries the ability, the screen just refuses to say so.
+    applyOne(
+        "Hidden-ability release gate removed",
+        HiddenAbilityGatePatch::isDexDetailScreen,
+        HiddenAbilityGatePatch::patch,
+    )
+
     // A scissor pop with nothing pushed - a battle frame drawn while the window is minimized -
     // was a fatal render error; the guard makes it a no-op instead.
     applyOne(
@@ -424,10 +432,47 @@ fun main(args: Array<String>) {
             "dumptools",
             "dumpitems",
             // What the client holds for an imported species once every section and fixup ran.
+            "dumpspecies:7",
+            "dumpspecies:25",
             "dumpspecies:668",
             "dumpspecies:676",
             "dumpspecies:718",
         )
+    // The fields only the ROM loader fills, zeroed on every imported species: gender ratio,
+    // exp yield, height, weight and the per-stat EV yields the dex renders. Values come from the
+    // same catalogue that generated the merged monsters.json, so the two stay identical. The id
+    // window skips everything a ROM already covers: retail 1-649, the form records 650-667 and
+    // the client-reserved 1000-1052.
+    val heldItemNames = ItemNames(expansionRootPath)
+    val speciesDataLines =
+        expansion.mapNotNull { entry ->
+          val wire = entry.clientWireId ?: return@mapNotNull null
+          if (wire in 1..667 || wire in 1000..1052) return@mapNotNull null
+          listOf(
+                  "speciesdata",
+                  wire,
+                  entry.genderRatio,
+                  entry.expYield,
+                  entry.height,
+                  entry.weight,
+                  entry.evYieldHp,
+                  entry.evYieldAttack,
+                  entry.evYieldDefense,
+                  entry.evYieldSpeed,
+                  entry.evYieldSpAttack,
+                  entry.evYieldSpDefense,
+                  listOfNotNull(
+                          heldItemNames.bySymbol(entry.itemCommonSymbol),
+                          heldItemNames.bySymbol(entry.itemRareSymbol),
+                      )
+                      .map { it.first }
+                      .distinct()
+                      .joinToString(",")
+                      .ifEmpty { "-" },
+              )
+              .joinToString(":")
+        }
+
     val fixups =
         retypeLines +
             moveTypeLines +
@@ -435,6 +480,7 @@ fun main(args: Array<String>) {
             handpickedAnims +
             moveAnimLines +
             evoLines +
+            speciesDataLines +
             toolLines +
             dumpLines
     // One wild-location table per season, installed at load by the season the world is in. The

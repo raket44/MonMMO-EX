@@ -120,7 +120,7 @@ fun main(args: Array<String>) {
  * never had resolve through the import plan's assigned ids instead, so an Expansion-only evolution
  * stone still names a real item.
  */
-private class ItemNames(expansionRoot: Path) {
+internal class ItemNames(expansionRoot: Path) {
   private val byNormalizedName = linkedMapOf<String, Pair<Int, String>>()
   private val expansionNames = ExpansionItems.parse(expansionRoot).mapValues { it.value.name }
 

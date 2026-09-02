@@ -634,13 +634,21 @@ private fun patchNames(
         })
   }
 
+  // The name string carries the category too. At boot the client REBUILDS every retail name
+  // as template 1764 ("{00} [{01}]") from the ROM's category table - "Pikachu [Mouse]" - and
+  // the dex renders the "Mouse Pokemon" line from that suffix (nV0's species loop, bytecode).
+  // That loop runs before section 10 registers imported species, so they never get the suffix;
+  // baking it into the shipped string reproduces the exact post-boot state retail names have.
   species.forEach { entry ->
     val stringId = 150000 + checkNotNull(entry.clientWireId)
     require(stringId !in occupied) { "Client string $stringId already exists (${entry.stableId})" }
+    val name = clientDisplayName(entry)
+    val composed =
+        if (entry.categoryName.isBlank()) name else name + " [" + entry.categoryName + "]"
     root.appendChild(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())
-          textContent = clientDisplayName(entry)
+          textContent = composed
         })
   }
   Files.createDirectories(output.parent)

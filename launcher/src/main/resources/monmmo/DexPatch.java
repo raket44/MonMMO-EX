@@ -127,7 +127,12 @@ public final class DexPatch {
     try {
       run();
     } catch (Throwable error) {
-      log("[monmmo] dex fixups failed: " + error);
+      StringBuilder where = new StringBuilder("[monmmo] dex fixups failed: " + error);
+      StackTraceElement[] trace = error.getStackTrace();
+      for (int i = 0; i < trace.length && i < 6; i++) {
+        where.append(" | ").append(trace[i]);
+      }
+      log(where.toString());
     }
   }
 
@@ -192,6 +197,7 @@ public final class DexPatch {
     int evolutions = 0;
     int tools = 0;
     int evoItems = 0;
+    int speciesData = 0;
     List<String> lines = new ArrayList<>();
     try (BufferedReader reader =
         new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
@@ -393,31 +399,99 @@ public final class DexPatch {
             log("[monmmo] dumpitems failed: " + error);
           }
         }
+        case "speciesdata" -> {
+          // The fields only the ROM loader fills, so an imported species has them zeroed: gender
+          // ratio sI0 (255 reads as genderless), base exp yield jb1, height wr1 (dm), weight nC0
+          // (hg), the EV-yield bytes cz the dex renders per stat, the form count pq, and the
+          // hidden-from-dex flag JI that section 10 sets on every record it creates. Field names
+          // verified against retail values: Squirtle sI0=31 jb1=63 wr1=5 nC0=90, Pikachu 127/
+          // 105/4/60. Line: speciesdata:<id>:<gender>:<exp>:<height>:<weight>:<hp>:<atk>:<def>:
+          // <speed>:<spatk>:<spdef> with cz indexed by the stat enum order.
+          Object target = species.get(Short.parseShort(parts[1]));
+          if (target == null) {
+            continue;
+          }
+          speciesClass.getField("sI0").setShort(target, Short.parseShort(parts[2]));
+          speciesClass.getField("jb1").setInt(target, Integer.parseInt(parts[3]));
+          speciesClass.getField("wr1").setShort(target, Short.parseShort(parts[4]));
+          speciesClass.getField("nC0").setShort(target, Short.parseShort(parts[5]));
+          byte[] evYields = (byte[]) speciesClass.getField("cz").get(target);
+          for (int stat = 0; stat < 6 && stat < evYields.length; stat++) {
+            evYields[stat] = Byte.parseByte(parts[6 + stat]);
+          }
+          // Held items land in YC1, the id list the dex renders; retail species without any
+          // carry an EMPTY array rather than null, so the field is always assigned.
+          String[] held =
+              parts.length > 12 && !parts[12].equals("-") ? parts[12].split(",") : new String[0];
+          short[] heldIds = new short[held.length];
+          for (int item = 0; item < held.length; item++) {
+            heldIds[item] = Short.parseShort(held[item]);
+          }
+          speciesClass.getField("YC1").set(target, heldIds);
+          if (speciesClass.getField("pq").getByte(target) == 0) {
+            speciesClass.getField("pq").setByte(target, (byte) 1);
+          }
+          speciesClass.getField("JI").setBoolean(target, false);
+          speciesData++;
+        }
         case "dumpspecies" -> {
-          // What the client ACTUALLY holds for a species after every section and fixup has run:
-          // the dex renders from these fields, so an empty one here is the missing line on
-          // screen. Types are mx/dz0, egg groups Cq1/ww (their iI0 byte names the group string
-          // at 181000+id), the category line comes from qH1() and the name from DZ(true).
+          // EVERY field of the live species record, generically: the ground truth for what a
+          // retail species carries that an imported one lacks. Diffing two of these lines IS the
+          // study of how the client fills a complete entry - no field-by-field guessing.
           Object target = species.get(Short.parseShort(parts[1]));
           if (target == null) {
             log("[monmmo] dumpspecies " + parts[1] + " NOT REGISTERED");
             continue;
           }
-          StringBuilder out = new StringBuilder("[monmmo] species " + parts[1]);
+          StringBuilder out = new StringBuilder("[monmmo] speciesfields " + parts[1]);
           try {
             out.append(" name=").append(speciesClass.getMethod("DZ", boolean.class).invoke(target, true));
             out.append(" category=").append(speciesClass.getMethod("qH1").invoke(target));
-            out.append(" type1=").append(primaryType.get(target));
-            out.append(" type2=").append(secondaryType.get(target));
-            Object egg1 = speciesClass.getField("Cq1").get(target);
-            Object egg2 = speciesClass.getField("ww").get(target);
-            out.append(" egg1=").append(egg1 == null ? "null" : egg1.toString());
-            out.append(" egg2=").append(egg2 == null ? "null" : egg2.toString());
-            out.append(" forms=").append(speciesClass.getField("pq").getByte(target));
-            Object moves = speciesClass.getField("Bg").get(target);
-            out.append(" levelupList=").append(moves == null ? "null" : ((List<?>) moves).size());
-          } catch (Throwable probeError) {
-            out.append(" PROBE FAILED: ").append(probeError);
+          } catch (Throwable named) {
+            out.append(" nameFail=").append(named);
+          }
+          for (Field field : speciesClass.getDeclaredFields()) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+              continue;
+            }
+            field.setAccessible(true);
+            out.append(" ").append(field.getName()).append("=");
+            try {
+              Object value = field.get(target);
+              if (value == null) {
+                out.append("null");
+              } else if (value instanceof short[][] table) {
+                StringBuilder sizes = new StringBuilder("[");
+                for (short[] row : table) {
+                  sizes.append(row == null ? "-" : row.length).append(",");
+                }
+                out.append(sizes).append("]");
+              } else if (value instanceof short[] row) {
+                out.append("len").append(row.length);
+              } else if (value instanceof byte[] bytes) {
+                StringBuilder joined = new StringBuilder("[");
+                for (byte b : bytes) {
+                  joined.append(b).append(",");
+                }
+                out.append(joined).append("]");
+              } else if (value instanceof List<?> list) {
+                out.append("size").append(list.size());
+              } else if (value instanceof java.util.Collection<?> set) {
+                out.append("size").append(set.size());
+              } else if (value instanceof Enum<?> constant) {
+                out.append(constant.name());
+              } else if (value.getClass().isPrimitive()
+                  || value instanceof Number
+                  || value instanceof Boolean
+                  || value instanceof Character
+                  || value instanceof String) {
+                out.append(value);
+              } else {
+                out.append("<").append(value.getClass().getName()).append(">");
+              }
+            } catch (Throwable unreadable) {
+              out.append("?");
+            }
           }
           log(out.toString());
         }
@@ -496,7 +570,8 @@ public final class DexPatch {
         default -> {}
       }
     }
-    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveVfx=" + moveVfx + " moveAnims=" + moveAnims + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
+    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveVfx=" + moveVfx + " moveAnims=" + moveAnims + " evolutions=" + evolutions
+            + " speciesData=" + speciesData + " tools=" + tools + " evoItems=" + evoItems);
     if (tools > 0) {
       // Read back what was just created, through the same accessors the dex uses: how many
       // tools now teach imported moves, and what one of them says its name is. A broken name

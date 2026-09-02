@@ -439,10 +439,16 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
   private fun stableId(symbol: String): String = "expansion:$symbol"
 
   /**
-   * Keeps client ids in National Dex order instead of jumping to a separate block. A Dex number
-   * below 1000 is used as it stands; from 1000 it shifts past the 1000-1052 range the client
-   * already fills with its own records, so Dex 1000 lands at 1053. Forms share their base species
-   * Dex number, so they take slots after the last Dex entry rather than colliding with it.
+   * Keeps client ids in National Dex order instead of jumping to a separate block, stepping over
+   * every id the client has already claimed. There are TWO such blocks, not one: 1000-1052 for
+   * the client's own event species, and **650-667 for its retail FORM records** - Deoxys,
+   * Wormadam, Shaymin, Giratina, Rotom, Castform, Basculin, Darmanitan and Meloetta. Missing the
+   * second block put the eighteen Kalos species from Chespin to Litleo straight on top of those
+   * forms, so a Greninja was a Rotom form as far as the client was concerned.
+   *
+   * A wire id is an identity, not a Dex number: the dex TAB order comes from the regional dex
+   * lists (section 11), where a species' position in the list is the number it displays. So the
+   * Kalos species still read 1, 2, 3... in their own tab while living at free ids.
    */
   private fun clientWireId(entry: RawSpecies, isBaseSpecies: Boolean, formOrdinal: Int?): Int {
     val dex = entry.nationalDexId
@@ -453,8 +459,14 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
     return id
   }
 
-  private fun dexWireId(dex: Int): Int =
-      if (dex < FIRST_RESERVED_CLIENT_ID) dex else dex + RESERVED_CLIENT_ID_COUNT
+  private fun dexWireId(dex: Int): Int {
+    var id = dex
+    // Walk the reserved blocks in order, pushing past each one the id lands inside or after.
+    RESERVED_CLIENT_BLOCKS.forEach { block ->
+      if (id >= block.first) id += block.last - block.first + 1
+    }
+    return id
+  }
 
   private data class RawSpecies(
       val symbol: String,
@@ -466,11 +478,13 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
 
   private companion object {
     const val EXPANSION_SERVER_ID_BASE = 0x10000
-    /** The client fills 1000-1052 with its own records, so generated ids step over that block. */
-    const val FIRST_RESERVED_CLIENT_ID = 1000
-    const val RESERVED_CLIENT_ID_COUNT = 53
-    /** First slot after the highest Dex number the catalogue produces (1025 -> 1078). */
-    const val FIRST_FORM_CLIENT_ID = 1079
+    /**
+     * Id ranges the client has already filled, lowest first: its retail FORM records (Deoxys
+     * through Meloetta) and its own event species. Generated ids step over both.
+     */
+    val RESERVED_CLIENT_BLOCKS = listOf(650..667, 1000..1052)
+    /** First slot after the highest Dex number the catalogue produces (1025 -> 1096). */
+    const val FIRST_FORM_CLIENT_ID = 1097
     const val LAST_KNOWN_CLIENT_SPECIES = 649
     /** The client's rarity class: Mew is 1, Mewtwo is 2. */
     const val RARITY_NONE = 0

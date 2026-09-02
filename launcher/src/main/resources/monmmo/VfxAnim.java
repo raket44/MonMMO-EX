@@ -20,10 +20,21 @@ public final class VfxAnim extends f.Dm0 {
   public VfxAnim(f.QL1 attacker, short moveId) {
     super(attacker);
     this.moveId = moveId;
+    MapLog.log("VfxAnim constructed for move " + moveId);
   }
 
   @Override
   public f.Dm0 hQ1() {
+    MapLog.log("VfxAnim.hQ1 building move " + moveId);
+    try {
+      return build();
+    } catch (Throwable failure) {
+      MapLog.fail(failure);
+      throw failure;
+    }
+  }
+
+  private f.Dm0 build() {
     final float speed = (SW0() ? 1.0f : -1.0f) * f.eR0.IV0;
     f.cd timeline = f.cd.QS0().OR(c30(moveId)).J6();
     yC = timeline;

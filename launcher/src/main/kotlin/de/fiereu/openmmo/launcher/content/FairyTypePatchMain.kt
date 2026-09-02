@@ -262,7 +262,7 @@ fun main(args: Array<String>) {
     // The vfx-playing animation, compiled against the client jar (it extends f.Dm0). Registered
     // per move by the movevfx fixups; the class rides the overlay like every other helper.
     jar.putNextEntry(ZipEntry("monmmo/VfxAnim.class"))
-    jar.write(compileHelperForClientRuntime("VfxAnim", client))
+    jar.write(compileHelperForClientRuntime("VfxAnim", client, companions = listOf("MapLog")))
     jar.closeEntry()
     // The LoadMap diagnostic's file-backed logger; javaw discards System.err.
     jar.putNextEntry(ZipEntry("monmmo/MapLog.class"))
@@ -448,10 +448,14 @@ private fun overlayClientType(symbol: String): Int =
  * `--release 17` matches the client's bundled JRE. Compiling at patch time from a resource keeps
  * the build free of a second Java toolchain, which the UI dependencies could not resolve.
  */
-private fun compileHelperForClientRuntime(name: String, classpath: Path? = null): ByteArray {
-  val source =
-      checkNotNull(object {}.javaClass.classLoader.getResourceAsStream("monmmo/$name.java")) {
-            "The $name helper source is not on the launcher classpath"
+private fun compileHelperForClientRuntime(
+    name: String,
+    classpath: Path? = null,
+    companions: List<String> = emptyList(),
+): ByteArray {
+  fun read(source: String): String =
+      checkNotNull(object {}.javaClass.classLoader.getResourceAsStream("monmmo/$source.java")) {
+            "The $source helper source is not on the launcher classpath"
           }
           .use { String(it.readBytes()) }
   val compiler =
@@ -461,8 +465,10 @@ private fun compileHelperForClientRuntime(name: String, classpath: Path? = null)
   val work = Files.createTempDirectory("monmmo-helper")
   val sourceDir = work.resolve("monmmo")
   Files.createDirectories(sourceDir)
-  val sourceFile = sourceDir.resolve("$name.java")
-  Files.writeString(sourceFile, source)
+  val sources =
+      (listOf(name) + companions).map { helper ->
+        sourceDir.resolve("$helper.java").also { Files.writeString(it, read(helper)) }
+      }
   val arguments = mutableListOf("--release", "17", "-d", work.toString())
   // Helpers that extend client classes (VfxAnim extends f.Dm0) compile against the client jar
   // itself; the reflection-only helpers need no classpath.
@@ -470,7 +476,7 @@ private fun compileHelperForClientRuntime(name: String, classpath: Path? = null)
     arguments += "-cp"
     arguments += it.toString()
   }
-  arguments += sourceFile.toString()
+  arguments += sources.map(Path::toString)
   val result = compiler.run(null, null, null, *arguments.toTypedArray())
   check(result == 0) { "The $name helper does not compile" }
   return Files.readAllBytes(work.resolve("monmmo").resolve("$name.class"))

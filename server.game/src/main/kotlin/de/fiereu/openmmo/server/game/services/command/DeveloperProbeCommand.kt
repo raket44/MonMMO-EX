@@ -36,17 +36,24 @@ constructor(
       // clearly uses others.
       // Fires an empty body at every unmapped s2c opcode; the CLIENT log then names the packet
       // class behind each ("Reading failed for packet f/XX"), mapping the ids in one shot.
-      "ops" -> {
-        listOf(
-                de.fiereu.openmmo.net.game.packets.Probe06Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe6APacket(),
-                de.fiereu.openmmo.net.game.packets.Probe82Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe8APacket(),
-                de.fiereu.openmmo.net.game.packets.Probe9FPacket(),
-                de.fiereu.openmmo.net.game.packets.ProbeAFPacket(),
-            )
-            .forEach { ctx.session.send(it) }
-        ctx.reply("Probed opcodes 06 6a 82 8a 9f af - check the client console.log")
+      // One probe per call: a batch of them desynced the compressed stream. The client log
+      // names the packet class it tried to parse for the id ("/probe op 6a").
+      "op" -> {
+        val packet =
+            when (ctx.args.getOrNull(1)?.lowercase()) {
+              "06" -> de.fiereu.openmmo.net.game.packets.Probe06Packet()
+              "6a" -> de.fiereu.openmmo.net.game.packets.Probe6APacket()
+              "82" -> de.fiereu.openmmo.net.game.packets.Probe82Packet()
+              "8a" -> de.fiereu.openmmo.net.game.packets.Probe8APacket()
+              "9f" -> de.fiereu.openmmo.net.game.packets.Probe9FPacket()
+              "af" -> de.fiereu.openmmo.net.game.packets.ProbeAFPacket()
+              else -> {
+                ctx.reply("/probe op <06|6a|82|8a|9f|af>")
+                return
+              }
+            }
+        ctx.session.send(packet)
+        ctx.reply("Probed - check what happened on screen and in console.log")
         return
       }
       "transport" -> {

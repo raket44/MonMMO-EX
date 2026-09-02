@@ -13,7 +13,13 @@ import de.fiereu.bytecodec.PacketCodec
  * entity id + accepted flag) the protocol already carries.
  */
 class OpcodeProbeCodec<T : Any>(private val make: () -> T) : PacketCodec<T>() {
-  override fun CodecScope<T>.body(): T = make()
+  override fun CodecScope<T>.body(): T {
+    // 32 zero bytes: enough for any plausible header (ids, species, flags all read as zero),
+    // so the client parser either consumes a zeroed no-op or logs a clean per-packet failure -
+    // an EMPTY body desynced the compressed stream after two probes.
+    repeat(32) { field(de.fiereu.bytecodec.U8) { 0 } }
+    return make()
+  }
 }
 
 class Probe06Packet

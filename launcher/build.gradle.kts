@@ -243,3 +243,16 @@ tasks.register<JavaExec>("extractNdsCollision") {
   val game = (project.findProperty("nds.game") as String?) ?: "hgss"
   args(rom, game, layout.buildDirectory.dir("nds-maps/$game").get().asFile.absolutePath)
 }
+
+tasks.register<JavaExec>("mergeMonstersJson") {
+  group = "openmmo"
+  description = "Adds the Expansion's species to data/pokemmo/monsters.json in the dump's schema"
+  dependsOn(":codegen:generateExpansionPokemon", "classes")
+  mainClass.set("de.fiereu.openmmo.launcher.content.MonstersJsonMerge")
+  classpath(sourceSets.main.get().runtimeClasspath)
+  maxHeapSize = "2g"
+  args(
+      rootProject.layout.projectDirectory.file("data/pokemmo/monsters.json").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+  )
+}

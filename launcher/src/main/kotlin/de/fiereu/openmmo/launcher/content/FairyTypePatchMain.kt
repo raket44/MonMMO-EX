@@ -317,8 +317,9 @@ fun main(args: Array<String>) {
     val handpickedAnims =
         mapOf(
                 585 to 236, // Moonblast - Moonlight's coded moon-and-glow staging
-                594 to 486, // Water Shuriken - Electro Ball's thrown projectile (script match;
-                // the own-effect playback never threw anything, operator verdict)
+                // 594 Water Shuriken reverted to its own water vfx: the Electro Ball pick threw
+                // the right SHAPE in the wrong ELEMENT - a yellow electric ball off a water move
+                // (operator verdict: stupid). Structure matching must never cross elements.
                 566 to 467, // Phantom Force - Shadow Force outright (script match, same move)
             )
             .map { (move, donor) -> "moveanim:$move:$donor" }

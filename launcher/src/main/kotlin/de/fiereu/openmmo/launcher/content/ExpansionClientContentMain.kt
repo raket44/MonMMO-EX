@@ -466,12 +466,15 @@ private fun patchNames(
       }
   val document = factory.newDocumentBuilder().parse(source.toFile())
   val root = document.documentElement
-  val occupied =
+  val stockStrings =
       (0 until root.childNodes.length)
           .mapNotNull { index ->
-            root.childNodes.item(index).attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()
+            val node = root.childNodes.item(index)
+            val id = node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()
+            id?.let { it to node.textContent }
           }
-          .toSet()
+          .toMap()
+  val occupied = stockStrings.keys
   // An ability with no name renders as a raw placeholder, so every ability the staged species use
   // gets its name and description. Ids the ROM already covers are left alone rather than shadowed.
   val abilityIds = AbilityText.ids(expansionRoot)
@@ -506,10 +509,13 @@ private fun patchNames(
   tmMoves.forEachIndexed { index, moveId ->
     val stringId = TmPlan.NAME_STRING_BASE + index
     if (stringId in occupied) return@forEachIndexed
+    // The CLIENT's move name wins when it differs - PokeMMO renames Hail to Snowscape at
+    // string 110258, and the tool must carry the name the player sees on the move.
+    val clientMoveName = stockStrings[110000 + moveId]
     root.appendChild(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())
-          textContent = "TM ${moveNamesById[moveId]?.name ?: ""}".trim()
+          textContent = "TM ${clientMoveName ?: moveNamesById[moveId]?.name ?: ""}".trim()
         })
   }
 

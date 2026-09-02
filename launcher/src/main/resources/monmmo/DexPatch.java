@@ -28,6 +28,7 @@ import java.util.Map;
  *
  * <pre>
  * retype:&lt;wireId&gt;:&lt;type1&gt;:&lt;type2&gt;
+ * movetype:&lt;moveId&gt;:&lt;typeOrdinal&gt;
  * evo:&lt;fromWire&gt;:&lt;methodId&gt;:&lt;param&gt;:&lt;toWire&gt;
  * dump:&lt;wireId&gt;
  * </pre>
@@ -89,7 +90,15 @@ public final class DexPatch {
         evolutionClass.getConstructor(methodEnum, int.class, short.class);
     Field evolutionTarget = evolutionClass.getField("Dy");
 
+    // The move registry, for movetype fixups: f.mj.aF1() is the singleton, le0(short) the lookup,
+    // and f.sC.fy1 the type the section-4 loader itself assigns (flag 0x008).
+    Class<?> moveRegistryClass = Class.forName("f.mj");
+    Object moveRegistry = moveRegistryClass.getMethod("aF1").invoke(null);
+    Method moveById = moveRegistryClass.getMethod("le0", short.class);
+    Field moveTypeField = Class.forName("f.sC").getField("fy1");
+
     int retypes = 0;
+    int moveTypes = 0;
     int evolutions = 0;
     int tools = 0;
     int evoItems = 0;
@@ -113,6 +122,14 @@ public final class DexPatch {
           primaryType.set(target, typeByOrdinal.invoke(null, Byte.parseByte(parts[2])));
           secondaryType.set(target, typeByOrdinal.invoke(null, Byte.parseByte(parts[3])));
           retypes++;
+        }
+        case "movetype" -> {
+          Object move = moveById.invoke(moveRegistry, Short.parseShort(parts[1]));
+          if (move == null) {
+            continue;
+          }
+          moveTypeField.set(move, typeByOrdinal.invoke(null, Byte.parseByte(parts[2])));
+          moveTypes++;
         }
         case "evo" -> {
           Object from = species.get(Short.parseShort(parts[1]));
@@ -320,7 +337,7 @@ public final class DexPatch {
         default -> {}
       }
     }
-    log("[monmmo] dex fixups applied: retypes=" + retypes + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
+    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
     if (tools > 0) {
       // Read back what was just created, through the same accessors the dex uses: how many
       // tools now teach imported moves, and what one of them says its name is. A broken name

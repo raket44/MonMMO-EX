@@ -74,6 +74,7 @@ object MoveText {
   fun parse(expansionRoot: Path, ids: Map<String, Int>): List<Move> {
     val text = Files.readString(expansionRoot.resolve("src/data/moves_info.h"))
     val updatedThrough = updatedMoveDataGeneration(expansionRoot)
+    val updatedTypesThrough = updatedMoveTypesGeneration(expansionRoot)
     val config = ExpansionConfig.read(expansionRoot)
     return ENTRY.findAll(text)
         .mapNotNull { match ->
@@ -88,7 +89,7 @@ object MoveText {
               id = id,
               name = clean(name),
               description = clean(description.orEmpty()).ifEmpty { "--" },
-              type = field(body, "type") ?: "TYPE_NORMAL",
+              type = resolvedType(body, updatedTypesThrough) ?: "TYPE_NORMAL",
               power = numeric(body, "power", updatedThrough) ?: 0,
               accuracy = numeric(body, "accuracy", updatedThrough) ?: 0,
               pp = numeric(body, "pp", updatedThrough) ?: 0,
@@ -123,6 +124,31 @@ object MoveText {
     val generation = ternary.groupValues[1].toInt()
     return if (updatedThrough >= generation) ternary.groupValues[2].toInt()
     else ternary.groupValues[3].toInt()
+  }
+
+  /**
+   * Move TYPES carry their own generation gate: `.type = B_UPDATED_MOVE_TYPES >= GEN_6 ? TYPE_FAIRY
+   * : TYPE_NORMAL` on the retyped classics (Sweet Kiss, Charm, Karate Chop...). Same
+   * resolve-from-config rule as the numeric gate - the raw token is never a type name.
+   */
+  private val TYPE_TERNARY =
+      Regex("""B_UPDATED_MOVE_TYPES\s*>=\s*GEN_(\d+)\s*\?\s*(\w+)\s*:\s*(\w+)""")
+
+  fun resolvedType(body: String, updatedTypesThrough: Int): String? {
+    val raw =
+        Regex("""\.type\s*=\s*([^,\n]+)""").find(body)?.groupValues?.get(1)?.trim() ?: return null
+    val ternary = TYPE_TERNARY.find(raw) ?: return raw
+    val generation = ternary.groupValues[1].toInt()
+    return if (updatedTypesThrough >= generation) ternary.groupValues[2] else ternary.groupValues[3]
+  }
+
+  /** The generation whose move TYPES this Expansion checkout is configured to use. */
+  fun updatedMoveTypesGeneration(expansionRoot: Path): Int {
+    val battle = Files.readString(expansionRoot.resolve("include/config/battle.h"))
+    val symbol =
+        Regex("""#define\s+B_UPDATED_MOVE_TYPES\s+(\w+)""").find(battle)?.groupValues?.get(1)
+            ?: return LATEST_GENERATION
+    return resolveGeneration(expansionRoot, symbol, 0)
   }
 
   /** The generation whose move numbers this Expansion checkout is configured to use. */

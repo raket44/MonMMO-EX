@@ -59,21 +59,23 @@ constructor(
   fun size(): Int = species.size
 
   /**
-   * The pre-generated expansion catalogue carries ZERO exp yields (and sometimes catch rates and EV
-   * yields) for old species - a Chansey win paid 0 xp. A zero in those fields is never valid data,
-   * so it backfills from the retail dump, then the decomp def.
+   * Economy fields are RETAIL-FIRST (operator-directed): PokeMMO hand-tuned its exp and EV
+   * yields for its own leveling economy - Pikachu pays 105, matching no cartridge table - so
+   * the dump's values override the Expansion's modern ones wherever the dump knows the
+   * species. The Expansion (then the decomp) only fills species retail never had, and a zero
+   * in any of these fields is never valid data.
    */
   private fun backfillEconomy(def: SpeciesDef, id: Int): SpeciesDef {
     val retail = RetailMonsterData.get(id)
     val decomp = species[id]
     val expYield =
-        def.expYield.takeIf { it > 0 }
-            ?: retail?.yields?.exp?.takeIf { it > 0 }
+        retail?.yields?.exp?.takeIf { it > 0 }
+            ?: def.expYield.takeIf { it > 0 }
             ?: decomp?.expYield
             ?: 0
     val catchRate =
-        def.catchRate.takeIf { it > 0 }
-            ?: retail?.catchRate?.takeIf { it > 0 }
+        retail?.catchRate?.takeIf { it > 0 }
+            ?: def.catchRate.takeIf { it > 0 }
             ?: decomp?.catchRate
             ?: 0
     val hasEvYields =
@@ -84,7 +86,7 @@ constructor(
             def.evYieldSpAttack +
             def.evYieldSpDefense > 0
     val out =
-        if (hasEvYields || (retail == null && decomp == null)) def
+        if (retail == null && (hasEvYields || decomp == null)) def
         else if (retail != null &&
             retail.yields.let {
               it.evHp + it.evAttack + it.evDefense + it.evSpeed + it.evSpAttack + it.evSpDefense

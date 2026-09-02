@@ -243,7 +243,10 @@ class BattleServiceTest :
           fx.registry.byChar(charId).shouldBeNull()
           advanceUntilIdle()
 
-          // The level 2 Rattata yields its base experience scaled by level over seven.
+          // The level 2 Rattata yields its base experience scaled by level over seven. Tests
+          // deliberately run on decomp data (57); the live server serves the Expansion's 51.
+          // Running the monsters.json merge task in the SAME gradle invocation can leak the
+          // dump into this JVM's registry singleton and flip the value - run tests alone.
           session.sent
               .filterIsInstance<BattleEntityDeltaPacket>()
               .any { it.experience != null }

@@ -46,6 +46,72 @@ public final class DexPatch {
   /** The loader hook can fire again on a resync; evolutions must not be appended twice. */
   private static boolean applied;
 
+  /** movevfx/moveanim lines, cached for re-application on every registry rebuild. */
+  private static java.util.List<String> animLines;
+
+  /**
+   * Called from the patched tail of the animation registry's builder (m7): the battle scene
+   * constructs a FRESH registry per battle, which discarded every runtime entry - this re-applies
+   * the movevfx and moveanim fixups onto the instance being built. Runs during class
+   * initialization too, so it must stay self-contained.
+   */
+  public static void animRegistryRebuilt(Object registry) {
+    try {
+      if (animLines == null) {
+        java.util.List<String> collected = new ArrayList<>();
+        InputStream stream = DexPatch.class.getResourceAsStream("/monmmo/fixups.txt");
+        if (stream == null) {
+          return;
+        }
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+          String line;
+          while ((line = reader.readLine()) != null) {
+            line = line.trim();
+            if (line.startsWith("movevfx:") || line.startsWith("moveanim:")) {
+              collected.add(line);
+            }
+          }
+        }
+        animLines = collected;
+      }
+      Object animMap = registry.getClass().getField("Kp1").get(registry);
+      Method animGet = animMap.getClass().getMethod("gi0", short.class);
+      Method animPut = animMap.getClass().getMethod("nuL", short.class, Object.class);
+      java.lang.reflect.Constructor<?> vfxCtor =
+          Class.forName("monmmo.VfxAnim")
+              .getConstructor(Class.forName("f.QL1"), short.class);
+      int vfx = 0;
+      int aliases = 0;
+      for (String line : animLines) {
+        String[] parts = line.split(":");
+        if (parts[0].equals("movevfx")) {
+          final short moveId = Short.parseShort(parts[1]);
+          final java.lang.reflect.Constructor<?> ctor = vfxCtor;
+          java.util.function.Function<Object, Object> factory =
+              attacker -> {
+                try {
+                  return ctor.newInstance(attacker, moveId);
+                } catch (Exception failed) {
+                  throw new RuntimeException(failed);
+                }
+              };
+          animPut.invoke(animMap, moveId, factory);
+          vfx++;
+        } else {
+          Object donor = animGet.invoke(animMap, Short.parseShort(parts[2]));
+          if (donor != null) {
+            animPut.invoke(animMap, Short.parseShort(parts[1]), donor);
+            aliases++;
+          }
+        }
+      }
+      log("[monmmo] anim registry rebuilt: vfx=" + vfx + " aliases=" + aliases);
+    } catch (Throwable failure) {
+      log("[monmmo] anim registry re-apply failed: " + failure);
+    }
+  }
+
   /** Moves some existing tool already teaches, built once from the live registry. */
   private static java.util.Set<Short> toolTeaches;
 

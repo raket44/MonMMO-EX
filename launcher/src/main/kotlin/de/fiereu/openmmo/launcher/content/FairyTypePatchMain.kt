@@ -170,6 +170,14 @@ fun main(args: Array<String>) {
         ScissorGuardPatch::patch,
     )
 
+    // The battle scene rebuilds the animation registry per battle, discarding runtime entries;
+    // the builder's tail now re-applies the movevfx/moveanim fixups on every rebuild.
+    applyOne(
+        "anim registry rebuild hook",
+        AnimRegistryHookPatch::isRegistry,
+        AnimRegistryHookPatch::patch,
+    )
+
     // Section 6 is set-only for the hide flags, so every imported species is constructed hidden
     // and stays hidden. The screen's four flag-skips go instead.
     applyOne(

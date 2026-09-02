@@ -282,10 +282,26 @@ fun main(args: Array<String>) {
     // move registry after load, the same moment the species retypes land. Emitted for all 559
     // rather than a diff: the client's per-move baseline lives in the ROMs where we do not read.
     val moveRoot = Path.of(args[1])
+    val parsedMoves = MoveText.parse(moveRoot, MoveText.ids(moveRoot))
     val moveTypeLines =
-        MoveText.parse(moveRoot, MoveText.ids(moveRoot))
+        parsedMoves
             .filter { it.id in 1..559 }
             .map { "movetype:${it.id}:${overlayClientType(it.type)}" }
+    // Battle animations for the imported moves (operator-directed): each new move aliases a
+    // retail move's animation factory in the client's registry. The donor is the retail move of
+    // the same type, preferring the same damage category and the closest power, so a Fairy
+    // special attack sparkles rather than falling back to the generic thump. Handpicked
+    // improvements can override any line later; this guarantees no imported move animates blank.
+    val retailMoves = parsedMoves.filter { it.id in 1..559 }
+    val moveAnimLines =
+        parsedMoves
+            .filter { it.id in 560..999 }
+            .mapNotNull { move ->
+              val sameType = retailMoves.filter { it.type == move.type }
+              val pool = sameType.filter { it.category == move.category }.ifEmpty { sameType }
+              val donor = pool.minByOrNull { kotlin.math.abs(it.power - move.power) * 1000 + it.id }
+              donor?.let { "moveanim:${move.id}:${it.id}" }
+            }
     // Evolution entries where either end is a species we add; chains fully inside the canonical
     // range already come from the ROM. Eevee to Sylveon starts from a canonical species, which an
     // ours-only pass silently skipped.
@@ -336,7 +352,7 @@ fun main(args: Array<String>) {
     Files.write(evolutionsCsv, evoLines.map { it.removePrefix("evo:") })
 
     val dumpLines = listOf("locations", "dump:7", "dump:133", "dumptools", "dumpitems")
-    val fixups = retypeLines + moveTypeLines + evoLines + toolLines + dumpLines
+    val fixups = retypeLines + moveTypeLines + moveAnimLines + evoLines + toolLines + dumpLines
     // One wild-location table per season, installed at load by the season the world is in. The
     // dex row format has no season field, so a season is a whole table rather than a flag.
     var locationBytes = 0

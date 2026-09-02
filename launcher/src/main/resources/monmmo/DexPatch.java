@@ -29,6 +29,7 @@ import java.util.Map;
  * <pre>
  * retype:&lt;wireId&gt;:&lt;type1&gt;:&lt;type2&gt;
  * movetype:&lt;moveId&gt;:&lt;typeOrdinal&gt;
+ * moveanim:&lt;newMoveId&gt;:&lt;donorMoveId&gt;
  * evo:&lt;fromWire&gt;:&lt;methodId&gt;:&lt;param&gt;:&lt;toWire&gt;
  * dump:&lt;wireId&gt;
  * </pre>
@@ -97,7 +98,18 @@ public final class DexPatch {
     Method moveById = moveRegistryClass.getMethod("le0", short.class);
     Field moveTypeField = Class.forName("f.sC").getField("fy1");
 
+    // The battle-animation registry, for moveanim fixups: f.Rj1.aP0 (its clinit builds the
+    // per-move factory map Kp1, one lambda per canonical move; ux1 falls back to a generic
+    // animation for unknown ids). Aliasing a new move id to a donor's factory gives it that
+    // donor's full animation.
+    Class<?> animRegistryClass = Class.forName("f.Rj1");
+    Object animRegistry = animRegistryClass.getField("aP0").get(null);
+    Object animMap = animRegistryClass.getField("Kp1").get(animRegistry);
+    Method animGet = animMap.getClass().getMethod("gi0", short.class);
+    Method animPut = animMap.getClass().getMethod("nuL", short.class, Object.class);
+
     int retypes = 0;
+    int moveAnims = 0;
     int moveTypes = 0;
     int evolutions = 0;
     int tools = 0;
@@ -122,6 +134,14 @@ public final class DexPatch {
           primaryType.set(target, typeByOrdinal.invoke(null, Byte.parseByte(parts[2])));
           secondaryType.set(target, typeByOrdinal.invoke(null, Byte.parseByte(parts[3])));
           retypes++;
+        }
+        case "moveanim" -> {
+          Object donor = animGet.invoke(animMap, Short.parseShort(parts[2]));
+          if (donor == null) {
+            continue;
+          }
+          animPut.invoke(animMap, Short.parseShort(parts[1]), donor);
+          moveAnims++;
         }
         case "movetype" -> {
           Object move = moveById.invoke(moveRegistry, Short.parseShort(parts[1]));
@@ -351,7 +371,7 @@ public final class DexPatch {
         default -> {}
       }
     }
-    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
+    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveAnims=" + moveAnims + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
     if (tools > 0) {
       // Read back what was just created, through the same accessors the dex uses: how many
       // tools now teach imported moves, and what one of them says its name is. A broken name

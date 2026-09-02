@@ -21,6 +21,19 @@ sealed interface BattleEventBody {
   /** Event 4, meaning unknown. It carries no body. Effectiveness rides in the outcome word. */
   data object EffectivenessMessage : BattleEventBody
 
+  /**
+   * Event 107, BattleEvolution: the client rebuilds the battle mon as [species] (form [form]),
+   * plays the evolve sequence and announces it. Decompiled off the client's event reader (f/SF1
+   * case 107 -> f/BK: short species, one discarded byte, short form, two stat shorts fed to the
+   * entity rebuild - sent as the evolved current and max hp).
+   */
+  data class Evolution(
+      val species: Short,
+      val form: Short = 0,
+      val currentHp: Short,
+      val maxHp: Short,
+  ) : BattleEventBody
+
   /** Event 0x40, BattleMoveFailed. [moveId] names the move in the "it failed" message. */
   data class MoveFailed(val moveId: Short) : BattleEventBody
 }
@@ -64,6 +77,19 @@ private val EffectivenessMessageBodyCodec: Codec<BattleEventBody> =
           BattleEventBody.EffectivenessMessage
     }
 
+private val EvolutionBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val species = field(S16LE) { (it as BattleEventBody.Evolution).species }
+        // The client reads and discards one byte here.
+        reserved(0)
+        val form = field(S16LE) { (it as BattleEventBody.Evolution).form }
+        val currentHp = field(S16LE) { (it as BattleEventBody.Evolution).currentHp }
+        val maxHp = field(S16LE) { (it as BattleEventBody.Evolution).maxHp }
+        return BattleEventBody.Evolution(species, form, currentHp, maxHp)
+      }
+    }
+
 private val MoveFailedBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
@@ -81,7 +107,8 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   STAT_CHANGE(id = 1, codec = StatChangeBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
-  MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec);
+  MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
+  EVOLUTION(id = 107, codec = EvolutionBodyCodec);
 
   companion object {
     fun ofId(id: Int): BattleEventType = entries.first { it.id == id }
@@ -93,6 +120,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.EffectivenessMessage -> EFFECTIVENESS_MESSAGE
           is BattleEventBody.Faint -> POKEMON_FAINTED
           is BattleEventBody.MoveFailed -> MOVE_FAILED
+          is BattleEventBody.Evolution -> EVOLUTION
         }
   }
 }

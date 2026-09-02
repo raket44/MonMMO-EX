@@ -202,6 +202,46 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     )
   }
 
+  /**
+   * Plays the client's own evolution sequence on a battle mon: event 107 rebuilds the entity as the
+   * new species, morphs the sprite and announces the evolution. Ridden on the same move-event
+   * stream every turn already uses, addressed at the evolving mon.
+   */
+  fun sendEvolution(
+      battle: BattleInstance,
+      entityId: Long,
+      species: Short,
+      currentHp: Short,
+      maxHp: Short,
+  ) {
+    broadcast(
+        battle,
+        BattleEntityMoveEventPacket(
+            sourceEntity = entityId,
+            sourceMove = 0,
+            kind = MOVE_EVENT_KIND,
+            targets =
+                listOf(
+                    BattleEffectTarget(
+                        entityId = entityId,
+                        targetMove = 0,
+                        subEvents =
+                            listOf(
+                                BattleActionEvent(
+                                    entityA = null,
+                                    entityB = null,
+                                    body =
+                                        BattleEventBody.Evolution(
+                                            species = species,
+                                            currentHp = currentHp,
+                                            maxHp = maxHp,
+                                        ),
+                                )),
+                    )),
+        ),
+    )
+  }
+
   fun sendPrompt(battle: BattleInstance) {
     broadcast(battle, BattleTileMapPacket(groupId = battle.turn.toShort(), slotTiles = null))
     broadcast(battle, BattleQueuedEventPacket(packed = ACTION_PROMPT))

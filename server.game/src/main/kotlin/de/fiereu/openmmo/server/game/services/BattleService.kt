@@ -610,6 +610,16 @@ constructor(
       state.currentHp = minOf(state.currentHp, stats.hp.toInt())
       state.stats = stats
       characterStore.updatePokemon(battle.charId, state.source)
+      // The client's own evolve sequence, played on the battle entity while the scene is
+      // still open. Benched mons have no battle entity to morph; they evolve silently and the
+      // notice covers them.
+      emitter.sendEvolution(
+          battle,
+          state.entityId,
+          target.toShort(),
+          state.currentHp.toShort(),
+          stats.hp.toShort(),
+      )
       emitter.sendNotice(battle, "$fromName evolved into ${evolvedDef.name}!")
       log.info {
         "char=${battle.charId} $fromName (wire $wire) evolved into ${evolvedDef.name} (wire $target)"

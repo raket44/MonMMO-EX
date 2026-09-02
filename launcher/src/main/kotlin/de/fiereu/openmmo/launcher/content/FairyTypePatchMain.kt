@@ -416,7 +416,18 @@ fun main(args: Array<String>) {
     Files.createDirectories(evolutionsCsv.parent)
     Files.write(evolutionsCsv, evoLines.map { it.removePrefix("evo:") })
 
-    val dumpLines = listOf("locations", "dump:7", "dump:133", "dumptools", "dumpitems")
+    val dumpLines =
+        listOf(
+            "locations",
+            "dump:7",
+            "dump:133",
+            "dumptools",
+            "dumpitems",
+            // What the client holds for an imported species once every section and fixup ran.
+            "dumpspecies:668",
+            "dumpspecies:676",
+            "dumpspecies:718",
+        )
     val fixups =
         retypeLines +
             moveTypeLines +

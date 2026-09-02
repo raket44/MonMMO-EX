@@ -393,6 +393,34 @@ public final class DexPatch {
             log("[monmmo] dumpitems failed: " + error);
           }
         }
+        case "dumpspecies" -> {
+          // What the client ACTUALLY holds for a species after every section and fixup has run:
+          // the dex renders from these fields, so an empty one here is the missing line on
+          // screen. Types are mx/dz0, egg groups Cq1/ww (their iI0 byte names the group string
+          // at 181000+id), the category line comes from qH1() and the name from DZ(true).
+          Object target = species.get(Short.parseShort(parts[1]));
+          if (target == null) {
+            log("[monmmo] dumpspecies " + parts[1] + " NOT REGISTERED");
+            continue;
+          }
+          StringBuilder out = new StringBuilder("[monmmo] species " + parts[1]);
+          try {
+            out.append(" name=").append(speciesClass.getMethod("DZ", boolean.class).invoke(target, true));
+            out.append(" category=").append(speciesClass.getMethod("qH1").invoke(target));
+            out.append(" type1=").append(primaryType.get(target));
+            out.append(" type2=").append(secondaryType.get(target));
+            Object egg1 = speciesClass.getField("Cq1").get(target);
+            Object egg2 = speciesClass.getField("ww").get(target);
+            out.append(" egg1=").append(egg1 == null ? "null" : egg1.toString());
+            out.append(" egg2=").append(egg2 == null ? "null" : egg2.toString());
+            out.append(" forms=").append(speciesClass.getField("pq").getByte(target));
+            Object moves = speciesClass.getField("Bg").get(target);
+            out.append(" levelupList=").append(moves == null ? "null" : ((List<?>) moves).size());
+          } catch (Throwable probeError) {
+            out.append(" PROBE FAILED: ").append(probeError);
+          }
+          log(out.toString());
+        }
         case "dumptools" -> {
           Object toolRegistry = Class.forName("f.YY0").getField("Mk1").get(null);
           java.util.TreeMap<?, ?> toolMap =

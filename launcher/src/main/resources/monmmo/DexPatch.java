@@ -523,7 +523,32 @@ public final class DexPatch {
               log("[monmmo] label probe id=" + stringId + " raw=" + name
                   + " stripped=" + name.replaceAll(" .*", "") + " chars=" + codes);
             }
-          } catch (Throwable probeFail) {
+            try {
+            // The Snowscape row is the one hold-out: walk every tool in the live registry the
+            // way the dex loop does and print what each one teaching move 258 would label as,
+            // plus any tool whose display name mentions Snowscape at all.
+            Object reg = Class.forName("f.YY0").getField("Mk1").get(null);
+            java.util.TreeMap<?, ?> items =
+                (java.util.TreeMap<?, ?>) reg.getClass().getField("xy").get(reg);
+            Method textLookup = Class.forName("f.nV0").getMethod("Id1", int.class);
+            for (java.util.Map.Entry<?, ?> row : items.entrySet()) {
+              Object item = row.getValue();
+              short teaches = item.getClass().getField("m30").getShort(item);
+              int nameString = item.getClass().getField("fb").getInt(item);
+              String display = (String) textLookup.invoke(null, nameString);
+              String direct = (String) item.getClass().getMethod("getName").invoke(item);
+              if (teaches == 258 || (display != null && display.contains("Snowscape"))
+                  || (direct != null && direct.contains("Snowscape"))) {
+                log("[monmmo] snowprobe item=" + row.getKey() + " m30=" + teaches
+                    + " fb=" + nameString + " display=" + display
+                    + " stripped=" + (display == null ? null : display.replaceAll(" .*", ""))
+                    + " getName=" + direct);
+              }
+            }
+          } catch (Throwable snowFail) {
+            log("[monmmo] snowprobe failed: " + snowFail);
+          }
+        } catch (Throwable probeFail) {
             log("[monmmo] label probe failed: " + probeFail);
           }
         }

@@ -32,6 +32,14 @@ object PorymovesLearnsets {
    */
   private val EXCLUDED_GAMES = setOf("za.json")
 
+  /**
+   * The Expansion keeps legacy and modern ids for a renamed move; the CLIENT has one move and
+   * renamed its string. Snowscape is the only such pair in the whole table (client 258 = Hail
+   * renamed "Snowscape", Expansion adds 809 as a new id): modern dumps teach 809, older dumps teach
+   * 258, and unioning both duplicated the move and minted a ghost "TM Snowscape".
+   */
+  private val CANONICAL_MOVE_IDS = mapOf(809 to 258)
+
   data class Learnsets(
       val taught: Map<String, List<Int>>,
       val egg: Map<String, List<Int>>,
@@ -72,7 +80,7 @@ object PorymovesLearnsets {
     val list = entry[key] ?: return
     list.jsonArray.forEach { element ->
       val symbol = element.jsonPrimitive.content
-      moveIds[symbol]?.let(into::add)
+      moveIds[symbol]?.let { id -> into.add(CANONICAL_MOVE_IDS[id] ?: id) }
     }
   }
 }

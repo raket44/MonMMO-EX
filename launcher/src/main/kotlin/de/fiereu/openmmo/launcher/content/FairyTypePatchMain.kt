@@ -312,6 +312,13 @@ fun main(args: Array<String>) {
     // line can be handpicked later, and an authored .vfx can promote a move to the first tier.
     val moveVfxLines =
         parsedMoves.filter { it.id in 560..LAST_SHIPPED_VFX_MOVE }.map { "movevfx:${it.id}" }
+    // Handpicked donors that beat the naive vfx playback - emitted AFTER the vfx tier so they
+    // win (fixups apply in file order). Operator-curated; grow this list freely.
+    val handpickedAnims =
+        mapOf(
+                585 to 236, // Moonblast - Moonlight's coded moon-and-glow staging
+            )
+            .map { (move, donor) -> "moveanim:$move:$donor" }
     val retailMoves = parsedMoves.filter { it.id in 1..559 }
     val moveAnimLines =
         parsedMoves
@@ -376,6 +383,7 @@ fun main(args: Array<String>) {
         retypeLines +
             moveTypeLines +
             moveVfxLines +
+            handpickedAnims +
             moveAnimLines +
             evoLines +
             toolLines +

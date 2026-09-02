@@ -39,15 +39,14 @@ constructor(
       "ops" -> {
         listOf(
                 de.fiereu.openmmo.net.game.packets.Probe06Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe0DPacket(),
-                de.fiereu.openmmo.net.game.packets.Probe0EPacket(),
-                de.fiereu.openmmo.net.game.packets.Probe10Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe12Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe13Packet(),
-                de.fiereu.openmmo.net.game.packets.Probe1BPacket(),
+                de.fiereu.openmmo.net.game.packets.Probe6APacket(),
+                de.fiereu.openmmo.net.game.packets.Probe82Packet(),
+                de.fiereu.openmmo.net.game.packets.Probe8APacket(),
+                de.fiereu.openmmo.net.game.packets.Probe9FPacket(),
+                de.fiereu.openmmo.net.game.packets.ProbeAFPacket(),
             )
             .forEach { ctx.session.send(it) }
-        ctx.reply("Probed opcodes 06 0d 0e 10 12 13 1b - check the client console.log")
+        ctx.reply("Probed opcodes 06 6a 82 8a 9f af - check the client console.log")
         return
       }
       "transport" -> {

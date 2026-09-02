@@ -18,14 +18,12 @@ class OpcodeProbeCodec<T : Any>(private val make: () -> T) : PacketCodec<T>() {
 
 class Probe06Packet
 
-class Probe0DPacket
+class Probe6APacket
 
-class Probe0EPacket
+class Probe82Packet
 
-class Probe10Packet
+class Probe8APacket
 
-class Probe12Packet
+class Probe9FPacket
 
-class Probe13Packet
-
-class Probe1BPacket
+class ProbeAFPacket

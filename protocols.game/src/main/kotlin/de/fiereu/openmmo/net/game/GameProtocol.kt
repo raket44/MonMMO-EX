@@ -16,15 +16,15 @@ object GameProtocol : Protocol() {
 
   init {
     c2s<JoinPacket>(0x01u, JoinPacketCodec)
-    // Empty-bodied probes for the unmapped s2c opcodes: the client logs the packet CLASS it
-    // tried to parse, naming what lives behind each id (hunting the evolution prompt).
+    // Empty-bodied probes for the GENUINELY unmapped s2c opcodes (the rest of the low range is
+    // bidi-registered): the client logs the packet CLASS it tried to parse, naming what lives
+    // behind each id (hunting the evolution prompt).
     s2c<Probe06Packet>(0x06u, OpcodeProbeCodec(::Probe06Packet))
-    s2c<Probe0DPacket>(0x0Du, OpcodeProbeCodec(::Probe0DPacket))
-    s2c<Probe0EPacket>(0x0Eu, OpcodeProbeCodec(::Probe0EPacket))
-    s2c<Probe10Packet>(0x10u, OpcodeProbeCodec(::Probe10Packet))
-    s2c<Probe12Packet>(0x12u, OpcodeProbeCodec(::Probe12Packet))
-    s2c<Probe13Packet>(0x13u, OpcodeProbeCodec(::Probe13Packet))
-    s2c<Probe1BPacket>(0x1Bu, OpcodeProbeCodec(::Probe1BPacket))
+    s2c<Probe6APacket>(0x6Au, OpcodeProbeCodec(::Probe6APacket))
+    s2c<Probe82Packet>(0x82u, OpcodeProbeCodec(::Probe82Packet))
+    s2c<Probe8APacket>(0x8Au, OpcodeProbeCodec(::Probe8APacket))
+    s2c<Probe9FPacket>(0x9Fu, OpcodeProbeCodec(::Probe9FPacket))
+    s2c<ProbeAFPacket>(0xAFu, OpcodeProbeCodec(::ProbeAFPacket))
     s2c<JoinResponsePacket>(0x01u, JoinResponsePacketCodec)
 
     c2s<RequestCharactersPacket>(0x02u, RequestCharactersPacketCodec)

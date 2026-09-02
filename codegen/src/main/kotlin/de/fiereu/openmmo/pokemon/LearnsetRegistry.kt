@@ -28,9 +28,15 @@ constructor(
   }
 
   fun get(dexId: Int): List<LevelUpMove> =
-      learnsets[dexId]
-          ?: expansion
-              .getByServerId(dexId)
+      // Retail-dump learnsets win where present (operator-directed) - they are the modern move
+      // tables the client itself displays; decomp and expansion tables stay the fallbacks.
+      de.fiereu.openmmo.pokemon.retail.RetailMonsterData.get(dexId)?.levelUpLearnset?.takeIf {
+        it.isNotEmpty()
+      }
+          ?: learnsets[dexId]
+          // Plain 1-649 ids resolve through the wire-id index too, same as runtimeDefinition -
+          // creation collapses expansion-offset ids for retail dex numbers to the plain id.
+          ?: (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
               ?.levelUpLearnset
               ?.map { LevelUpMove(it.level, it.originalMoveId) }
               .orEmpty()

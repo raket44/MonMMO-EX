@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.openmmo.common.DEFAULT_MOVE_PP
+import de.fiereu.openmmo.common.EXPANSION_SERVER_SPECIES_BASE
 import de.fiereu.openmmo.common.MAX_MOVE_SLOTS
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.PokemonMove
@@ -17,6 +18,8 @@ import javax.inject.Singleton
 
 private const val TACKLE_ID = 33
 
+private const val LAST_RETAIL_DEX = 649
+
 /** Rolls a wild monster: random nature seed, random IVs, computed stats, full hp. */
 @Singleton
 class WildMonFactory
@@ -28,7 +31,15 @@ constructor(
     private val entityIds: EntityIdService,
 ) {
 
-  fun create(dexId: Int, level: Int, rng: BattleRng): Pokemon? {
+  fun create(requestedDexId: Int, level: Int, rng: BattleRng): Pokemon? {
+    // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
+    // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
+    // are the same monster server-side. Ids for genuinely new species (650+) keep the offset.
+    val dexId =
+        if (requestedDexId >= EXPANSION_SERVER_SPECIES_BASE &&
+            requestedDexId - EXPANSION_SERVER_SPECIES_BASE in 1..LAST_RETAIL_DEX)
+            requestedDexId - EXPANSION_SERVER_SPECIES_BASE
+        else requestedDexId
     val def = species.get(dexId) ?: return null
     val ivs =
         IVs().apply {

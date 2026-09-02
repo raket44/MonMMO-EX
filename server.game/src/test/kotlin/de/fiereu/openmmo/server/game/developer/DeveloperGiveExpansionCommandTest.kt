@@ -82,7 +82,10 @@ class DeveloperGiveExpansionCommandTest :
           command.run(context.withArgs("SPECIES_SNIVY", "10"))
 
           val pokemon = store.getCharacter(context.characterId)!!.pokemon.single()
-          pokemon.dexId shouldBe 0x10000 + 495
+          // One identity per species: dex 1-649 collapses from the expansion-offset id to the
+          // plain canonical id at creation (WildMonFactory), so a given Snivy and a caught one
+          // are the same monster server-side.
+          pokemon.dexId shouldBe 495
           pokemon.moves.map { it.id.toInt() } shouldBe listOf(33, 43, 22, 35)
         }
       }

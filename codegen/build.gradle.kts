@@ -9,6 +9,7 @@ dependencies {
   api(project(":common"))
   api(project(":protocols.game"))
   api(libs.dagger)
+  implementation(libs.kotlinx.serialization.json)
   "generatorImplementation"(project(":common"))
   "generatorImplementation"(libs.jte)
   "generatorImplementation"(libs.kotlinx.serialization.json)

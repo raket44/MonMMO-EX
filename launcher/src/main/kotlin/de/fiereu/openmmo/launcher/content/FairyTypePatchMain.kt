@@ -171,6 +171,15 @@ fun main(args: Array<String>) {
         DexTextRedirectPatch::patch,
     )
 
+    // The move list labels a machine move with the tool name stripped at " - "; numberless
+    // names have no dash, so the whole name leaked into the source column. Strip at the first
+    // space instead, rendering the bare "TM" / "HM" tag.
+    applyOne(
+        "Pokedex move-source label",
+        DexMoveRowLabelPatch::isRowPainter,
+        DexMoveRowLabelPatch::patch,
+    )
+
     // The hidden-ability line is gated on a whitelist baked into the client that imported
     // species can never join; the record carries the ability, the screen just refuses to say so.
     applyOne(

@@ -83,8 +83,8 @@ constructor(
     // whatever its gender), and the baby is always the family's YOUNGEST form.
     val mother =
         when {
-          first.dexId == DITTO -> second
-          second.dexId == DITTO -> first
+          isDitto(first) -> second
+          isDitto(second) -> first
           genderOf(second, defB) == FEMALE -> second
           else -> first
         }
@@ -254,8 +254,8 @@ constructor(
       defB: de.fiereu.openmmo.pokemon.SpeciesDef?,
   ): String? {
     if (defA == null || defB == null) return "unknown species"
-    val aDitto = a.dexId == DITTO
-    val bDitto = b.dexId == DITTO
+    val aDitto = isDitto(a)
+    val bDitto = isDitto(b)
     if (aDitto && bDitto) return "two Dittos"
     if ((a.isShiny || a.isSecret) != (b.isShiny || b.isSecret)) return "shiny with non-shiny"
     if (a.isAlpha != b.isAlpha) return "alpha with non-alpha"
@@ -304,6 +304,15 @@ constructor(
 
   private companion object {
     const val DITTO = 132
+
+    /**
+     * Ditto by CLIENT WIRE id - expansion-imported monsters carry offset server dex ids (an
+     * imported Ditto arrived as 65668 = 0x10000 + 132), so the raw dexId compare missed them and
+     * the Ditto fell through to the genderless no-pair rejection.
+     */
+    fun isDitto(mon: de.fiereu.openmmo.common.Pokemon): Boolean =
+        de.fiereu.openmmo.common.clientSpeciesId(mon.dexId) == DITTO
+
     /** Retail's price for pinning the offspring's gender. */
     const val GENDER_CHOICE_COST = 5000
 

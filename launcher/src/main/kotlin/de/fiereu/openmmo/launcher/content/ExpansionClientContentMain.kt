@@ -616,12 +616,16 @@ private fun patchNames(
         }
   }
 
-  // Category is the line under the species name in the dex ("Life Pokemon"), read from
-  // string id 155000 + speciesId the same way the name comes from 150000 + speciesId.
+  // Category is the line under the species name in the dex ("Life Pokemon"). The reader
+  // (zK0.qH1, bytecode) is NOT a plain 155000 + speciesId: for any species id past 493 it adds
+  // 16 before the lookup - a gap in PokeMMO's own string table - and renders empty when the
+  // string is missing. Writing at the unshifted id is why every imported species showed no
+  // description line (operator-reported).
   species.forEach { entry ->
     val wireId = entry.clientWireId ?: return@forEach
     if (entry.categoryName.isBlank()) return@forEach
-    val stringId = CATEGORY_STRING_BASE + wireId
+    val shifted = if (wireId > CATEGORY_SHIFT_THRESHOLD) wireId + CATEGORY_SHIFT else wireId
+    val stringId = CATEGORY_STRING_BASE + shifted
     if (stringId in occupied) return@forEach
     root.appendChild(
         document.createElement("string").apply {
@@ -651,6 +655,10 @@ private fun patchNames(
 
 /** The dex category line sits 5000 above the species name in the string table. */
 private const val CATEGORY_STRING_BASE = 155000
+
+/** zK0.qH1: category lookups for species ids past 493 add 16 - PokeMMO's own table gap. */
+private const val CATEGORY_SHIFT_THRESHOLD = 493
+private const val CATEGORY_SHIFT = 16
 
 /** The wire block the catalogue generator assigns to forms, after the last Dex-numbered slot. */
 private const val FIRST_FORM_WIRE_ID = 1079

@@ -34,6 +34,22 @@ constructor(
       // Re-sends your own LoadEntity with a chosen transportation byte - the runtime probe for
       // finding which value means bike / surf / run-enabled. We always send 0; the retail server
       // clearly uses others.
+      // Fires an empty body at every unmapped s2c opcode; the CLIENT log then names the packet
+      // class behind each ("Reading failed for packet f/XX"), mapping the ids in one shot.
+      "ops" -> {
+        listOf(
+                de.fiereu.openmmo.net.game.packets.Probe06Packet(),
+                de.fiereu.openmmo.net.game.packets.Probe0DPacket(),
+                de.fiereu.openmmo.net.game.packets.Probe0EPacket(),
+                de.fiereu.openmmo.net.game.packets.Probe10Packet(),
+                de.fiereu.openmmo.net.game.packets.Probe12Packet(),
+                de.fiereu.openmmo.net.game.packets.Probe13Packet(),
+                de.fiereu.openmmo.net.game.packets.Probe1BPacket(),
+            )
+            .forEach { ctx.session.send(it) }
+        ctx.reply("Probed opcodes 06 0d 0e 10 12 13 1b - check the client console.log")
+        return
+      }
       "transport" -> {
         val value = ctx.args.getOrNull(1)?.toIntOrNull()
         if (value == null || value !in 0..255) {

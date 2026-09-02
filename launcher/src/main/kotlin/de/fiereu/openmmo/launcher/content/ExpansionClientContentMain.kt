@@ -264,7 +264,8 @@ fun main(args: Array<String>) {
   Files.newBufferedWriter(itemManifest).use { writer ->
     val moveNames = MoveText.parse(expansionRoot, MoveText.ids(expansionRoot)).associateBy { it.id }
     TmPlan.taughtMoves(expansionRoot).forEachIndexed { index, moveId ->
-      val name = "TM${TmPlan.FIRST_NUMBER + index} ${moveNames[moveId]?.name ?: ""}".trim()
+      // Numberless (operator-directed): the name is "TM <move>" everywhere a name renders.
+      val name = "TM ${moveNames[moveId]?.name ?: ""}".trim()
       writer.appendLine("${TmPlan.FIRST_ITEM_ID + index};$name")
     }
     EvoItemPlan.ITEMS.forEachIndexed { index, (_, name) ->
@@ -485,8 +486,9 @@ private fun patchNames(
             }
       }
 
-  // Name strings for the TM items the overlay creates. The dex derives a row's TM number from the
-  // digits in the item's name, so the number lives in the string and the item just points at it.
+  // Name strings for the TM items the overlay creates - numberless "TM <move>" (operator-directed:
+  // the same name renders in pickups, dialogs, the bag and the dex; a bare number tells nobody
+  // anything and regional numbering cannot drift when there is no number).
   val tmMoves = TmPlan.taughtMoves(expansionRoot)
   val moveNamesById =
       MoveText.parse(expansionRoot, MoveText.ids(expansionRoot)).associateBy { it.id }
@@ -496,8 +498,22 @@ private fun patchNames(
     root.appendChild(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())
-          textContent =
-              "TM${TmPlan.FIRST_NUMBER + index} ${moveNamesById[moveId]?.name ?: ""}".trim()
+          textContent = "TM ${moveNamesById[moveId]?.name ?: ""}".trim()
+        })
+  }
+
+  // The RETAIL tools get the same treatment: their names live at string 240000 + itemId
+  // (measured - f/Gc0.fb on the live client), and a strings_en.xml entry at that id overrides
+  // the name everywhere it renders. "TM24" becomes "TM Thunderbolt", "HM03" becomes "HM Surf".
+  RetailTools.renames().forEach { (stringId, moveId) ->
+    if (stringId in occupied) return@forEach
+    val moveName = moveNamesById[moveId]?.name ?: return@forEach
+    val prefix =
+        if (stringId >= RetailTools.ITEM_NAME_STRING_BASE + RetailTools.TM_ITEM_BASE) "TM" else "HM"
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = "$prefix $moveName"
         })
   }
 

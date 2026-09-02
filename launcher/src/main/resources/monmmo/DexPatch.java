@@ -302,6 +302,20 @@ public final class DexPatch {
                 .append(" lastName=").append(v.getClass().getField("fb").getInt(v));
           }
           log(text.toString());
+          // The full table as a file, so the build's RetailTools calibration can be verified
+          // against the live client instead of trusted: itemId;fb;moveId;name per tool.
+          try (java.io.PrintWriter out =
+              new java.io.PrintWriter("monmmo-tools.csv", StandardCharsets.UTF_8)) {
+            for (Object tool : toolMap.values()) {
+              out.println(
+                  tool.getClass().getField("ky0").getShort(tool)
+                      + ";" + tool.getClass().getField("fb").getInt(tool)
+                      + ";" + tool.getClass().getField("m30").getShort(tool)
+                      + ";" + tool.getClass().getMethod("getName").invoke(tool));
+            }
+          } catch (Exception writeError) {
+            log("[monmmo] tool dump file failed: " + writeError);
+          }
         }
                 case "dump" -> {
           short id = Short.parseShort(parts[1]);

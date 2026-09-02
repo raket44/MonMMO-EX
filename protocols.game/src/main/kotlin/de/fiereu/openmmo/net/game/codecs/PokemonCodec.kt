@@ -89,7 +89,10 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     // window's "Held Item: {00}" render chain, f/pM1 -> vh1 -> f/YY0.lPt9 registry lookup).
     val heldItem = field(S16LE) { it.heldItem.toShort() }
     val xp = field(S32LE, Pokemon::xp)
-    field(reserved("003200")) {}
+    field(reserved("00")) {}
+    // Friendship s16 (client k91.COn) - the summary happiness meter reads this; it was the
+    // hardcoded 0x0032 half of the old reserved block.
+    val friendship = field(S16LE) { it.friendship.toShort() }
     val moveIds = List(4) { i -> field(S16LE) { it.moves[i].id } }
     val movePps = List(4) { i -> field(S8) { it.moves[i].pp } }
     // The client reads FOUR SHORTS here (k91.CQ) and only THEN the six EV bytes - the old
@@ -122,6 +125,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
         hp = hp,
         xp = xp,
         heldItem = heldItem.toInt(),
+        friendship = friendship.toInt(),
         eVs = evsFromWire(evHp, evAtk, evDef, evSpd, evSpAtk, evSpDef),
         iVs = ivsFromBits(ivBits),
         moves = List(4) { PokemonMove(moveIds[it], movePps[it]) },

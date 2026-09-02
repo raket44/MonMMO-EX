@@ -431,7 +431,12 @@ object EvolutionTable {
       val seed: Long,
       val female: Boolean,
       val heldItem: Int,
+      val friendship: Int = 0,
+      val daytime: Boolean = true,
   )
+
+  /** The cartridge happiness threshold for the friendship evolutions. */
+  const val FRIENDSHIP_EVOLUTION = 220
 
   /**
    * The species [fromWire] becomes on reaching [context], or null. Covers the level-driven methods:
@@ -444,6 +449,9 @@ object EvolutionTable {
           .firstOrNull { entry ->
             entry.from == fromWire &&
                 when (entry.method) {
+                  1 -> context.friendship >= FRIENDSHIP_EVOLUTION // HAPPINESS
+                  2 -> context.friendship >= FRIENDSHIP_EVOLUTION && context.daytime
+                  3 -> context.friendship >= FRIENDSHIP_EVOLUTION && !context.daytime
                   4 -> context.level >= entry.param // LEVEL
                   9 -> context.level >= entry.param && context.attack > context.defense
                   10 -> context.level >= entry.param && context.attack == context.defense

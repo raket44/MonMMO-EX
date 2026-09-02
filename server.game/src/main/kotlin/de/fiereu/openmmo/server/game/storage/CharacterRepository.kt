@@ -349,6 +349,7 @@ constructor(
           isEgg = isEgg,
           caughtAt = caughtAt,
           heldItem = heldItem,
+          friendship = friendship,
       )
 
   private fun PokemonRecord.toPokemon(): Pokemon =
@@ -382,6 +383,7 @@ constructor(
           isEgg = isEgg ?: false,
           caughtAt = caughtAt,
           heldItem = heldItem ?: 0,
+          friendship = (friendship ?: 70).toInt(),
       )
 
   private fun PokemonRecord.hydrateEvs(): EVs =

@@ -532,8 +532,14 @@ constructor(
       pendingLearns[winner.entityId] = PendingMoveLearn(battle.charId, winner.entityId, offered)
       battle.session.send(MoveLearnPromptPacket(winner.entityId, offered))
     }
+    // Happiness grows with every earned victory (operator-directed): the cartridge bands - a
+    // less-happy monster warms up faster - doubled by a held Soothe Bell, capped at 255.
+    val friendshipGain =
+        (if (winner.source.friendship < 100) 5 else if (winner.source.friendship < 200) 4 else 3)
+            .let { if (winner.source.heldItem in SOOTHE_BELLS) it * 2 else it }
     val grown =
         winner.source.copy(
+            friendship = minOf(255, winner.source.friendship + friendshipGain),
             level = reward.newLevel.toByte(),
             xp = reward.newXp,
             hp = reward.newCurrentHp.toShort(),
@@ -592,6 +598,8 @@ constructor(
                   seed = mon.seed.toLong() and 0xFFFFFFFFL,
                   female = female,
                   heldItem = mon.heldItem,
+                  friendship = mon.friendship,
+                  daytime = java.time.LocalTime.now().hour in 6..17,
               ),
           ) ?: continue
       val evolvedDef = speciesRegistry.get(target) ?: continue
@@ -622,6 +630,9 @@ constructor(
     }
     characterStore.flushCharacterAsync(battle.charId)
   }
+
+  /** Soothe Bell in both held-item catalogs - doubles happiness gains while held. */
+  private val SOOTHE_BELLS = setOf(5218, 6218)
 
   private fun finishBattle(battle: BattleInstance, result: BattleResult) {
     interestManager.leave(battle.session, battle.key)

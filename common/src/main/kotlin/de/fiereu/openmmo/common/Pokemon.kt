@@ -50,6 +50,8 @@ data class Pokemon(
      * the battle override z21 is -1, bytecode-verified).
      */
     val heldItem: Int = 0,
+    /** Happiness 0-255; 70 wild base, 120 hatched, 220 evolves the happiness families. */
+    val friendship: Int = 70,
 ) {
   // seed is an unsigned 32-bit value on the wire, so mask before the modulo to avoid a negative
   // index when the high bit is set.

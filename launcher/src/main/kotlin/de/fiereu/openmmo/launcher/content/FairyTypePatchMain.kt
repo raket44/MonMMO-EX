@@ -317,6 +317,9 @@ fun main(args: Array<String>) {
     val handpickedAnims =
         mapOf(
                 585 to 236, // Moonblast - Moonlight's coded moon-and-glow staging
+                594 to 486, // Water Shuriken - Electro Ball's thrown projectile (script match;
+                // the own-effect playback never threw anything, operator verdict)
+                566 to 467, // Phantom Force - Shadow Force outright (script match, same move)
             )
             .map { (move, donor) -> "moveanim:$move:$donor" }
     val retailMoves = parsedMoves.filter { it.id in 1..559 }
@@ -348,6 +351,17 @@ fun main(args: Array<String>) {
               }
               donor?.let { "moveanim:${move.id}:$it" }
             }
+    // Advisory rows for the vfx tier too: every 560-732 move's script-matched donor, so a move
+    // whose own-effect playback disappoints can be flipped to its donor with one handpick line.
+    parsedMoves
+        .filter { it.id in 560..LAST_SHIPPED_VFX_MOVE }
+        .forEach { move ->
+          structural[move.id]?.let { choice ->
+            val donorName = parsedMoves.firstOrNull { m -> m.id == choice.donor }?.name ?: "?"
+            donorReview.append(
+                "${move.id};${move.name};${choice.donor};$donorName;ADVISORY vfx tier - ${choice.reason}\n")
+          }
+        }
     val reviewFile = Path.of("build/expansion-client/anim-donors.csv")
     Files.createDirectories(reviewFile.parent)
     Files.writeString(reviewFile, donorReview.toString())

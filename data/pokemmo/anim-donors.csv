@@ -1,0 +1,375 @@
+move;name;donor;donorName;how
+733;Terrain Pulse;427;Psycho Cut;overlap score=6 sharedTemplates=0
+734;Skitter Smack;425;Shadow Sneak;overlap score=7 sharedTemplates=0
+735;Burning Jealousy;473;Psyshock;overlap score=9 sharedTemplates=0
+736;Lash Out;246;Ancient Power;overlap score=14 sharedTemplates=2
+737;Poltergeist;425;Shadow Sneak;overlap score=7 sharedTemplates=0
+738;Corrosive Gas;499;Clear Smog;overlap score=4 sharedTemplates=0
+739;Coaching;150;Splash;overlap score=4 sharedTemplates=0
+740;Flip Turn;127;Waterfall;overlap score=8 sharedTemplates=1
+741;Triple Axel;524;Frost Breath;overlap score=4 sharedTemplates=0
+742;Dual Wingbeat;332;Aerial Ace;overlap score=3 sharedTemplates=0
+743;Scorching Sands;488;Flame Charge;overlap score=14 sharedTemplates=2
+744;Jungle Healing;312;Aromatherapy;overlap score=4 sharedTemplates=0
+745;Wicked Blow;246;Ancient Power;overlap score=14 sharedTemplates=2
+746;Surging Strikes;55;Water Gun;overlap score=8 sharedTemplates=1
+747;Thunder Cage;85;Thunderbolt;overlap score=9 sharedTemplates=1
+748;Dragon Energy;528;Wild Charge;overlap score=16 sharedTemplates=2
+749;Freezing Glare;137;Glare;overlap score=9 sharedTemplates=1
+750;Fiery Wrath;451;Charge Beam;overlap score=9 sharedTemplates=0
+751;Thunderous Kick;528;Wild Charge;overlap score=17 sharedTemplates=2
+752;Glacial Lance;8;Ice Punch;overlap score=6 sharedTemplates=0
+753;Astral Barrage;223;Dynamic Punch;overlap score=11 sharedTemplates=1
+754;Eerie Spell;180;Spite;overlap score=4 sharedTemplates=0
+755;Dire Claw;306;Crush Claw;overlap score=9 sharedTemplates=1
+756;Psyshield Bash;36;Take Down;overlap score=17 sharedTemplates=2
+757;Power Shift;179;Reversal;overlap score=2 sharedTemplates=0
+758;Stone Axe;350;Rock Blast;overlap score=9 sharedTemplates=1
+759;Springtide Storm;13;Razor Wind;overlap score=4 sharedTemplates=0
+760;Mystical Power;326;Extrasensory;overlap score=4 sharedTemplates=0
+761;Raging Fury;131;Spike Cannon;overlap score=11 sharedTemplates=1
+762;Wave Crash;528;Wild Charge;overlap score=11 sharedTemplates=1
+763;Chloroblast;434;Draco Meteor;overlap score=12 sharedTemplates=0
+764;Mountain Gale;545;Searing Shot;overlap score=4 sharedTemplates=0
+765;Victory Dance;349;Dragon Dance;overlap score=4 sharedTemplates=0
+766;Headlong Rush;224;Megahorn;overlap score=16 sharedTemplates=2
+767;Barb Barrage;91;Dig;overlap score=4 sharedTemplates=0
+768;Esper Wing;427;Psycho Cut;overlap score=8 sharedTemplates=1
+769;Bitter Malice;558;Fusion Flare;overlap score=9 sharedTemplates=0
+770;Shelter;504;Shell Smash;overlap score=11 sharedTemplates=2
+771;Triple Arrows;223;Dynamic Punch;overlap score=6 sharedTemplates=0
+772;Infernal Parade;325;Shadow Punch;overlap score=7 sharedTemplates=0
+773;Ceaseless Edge;394;Flare Blitz;overlap score=16 sharedTemplates=2
+774;Bleakwind Storm;413;Brave Bird;overlap score=6 sharedTemplates=0
+775;Wildbolt Storm;466;Ominous Wind;overlap score=7 sharedTemplates=0
+776;Sandsear Storm;558;Fusion Flare;overlap score=9 sharedTemplates=0
+777;Lunar Blessing;461;Lunar Dance;overlap score=11 sharedTemplates=1
+778;Take Heart;287;Refresh;overlap score=3 sharedTemplates=0
+779;Tera Blast;439;Rock Wrecker;overlap score=26 sharedTemplates=2
+780;Silk Trap;527;Electroweb;overlap score=9 sharedTemplates=1
+781;Axe Kick;136;High Jump Kick;overlap score=11 sharedTemplates=2
+782;Last Respects;101;Night Shade;overlap score=4 sharedTemplates=0
+783;Lumina Crash;430;Flash Cannon;overlap score=11 sharedTemplates=0
+784;Order Up;292;Arm Thrust;overlap score=9 sharedTemplates=1
+785;Jet Punch;127;Waterfall;overlap score=18 sharedTemplates=3
+786;Spicy Extract;558;Fusion Flare;overlap score=9 sharedTemplates=0
+787;Spin Out;229;Rapid Spin;overlap score=13 sharedTemplates=1
+788;Population Bomb;376;Trump Card;overlap score=9 sharedTemplates=1
+789;Ice Spinner;229;Rapid Spin;overlap score=12 sharedTemplates=1
+790;Glaive Rush;525;Dragon Tail;overlap score=17 sharedTemplates=2
+791;Revival Blessing;14;Swords Dance;stat fallback
+792;Salt Cure;301;Ice Ball;overlap score=1 sharedTemplates=0
+793;Triple Dive;291;Dive;overlap score=7 sharedTemplates=1
+794;Mortal Spin;229;Rapid Spin;overlap score=12 sharedTemplates=1
+795;Doodle;166;Sketch;overlap score=8 sharedTemplates=1
+796;Fillet Away;548;Secret Sword;overlap score=11 sharedTemplates=1
+797;Kowtow Cleave;428;Zen Headbutt;overlap score=9 sharedTemplates=1
+798;Flower Trick;227;Encore;overlap score=20 sharedTemplates=1
+799;Torch Song;304;Hyper Voice;overlap score=17 sharedTemplates=1
+800;Aqua Step;229;Rapid Spin;overlap score=10 sharedTemplates=1
+801;Raging Bull;38;Double-Edge;overlap score=22 sharedTemplates=2
+802;Make It Rain;6;Pay Day;overlap score=15 sharedTemplates=2
+803;Ruination;262;Memento;overlap score=14 sharedTemplates=0
+804;Collision Course;559;Fusion Bolt;overlap score=21 sharedTemplates=1
+805;Electro Drift;559;Fusion Bolt;overlap score=18 sharedTemplates=1
+806;Shed Tail;39;Tail Whip;overlap score=4 sharedTemplates=0
+807;Chilly Reception;67;Low Kick;overlap score=8 sharedTemplates=1
+808;Tidy Up;427;Psycho Cut;overlap score=6 sharedTemplates=0
+809;Snowscape;196;Icy Wind;overlap score=5 sharedTemplates=0
+810;Pounce;401;Aqua Tail;overlap score=9 sharedTemplates=1
+811;Trailblaze;488;Flame Charge;overlap score=19 sharedTemplates=2
+812;Chilling Water;491;Acid Spray;overlap score=15 sharedTemplates=2
+813;Hyper Drill;13;Razor Wind;overlap score=1 sharedTemplates=0
+814;Twin Beam;149;Psywave;overlap score=4 sharedTemplates=0
+815;Rage Fist;218;Frustration;overlap score=16 sharedTemplates=1
+816;Armor Cannon;430;Flash Cannon;overlap score=16 sharedTemplates=2
+817;Bitter Blade;315;Overheat;overlap score=4 sharedTemplates=0
+818;Double Shock;550;Bolt Strike;overlap score=10 sharedTemplates=1
+819;Gigaton Hammer;452;Wood Hammer;overlap score=16 sharedTemplates=1
+820;Comeuppance;218;Frustration;overlap score=11 sharedTemplates=0
+821;Aqua Cutter;401;Aqua Tail;overlap score=14 sharedTemplates=2
+822;Blazing Torque;387;Last Resort;overlap score=25 sharedTemplates=2
+823;Wicked Torque;38;Double-Edge;overlap score=22 sharedTemplates=2
+824;Noxious Torque;387;Last Resort;overlap score=25 sharedTemplates=2
+825;Combat Torque;387;Last Resort;overlap score=25 sharedTemplates=2
+826;Magical Torque;38;Double-Edge;overlap score=22 sharedTemplates=2
+827;Psyblade;428;Zen Headbutt;overlap score=9 sharedTemplates=1
+828;Hydro Steam;503;Scald;overlap score=7 sharedTemplates=0
+829;Blood Moon;416;Giga Impact;overlap score=11 sharedTemplates=1
+830;Matcha Gotcha;394;Flare Blitz;overlap score=16 sharedTemplates=2
+831;Syrup Bomb;345;Magical Leaf;stat fallback
+832;Ivy Cudgel;452;Wood Hammer;overlap score=10 sharedTemplates=0
+833;Electro Shot;451;Charge Beam;overlap score=15 sharedTemplates=1
+834;Tera Starstorm;528;Wild Charge;overlap score=10 sharedTemplates=1
+835;Fickle Beam;63;Hyper Beam;overlap score=7 sharedTemplates=0
+836;Burning Bulwark;172;Flame Wheel;overlap score=8 sharedTemplates=1
+837;Thunderclap;87;Thunder;overlap score=10 sharedTemplates=1
+838;Mighty Cleave;428;Zen Headbutt;overlap score=12 sharedTemplates=1
+839;Tachyon Cutter;229;Rapid Spin;overlap score=1 sharedTemplates=0
+840;Hard Press;462;Crush Grip;overlap score=6 sharedTemplates=1
+841;Dragon Cheer;336;Howl;overlap score=6 sharedTemplates=0
+842;Alluring Voice;304;Hyper Voice;overlap score=14 sharedTemplates=1
+843;Temper Flare;99;Rage;overlap score=12 sharedTemplates=1
+844;Supercell Slam;34;Body Slam;overlap score=20 sharedTemplates=3
+845;Psychic Noise;253;Uproar;overlap score=14 sharedTemplates=2
+846;Upper Hand;395;Force Palm;overlap score=15 sharedTemplates=2
+847;Malignant Chain;132;Constrict;overlap score=5 sharedTemplates=0
+848;Breakneck Blitz;387;Last Resort;overlap score=20 sharedTemplates=2
+849;All-Out Pummeling;524;Frost Breath;overlap score=16 sharedTemplates=2
+850;Supersonic Skystrike;524;Frost Breath;overlap score=14 sharedTemplates=2
+851;Acid Downpour;524;Frost Breath;overlap score=16 sharedTemplates=2
+852;Tectonic Rage;464;Dark Void;overlap score=13 sharedTemplates=2
+853;Continental Crush;327;Sky Uppercut;overlap score=17 sharedTemplates=2
+854;Savage Spin-Out;545;Searing Shot;overlap score=11 sharedTemplates=0
+855;Never-Ending Nightmare;545;Searing Shot;overlap score=11 sharedTemplates=0
+856;Corkscrew Crash;524;Frost Breath;overlap score=16 sharedTemplates=2
+857;Inferno Overdrive;545;Searing Shot;overlap score=14 sharedTemplates=0
+858;Hydro Vortex;550;Bolt Strike;overlap score=17 sharedTemplates=2
+859;Bloom Doom;312;Aromatherapy;overlap score=12 sharedTemplates=2
+860;Gigavolt Havoc;85;Thunderbolt;overlap score=15 sharedTemplates=2
+861;Shattered Psyche;68;Counter;overlap score=13 sharedTemplates=2
+862;Subzero Slammer;554;Ice Burn;overlap score=20 sharedTemplates=2
+863;Devastating Drake;558;Fusion Flare;overlap score=13 sharedTemplates=0
+864;Black Hole Eclipse;117;Bide;overlap score=16 sharedTemplates=2
+865;Twinkle Tackle;321;Tickle;overlap score=5 sharedTemplates=0
+866;Catastropika;550;Bolt Strike;overlap score=20 sharedTemplates=2
+867;10,000,000 Volt Thunderbolt;545;Searing Shot;overlap score=14 sharedTemplates=0
+869;Stoked Sparksurfer;344;Volt Tackle;overlap score=20 sharedTemplates=1
+870;Extreme Evoboost;449;Judgment;overlap score=6 sharedTemplates=0
+871;Pulverizing Pancake;545;Searing Shot;overlap score=10 sharedTemplates=0
+872;Genesis Supernova;558;Fusion Flare;overlap score=16 sharedTemplates=1
+873;Sinister Arrow Raid;558;Fusion Flare;overlap score=7 sharedTemplates=0
+874;Malicious Moonsault;528;Wild Charge;overlap score=18 sharedTemplates=3
+875;Oceanic Operetta;558;Fusion Flare;overlap score=11 sharedTemplates=0
+876;Splintered Stormshards;218;Frustration;overlap score=12 sharedTemplates=1
+877;Let's Snuggle Forever;187;Belly Drum;overlap score=8 sharedTemplates=1
+878;Clangorous Soulblaze;464;Dark Void;overlap score=23 sharedTemplates=4
+879;Guardian of Alola;90;Fissure;overlap score=16 sharedTemplates=1
+880;Searing Sunraze Smash;387;Last Resort;overlap score=21 sharedTemplates=2
+881;Menacing Moonraze Maelstrom;387;Last Resort;overlap score=20 sharedTemplates=2
+882;Light That Burns the Sky;550;Bolt Strike;overlap score=11 sharedTemplates=0
+883;Soul-Stealing 7-Star Strike;553;Freeze Shock;overlap score=10 sharedTemplates=0
+884;Max Guard;182;Protect;script goto
+894;Max Flare;307;Blast Burn;script goto
+891;Max Flutterby;405;Bug Buzz;script goto
+897;Max Lightning;209;Spark;stat fallback
+885;Max Strike;12;Guillotine;stat fallback
+886;Max Knuckle;370;Close Combat;script goto
+892;Max Phantasm;247;Shadow Ball;script goto
+899;Max Hailstorm;329;Sheer Cold;script goto
+888;Max Ooze;40;Poison Sting;stat fallback
+895;Max Geyser;308;Hydro Cannon;script goto
+887;Max Airstream;64;Peck;stat fallback
+902;Max Starfall;585;Moonblast;script goto
+900;Max Wyrmwind;460;Spacial Rend;script goto
+898;Max Mindstorm;354;Psycho Boost;script goto
+890;Max Rockfall;439;Rock Wrecker;script goto
+889;Max Quake;90;Fissure;script goto
+901;Max Darkness;399;Dark Pulse;script goto
+896;Max Overgrowth;338;Frenzy Plant;script goto
+893;Max Steelspike;484;Heavy Slam;script goto
+903;G-Max Vine Lash;331;Bullet Seed;stat fallback
+904;G-Max Wildfire;535;Heat Crash;stat fallback
+905;G-Max Cannonade;128;Clamp;stat fallback
+906;G-Max Befuddle;41;Twineedle;stat fallback
+907;G-Max Volt Crash;209;Spark;stat fallback
+908;G-Max Gold Rush;132;Constrict;stat fallback
+909;G-Max Chi Strike;167;Triple Kick;stat fallback
+910;G-Max Terror;122;Lick;stat fallback
+911;G-Max Foam Burst;128;Clamp;stat fallback
+912;G-Max Resonance;333;Icicle Spear;stat fallback
+913;G-Max Cuddle;132;Constrict;stat fallback
+914;G-Max Replenish;132;Constrict;stat fallback
+915;G-Max Malodor;40;Poison Sting;stat fallback
+916;G-Max Meltdown;360;Gyro Ball;stat fallback
+917;G-Max Drum Solo;331;Bullet Seed;stat fallback
+918;G-Max Fireball;535;Heat Crash;stat fallback
+919;G-Max Hydrosnipe;128;Clamp;stat fallback
+920;G-Max Wind Rage;64;Peck;stat fallback
+921;G-Max Gravitas;531;Heart Stamp;stat fallback
+922;G-Max Stonesurge;128;Clamp;stat fallback
+923;G-Max Volcalith;350;Rock Blast;stat fallback
+924;G-Max Tartness;331;Bullet Seed;stat fallback
+925;G-Max Sweetness;331;Bullet Seed;stat fallback
+926;G-Max Sandblast;90;Fissure;stat fallback
+927;G-Max Stun Shock;209;Spark;stat fallback
+928;G-Max Centiferno;535;Heat Crash;stat fallback
+929;G-Max Smite;186;Sweet Kiss;stat fallback
+930;G-Max Snooze;251;Beat Up;stat fallback
+931;G-Max Finale;186;Sweet Kiss;stat fallback
+932;G-Max Steelsurge;360;Gyro Ball;stat fallback
+933;G-Max Depletion;530;Dual Chop;stat fallback
+934;G-Max One Blow;251;Beat Up;stat fallback
+935;G-Max Rapid Flow;128;Clamp;stat fallback
+560;Flying Press;507;Sky Drop;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+561;Mat Block;160;Conversion;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+562;Belch;459;Roar of Time;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+563;Rototiller;425;Shadow Sneak;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+564;Sticky Web;169;Spider Web;ADVISORY vfx tier - overlap score=7 sharedTemplates=1
+565;Fell Stinger;371;Payback;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+566;Phantom Force;467;Shadow Force;ADVISORY vfx tier - overlap score=18 sharedTemplates=0
+567;Trick-or-Treat;174;Curse;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+568;Noble Roar;43;Leer;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+569;Ion Deluge;86;Thunder Wave;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+570;Parabolic Charge;351;Shock Wave;ADVISORY vfx tier - overlap score=20 sharedTemplates=1
+571;Forest's Curse;174;Curse;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+572;Petal Blizzard;239;Twister;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+573;Freeze-Dry;8;Ice Punch;ADVISORY vfx tier - overlap score=17 sharedTemplates=2
+574;Disarming Voice;45;Growl;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+575;Parting Shot;45;Growl;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+576;Topsy-Turvy;434;Draco Meteor;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+577;Draining Kiss;213;Attract;ADVISORY vfx tier - overlap score=15 sharedTemplates=2
+578;Crafty Shield;160;Conversion;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+579;Flower Shield;86;Thunder Wave;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+580;Grassy Terrain;391;Heart Swap;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+581;Misty Terrain;391;Heart Swap;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+582;Electrify;546;Techno Blast;ADVISORY vfx tier - overlap score=14 sharedTemplates=2
+583;Play Rough;146;Dizzy Punch;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+584;Fairy Wind;465;Seed Flare;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+585;Moonblast;236;Moonlight;ADVISORY vfx tier - overlap score=11 sharedTemplates=1
+586;Boomburst;304;Hyper Voice;ADVISORY vfx tier - overlap score=17 sharedTemplates=1
+587;Fairy Lock;559;Fusion Bolt;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+588;King's Shield;182;Protect;ADVISORY vfx tier - script goto
+589;Play Nice;213;Attract;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+590;Confide;150;Splash;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+591;Diamond Storm;196;Icy Wind;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+592;Steam Eruption;25;Mega Kick;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+593;Hyperspace Hole;425;Shadow Sneak;ADVISORY vfx tier - overlap score=8 sharedTemplates=0
+594;Water Shuriken;486;Electro Ball;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+595;Mystical Fire;221;Sacred Fire;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+596;Spiky Shield;182;Protect;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+597;Aromatic Mist;230;Sweet Scent;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+598;Eerie Impulse;435;Discharge;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+599;Venom Drench;380;Gastro Acid;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+600;Powder;476;Rage Powder;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+601;Geomancy;558;Fusion Flare;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+602;Magnetic Flux;546;Techno Blast;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+603;Happy Hour;6;Pay Day;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+604;Electric Terrain;391;Heart Swap;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+605;Dazzling Gleam;322;Cosmic Power;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+606;Celebrate;266;Follow Me;ADVISORY vfx tier - overlap score=2 sharedTemplates=0
+607;Hold Hands;270;Helping Hand;ADVISORY vfx tier - overlap score=15 sharedTemplates=1
+608;Baby-Doll Eyes;515;Final Gambit;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+609;Nuzzle;204;Charm;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+610;Hold Back;311;Weather Ball;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+611;Infestation;451;Charge Beam;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+612;Power-Up Punch;292;Arm Thrust;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+613;Oblivion Wing;19;Fly;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+614;Thousand Arrows;553;Freeze Shock;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+615;Thousand Waves;245;Extreme Speed;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+616;Land's Wrath;414;Earth Power;ADVISORY vfx tier - overlap score=11 sharedTemplates=0
+617;Light Of Ruin;545;Searing Shot;ADVISORY vfx tier - overlap score=13 sharedTemplates=0
+618;Origin Pulse;439;Rock Wrecker;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+619;Precipice Blades;525;Dragon Tail;ADVISORY vfx tier - overlap score=14 sharedTemplates=2
+620;Dragon Ascent;387;Last Resort;ADVISORY vfx tier - overlap score=21 sharedTemplates=2
+621;Hyperspace Fury;63;Hyper Beam;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+622;Shore Up;201;Sandstorm;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+623;First Impression;401;Aqua Tail;ADVISORY vfx tier - overlap score=18 sharedTemplates=3
+624;Baneful Bunker;182;Protect;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+625;Spirit Shackle;427;Psycho Cut;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+626;Darkest Lariat;555;Snarl;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+627;Sparkling Aria;528;Wild Charge;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+628;Ice Hammer;359;Hammer Arm;ADVISORY vfx tier - overlap score=10 sharedTemplates=1
+629;Floral Healing;230;Sweet Scent;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+630;High Horsepower;25;Mega Kick;ADVISORY vfx tier - overlap score=8 sharedTemplates=0
+631;Strength Sap;215;Heal Bell;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+632;Solar Blade;548;Secret Sword;ADVISORY vfx tier - overlap score=10 sharedTemplates=1
+633;Leafage;75;Razor Leaf;ADVISORY vfx tier - overlap score=2 sharedTemplates=0
+634;Spotlight;227;Encore;ADVISORY vfx tier - overlap score=14 sharedTemplates=1
+635;Toxic Thread;427;Psycho Cut;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+636;Laser Focus;43;Leer;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+637;Gear Up;546;Techno Blast;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+638;Throat Chop;358;Wake-Up Slap;ADVISORY vfx tier - overlap score=10 sharedTemplates=1
+639;Pollen Puff;515;Final Gambit;ADVISORY vfx tier - overlap score=8 sharedTemplates=0
+640;Anchor Shot;434;Draco Meteor;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+641;Psychic Terrain;391;Heart Swap;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+642;Lunge;170;Mind Reader;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+643;Fire Lash;172;Flame Wheel;ADVISORY vfx tier - overlap score=23 sharedTemplates=3
+644;Power Trip;515;Final Gambit;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+645;Burn Up;315;Overheat;ADVISORY vfx tier - overlap score=19 sharedTemplates=0
+646;Speed Swap;138;Dream Eater;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+647;Smart Strike;199;Lock-On;ADVISORY vfx tier - overlap score=10 sharedTemplates=2
+648;Purify;108;Smokescreen;ADVISORY vfx tier - overlap score=2 sharedTemplates=0
+649;Revelation Dance;514;Retaliate;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+650;Core Enforcer;435;Discharge;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+651;Trop Kick;428;Zen Headbutt;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+652;Instruct;172;Flame Wheel;ADVISORY vfx tier - overlap score=11 sharedTemplates=1
+653;Beak Blast;65;Drill Peck;ADVISORY vfx tier - overlap score=18 sharedTemplates=2
+654;Clanging Scales;434;Draco Meteor;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+655;Dragon Hammer;387;Last Resort;ADVISORY vfx tier - overlap score=19 sharedTemplates=2
+656;Brutal Swing;528;Wild Charge;ADVISORY vfx tier - overlap score=19 sharedTemplates=3
+657;Aurora Veil;62;Aurora Beam;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+658;Shell Trap;394;Flare Blitz;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+659;Fleur Cannon;63;Hyper Beam;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+660;Psychic Fangs;280;Brick Break;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+661;Stomping Tantrum;434;Draco Meteor;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+662;Shadow Bone;125;Bone Club;ADVISORY vfx tier - overlap score=10 sharedTemplates=1
+663;Accelerock;350;Rock Blast;ADVISORY vfx tier - overlap score=13 sharedTemplates=2
+664;Liquidation;127;Waterfall;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+665;Prismatic Laser;143;Sky Attack;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+666;Spectral Thief;194;Destiny Bond;ADVISORY vfx tier - overlap score=14 sharedTemplates=0
+667;Sunsteel Strike;434;Draco Meteor;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+668;Moongeist Beam;546;Techno Blast;ADVISORY vfx tier - overlap score=12 sharedTemplates=1
+669;Tearful Look;170;Mind Reader;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+670;Zing Zap;209;Spark;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+671;Nature's Madness;515;Final Gambit;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+672;Multi-Attack;548;Secret Sword;ADVISORY vfx tier - overlap score=12 sharedTemplates=1
+673;Mind Blown;558;Fusion Flare;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+674;Plasma Fists;351;Shock Wave;ADVISORY vfx tier - overlap score=11 sharedTemplates=0
+675;Photon Geyser;451;Charge Beam;ADVISORY vfx tier - overlap score=10 sharedTemplates=0
+676;Zippy Zap;98;Quick Attack;ADVISORY vfx tier - overlap score=11 sharedTemplates=0
+677;Splishy Splash;127;Waterfall;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+678;Floaty Fall;19;Fly;ADVISORY vfx tier - overlap score=16 sharedTemplates=2
+679;Pika Papow;216;Return;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+680;Bouncy Bubble;202;Giga Drain;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+681;Buzzy Buzz;85;Thunderbolt;ADVISORY vfx tier - overlap score=8 sharedTemplates=0
+682;Sizzly Slide;172;Flame Wheel;ADVISORY vfx tier - overlap score=18 sharedTemplates=2
+683;Glitzy Glow;113;Light Screen;ADVISORY vfx tier - script goto
+684;Baddy Bad;115;Reflect;ADVISORY vfx tier - script goto
+685;Sappy Seed;345;Magical Leaf;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+686;Freezy Frost;434;Draco Meteor;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+687;Sparkly Swirl;434;Draco Meteor;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+688;Veevee Volley;216;Return;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+689;Double Iron Bash;211;Steel Wing;ADVISORY vfx tier - overlap score=24 sharedTemplates=3
+690;Dynamax Cannon;545;Searing Shot;ADVISORY vfx tier - overlap score=10 sharedTemplates=0
+691;Snipe Shot;43;Leer;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+692;Jaw Lock;427;Psycho Cut;ADVISORY vfx tier - overlap score=9 sharedTemplates=0
+693;Stuff Cheeks;215;Heal Bell;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+694;No Retreat;298;Teeter Dance;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+695;Tar Shot;499;Clear Smog;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+696;Magic Powder;391;Heart Swap;ADVISORY vfx tier - overlap score=4 sharedTemplates=0
+697;Dragon Darts;223;Dynamic Punch;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+698;Teatime;118;Metronome;ADVISORY vfx tier - overlap score=5 sharedTemplates=1
+699;Octolock;295;Luster Purge;ADVISORY vfx tier - overlap score=3 sharedTemplates=0
+700;Bolt Beak;209;Spark;ADVISORY vfx tier - overlap score=19 sharedTemplates=3
+701;Fishious Rend;127;Waterfall;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+702;Court Change;433;Trick Room;ADVISORY vfx tier - script goto
+703;Clangorous Soul;203;Endure;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+704;Body Press;558;Fusion Flare;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+705;Decorate;579;Flower Shield;ADVISORY vfx tier - script goto
+706;Drum Beating;187;Belly Drum;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+707;Snap Trap;427;Psycho Cut;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+708;Pyro Ball;545;Searing Shot;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+709;Behemoth Blade;533;Sacred Sword;ADVISORY vfx tier - overlap score=20 sharedTemplates=3
+710;Behemoth Bash;153;Explosion;ADVISORY vfx tier - overlap score=12 sharedTemplates=1
+711;Aura Wheel;528;Wild Charge;ADVISORY vfx tier - overlap score=13 sharedTemplates=2
+712;Breaking Swipe;434;Draco Meteor;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+713;Branch Poke;532;Horn Leech;ADVISORY vfx tier - overlap score=5 sharedTemplates=0
+714;Overdrive;304;Hyper Voice;ADVISORY vfx tier - overlap score=14 sharedTemplates=1
+715;Apple Acid;558;Fusion Flare;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+716;Grav Apple;327;Sky Uppercut;ADVISORY vfx tier - overlap score=14 sharedTemplates=2
+717;Spirit Break;27;Rolling Kick;ADVISORY vfx tier - overlap score=8 sharedTemplates=1
+718;Strange Steam;558;Fusion Flare;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+719;Life Dew;487;Soak;ADVISORY vfx tier - overlap score=1 sharedTemplates=0
+720;Obstruct;182;Protect;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+721;False Surrender;185;Feint Attack;ADVISORY vfx tier - overlap score=14 sharedTemplates=0
+722;Meteor Assault;545;Searing Shot;ADVISORY vfx tier - overlap score=13 sharedTemplates=0
+723;Eternabeam;434;Draco Meteor;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+724;Steel Beam;430;Flash Cannon;ADVISORY vfx tier - overlap score=10 sharedTemplates=0
+725;Expanding Force;223;Dynamic Punch;ADVISORY vfx tier - overlap score=7 sharedTemplates=0
+726;Steel Roller;525;Dragon Tail;ADVISORY vfx tier - overlap score=6 sharedTemplates=1
+727;Scale Shot;407;Dragon Rush;ADVISORY vfx tier - overlap score=9 sharedTemplates=1
+728;Meteor Beam;439;Rock Wrecker;ADVISORY vfx tier - overlap score=10 sharedTemplates=0
+730;Misty Explosion;558;Fusion Flare;ADVISORY vfx tier - overlap score=6 sharedTemplates=0
+731;Grassy Glide;525;Dragon Tail;ADVISORY vfx tier - overlap score=13 sharedTemplates=2
+732;Rising Voltage;351;Shock Wave;ADVISORY vfx tier - overlap score=13 sharedTemplates=1

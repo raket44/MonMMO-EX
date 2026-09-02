@@ -14,6 +14,9 @@ import kotlin.io.path.name
  */
 object ExpansionDexText {
   private val SPECIES_BLOCK = Regex("""\[SPECIES_([A-Z0-9_]+)]\s*=""")
+  private val SHARED_TEXT =
+      Regex("""const u8 (g\w+PokedexText)\[\]\s*=\s*_\(((?:[^()]|\(\w*\))*)\)""")
+  private val NAMED_DESCRIPTION = Regex("""\.description\s*=\s*(g\w+PokedexText)""")
   private val DESCRIPTION =
       Regex("""\.description\s*=\s*COMPOUND_STRING\(((?:[^()]|\([^)]*\))*)\)""")
   private val QUOTED = Regex(""""((?:[^"\\]|\\.)*)"""")
@@ -28,27 +31,65 @@ object ExpansionDexText {
                   Files.isRegularFile(it)
                 })
             .filterNotNull()
+    // Species with forms share one paragraph through a named variable in shared_dex_text.h;
+    // resolve those first so a .description = gGreninjaPokedexText reference lands too.
+    val sharedTexts = mutableMapOf<String, String>()
+    val sharedFile = infoDir.resolve("shared_dex_text.h")
+    if (Files.isRegularFile(sharedFile)) {
+      SHARED_TEXT.findAll(Files.readString(sharedFile)).forEach { match ->
+        val paragraph = joinQuoted(match.groupValues[2])
+        if (paragraph.isNotEmpty()) sharedTexts[match.groupValues[1]] = paragraph
+      }
+    }
+
     sources.forEach { source ->
       val text = Files.readString(source)
       val markers = SPECIES_BLOCK.findAll(text).toList()
       markers.forEachIndexed { index, marker ->
         val end = markers.getOrNull(index + 1)?.range?.first ?: text.length
         val block = text.substring(marker.range.first, end)
-        val body = DESCRIPTION.find(block)?.groupValues?.get(1) ?: return@forEachIndexed
+        val body = DESCRIPTION.find(block)?.groupValues?.get(1)
         val paragraph =
-            QUOTED.findAll(body)
-                .joinToString("") { it.groupValues[1] }
-                .replace("\\n", " ")
-                .replace("\\\"", "\"")
-                .replace(Regex("\\s+"), " ")
-                .trim()
+            if (body != null) joinQuoted(body)
+            else
+                NAMED_DESCRIPTION.find(block)?.groupValues?.get(1)?.let { sharedTexts[it] }
+                    ?: return@forEachIndexed
         if (paragraph.isNotEmpty()) {
           result.putIfAbsent(marker.groupValues[1], paragraph)
         }
       }
     }
+    // A species whose whole info block is a macro (Scatterbug, Furfrou, Minior...) never shows
+    // a .description inside its [SPECIES_X] entry, but its shared variable name spells the
+    // species: gScatterbugPokedexText -> SCATTERBUG. Derive that as a last resort.
+    sharedTexts.forEach { (variable, text) ->
+      val symbol =
+          variable
+              .removePrefix("g")
+              .removeSuffix("PokedexText")
+              .replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
+              .uppercase()
+      result.putIfAbsent(symbol, text)
+      // Token-pasted names carry the form too (gAlcremieVanillaCreamPokedexText); offer every
+      // shortened prefix so the base species picks up its first form's paragraph.
+      var prefix = symbol
+      while (true) {
+        val cut = prefix.lastIndexOf('_')
+        if (cut <= 0) break
+        prefix = prefix.substring(0, cut)
+        result.putIfAbsent(prefix, text)
+      }
+    }
     return result
   }
+
+  private fun joinQuoted(body: String): String =
+      QUOTED.findAll(body)
+          .joinToString("") { it.groupValues[1] }
+          .replace("\\n", " ")
+          .replace("\\\"", "\"")
+          .replace(Regex("\\s+"), " ")
+          .trim()
 
   /** The paragraph for a symbol, falling back through the family the way learnsets do. */
   fun forSymbol(table: Map<String, String>, symbol: String): String? {

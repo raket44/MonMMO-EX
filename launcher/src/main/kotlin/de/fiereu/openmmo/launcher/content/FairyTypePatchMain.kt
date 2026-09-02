@@ -516,32 +516,36 @@ fun main(args: Array<String>) {
       val wire = entry.clientWireId ?: return@forEach
       if (wire in 1..667 || wire in 1000..1052) return@forEach
       val clean = { value: String -> value.replace("\t", " ").replace("\n", "\\n") }
+      // Measured on screen: the Type row text reads table 260 (the "Ninja Pokemon" category
+      // line) and the Desc row reads 235/236 (the dex-entry paragraph) - the reverse of the
+      // first guess.
       if (entry.categoryName.isNotBlank()) {
         val category = clean(entry.categoryName + " Pokémon")
-        dexTextRows.append("235\t").append(wire).append("\t").append(category).append("\n")
-        dexTextRows.append("236\t").append(wire).append("\t").append(category).append("\n")
+        dexTextRows.append("260\t").append(wire).append("\t").append(category).append("\n")
         dexTextCount++
       }
       ExpansionDexText.forSymbol(dexDescriptions, entry.symbol)?.let { paragraph ->
-        dexTextRows.append("260\t").append(wire).append("\t").append(clean(paragraph)).append("\n")
+        dexTextRows.append("235\t").append(wire).append("\t").append(clean(paragraph)).append("\n")
+        dexTextRows.append("236\t").append(wire).append("\t").append(clean(paragraph)).append("\n")
         dexTextCount++
       }
+      // Retail formatting sampled off the ROM at runtime: height 1\'04\" (feet, zero-
+      // padded inches), weight 13.2 lbs. - imperial, not metric.
+      val totalInches = Math.round(entry.height * 3.93701).toInt()
       dexTextRows
           .append("245\t")
           .append(wire)
           .append("\t")
-          .append(entry.height / 10)
-          .append(".")
-          .append(entry.height % 10)
-          .append(" m\n")
+          .append(totalInches / 12)
+          .append("'")
+          .append(String.format("%02d", totalInches % 12))
+          .append("\"\n")
       dexTextRows
           .append("268\t")
           .append(wire)
           .append("\t")
-          .append(entry.weight / 10)
-          .append(".")
-          .append(entry.weight % 10)
-          .append(" kg\n")
+          .append(String.format("%.1f", entry.weight * 0.220462))
+          .append(" lbs.\n")
     }
 
     jar.putNextEntry(ZipEntry("monmmo/dex-text.tsv"))

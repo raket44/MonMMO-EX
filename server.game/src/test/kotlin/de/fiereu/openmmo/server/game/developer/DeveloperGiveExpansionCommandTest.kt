@@ -70,7 +70,9 @@ class DeveloperGiveExpansionCommandTest :
                             expansionClientContent = expansionClientContent,
                         ),
                 ))
-        val command = DeveloperGiveExpansionCommand(tools, expansion, factory, player)
+        val command =
+            DeveloperGiveExpansionCommand(
+                tools, expansion, factory, player, de.fiereu.openmmo.moves.MoveRegistry())
         val context =
             CommandContext(session, session.state(), character, emptyList(), listOf(command))
         return Triple(command, context, store)

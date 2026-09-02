@@ -22,10 +22,12 @@ constructor(
     private val expansion: ExpansionSpeciesRegistry,
     private val pokemonFactory: WildMonFactory,
     private val storyPlayer: StoryPlayerService,
+    private val moveRegistry: de.fiereu.openmmo.moves.MoveRegistry,
 ) : ChatCommand {
   override val name = "givemon"
   override val aliases = listOf("devgivemon")
-  override val usage = "/givemon <species> [level] [shiny] - partial names list matches"
+  override val usage =
+      "/givemon <species> [level] [shiny] [moves:<id-or-name>,...] - partial names list matches"
   override val description = "adds a Pokemon from the Expansion catalog to your party"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -47,14 +49,39 @@ constructor(
       return
     }
     val speciesArgument = ctx.args.getOrNull(0)
-    val levelArgument = ctx.args.getOrNull(1)
-    val shinyArgument = ctx.args.getOrNull(2)
+    // A moves: argument overrides the learnset moveset, so any animation or mechanic can be
+    // battle-tested on a spawned monster (operator-requested; the client's own /testanimation
+    // needs an active battle scene and is useless for auditing). Accepts move ids or names.
+    val movesArgument = ctx.args.firstOrNull { it.startsWith("moves:") }
+    val positional = ctx.args.filter { !it.startsWith("moves:") }
+    val levelArgument = positional.getOrNull(1)
+    val shinyArgument = positional.getOrNull(2)
     // Saying which argument was wrong, rather than only reprinting the usage line, so a rejected
     // command is diagnosable from the chat reply instead of silently looking like nothing happened.
     if (speciesArgument == null) {
       ctx.reply(usage)
       return
     }
+    val overrideMoves: List<Int>? =
+        movesArgument?.let { argument ->
+          val tokens = argument.removePrefix("moves:").split(',').filter { it.isNotBlank() }
+          if (tokens.isEmpty() || tokens.size > 4) {
+            ctx.reply("moves: takes 1 to 4 comma-separated move ids or names.")
+            return
+          }
+          tokens.map { token ->
+            token.toIntOrNull()
+                ?: moveRegistry
+                    .all()
+                    .firstOrNull { it.name.equals(token.replace('_', ' '), ignoreCase = true) }
+                    ?.id
+                ?: run {
+                  ctx.reply(
+                      "Unknown move \"$token\" - use a numeric id for moves past the Gen 3 table.")
+                  return
+                }
+          }
+        }
     // Many species exist only as named forms: there is no SPECIES_XERNEAS, only XERNEAS_NEUTRAL
     // and XERNEAS_ACTIVE, so a bare name falls back to the base form of a prefix match.
     val entry = expansion.get(speciesArgument) ?: resolveForm(speciesArgument, ctx) ?: return
@@ -107,7 +134,7 @@ constructor(
       return
     }
 
-    val moveIds = created.moves.map { it.id.toInt() }.filter { it != 0 }
+    val moveIds = overrideMoves ?: created.moves.map { it.id.toInt() }.filter { it != 0 }
     val isShiny = shinyArgument == "shiny"
     val given =
         storyPlayer.givePokemon(

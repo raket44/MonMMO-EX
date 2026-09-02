@@ -7,7 +7,8 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 
-private const val BULBASAUR = 1
+// A synthetic dex id no data source resolves, so the registered test learnset is what serves.
+private const val BULBASAUR = 55_000
 private const val TACKLE: Short = 33
 private const val GROWL: Short = 45
 private const val LEECH_SEED: Short = 73
@@ -20,7 +21,21 @@ private fun slots(vararg ids: Short) = ids.map { PokemonMove(it, 0) }.toMutableL
 class MoveLearnerTest :
     FunSpec({
       val moves = MoveRegistry()
-      val learner = MoveLearner(LearnsetRegistry(), moves)
+      val learnsets = LearnsetRegistry()
+      // These are MECHANICS tests: pin the classic Gen 3 Bulbasaur learnset under a synthetic id
+      // so the assertions stay stable while the live data source evolves (expansion tables now
+      // outrank the decomp's and carry different levels).
+      learnsets.register(
+          BULBASAUR,
+          listOf(
+              de.fiereu.openmmo.pokemon.LevelUpMove(1, TACKLE.toInt()),
+              de.fiereu.openmmo.pokemon.LevelUpMove(4, GROWL.toInt()),
+              de.fiereu.openmmo.pokemon.LevelUpMove(7, LEECH_SEED.toInt()),
+              de.fiereu.openmmo.pokemon.LevelUpMove(10, VINE_WHIP.toInt()),
+              de.fiereu.openmmo.pokemon.LevelUpMove(15, POISON_POWDER.toInt()),
+              de.fiereu.openmmo.pokemon.LevelUpMove(15, SLEEP_POWDER.toInt()),
+          ))
+      val learner = MoveLearner(learnsets, moves)
 
       test("a move learned at the new level goes into a free slot") {
         val known = slots(TACKLE, 0, 0, 0)

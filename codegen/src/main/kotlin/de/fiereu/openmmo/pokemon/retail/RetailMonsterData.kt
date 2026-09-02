@@ -12,11 +12,13 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * The retail PokeMMO data dump (`data/pokemmo/monsters.json`, operator-supplied): one record per
- * species with the MODERN stats, types, learnsets, egg groups and yields the 31914 client itself
- * displays, plus every wild-encounter row across the five regions - the operator-designated single
- * source of truth for how and when anything spawns. Species ids 1-649 are national dex numbers (the
- * same as canonical server ids); 1000+ are the client's form records, kept parsed but not yet
+ * The client's own DUMP DEX output (`data/pokemmo/monsters.json`, operator-supplied): one record
+ * per RETAIL species - complete stats, types, learnsets (outdated, pre-expansion), egg groups and
+ * yields, but NO expansion species - plus every wild-encounter row across the five regions. The
+ * encounter rows are the operator-designated single source of truth for how and when anything
+ * spawns; the species data ranks BELOW the expansion catalogue (the modern truth - Fairy retypes
+ * and current tables live there) and above the decomp. Species ids 1-649 are national dex numbers
+ * (the same as canonical server ids); 1000+ are the client's form records, kept parsed but not yet
  * applied.
  *
  * Loaded lazily from the working directory (the server launches with CWD = the project dir, same

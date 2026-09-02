@@ -33,16 +33,33 @@ class WildMonFactoryTest :
         }
       }
 
+      // MECHANICS tests on a synthetic species with a pinned learnset (id 55000 resolves through
+      // no live data source), so the assertions survive the expansion/retail/decomp precedence.
+      val pinnedSpecies = SpeciesRegistry()
+      val pinnedLearnsets = LearnsetRegistry()
+      pinnedSpecies.register(pinnedSpecies.get(19)!!.copy(id = 55_000))
+      pinnedLearnsets.register(
+          55_000,
+          listOf(
+              de.fiereu.openmmo.pokemon.LevelUpMove(1, 33),
+              de.fiereu.openmmo.pokemon.LevelUpMove(4, 45),
+              de.fiereu.openmmo.pokemon.LevelUpMove(21, 230),
+              de.fiereu.openmmo.pokemon.LevelUpMove(25, 74),
+              de.fiereu.openmmo.pokemon.LevelUpMove(29, 235),
+              de.fiereu.openmmo.pokemon.LevelUpMove(33, 76),
+          ))
+      val pinnedFactory =
+          WildMonFactory(pinnedSpecies, MoveRegistry(), pinnedLearnsets, EntityIdService())
+
       test("the moveset is the level up moveset with registry pp") {
-        // Bulbasaur knows Tackle at level 1 and Growl at level 4.
-        val mon = factory.create(1, 5, BattleRng(seed = 7))!!
+        val mon = pinnedFactory.create(55_000, 5, BattleRng(seed = 7))!!
         mon.moves.map { it.id.toInt() } shouldBe listOf(33, 45, 0, 0)
         mon.moves[0].pp shouldBe MoveRegistry().get(33)!!.pp.toByte()
         mon.moves[1].pp shouldBe MoveRegistry().get(45)!!.pp.toByte()
       }
 
       test("a high level monster keeps only the last four moves") {
-        val mon = factory.create(1, 100, BattleRng(seed = 7))!!
+        val mon = pinnedFactory.create(55_000, 100, BattleRng(seed = 7))!!
         mon.moves.map { it.id.toInt() } shouldBe listOf(230, 74, 235, 76)
       }
 

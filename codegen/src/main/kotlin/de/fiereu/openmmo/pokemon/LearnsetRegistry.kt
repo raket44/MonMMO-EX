@@ -28,18 +28,19 @@ constructor(
   }
 
   fun get(dexId: Int): List<LevelUpMove> =
-      // Retail-dump learnsets win where present (operator-directed) - they are the modern move
-      // tables the client itself displays; decomp and expansion tables stay the fallbacks.
-      de.fiereu.openmmo.pokemon.retail.RetailMonsterData.get(dexId)?.levelUpLearnset?.takeIf {
-        it.isNotEmpty()
-      }
-          ?: learnsets[dexId]
-          // Plain 1-649 ids resolve through the wire-id index too, same as runtimeDefinition -
-          // creation collapses expansion-offset ids for retail dex numbers to the plain id.
-          ?: (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
+      // Precedence (operator-directed): EXPANSION learnsets are the modern truth and replace the
+      // counterparts' tables (plain 1-649 ids resolve through the wire-id index too - creation
+      // collapses expansion-offset ids for retail dex numbers to the plain id). The retail dump
+      // (the client's DUMP DEX output, outdated movesets) covers what the expansion cannot
+      // resolve, then the decomp tables.
+      (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
+          ?.levelUpLearnset
+          ?.takeIf { it.isNotEmpty() }
+          ?.map { LevelUpMove(it.level, it.originalMoveId) }
+          ?: de.fiereu.openmmo.pokemon.retail.RetailMonsterData.get(dexId)
               ?.levelUpLearnset
-              ?.map { LevelUpMove(it.level, it.originalMoveId) }
-              .orEmpty()
+              ?.takeIf { it.isNotEmpty() }
+          ?: learnsets[dexId].orEmpty()
 
   fun movesAt(dexId: Int, level: Int): List<Int> =
       get(dexId).filter { it.level == level }.map { it.moveId }

@@ -28,23 +28,87 @@ constructor(
     species[def.id] = def
   }
 
+  private val expansionResolved = ConcurrentHashMap<Int, SpeciesDef>()
+
   /**
-   * Retail-dump data wins for species it covers (operator-directed: the modern types, stats and
-   * tables the client itself shows replace the GBA decomp's), with the decomp def filling the
-   * fields the dump lacks (egg cycles, friendship, safari flee rate, body color). Everything else
-   * falls back exactly as before: generated decomp defs, then the expansion catalogue.
+   * Precedence (operator-directed): the EXPANSION catalogue is the modern truth - it is where the
+   * Fairy retypes and current tables came from - and replaces the counterpart data for every
+   * species it resolves, old dex numbers included. The retail dump (the client's own DUMP DEX
+   * output: complete for retail species but OUTDATED movesets and no new species) fills species the
+   * expansion cannot resolve, merged over the decomp def for its missing fields. The decomp tables
+   * are the last fallback.
    */
   fun get(id: Int): SpeciesDef? {
+    expansionResolved[id]?.let {
+      return it
+    }
+    expansion.runtimeDefinition(id)?.let { resolved ->
+      val filled = backfillEconomy(resolved, id)
+      expansionResolved[id] = filled
+      return filled
+    }
     val retail = RetailMonsterData.get(id)
     if (retail != null) {
       return retailMerged.computeIfAbsent(id) { mergeRetail(retail, species[id]) }
     }
-    return species[id] ?: expansion.runtimeDefinition(id)
+    return species[id]
   }
 
   fun all(): Collection<SpeciesDef> = species.values
 
   fun size(): Int = species.size
+
+  /**
+   * The pre-generated expansion catalogue carries ZERO exp yields (and sometimes catch rates and EV
+   * yields) for old species - a Chansey win paid 0 xp. A zero in those fields is never valid data,
+   * so it backfills from the retail dump, then the decomp def.
+   */
+  private fun backfillEconomy(def: SpeciesDef, id: Int): SpeciesDef {
+    val retail = RetailMonsterData.get(id)
+    val decomp = species[id]
+    val expYield =
+        def.expYield.takeIf { it > 0 }
+            ?: retail?.yields?.exp?.takeIf { it > 0 }
+            ?: decomp?.expYield
+            ?: 0
+    val catchRate =
+        def.catchRate.takeIf { it > 0 }
+            ?: retail?.catchRate?.takeIf { it > 0 }
+            ?: decomp?.catchRate
+            ?: 0
+    val hasEvYields =
+        def.evYieldHp +
+            def.evYieldAttack +
+            def.evYieldDefense +
+            def.evYieldSpeed +
+            def.evYieldSpAttack +
+            def.evYieldSpDefense > 0
+    val out =
+        if (hasEvYields || (retail == null && decomp == null)) def
+        else if (retail != null &&
+            retail.yields.let {
+              it.evHp + it.evAttack + it.evDefense + it.evSpeed + it.evSpAttack + it.evSpDefense
+            } > 0)
+            def.copy(
+                evYieldHp = retail.yields.evHp,
+                evYieldAttack = retail.yields.evAttack,
+                evYieldDefense = retail.yields.evDefense,
+                evYieldSpeed = retail.yields.evSpeed,
+                evYieldSpAttack = retail.yields.evSpAttack,
+                evYieldSpDefense = retail.yields.evSpDefense,
+            )
+        else if (decomp != null)
+            def.copy(
+                evYieldHp = decomp.evYieldHp,
+                evYieldAttack = decomp.evYieldAttack,
+                evYieldDefense = decomp.evYieldDefense,
+                evYieldSpeed = decomp.evYieldSpeed,
+                evYieldSpAttack = decomp.evYieldSpAttack,
+                evYieldSpDefense = decomp.evYieldSpDefense,
+            )
+        else def
+    return out.copy(expYield = expYield, catchRate = catchRate)
+  }
 
   private fun mergeRetail(
       retail: RetailMonsterData.RetailMonster,

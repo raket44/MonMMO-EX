@@ -39,10 +39,15 @@ public final class VfxAnim extends f.Dm0 {
     f.cd timeline = f.cd.QS0().OR(c30(moveId)).J6();
     yC = timeline;
     timeline.Ix0(JK(0, 0.6f));
-    yC.Ix0(ew(14, 1))
-        .Zy1()
-        .J6()
-        .Ix0(j00(-1, moveId, 0, 9, 8, 0.0f))
+    f.cd chain = yC.Ix0(ew(14, 1)).Zy1().J6();
+    // Anchor EVERY controller of the effect, not just the first: j00 copies controller <i> with
+    // the caster-to-target anchors attached, and self-guards (empty timeline) past the last
+    // index. The generic animation anchors only index 0, which is why multi-phase effects -
+    // Moonblast carries six controllers - played as a sliver of themselves.
+    for (int controller = 0; controller < 12; controller++) {
+      chain = chain.Ix0(j00(-1, moveId, controller, 9, 8, 0.0f));
+    }
+    chain
         .Ix0(Oh(14, 0.5f, 0.0f, 0.5f, f.N31.kA0(31)))
         .Ix0(zF1(14, 1, 2, 0.016f, 0.228f, 1.2f, 1.2f))
         .Ix0(xw1((byte) 2, (short) 1412, 0, 14, 100.0f, 1.0f, gR1))

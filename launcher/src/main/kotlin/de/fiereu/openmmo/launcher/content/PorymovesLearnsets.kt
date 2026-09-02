@@ -24,6 +24,14 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 object PorymovesLearnsets {
 
+  /**
+   * Legends Z-A has no real TM machines: its dump lists most of a species' MOVEPOOL as
+   * TMMoves/TutorMoves (Greninja's includes Tackle and its signature Water Shuriken), which
+   * polluted the tools tab and even minted TM items for level-up moves. Its categories mean
+   * something else, so the file is excluded from the union entirely.
+   */
+  private val EXCLUDED_GAMES = setOf("za.json")
+
   data class Learnsets(
       val taught: Map<String, List<Int>>,
       val egg: Map<String, List<Int>>,
@@ -37,7 +45,7 @@ object PorymovesLearnsets {
     val prevo = mutableMapOf<String, MutableSet<Int>>()
     Files.list(directory).use { files ->
       files
-          .filter { it.name.endsWith(".json") }
+          .filter { it.name.endsWith(".json") && it.name !in EXCLUDED_GAMES }
           .sorted()
           .forEach { file ->
             val root = Json.parseToJsonElement(Files.readString(file)).jsonObject

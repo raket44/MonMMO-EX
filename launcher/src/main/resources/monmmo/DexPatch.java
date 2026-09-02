@@ -108,7 +108,19 @@ public final class DexPatch {
     Method animGet = animMap.getClass().getMethod("gi0", short.class);
     Method animPut = animMap.getClass().getMethod("nuL", short.class, Object.class);
 
+    // The vfx-playing animation class for movevfx fixups, resolved lazily so a build without it
+    // degrades to the donor aliases instead of failing every fixup.
+    java.lang.reflect.Constructor<?> vfxCtor = null;
+    try {
+      vfxCtor =
+          Class.forName("monmmo.VfxAnim")
+              .getConstructor(Class.forName("f.QL1"), short.class);
+    } catch (Throwable missing) {
+      log("[monmmo] VfxAnim unavailable: " + missing);
+    }
+
     int retypes = 0;
+    int moveVfx = 0;
     int moveAnims = 0;
     int moveTypes = 0;
     int evolutions = 0;
@@ -142,6 +154,25 @@ public final class DexPatch {
           }
           animPut.invoke(animMap, Short.parseShort(parts[1]), donor);
           moveAnims++;
+        }
+        case "movevfx" -> {
+          // The move's own shipped particle effect (particle/auto/<id>.vfx), played through the
+          // VfxAnim translation of the client's generic timeline. Beats any donor alias.
+          if (vfxCtor == null) {
+            continue;
+          }
+          final short vfxMoveId = Short.parseShort(parts[1]);
+          final java.lang.reflect.Constructor<?> ctor = vfxCtor;
+          java.util.function.Function<Object, Object> factory =
+              attacker -> {
+                try {
+                  return ctor.newInstance(attacker, vfxMoveId);
+                } catch (Exception failed) {
+                  throw new RuntimeException(failed);
+                }
+              };
+          animPut.invoke(animMap, vfxMoveId, factory);
+          moveVfx++;
         }
         case "movetype" -> {
           Object move = moveById.invoke(moveRegistry, Short.parseShort(parts[1]));
@@ -371,7 +402,7 @@ public final class DexPatch {
         default -> {}
       }
     }
-    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveAnims=" + moveAnims + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
+    log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveVfx=" + moveVfx + " moveAnims=" + moveAnims + " evolutions=" + evolutions + " tools=" + tools + " evoItems=" + evoItems);
     if (tools > 0) {
       // Read back what was just created, through the same accessors the dex uses: how many
       // tools now teach imported moves, and what one of them says its name is. A broken name

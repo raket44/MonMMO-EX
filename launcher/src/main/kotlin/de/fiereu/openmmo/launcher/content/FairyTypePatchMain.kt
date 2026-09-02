@@ -259,6 +259,11 @@ fun main(args: Array<String>) {
     jar.putNextEntry(ZipEntry(helperName))
     jar.write(compileHelperForClientRuntime("DexPatch"))
     jar.closeEntry()
+    // The vfx-playing animation, compiled against the client jar (it extends f.Dm0). Registered
+    // per move by the movevfx fixups; the class rides the overlay like every other helper.
+    jar.putNextEntry(ZipEntry("monmmo/VfxAnim.class"))
+    jar.write(compileHelperForClientRuntime("VfxAnim", client))
+    jar.closeEntry()
     // The LoadMap diagnostic's file-backed logger; javaw discards System.err.
     jar.putNextEntry(ZipEntry("monmmo/MapLog.class"))
     jar.write(compileHelperForClientRuntime("MapLog"))
@@ -287,15 +292,22 @@ fun main(args: Array<String>) {
         parsedMoves
             .filter { it.id in 1..559 }
             .map { "movetype:${it.id}:${overlayClientType(it.type)}" }
-    // Battle animations for the imported moves (operator-directed): each new move aliases a
-    // retail move's animation factory in the client's registry. The donor is the retail move of
-    // the same type, preferring the same damage category and the closest power, so a Fairy
-    // special attack sparkles rather than falling back to the generic thump. Handpicked
-    // improvements can override any line later; this guarantees no imported move animates blank.
+    // Battle animations for the imported moves (operator-directed). Two tiers:
+    //
+    // 560-732: the client SHIPS an authored particle effect for every one of these
+    // (particle/auto/<id>.vfx, through Gen 6 - Moonblast is 585) that no code ever registered.
+    // movevfx plays the move's own effect through VfxAnim, the translation of the client's
+    // generic timeline. Authentic visuals, zero authoring.
+    //
+    // 733+: no shipped effect exists, so each aliases a retail donor's animation - same type,
+    // preferring the same damage category and the closest power. A placeholder by design; any
+    // line can be handpicked later, and an authored .vfx can promote a move to the first tier.
+    val moveVfxLines =
+        parsedMoves.filter { it.id in 560..LAST_SHIPPED_VFX_MOVE }.map { "movevfx:${it.id}" }
     val retailMoves = parsedMoves.filter { it.id in 1..559 }
     val moveAnimLines =
         parsedMoves
-            .filter { it.id in 560..999 }
+            .filter { it.id in (LAST_SHIPPED_VFX_MOVE + 1)..999 }
             .mapNotNull { move ->
               val sameType = retailMoves.filter { it.type == move.type }
               val pool = sameType.filter { it.category == move.category }.ifEmpty { sameType }
@@ -352,7 +364,14 @@ fun main(args: Array<String>) {
     Files.write(evolutionsCsv, evoLines.map { it.removePrefix("evo:") })
 
     val dumpLines = listOf("locations", "dump:7", "dump:133", "dumptools", "dumpitems")
-    val fixups = retypeLines + moveTypeLines + moveAnimLines + evoLines + toolLines + dumpLines
+    val fixups =
+        retypeLines +
+            moveTypeLines +
+            moveVfxLines +
+            moveAnimLines +
+            evoLines +
+            toolLines +
+            dumpLines
     // One wild-location table per season, installed at load by the season the world is in. The
     // dex row format has no season field, so a season is a whole table rather than a flag.
     var locationBytes = 0
@@ -395,6 +414,9 @@ private val TYPES = listOf("NORMAL", "FIGHTING", "DRAGON", "DARK", "STEEL", "PSY
  */
 private val NEW_POKEDEX_REGIONS = listOf(6, 7, 8, 9)
 
+/** The highest move id with a shipped particle effect: particles.pak holds auto/0-732.vfx. */
+private const val LAST_SHIPPED_VFX_MOVE = 732
+
 /** The client type ordinal for an Expansion type symbol; Fairy is 19 via the enum patch. */
 private fun overlayClientType(symbol: String): Int =
     when (symbol) {
@@ -426,7 +448,7 @@ private fun overlayClientType(symbol: String): Int =
  * `--release 17` matches the client's bundled JRE. Compiling at patch time from a resource keeps
  * the build free of a second Java toolchain, which the UI dependencies could not resolve.
  */
-private fun compileHelperForClientRuntime(name: String): ByteArray {
+private fun compileHelperForClientRuntime(name: String, classpath: Path? = null): ByteArray {
   val source =
       checkNotNull(object {}.javaClass.classLoader.getResourceAsStream("monmmo/$name.java")) {
             "The $name helper source is not on the launcher classpath"
@@ -441,17 +463,15 @@ private fun compileHelperForClientRuntime(name: String): ByteArray {
   Files.createDirectories(sourceDir)
   val sourceFile = sourceDir.resolve("$name.java")
   Files.writeString(sourceFile, source)
-  val result =
-      compiler.run(
-          null,
-          null,
-          null,
-          "--release",
-          "17",
-          "-d",
-          work.toString(),
-          sourceFile.toString(),
-      )
-  check(result == 0) { "The fixup helper does not compile" }
+  val arguments = mutableListOf("--release", "17", "-d", work.toString())
+  // Helpers that extend client classes (VfxAnim extends f.Dm0) compile against the client jar
+  // itself; the reflection-only helpers need no classpath.
+  classpath?.let {
+    arguments += "-cp"
+    arguments += it.toString()
+  }
+  arguments += sourceFile.toString()
+  val result = compiler.run(null, null, null, *arguments.toTypedArray())
+  check(result == 0) { "The $name helper does not compile" }
   return Files.readAllBytes(work.resolve("monmmo").resolve("$name.class"))
 }

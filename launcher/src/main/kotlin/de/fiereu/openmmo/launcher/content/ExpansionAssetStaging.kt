@@ -29,7 +29,11 @@ data class ExpansionAssetSummary(
  */
 class ExpansionAssetStaging(private val expansionRoot: Path) {
 
-  fun stage(species: List<ExpansionSpeciesDef>, archive: Path): ExpansionAssetSummary {
+  fun stage(
+      species: List<ExpansionSpeciesDef>,
+      archive: Path,
+      itemIcons: Map<Int, ByteArray> = emptyMap(),
+  ): ExpansionAssetSummary {
     var staged = 0
     var cries = 0
     var animated = 0
@@ -42,10 +46,10 @@ class ExpansionAssetStaging(private val expansionRoot: Path) {
     ZipOutputStream(Files.newOutputStream(archive)).use { zip ->
       // The client refuses an archive with no directory entries as a "flattened zip structure",
       // so every folder it will read from is declared before the files land in it.
-      listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/").forEach {
-        zip.directory(it)
-      }
+      listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/", "sprites/itemicons/")
+          .forEach { zip.directory(it) }
       zip.write("info.xml", INFO_XML.toByteArray())
+      itemIcons.forEach { (itemId, png) -> zip.write("sprites/itemicons/$itemId.png", png) }
       species.forEach { entry ->
         val wireId = entry.clientWireId ?: return@forEach
         runCatching {

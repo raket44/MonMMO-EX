@@ -253,9 +253,20 @@ fun main(args: Array<String>) {
 
   // Metadata registers a species; without converted assets the client would draw it blank.
   val withAssets = selected.filter { it.assetSourcesResolved }
+  // Icons for every created item, from the Expansion's own art (operator-directed).
+  val (itemIcons, iconSummary) =
+      ItemIconStaging.build(
+          expansionRoot,
+          TmPlan.taughtMoves(expansionRoot),
+          MoveText.parse(expansionRoot, moveIds).associate { it.id to it.type },
+      )
+  println(
+      "[expansion-client] item icons staged=${iconSummary.staged}" +
+          if (iconSummary.missing.isEmpty()) ""
+          else " missing=${iconSummary.missing.take(10).joinToString()}")
   val assets =
       ExpansionAssetStaging(expansionRoot)
-          .stage(withAssets, outputData.parent.resolve("mods/monmmo-lost-knights.zip"))
+          .stage(withAssets, outputData.parent.resolve("mods/monmmo-lost-knights.zip"), itemIcons)
 
   // The manifest of every item the overlay creates in the client, as id;name. The server's
   // ItemRegistry loads this from its classpath so the same items are addressable server-side -

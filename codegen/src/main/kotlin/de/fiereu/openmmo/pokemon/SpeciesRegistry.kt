@@ -109,7 +109,18 @@ constructor(
                 evYieldSpDefense = decomp.evYieldSpDefense,
             )
         else def
-    return out.copy(expYield = expYield, catchRate = catchRate)
+    // Egg groups are retail-first for the same reason as yields: PokeMMO tuned its breeding
+    // rules - Nidorina and Nidoqueen breed there while every cartridge says they cannot - and
+    // the dex shows the ROM groups, so breeding must read the same table the player sees.
+    val retailGroups = retail?.eggGroups.orEmpty()
+    val withGroups =
+        if (retailGroups.isEmpty()) out
+        else
+            out.copy(
+                eggGroup1 = retailGroups[0],
+                eggGroup2 = retailGroups.getOrElse(1) { retailGroups[0] },
+            )
+    return withGroups.copy(expYield = expYield, catchRate = catchRate)
   }
 
   private fun mergeRetail(

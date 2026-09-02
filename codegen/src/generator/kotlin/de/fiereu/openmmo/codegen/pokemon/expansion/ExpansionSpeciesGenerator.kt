@@ -244,8 +244,12 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
           LEVEL_UP_MOVE.findAll(match.groupValues[2])
               .mapNotNull { move ->
                 val symbol = move.groupValues[2]
-                moveIds[symbol]?.let {
-                  ParsedExpansionLevelUpMove(move.groupValues[1].toInt(), symbol, it)
+                moveIds[symbol]?.let { resolved ->
+                  // A renamed move must resolve to the CLIENT's id, not the Expansion's new
+                  // one: the client has one Snowscape - move 258, Hail renamed - with its real
+                  // animation, while Expansion id 809 would battle as an unanimated ghost copy.
+                  val canonical = CANONICAL_MOVE_IDS[resolved] ?: resolved
+                  ParsedExpansionLevelUpMove(move.groupValues[1].toInt(), symbol, canonical)
                 }
               }
               .toList()
@@ -477,6 +481,9 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
   )
 
   private companion object {
+    /** Expansion ids that duplicate a CLIENT move under a rename (Snowscape = Hail 258). */
+    val CANONICAL_MOVE_IDS = mapOf(809 to 258)
+
     const val EXPANSION_SERVER_ID_BASE = 0x10000
     /**
      * Id ranges the client has already filled, lowest first: its retail FORM records (Deoxys
@@ -654,5 +661,6 @@ object ExpansionSpeciesBinary {
   }
 }
 
+// Exp-yield gates wrap the condition in parens; the optional close-paren admits both shapes.
 private val STAT_TERNARY =
-    Regex("""(\w+)\s*(>=|<=|==|!=|>|<)\s*(\w+)\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")
+    Regex("""(\w+)\s*(>=|<=|==|!=|>|<)\s*(\w+)\s*\)?\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")

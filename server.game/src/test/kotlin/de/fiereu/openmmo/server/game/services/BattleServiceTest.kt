@@ -243,17 +243,17 @@ class BattleServiceTest :
           fx.registry.byChar(charId).shouldBeNull()
           advanceUntilIdle()
 
-          // The level 2 Rattata yields its base experience scaled by level over seven. Tests
-          // deliberately run on decomp data (57); the live server serves the Expansion's 51.
-          // Running the monsters.json merge task in the SAME gradle invocation can leak the
-          // dump into this JVM's registry singleton and flip the value - run tests alone.
+          // The level 2 Rattata yields its base experience scaled by level over seven. Economy
+          // is retail-first, but tests deliberately run without the retail dump, so precedence
+          // falls to the Expansion catalogue's 51; the live server (dump present) serves the
+          // hand-tuned retail 57.
           session.sent
               .filterIsInstance<BattleEntityDeltaPacket>()
               .any { it.experience != null }
               .shouldBeTrue()
           val saved = fx.repo.saved[charId].shouldNotBeNull()
           saved.pokemon.single().moves[0].pp shouldBe (35 - rounds).toByte()
-          saved.pokemon.single().xp shouldBe 57 * 2 / 7
+          saved.pokemon.single().xp shouldBe 51 * 2 / 7
         }
       }
 

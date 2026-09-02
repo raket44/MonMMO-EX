@@ -353,6 +353,21 @@ object EvolutionTable {
     }
   }
 
+  private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
+
+  /**
+   * Walks the evolution chain DOWN to the family's youngest form (wire ids) - breeding offspring
+   * always hatch as the base stage (Pichu from a Pikachu line, operator-specified).
+   */
+  fun baseForm(wire: Int): Int {
+    var current = wire
+    val visited = mutableSetOf<Int>()
+    while (visited.add(current)) {
+      current = preEvolution[current] ?: return current
+    }
+    return wire
+  }
+
   /** The wire id this species becomes when [clientItemId] is used on it, or null. */
   fun itemEvolution(fromWire: Int, clientItemId: Int): Int? =
       entries

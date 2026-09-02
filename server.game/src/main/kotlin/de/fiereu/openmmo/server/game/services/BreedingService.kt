@@ -3,6 +3,7 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.clientSpeciesId
+import de.fiereu.openmmo.common.enums.EggGroup
 import de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket
 import de.fiereu.openmmo.net.game.packets.BreedingForecastPacket
 import de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket
@@ -19,9 +20,12 @@ private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  * preference changes and then WAITS on the BreedingForecast reply - the forecast is the baby
  * preview in the middle and the cost column. The Breed button sends SubmitBreedingParty.
  *
- * v1 scope: the forecast answers with the non-Ditto parent's species (the server holds no evolution
- * chains yet, so no devolving to the base stage), empty stat/shiny/value columns and zero cost; the
- * submit only logs - egg creation is the next system.
+ * Pairing rules (operator-specified): the FEMALE determines the offspring's family and the baby is
+ * the family's youngest form; a Ditto substitutes for either parent; males just need a shared egg
+ * group; shinies only breed with shinies and alphas only with alphas. OT attribution: shiny babies
+ * carry your OT only from a mother with your OT (else Unknown OT); non-shiny babies always carry
+ * your name, starred when the species will not register in the Pokedex. The submit still only
+ * logs - egg creation is the next system.
  */
 @Singleton
 class BreedingService
@@ -65,7 +69,40 @@ constructor(
       session.send(emptyForecast(p.ownPokemonEntityId, p.partnerPokemonEntityId))
       return
     }
-    val offspringDex = if (first.dexId == DITTO) second.dexId else first.dexId
+    val defA = speciesRegistry.get(first.dexId)
+    val defB = speciesRegistry.get(second.dexId)
+    val incompatible = incompatibilityReason(first, second, defA, defB)
+    if (defA == null || defB == null || incompatible != null) {
+      log.info {
+        "Breeding pair rejected: char=$charId reason=${incompatible ?: "unknown species"}"
+      }
+      session.send(emptyForecast(p.ownPokemonEntityId, p.partnerPokemonEntityId))
+      return
+    }
+    // The FEMALE determines the offspring's family (with a Ditto, the non-Ditto parent does,
+    // whatever its gender), and the baby is always the family's YOUNGEST form.
+    val mother =
+        when {
+          first.dexId == DITTO -> second
+          second.dexId == DITTO -> first
+          genderOf(second, defB) == FEMALE -> second
+          else -> first
+        }
+    val offspringWire = EvolutionTable.baseForm(clientSpeciesId(mother.dexId))
+    // The OT line (e30 via the 'gender' byte: 0 = your name in green, 1 = your name with a *,
+    // 2 = Unknown OT). Shiny pairs only carry your OT when the mother is yours - otherwise the
+    // baby hatches with an Unknown OT (no laundering a family you never shiny-hunted). Non-shiny
+    // babies always get your name; the * marks a species that will NOT register in the Pokedex
+    // (not caught-as-OT and not bred down from a mother with your OT).
+    val playerName = stored.info.name
+    val caughtAsOt =
+        owned.asSequence().filter { it.ot == playerName }.map { clientSpeciesId(it.dexId) }.toSet()
+    val otByte: Byte =
+        if (first.isShiny || first.isSecret) {
+          if (mother.ot == playerName) OT_SELF else OT_UNKNOWN
+        } else {
+          if (offspringWire in caughtAsOt || mother.ot == playerName) OT_SELF else OT_STARRED
+        }
     // The nature line: an EMPTY possibleNatures list renders "???" (a random roll - the earlier
     // crash blamed on this list was really the statEntries indexing). An Everstone holder pins
     // their nature; both holding one is a 50/50 between theirs.
@@ -78,7 +115,7 @@ constructor(
             parentA = p.ownPokemonEntityId,
             parentB = p.partnerPokemonEntityId,
             hasPreview = true,
-            species = clientSpeciesId(offspringDex).toShort(),
+            species = offspringWire.toShort(),
             form = 0,
             // The renderer walks its six stat constants and indexes THIS array by stat id
             // directly (pM1.Cm0 line 99: statEntries[stat.Df0]) - it must always hold one
@@ -88,7 +125,9 @@ constructor(
             possibleNatures = pinnedNatures.distinct(),
             valueIds = emptyList(),
             valueSources = emptyList(),
-            gender = p.slotIndex,
+            // This byte is the OT-attribution enum (e30), NOT a gender - the old genderPref echo
+            // is what rendered "Unknown OT" for everyone (pref -1 indexed past e30.Mf).
+            gender = otByte,
             // Capture-mislabeled TWICE over: this short is the offspring's APPEARANCE FLAGS
             // bitfield (k91.Zl1 - bit 0 shiny, bit 3 secret, more for alpha; -1 rendered a
             // secret shiny alpha, operator-verified). 0 = plain until shininess rules exist.
@@ -202,6 +241,47 @@ constructor(
     }
   }
 
+  /**
+   * The pairing rules (operator-specified): shinies only breed with shinies, alphas only with
+   * alphas, a Ditto pairs with anything breedable except another Ditto, and otherwise the pair
+   * needs one female and one male sharing an egg group. Returns a log-worthy reason, or null when
+   * the pair can breed.
+   */
+  private fun incompatibilityReason(
+      a: de.fiereu.openmmo.common.Pokemon,
+      b: de.fiereu.openmmo.common.Pokemon,
+      defA: de.fiereu.openmmo.pokemon.SpeciesDef?,
+      defB: de.fiereu.openmmo.pokemon.SpeciesDef?,
+  ): String? {
+    if (defA == null || defB == null) return "unknown species"
+    val aDitto = a.dexId == DITTO
+    val bDitto = b.dexId == DITTO
+    if (aDitto && bDitto) return "two Dittos"
+    if ((a.isShiny || a.isSecret) != (b.isShiny || b.isSecret)) return "shiny with non-shiny"
+    if (a.isAlpha != b.isAlpha) return "alpha with non-alpha"
+    fun groups(def: de.fiereu.openmmo.pokemon.SpeciesDef) =
+        setOf(def.eggGroup1, def.eggGroup2) - EggGroup.NONE
+    if (!aDitto && EggGroup.NO_EGGS_DISCOVERED in groups(defA)) return "${defA.name} cannot breed"
+    if (!bDitto && EggGroup.NO_EGGS_DISCOVERED in groups(defB)) return "${defB.name} cannot breed"
+    if (aDitto || bDitto) return null
+    val genders = setOf(genderOf(a, defA), genderOf(b, defB))
+    if (genders != setOf(FEMALE, MALE)) return "no female+male pair (genders $genders)"
+    if ((groups(defA) intersect groups(defB)).isEmpty()) return "no shared egg group"
+    return null
+  }
+
+  /** The client's gender derivation (f/gT0.Ug1): female iff (seed & 0xFF) < genderRatio. */
+  private fun genderOf(
+      mon: de.fiereu.openmmo.common.Pokemon,
+      def: de.fiereu.openmmo.pokemon.SpeciesDef
+  ): Int =
+      when (def.genderRatio) {
+        0 -> MALE
+        254 -> FEMALE
+        255 -> GENDERLESS
+        else -> if ((mon.seed and 0xFF) < def.genderRatio) FEMALE else MALE
+      }
+
   private fun emptyForecast(a: Long, b: Long) =
       BreedingForecastPacket(
           parentA = a,
@@ -234,6 +314,16 @@ constructor(
 
     /** Everstone ids in both held-item catalogs - the holder's nature is pinned on the baby. */
     val EVERSTONES = setOf(5229, 6229)
+
+    /** f/gT0.Ug1 gender values. */
+    const val MALE = 0
+    const val FEMALE = 1
+    const val GENDERLESS = -1
+
+    /** e30 OT-attribution bytes (Mf indices; anything else renders "Unknown OT"). */
+    const val OT_SELF: Byte = 0
+    const val OT_STARRED: Byte = 1
+    const val OT_UNKNOWN: Byte = 2
 
     /**
      * Client item id of each Power brace to the wire stat index it pins (hp, atk, def, spd, spAtk,

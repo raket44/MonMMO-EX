@@ -129,14 +129,23 @@ constructor(
     val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
     val reply = event.packet
     val pending = pendingLearns[reply.entityId] ?: return
-    if (pending.charId != charId) return
-    pendingLearns.remove(reply.entityId)
+    if (pending.charId != charId || reply.moveId !in pending.offered) return
+    // One answer per offered move; the entry lives until every prompt is answered.
+    val remaining = pending.offered - reply.moveId
+    if (remaining.isEmpty()) pendingLearns.remove(reply.entityId)
+    else pendingLearns[reply.entityId] = pending.copy(offered = remaining)
+    if (reply.slot < 0) {
+      log.info { "char=$charId declined move ${reply.moveId} for ${reply.entityId}" }
+      return
+    }
     val stored =
         characterStore.getCharacter(charId)?.pokemon?.firstOrNull { it.id == reply.entityId }
             ?: return
     val moves = stored.moves.toMutableList()
-    if (!moveLearner.apply(moves, reply.moveIds, pending.offered)) {
-      log.warn { "char=$charId picked an invalid moveset for ${reply.entityId}: ${reply.moveIds}" }
+    if (!moveLearner.replace(moves, reply.slot.toInt(), reply.moveId)) {
+      log.warn {
+        "char=$charId picked an invalid slot ${reply.slot} for move ${reply.moveId} on ${reply.entityId}"
+      }
       return
     }
     if (moves == stored.moves) return
@@ -525,13 +534,19 @@ constructor(
     val outcome =
         moveLearner.learn(winner.moves, winner.source.dexId, winner.level, reward.newLevel)
     emitter.sendVictoryDelta(battle, winner.entityId, reward)
+    // The client prints "{mon} learned {move}!" itself for a move that took a free slot, and
+    // opens its forget dialog for a slot of -1; one packet per move either way.
     for (move in outcome.learned) {
-      emitter.sendNotice(battle, "${winner.species.name} learned ${move.name}!")
+      val slot = winner.moves.indexOfFirst { it.id.toInt() == move.moveId }
+      battle.session.send(
+          MoveLearnPromptPacket(winner.entityId, slot.toByte(), move.moveId.toShort()))
     }
     if (outcome.offered.isNotEmpty()) {
       val offered = outcome.offered.map { it.moveId.toShort() }
       pendingLearns[winner.entityId] = PendingMoveLearn(battle.charId, winner.entityId, offered)
-      battle.session.send(MoveLearnPromptPacket(winner.entityId, offered))
+      for (moveId in offered) {
+        battle.session.send(MoveLearnPromptPacket(winner.entityId, MoveLearnPromptPacket.ASK, moveId))
+      }
     }
     // Happiness grows with every earned victory (operator-directed): the cartridge bands - a
     // less-happy monster warms up faster - doubled by a held Soothe Bell, capped at 255.

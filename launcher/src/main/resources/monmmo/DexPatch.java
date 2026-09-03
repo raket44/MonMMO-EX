@@ -263,6 +263,8 @@ public final class DexPatch {
     int tools = 0;
     int evoItems = 0;
     int speciesData = 0;
+    int growthCurves = 0;
+    int growthCurveMisses = 0;
     List<String> lines = new ArrayList<>();
     try (BufferedReader reader =
         new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
@@ -504,18 +506,30 @@ public final class DexPatch {
           if (parts.length > 13) {
             java.lang.reflect.Field curveField = speciesClass.getField("kh0");
             Class<?> curveClass = curveField.getType();
-            int wanted = Integer.parseInt(parts[13]);
-            java.lang.reflect.Field indexField = curveClass.getField("mI0");
+            byte wanted = Byte.parseByte(parts[13]);
+            // Only instance 1 (the default) is a static field; the six live in the enum's
+            // own registry u00 (f/MX1), which the ROM loader (f/ZH) reads through t70(byte)
+            // exactly this way to set kh0 for retail species.
+            Object curve = null;
             for (java.lang.reflect.Field candidate : curveClass.getDeclaredFields()) {
-              if (candidate.getType() != curveClass
-                  || !java.lang.reflect.Modifier.isStatic(candidate.getModifiers())) {
-                continue;
+              if (!java.lang.reflect.Modifier.isStatic(candidate.getModifiers())) continue;
+              Object curveRegistry = candidate.get(null);
+              if (curveRegistry == null || candidate.getType() == curveClass) continue;
+              try {
+                Object found = curveRegistry.getClass().getMethod("t70", byte.class).invoke(curveRegistry, wanted);
+                if (curveClass.isInstance(found)) {
+                  curve = found;
+                  break;
+                }
+              } catch (NoSuchMethodException ignored) {
+                // Not the registry.
               }
-              Object curve = candidate.get(null);
-              if (curve != null && indexField.getByte(curve) == wanted) {
-                curveField.set(target, curve);
-                break;
-              }
+            }
+            if (curve != null) {
+              curveField.set(target, curve);
+              growthCurves++;
+            } else if (growthCurveMisses++ == 0) {
+              log("[monmmo] growth curve " + wanted + " not found in " + curveClass.getName());
             }
           }
           if (speciesClass.getField("pq").getByte(target) == 0) {
@@ -711,7 +725,7 @@ public final class DexPatch {
       }
     }
     log("[monmmo] dex fixups applied: retypes=" + retypes + " moveTypes=" + moveTypes + " moveVfx=" + moveVfx + " moveAnims=" + moveAnims + " evolutions=" + evolutions
-            + " speciesData=" + speciesData + " tools=" + tools + " evoItems=" + evoItems);
+            + " speciesData=" + speciesData + " growthCurves=" + growthCurves + " growthMisses=" + growthCurveMisses + " tools=" + tools + " evoItems=" + evoItems);
     if (tools > 0) {
       // Read back what was just created, through the same accessors the dex uses: how many
       // tools now teach imported moves, and what one of them says its name is. A broken name

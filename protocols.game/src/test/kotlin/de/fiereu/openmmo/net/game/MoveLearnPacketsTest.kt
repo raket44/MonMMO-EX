@@ -2,60 +2,55 @@ package de.fiereu.openmmo.net.game
 
 import de.fiereu.openmmo.common.test.decodeBytes
 import de.fiereu.openmmo.common.test.encodeToBytes
-import de.fiereu.openmmo.common.test.fixture
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacketCodec
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnReplyPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnReplyPacketCodec
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 private const val ENTITY_ID = 0x1ACEADEF2AC8C000L
 private const val FURY_SWIPES: Short = 154
-private const val LICK: Short = 122
-private const val WATER_GUN: Short = 55
-private const val LEER: Short = 43
-private const val UNOVA_MOVE: Short = 526
+private const val ROUND: Short = 496
+
+/** Client 31914's layout for both directions: uid s64, slot s8, move s16 (f/QX and f/com4). */
+private fun frame(entityId: Long, slot: Int, move: Short): ByteArray =
+    ByteBuffer.allocate(11)
+        .order(ByteOrder.LITTLE_ENDIAN)
+        .putLong(entityId)
+        .put(slot.toByte())
+        .putShort(move)
+        .array()
 
 class MoveLearnPacketsTest :
     FunSpec({
-      test("decodes a captured prompt for one move") {
-        val bytes = fixture("game/s2c/17/prompt_one_move_32710.bin")
+      test("a prompt that asks which move to forget carries slot -1") {
+        val bytes = frame(ENTITY_ID, -1, ROUND)
         val decoded = MoveLearnPromptPacketCodec.decodeBytes(bytes)
-        decoded shouldBe MoveLearnPromptPacket(ENTITY_ID, listOf(FURY_SWIPES))
+        decoded shouldBe MoveLearnPromptPacket(ENTITY_ID, MoveLearnPromptPacket.ASK, ROUND)
         MoveLearnPromptPacketCodec.encodeToBytes(decoded) shouldBe bytes
       }
 
-      test("decodes a captured prompt for two moves") {
-        val bytes = fixture("game/s2c/17/prompt_two_moves_32710.bin")
+      test("a prompt for a move learned into a free slot carries that slot") {
+        val bytes = frame(ENTITY_ID, 2, FURY_SWIPES)
         val decoded = MoveLearnPromptPacketCodec.decodeBytes(bytes)
-        decoded shouldBe MoveLearnPromptPacket(ENTITY_ID, listOf(536, 345))
+        decoded shouldBe MoveLearnPromptPacket(ENTITY_ID, 2, FURY_SWIPES)
         MoveLearnPromptPacketCodec.encodeToBytes(decoded) shouldBe bytes
       }
 
-      // Fury Swipes took the slot Leer held.
-      test("decodes a captured reply that swapped a move in") {
-        val bytes = fixture("game/c2s/0a/reply_swapped_32710.bin")
+      test("a reply that swapped the move into slot 1") {
+        val bytes = frame(ENTITY_ID, 1, ROUND)
         val decoded = MoveLearnReplyPacketCodec.decodeBytes(bytes)
-        decoded shouldBe
-            MoveLearnReplyPacket(
-                entityId = ENTITY_ID,
-                moveIds = listOf(UNOVA_MOVE, FURY_SWIPES, LICK, WATER_GUN),
-                offered = listOf(FURY_SWIPES),
-            )
+        decoded shouldBe MoveLearnReplyPacket(ENTITY_ID, 1, ROUND)
         MoveLearnReplyPacketCodec.encodeToBytes(decoded) shouldBe bytes
       }
 
-      // The moveset comes back as it was, so the player kept Leer.
-      test("decodes a captured reply that declined") {
-        val bytes = fixture("game/c2s/0a/reply_declined_32710.bin")
+      test("a reply that declined carries a negative slot") {
+        val bytes = frame(ENTITY_ID, -1, ROUND)
         val decoded = MoveLearnReplyPacketCodec.decodeBytes(bytes)
-        decoded shouldBe
-            MoveLearnReplyPacket(
-                entityId = ENTITY_ID,
-                moveIds = listOf(UNOVA_MOVE, LEER, LICK, WATER_GUN),
-                offered = listOf(FURY_SWIPES),
-            )
+        decoded shouldBe MoveLearnReplyPacket(ENTITY_ID, -1, ROUND)
         MoveLearnReplyPacketCodec.encodeToBytes(decoded) shouldBe bytes
       }
     })

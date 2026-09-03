@@ -53,6 +53,18 @@ constructor(
     return MoveLearnOutcome(learned, offered)
   }
 
+  /**
+   * The forget dialog's answer: [moveId] takes over [slot]. False when the slot is not one the
+   * monster has or the move is unknown, so a bad reply changes nothing.
+   */
+  fun replace(known: MutableList<PokemonMove>, slot: Int, moveId: Short): Boolean {
+    if (slot !in known.indices) return false
+    val def = moves.get(moveId.toInt()) ?: return false
+    if (known.any { it.id == moveId }) return false
+    known[slot] = PokemonMove(moveId, def.pp.toByte())
+    return true
+  }
+
   /** Applies the picked moveset, keeping the pp of moves it already had. */
   fun apply(known: MutableList<PokemonMove>, chosen: List<Short>, offered: List<Short>): Boolean {
     if (chosen.size != known.size || chosen.size != chosen.distinct().size) return false

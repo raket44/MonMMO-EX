@@ -290,7 +290,9 @@ constructor(
         }
         ctx.session.send(
             de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket(
-                mon.id, listOf(moveId)))
+                mon.id,
+                de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket.ASK,
+                moveId))
         ctx.reply("Sent MoveLearnPromptPacket for ${mon.id} offering move $moveId.")
       }
       "pcinv" -> {

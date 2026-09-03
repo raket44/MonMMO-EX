@@ -48,6 +48,18 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
   )
 }
 
+tasks.register<JavaExec>("fetchShowdownSprites") {
+  group = "openmmo"
+  description = "Downloads Pokemon Showdown's Gen 5-style sprites for the species the mod stages"
+  dependsOn(":codegen:generateExpansionPokemon", "classes")
+  mainClass.set("de.fiereu.openmmo.launcher.content.ShowdownSpriteFetchMain")
+  classpath(sourceSets.main.get().runtimeClasspath)
+  args(
+      rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+  )
+}
+
 tasks.register<JavaExec>("stageRetailData") {
   group = "openmmo"
   description = "Compacts the retail monsters.json into server calibration tables"

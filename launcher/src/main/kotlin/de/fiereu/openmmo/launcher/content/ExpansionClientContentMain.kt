@@ -270,8 +270,12 @@ fun main(args: Array<String>) {
       args.getOrNull(5)?.let { Path.of(it) }?.takeIf { Files.isDirectory(it) }?.let {
         Gen5StyleSpritePack(it, expansionRoot)
       }
+  // Pokemon Showdown's Gen 5-style set, fetched by :launcher:fetchShowdownSprites beside the packs.
+  val showdown =
+      args.getOrNull(5)?.let { Path.of(it).parent?.resolve("showdown") }?.let { ShowdownSprites(it) }
+          ?.takeIf { it.available }
   val assets =
-      ExpansionAssetStaging(expansionRoot, spritePack)
+      ExpansionAssetStaging(expansionRoot, spritePack, showdown)
           .stage(
               withAssets,
               outputData.parent.resolve("mods/monmmo-lost-knights.zip"),
@@ -279,7 +283,7 @@ fun main(args: Array<String>) {
               allSpecies = expansion,
           )
   Files.newBufferedWriter(outputData.parent.parent.resolve("sprite-pack.csv")).use { writer ->
-    writer.appendLine("symbol,wireId,front,back")
+    writer.appendLine("symbol,wireId,front,frontShiny,back,backShiny")
     assets.packReport.forEach { writer.appendLine(it) }
   }
   Files.newBufferedWriter(outputData.parent.parent.resolve("sprite-pack-missing.csv")).use { writer ->
@@ -287,8 +291,10 @@ fun main(args: Array<String>) {
     assets.packMissing.forEach { writer.appendLine(it) }
   }
   println(
-      "[expansion-client] gen5-style sprite pack: " +
-          if (spritePack == null) "not present" else "${assets.packSprites} species/forms replaced")
+      "[expansion-client] gen5-style sprites: ${assets.packSprites} species/forms replaced " +
+          "(showdown animated fronts=${assets.showdownAnimated}; packs " +
+          "${if (spritePack == null) "absent" else "present"}, showdown " +
+          "${if (showdown == null) "absent" else "present"})")
 
   // The manifest of every item the overlay creates in the client, as id;name. The server's
   // ItemRegistry loads this from its classpath so the same items are addressable server-side -
@@ -692,7 +698,7 @@ private const val CATEGORY_SHIFT_THRESHOLD = 493
 private const val CATEGORY_SHIFT = 16
 
 /** The wire block the catalogue generator assigns to forms, after the last Dex-numbered slot. */
-private const val FIRST_FORM_WIRE_ID = 1079
+internal const val FIRST_FORM_WIRE_ID = 1079
 
 /**
  * Forms share their base species' display name in the Expansion, which would put several identical

@@ -28,6 +28,8 @@ data class ExpansionAssetSummary(
      * to hand a sprite artist. `missing` is "front+back" or "back".
      */
     val packMissing: List<String> = emptyList(),
+    /** Species whose normal front is Showdown's animated GIF. */
+    val showdownAnimated: Int = 0,
 )
 
 /**
@@ -39,6 +41,7 @@ data class ExpansionAssetSummary(
 class ExpansionAssetStaging(
     private val expansionRoot: Path,
     private val spritePack: Gen5StyleSpritePack? = null,
+    private val showdown: ShowdownSprites? = null,
 ) {
 
   /**
@@ -57,6 +60,7 @@ class ExpansionAssetStaging(
     var followers = 0
     var followerFallbacks = 0
     var packSprites = 0
+    var showdownAnimated = 0
     val packReport = mutableListOf<String>()
     val packMissing = mutableListOf<String>()
     val failures = linkedMapOf<String, String>()
@@ -86,40 +90,51 @@ class ExpansionAssetStaging(
               // Expansion keeps as a single frame - most Gen 6+ fronts, and every back - get the
               // synthesized breathing idle instead, so nothing stands frozen.
               val script = anims[entry.symbol.removePrefix("SPECIES_")].orEmpty()
+              val scripted = script.size > 1 && front.height / FRAME > 1
               val packed = spritePack?.resolve(entry, bySymbol)
-              if (spritePack != null && (packed == null || packed.back == null)) {
-                val dex = spritePack.nationalDex(entry, bySymbol) ?: 0
-                packMissing +=
-                    "${entry.symbol},$wireId,${entry.displayName},$dex," +
-                        if (packed == null) "front+back" else "back"
-              }
-              if (packed != null) {
-                // Operator's Gen 5-style pack (stills): the same idle bounce on every side.
-                // A back the pack lacks keeps the Expansion's, so the species never goes blank.
-                zip.write("$SPRITES/$wireId-front-n.gif", packGif(packed.front))
-                zip.write("$SPRITES/$wireId-front-s.gif", packGif(packed.frontShiny ?: packed.front))
-                if (packed.back != null) {
-                  zip.write("$SPRITES/$wireId-back-n.gif", packGif(packed.back))
-                  zip.write("$SPRITES/$wireId-back-s.gif", packGif(packed.backShiny ?: packed.back))
-                } else {
-                  zip.write("$SPRITES/$wireId-back-n.gif", idleGif(back, normal, FRAME))
-                  zip.write("$SPRITES/$wireId-back-s.gif", idleGif(back, shiny, FRAME))
+              val online = showdown?.resolve(entry.symbol)
+              // Battle sprites, best source first per side: Showdown's animated GIF (normal sides
+              // only - there are no shiny animations), the operator's Gen 5-style still, Showdown's
+              // still, and finally the Expansion's own art. Stills get the idle bounce.
+              val frontN =
+                  online?.aniFront?.let { Files.readAllBytes(it) to ANI }
+                      ?: packed?.front?.let { packGif(it) to PACK }
+                      ?: online?.front?.let { packGif(it) to SHOWDOWN }
+                      ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
+                      else idleGif(front, normal, FRAME)) to EXPANSION
+              val frontS =
+                  packed?.frontShiny?.let { packGif(it) to PACK }
+                      ?: online?.frontShiny?.let { packGif(it) to SHOWDOWN }
+                      ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
+                      else idleGif(front, shiny, FRAME)) to EXPANSION
+              val backN =
+                  online?.aniBack?.let { Files.readAllBytes(it) to ANI }
+                      ?: packed?.back?.let { packGif(it) to PACK }
+                      ?: online?.back?.let { packGif(it) to SHOWDOWN }
+                      ?: idleGif(back, normal, FRAME) to EXPANSION
+              val backS =
+                  packed?.backShiny?.let { packGif(it) to PACK }
+                      ?: online?.backShiny?.let { packGif(it) to SHOWDOWN }
+                      ?: idleGif(back, shiny, FRAME) to EXPANSION
+              zip.write("$SPRITES/$wireId-front-n.gif", frontN.first)
+              zip.write("$SPRITES/$wireId-front-s.gif", frontS.first)
+              zip.write("$SPRITES/$wireId-back-n.gif", backN.first)
+              zip.write("$SPRITES/$wireId-back-s.gif", backS.first)
+              val sources = listOf(frontN.second, frontS.second, backN.second, backS.second)
+              if (frontN.second == EXPANSION && scripted) animated++
+              if (frontN.second == ANI) showdownAnimated++
+              if (sources.any { it != EXPANSION }) packSprites++
+              packReport += "${entry.symbol},$wireId,${sources.joinToString(",")}"
+              if (spritePack != null || showdown != null) {
+                val lacking =
+                    listOf("front", "frontShiny", "back", "backShiny").filterIndexed { index, _ ->
+                      sources[index] == EXPANSION
+                    }
+                if (lacking.isNotEmpty()) {
+                  packMissing +=
+                      "${entry.symbol},$wireId,${entry.displayName},${entry.nationalDexId ?: 0}," +
+                          lacking.joinToString("+")
                 }
-                packSprites++
-                packReport +=
-                    "${entry.symbol},$wireId,${packed.front.fileName}," +
-                        (packed.back?.fileName?.toString() ?: "expansion")
-              } else if (script.size > 1 && front.height / FRAME > 1) {
-                zip.write("$SPRITES/$wireId-front-n.gif", scriptedGif(front, normal, FRAME, script))
-                zip.write("$SPRITES/$wireId-front-s.gif", scriptedGif(front, shiny, FRAME, script))
-                animated++
-              } else {
-                zip.write("$SPRITES/$wireId-front-n.gif", idleGif(front, normal, FRAME))
-                zip.write("$SPRITES/$wireId-front-s.gif", idleGif(front, shiny, FRAME))
-              }
-              if (packed == null) {
-                zip.write("$SPRITES/$wireId-back-n.gif", idleGif(back, normal, FRAME))
-                zip.write("$SPRITES/$wireId-back-s.gif", idleGif(back, shiny, FRAME))
               }
               // icon.png stacks the two idle-bounce frames the party UI alternates between.
               zip.write("$ICONS/$wireId-0.png", png(icon, iconPalette, ICON, 0))
@@ -171,6 +186,7 @@ class ExpansionAssetStaging(
         packSprites,
         packReport,
         packMissing,
+        showdownAnimated,
     )
   }
 
@@ -181,19 +197,74 @@ class ExpansionAssetStaging(
    */
   private fun packGif(path: Path): ByteArray {
     val image = ImageIO.read(path.toFile()) ?: error("Unreadable pack sprite: $path")
-    val colors = linkedMapOf<Int, Int>()
+    // A GIF frame holds 255 colours plus transparency. Some Showdown stills are true-colour PNGs
+    // with anti-aliased edges; those are quantised by dropping low bits per channel until they fit.
+    for (keepBits in intArrayOf(8, 6, 5, 4)) {
+      val mask = (0xff shl (8 - keepBits)) and 0xff
+      val colors = linkedMapOf<Int, Int>()
+      val indices = IntArray(image.width * image.height)
+      var overflow = false
+      loop@ for (y in 0 until image.height) {
+        for (x in 0 until image.width) {
+          val argb = image.getRGB(x, y)
+          if (argb ushr 24 < 128) {
+            indices[y * image.width + x] = TRANSPARENT_INDEX
+            continue
+          }
+          val quantised =
+              (0xff shl 24) or
+                  (((argb shr 16) and mask) shl 16) or
+                  (((argb shr 8) and mask) shl 8) or
+                  (argb and mask)
+          val index = colors.getOrPut(quantised) { colors.size + 1 }
+          if (index > 255) {
+            overflow = true
+            break@loop
+          }
+          indices[y * image.width + x] = index
+        }
+      }
+      if (overflow) continue
+      val palette = IntArray(colors.size + 1)
+      colors.forEach { (argb, index) -> palette[index] = argb }
+      return idleGif(IndexedImage(image.width, image.height, indices), palette, maxOf(image.width, image.height))
+    }
+    // Still too many (gradient-heavy Tera masks): keep the 255 most used colours and snap the
+    // rest to the nearest of them.
+    val counts = mutableMapOf<Int, Int>()
+    for (y in 0 until image.height) {
+      for (x in 0 until image.width) {
+        val argb = image.getRGB(x, y)
+        if (argb ushr 24 >= 128) counts.merge(argb or (0xff shl 24), 1, Int::plus)
+      }
+    }
+    val kept = counts.entries.sortedByDescending { it.value }.take(255).map { it.key }
+    val palette = IntArray(kept.size + 1)
+    kept.forEachIndexed { index, argb -> palette[index + 1] = argb }
+    fun nearest(argb: Int): Int {
+      var best = 1
+      var bestDistance = Int.MAX_VALUE
+      for (index in 1..kept.size) {
+        val candidate = palette[index]
+        val dr = ((argb shr 16) and 0xff) - ((candidate shr 16) and 0xff)
+        val dg = ((argb shr 8) and 0xff) - ((candidate shr 8) and 0xff)
+        val db = (argb and 0xff) - (candidate and 0xff)
+        val distance = dr * dr + dg * dg + db * db
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = index
+        }
+      }
+      return best
+    }
     val indices = IntArray(image.width * image.height)
     for (y in 0 until image.height) {
       for (x in 0 until image.width) {
         val argb = image.getRGB(x, y)
         indices[y * image.width + x] =
-            if (argb ushr 24 == 0) TRANSPARENT_INDEX
-            else colors.getOrPut(argb or (0xff shl 24)) { colors.size + 1 }
+            if (argb ushr 24 < 128) TRANSPARENT_INDEX else nearest(argb or (0xff shl 24))
       }
     }
-    check(colors.size < 256) { "Pack sprite uses more than 255 colours: $path" }
-    val palette = IntArray(colors.size + 1)
-    colors.forEach { (argb, index) -> palette[index] = argb }
     return idleGif(IndexedImage(image.width, image.height, indices), palette, maxOf(image.width, image.height))
   }
 
@@ -497,6 +568,11 @@ class ExpansionAssetStaging(
     const val ICON = 32
     const val TRANSPARENT_INDEX = 0
     const val SPRITES = "sprites/battlesprites"
+    /** Sprite source labels in the staging report. */
+    const val ANI = "showdown-ani"
+    const val PACK = "pack"
+    const val SHOWDOWN = "showdown"
+    const val EXPANSION = "expansion"
     const val ICONS = "sprites/monstericons"
     const val FOLLOWERS = "sprites/followsprites"
     const val CRIES = "cries"

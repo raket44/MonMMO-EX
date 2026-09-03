@@ -53,6 +53,7 @@ constructor(
     private val expansion: ExpansionSpeciesRegistry,
     private val dexProgress: DexProgressService,
     private val breedingService: BreedingService,
+    private val presenceService: PresenceService,
 ) {
 
   suspend fun onContainerAction(event: PacketEvent<ContainerActionPacket>) {
@@ -295,6 +296,8 @@ constructor(
           ))
     }
     sendParty(ctx, charId)
+    // The follower is a party monster: boxed, it must stop walking; a new lead takes over.
+    presenceService.refreshFollower(ctx)
   }
 
   private fun placements(

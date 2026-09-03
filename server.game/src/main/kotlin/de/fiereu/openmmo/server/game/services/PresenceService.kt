@@ -127,8 +127,30 @@ constructor(
           else -> null
         }
     log.info { "[Follower] char=$charId $packet -> ${chosen?.let { "${it.dexId}#${it.id}" } ?: "none"}" }
-    val species = chosen?.let { clientSpeciesId(it.dexId) } ?: 0
     state.followerMonId = chosen?.id
+    sendFollower(ctx, charId, chosen)
+  }
+
+  /**
+   * Re-derive the follower after the party changed (a drag into the PC, a new lead): the chosen
+   * monster if it is still in the party, else the lead, matching what the spawn packet resolves.
+   * The client keeps the old sprite walking until told, so this is sent whenever the party moves.
+   */
+  fun refreshFollower(ctx: SessionContext) {
+    val state = ctx.attributes[PLAYER_STATE] ?: return
+    val charId = state.characterId ?: return
+    val party = characterStore.getCharacter(charId)?.pokemon ?: return
+    val chosen = party.firstOrNull { it.id == state.followerMonId } ?: party.firstOrNull()
+    if (chosen?.id != state.followerMonId) state.followerMonId = chosen?.id
+    sendFollower(ctx, charId, chosen)
+  }
+
+  private fun sendFollower(
+      ctx: SessionContext,
+      charId: Long,
+      chosen: de.fiereu.openmmo.common.Pokemon?,
+  ) {
+    val species = chosen?.let { clientSpeciesId(it.dexId) } ?: 0
     val update =
         de.fiereu.openmmo.net.game.packets.EntityFollowerPacket(
             entityId = charId,

@@ -74,7 +74,11 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     field(reserved("0000")) {}
     val ownerId = field(S64LE, Pokemon::ownerId)
     field(S64LE, Pokemon::ownerId)
-    field(reserved("01")) {}
+    // The container byte (client f/tK0.wG reads it through f/Cy's byte lookup into k91.Pf1): 0 =
+    // PC, 1 = party. It was a fixed 01, which filed every boxed monster as "party" on the client,
+    // so a container/slot delta for a PC monster took the same-container branch and only moved the
+    // slot - the monster stayed in its box and showed up in the party as well.
+    val container = PokemonContainer.entries[field(U8) { it.container.ordinal }]
     val containerSlot = field(S16LE, Pokemon::containerSlot)
     val wireDexId = field(U16LE) { clientSpeciesId(it.dexId) }
     val seed = field(S32LE, Pokemon::seed)
@@ -115,7 +119,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     return Pokemon(
         id = id,
         ownerId = ownerId,
-        container = PokemonContainer.PARTY,
+        container = container,
         containerSlot = containerSlot,
         dexId = canonicalSpeciesId(wireDexId),
         seed = seed,

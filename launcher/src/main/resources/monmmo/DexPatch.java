@@ -915,15 +915,30 @@ public final class DexPatch {
           } else {
             line.append(value.getClass().getName());
             try {
-              Object frames = value.getClass().getField("rw1").get(value);
-              line.append("{files=").append(((java.util.Map<?, ?>) frames).keySet()).append('}');
-            } catch (Exception noFiles) {
-              // Not the file holder.
+              // f/Qy1: the GIF sprite - VR() is its decoder (f/Lb), ZG1 the decoded frame count,
+              // J51() the timing table it will animate with.
+              Object decoder = value.getClass().getMethod("VR").invoke(value);
+              int frames = decoder.getClass().getField("ZG1").getInt(decoder);
+              int[] timings = (int[]) value.getClass().getMethod("J51").invoke(value);
+              Object file = value.getClass().getMethod("bF1").invoke(value);
+              line.append("{frames=")
+                  .append(frames)
+                  .append(" timings=")
+                  .append(timings == null ? "null" : String.valueOf(timings.length))
+                  .append(" file=")
+                  .append(file)
+                  .append('}');
+            } catch (Exception notGif) {
+              line.append("{").append(notGif.getClass().getSimpleName()).append('}');
             }
           }
         } catch (Exception fieldError) {
           line.append(' ').append(fieldName).append("=?").append(fieldError.getClass().getSimpleName());
         }
+      }
+      StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+      for (int depth = 2; depth < Math.min(stack.length, 5); depth++) {
+        line.append(depth == 2 ? " from=" : "<").append(stack[depth].getClassName()).append('.').append(stack[depth].getMethodName());
       }
       log(line.toString());
     } catch (Throwable error) {

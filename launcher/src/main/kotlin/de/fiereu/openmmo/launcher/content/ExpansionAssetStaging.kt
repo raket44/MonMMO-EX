@@ -97,7 +97,7 @@ class ExpansionAssetStaging(
               // only - there are no shiny animations), the operator's Gen 5-style still, Showdown's
               // still, and finally the Expansion's own art. Stills get the idle bounce.
               val frontN =
-                  online?.aniFront?.let { Files.readAllBytes(it) to ANI }
+                  online?.aniFront?.let { reencodeGif(it) to ANI }
                       ?: packed?.front?.let { packGif(it) to PACK }
                       ?: online?.front?.let { packGif(it) to SHOWDOWN }
                       ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
@@ -108,7 +108,7 @@ class ExpansionAssetStaging(
                       ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
                       else idleGif(front, shiny, FRAME)) to EXPANSION
               val backN =
-                  online?.aniBack?.let { Files.readAllBytes(it) to ANI }
+                  online?.aniBack?.let { reencodeGif(it) to ANI }
                       ?: packed?.back?.let { packGif(it) to PACK }
                       ?: online?.back?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, normal, FRAME) to EXPANSION
@@ -195,6 +195,106 @@ class ExpansionAssetStaging(
    * its opaque colours are re-indexed from 1 so index 0 can be the GIF's transparent colour, the
    * convention every other sprite here follows.
    */
+  /**
+   * Rewrites an animated GIF into the structure the client animates: every frame a full logical
+   * screen at 0,0 with restore-to-background disposal, one global palette, no interlacing - the
+   * shape of every GIF in the HD battle sprite mod. Showdown's GIFs store each frame as an offset
+   * sub-rectangle with restore-to-previous disposal, and the client showed those as a still.
+   */
+  private fun reencodeGif(path: Path): ByteArray {
+    val reader = ImageIO.getImageReadersByFormatName("gif").next()
+    val composed = mutableListOf<Pair<BufferedImage, Int>>()
+    ImageIO.createImageInputStream(path.toFile()).use { input ->
+      reader.input = input
+      val stream = reader.getStreamMetadata()
+      val screen = childNode(stream.getAsTree(stream.nativeMetadataFormatName) as javax.imageio.metadata.IIOMetadataNode, "LogicalScreenDescriptor")
+      val width = screen.getAttribute("logicalScreenWidth").toInt()
+      val height = screen.getAttribute("logicalScreenHeight").toInt()
+      var canvas = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+      val frames = reader.getNumImages(true)
+      for (index in 0 until frames) {
+        val meta = reader.getImageMetadata(index)
+        val root = meta.getAsTree(meta.nativeMetadataFormatName) as javax.imageio.metadata.IIOMetadataNode
+        val descriptor = childNode(root, "ImageDescriptor")
+        val control = childNode(root, "GraphicControlExtension")
+        val left = descriptor.getAttribute("imageLeftPosition").toIntOrNull() ?: 0
+        val top = descriptor.getAttribute("imageTopPosition").toIntOrNull() ?: 0
+        val delay = maxOf(2, control.getAttribute("delayTime").toIntOrNull() ?: 10)
+        val disposal = control.getAttribute("disposalMethod")
+        val before = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        before.graphics.drawImage(canvas, 0, 0, null)
+        val frame = reader.read(index)
+        canvas.createGraphics().apply {
+          drawImage(frame, left, top, null)
+          dispose()
+        }
+        val snapshot = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        snapshot.graphics.drawImage(canvas, 0, 0, null)
+        composed += snapshot to delay
+        when (disposal) {
+          "restoreToPrevious" -> canvas = before
+          "restoreToBackgroundColor" -> {
+            val g = canvas.createGraphics()
+            g.composite = java.awt.AlphaComposite.Clear
+            g.fillRect(left, top, frame.width, frame.height)
+            g.dispose()
+          }
+        }
+      }
+    }
+    reader.dispose()
+    return quantisedGif(composed)
+  }
+
+  /** Full-frame ARGB images to a looping GIF on one shared palette (index 0 transparent). */
+  private fun quantisedGif(frames: List<Pair<BufferedImage, Int>>): ByteArray {
+    val counts = mutableMapOf<Int, Int>()
+    frames.forEach { (image, _) ->
+      for (y in 0 until image.height) {
+        for (x in 0 until image.width) {
+          val argb = image.getRGB(x, y)
+          if (argb ushr 24 >= 128) counts.merge(argb or (0xff shl 24), 1, Int::plus)
+        }
+      }
+    }
+    val kept = counts.entries.sortedByDescending { it.value }.take(255).map { it.key }
+    val palette = IntArray(kept.size + 1)
+    kept.forEachIndexed { index, argb -> palette[index + 1] = argb }
+    val exact = kept.withIndex().associate { (index, argb) -> argb to index + 1 }
+    fun nearest(argb: Int): Int {
+      exact[argb]?.let {
+        return it
+      }
+      var best = 1
+      var bestDistance = Int.MAX_VALUE
+      for (index in 1..kept.size) {
+        val candidate = palette[index]
+        val dr = ((argb shr 16) and 0xff) - ((candidate shr 16) and 0xff)
+        val dg = ((argb shr 8) and 0xff) - ((candidate shr 8) and 0xff)
+        val db = (argb and 0xff) - (candidate and 0xff)
+        val distance = dr * dr + dg * dg + db * db
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = index
+        }
+      }
+      return best
+    }
+    val model = colorModel(palette)
+    return animatedGif(
+        frames.map { (image, delay) ->
+          val target = BufferedImage(image.width, image.height, BufferedImage.TYPE_BYTE_INDEXED, model)
+          for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+              val argb = image.getRGB(x, y)
+              target.raster.setSample(
+                  x, y, 0, if (argb ushr 24 < 128) TRANSPARENT_INDEX else nearest(argb or (0xff shl 24)))
+            }
+          }
+          target to delay
+        })
+  }
+
   private fun packGif(path: Path): ByteArray {
     val image = ImageIO.read(path.toFile()) ?: error("Unreadable pack sprite: $path")
     // A GIF frame holds 255 colours plus transparency. Some Showdown stills are true-colour PNGs
@@ -470,6 +570,8 @@ class ExpansionAssetStaging(
         val root = metadata.getAsTree(format) as javax.imageio.metadata.IIOMetadataNode
         val control = childNode(root, "GraphicControlExtension")
         control.setAttribute("disposalMethod", "restoreToBackgroundColor")
+        // Non-interlaced, like every GIF the client is known to animate.
+        childNode(root, "ImageDescriptor").setAttribute("interlaceFlag", "FALSE")
         control.setAttribute("userInputFlag", "FALSE")
         control.setAttribute("transparentColorFlag", "TRUE")
         control.setAttribute("transparentColorIndex", TRANSPARENT_INDEX.toString())

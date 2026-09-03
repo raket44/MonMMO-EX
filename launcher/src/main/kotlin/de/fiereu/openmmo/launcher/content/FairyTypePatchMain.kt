@@ -276,13 +276,9 @@ fun main(args: Array<String>) {
         MovementRailLinePatch::patch,
     )
 
-    // Imported species keep rendering the wrong battle sprite file; log what the client asks
-    // the sprite registry for, and what the mod stores hold under that key.
-    applyOne(
-        "sprite fetch diagnostic",
-        SpriteFetchDiagnosticPatch::isSpriteRegistry,
-        SpriteFetchDiagnosticPatch::patch,
-    )
+    // The sprite fetch diagnostic (SpriteFetchDiagnosticPatch) stays available but is NOT applied:
+    // its probe decodes every GIF it inspects, and the Pokedex fetches every imported species on
+    // open, which turned the hook into a multi-second freeze. Re-enable only to investigate.
   }
 
   Files.createDirectories(overlay.parent)

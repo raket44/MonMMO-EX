@@ -521,6 +521,7 @@ constructor(
       "char=${battle.charId} won: +${reward.xpGained} xp, level ${winner.level} -> ${reward.newLevel}"
     }
     winner.currentHp = reward.newCurrentHp
+    if (reward.leveled) winner.leveledThisBattle = true
     val outcome =
         moveLearner.learn(winner.moves, winner.source.dexId, winner.level, reward.newLevel)
     emitter.sendVictoryDelta(battle, winner.entityId, reward)
@@ -569,11 +570,10 @@ constructor(
   }
 
   /**
-   * Evolution is offered when a victorious battle ends, the way the cartridges stage it. Every
-   * party member is checked, not only the one that just leveled, so a monster that was already past
-   * its threshold - like an unevolved level-16+ Squirtle from before evolutions existed - catches up
-   * on the next win. An Everstone holds a monster back; trade and location methods never match until
-   * those systems exist.
+   * Evolution is offered when a victorious battle ends, the way the cartridges stage it: only a
+   * monster that gained a level in this battle is checked (a level-20 spawn does not evolve off a
+   * win that left it at 20 - it evolves on reaching 21, as the operator expects). An Everstone holds
+   * a monster back; trade and location methods never match until those systems exist.
    *
    * Nothing evolves here: each eligible monster gets the s2c 0x18 prompt, which the client queues
    * behind this battle's remaining events and plays as its own evolution cinematic once the fight
@@ -582,6 +582,7 @@ constructor(
   private fun evolveEligible(battle: BattleInstance) {
     val playerState = battle.session.attributes[PLAYER_STATE] ?: return
     for (state in battle.party) {
+      if (!state.leveledThisBattle) continue
       if (state.source.id in playerState.pendingEvolutions) continue
       val mon = state.source
       if (mon.heldItem in BreedingService.EVERSTONES) continue

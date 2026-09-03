@@ -488,6 +488,12 @@ fun main(args: Array<String>) {
                       .distinct()
                       .joinToString(",")
                       .ifEmpty { "-" },
+                  // Growth curve as the client's f/XB1 index (= the dump's exp_type numbering).
+                  // Section 10 never sets it, and the record constructor defaults to index 1 -
+                  // ERRATIC - so a Medium Slow species read its XP as below its own level and the
+                  // summary/battle XP bar never moved.
+                  GROWTH_ORDER.indexOf(entry.growthRateSymbol.removePrefix("GROWTH_"))
+                      .coerceAtLeast(0),
               )
               .joinToString(":")
         }

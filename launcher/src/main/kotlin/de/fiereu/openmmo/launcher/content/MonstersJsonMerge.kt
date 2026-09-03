@@ -359,7 +359,7 @@ private const val CLIENT_ITEM_SHIFT = 5000
 private val ITEM_EVO_METHODS = setOf(6, 8, 17, 18, 19, 20)
 
 /** GrowthRate enum order, which is also the dump's exp_type numbering. */
-private val GROWTH_ORDER =
+internal val GROWTH_ORDER =
     listOf("MEDIUM_FAST", "ERRATIC", "FLUCTUATING", "MEDIUM_SLOW", "FAST", "SLOW")
 
 /** The dump's own spelling, "Fluctating" included. */

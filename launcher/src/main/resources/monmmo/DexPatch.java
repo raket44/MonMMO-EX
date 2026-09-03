@@ -496,6 +496,28 @@ public final class DexPatch {
             heldIds[item] = Short.parseShort(held[item]);
           }
           speciesClass.getField("YC1").set(target, heldIds);
+          // Growth curve kh0 (f/XB1): the enum's six instances are created with index 0..5
+          // in field mI0 (0 Medium Fast, 1 Erratic, 2 Fluctuating, 3 Medium Slow, 4 Fast,
+          // 5 Slow - verified against the per-curve formulas in XB1.Yv0). The record
+          // constructor defaults every species to instance 1, Erratic, which is why an
+          // imported Medium Slow species showed a dead XP bar.
+          if (parts.length > 13) {
+            java.lang.reflect.Field curveField = speciesClass.getField("kh0");
+            Class<?> curveClass = curveField.getType();
+            int wanted = Integer.parseInt(parts[13]);
+            java.lang.reflect.Field indexField = curveClass.getField("mI0");
+            for (java.lang.reflect.Field candidate : curveClass.getDeclaredFields()) {
+              if (candidate.getType() != curveClass
+                  || !java.lang.reflect.Modifier.isStatic(candidate.getModifiers())) {
+                continue;
+              }
+              Object curve = candidate.get(null);
+              if (curve != null && indexField.getByte(curve) == wanted) {
+                curveField.set(target, curve);
+                break;
+              }
+            }
+          }
           if (speciesClass.getField("pq").getByte(target) == 0) {
             speciesClass.getField("pq").setByte(target, (byte) 1);
           }

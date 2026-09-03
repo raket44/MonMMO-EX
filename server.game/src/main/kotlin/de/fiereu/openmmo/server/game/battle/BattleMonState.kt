@@ -22,6 +22,9 @@ class BattleMonState(
     val gender: Byte = 0,
 ) {
   var currentHp: Int = source.hp.toInt().coerceIn(0, stats.hp)
+
+  /** Gained at least one level in this battle - the cartridge gate for a level evolution. */
+  var leveledThisBattle: Boolean = false
   val moves: MutableList<PokemonMove> =
       source.moves.map { PokemonMove(it.id, it.pp) }.toMutableList()
 

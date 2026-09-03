@@ -865,6 +865,66 @@ public final class DexPatch {
     log("[monmmo] locations: " + installed + " species tables installed");
   }
 
+  /** Evolution scenes seen, with the clock they started on; the scene object is the key. */
+  private static final java.util.Map<Object, Long> evolutionClocks =
+      java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+  /** Showdown's Gen 5-style animations run at 80-100 ms a frame; one cadence for all of them. */
+  private static final long EVOLUTION_FRAME_MS = 90;
+
+  /**
+   * Per-tick hook on f/rP0.TV0 (the evolution cinematic): a mod-sprite species has its GIF frames
+   * in KK1[i] but its drawn sprite DQ[i] was built from frame 0 and never revisited. Point the
+   * sprite's region (fE1.vm -> Cf.Ly) at the frame due now and let the sprite recompute (aS()).
+   * Native species keep KK1[i] null and are untouched. Reflection against obfuscated names, and
+   * a failure here must never break the cinematic.
+   */
+  public static void evolutionTick(Object scene) {
+    try {
+      Object[][] frames = (Object[][]) scene.getClass().getField("KK1").get(scene);
+      Object[] sprites = (Object[]) scene.getClass().getField("DQ").get(scene);
+      if (frames == null || sprites == null) {
+        return;
+      }
+      long start = evolutionClocks.computeIfAbsent(scene, key -> System.currentTimeMillis());
+      long elapsed = System.currentTimeMillis() - start;
+      for (int side = 0; side < Math.min(frames.length, sprites.length); side++) {
+        Object[] sideFrames = frames[side];
+        Object sprite = sprites[side];
+        if (sideFrames == null || sideFrames.length < 2 || sprite == null) {
+          continue;
+        }
+        int index = (int) ((elapsed / EVOLUTION_FRAME_MS) % sideFrames.length);
+        Object frame = sideFrames[index];
+        Object region = frame.getClass().getMethod("Qf1").invoke(frame);
+        Field holderField = findField(sprite.getClass(), "vm");
+        Object holder = holderField.get(sprite);
+        Field regionField = findField(holder.getClass(), "Ly");
+        if (regionField.get(holder) != region) {
+          regionField.set(holder, region);
+          sprite.getClass().getMethod("aS").invoke(sprite);
+        }
+      }
+    } catch (Throwable error) {
+      if (evolutionClocks.put(DexPatch.class, 1L) == null) {
+        log("[monmmo] evolutionTick failed: " + error);
+      }
+    }
+  }
+
+  private static Field findField(Class<?> type, String name) throws NoSuchFieldException {
+    for (Class<?> current = type; current != null; current = current.getSuperclass()) {
+      try {
+        Field field = current.getDeclaredField(name);
+        field.setAccessible(true);
+        return field;
+      } catch (NoSuchFieldException next) {
+        // Look in the superclass.
+      }
+    }
+    throw new NoSuchFieldException(name);
+  }
+
   /** Distinct sprite requests already logged, so a battle does not flood the diagnostic. */
   private static final java.util.Set<String> spriteProbes = new java.util.HashSet<>();
 

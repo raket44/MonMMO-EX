@@ -276,6 +276,13 @@ fun main(args: Array<String>) {
         MovementRailLinePatch::patch,
     )
 
+    // The evolution cinematic draws frame 0 of a mod GIF and never advances it; tick the frames.
+    applyOne(
+        "evolution scene animation",
+        EvolutionAnimPatch::isEvolutionScene,
+        EvolutionAnimPatch::patch,
+    )
+
     // The sprite fetch diagnostic (SpriteFetchDiagnosticPatch) stays available but is NOT applied:
     // its probe decodes every GIF it inspects, and the Pokedex fetches every imported species on
     // open, which turned the hook into a multi-second freeze. Re-enable only to investigate.

@@ -32,6 +32,20 @@ fun <K, V, R : UpdatableRecord<R>> DSLContext.writeDelta(
   // resetTouchedOnNotNull() would drop a column set back to null, leaving it never cleared.
   val records = delta.changed.map { (key, row) -> record(key, row).apply { touched(true) } }
   // A table that is only a primary key has nothing to set on a conflict.
-  val keyOnly = table.primaryKey?.fields?.size == table.fields().size
-  if (keyOnly) batchInsert(records).execute() else batchMerge(records).execute()
+  val primaryKey = table.primaryKey?.fields ?: error("${table.name} has no primary key")
+  val keyOnly = primaryKey.size == table.fields().size
+  if (keyOnly) {
+    batchInsert(records).execute()
+    return
+  }
+  // Upsert on the PRIMARY KEY only. jOOQ's batchMerge matches on the primary key OR any unique
+  // key, so a monster moving into a party slot matched the row still holding that slot and tried
+  // to rewrite that row's id - a pokemon_pkey violation on every save after a party drag, which
+  // silently stopped the character from ever being written again. The slot uniqueness is a
+  // deferred constraint, checked at commit once both rows of a swap are in place.
+  batch(
+          records.map { record ->
+            insertInto(table).set(record).onConflict(primaryKey).doUpdate().set(record)
+          })
+      .execute()
 }

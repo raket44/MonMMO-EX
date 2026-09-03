@@ -41,10 +41,15 @@ class ExpansionAssetStaging(
     private val spritePack: Gen5StyleSpritePack? = null,
 ) {
 
+  /**
+   * [allSpecies] is the whole catalogue, staged or not: a form of a retail species (a Gigantamax
+   * Venusaur) finds its family's Dex number through the base entry, which is never staged itself.
+   */
   fun stage(
       species: List<ExpansionSpeciesDef>,
       archive: Path,
       itemIcons: Map<Int, ByteArray> = emptyMap(),
+      allSpecies: List<ExpansionSpeciesDef> = species,
   ): ExpansionAssetSummary {
     var staged = 0
     var cries = 0
@@ -57,7 +62,7 @@ class ExpansionAssetStaging(
     val failures = linkedMapOf<String, String>()
     val anims = ExpansionFrontAnims.parse(expansionRoot)
     val asymFollowers = parseAsymFollowers()
-    val bySymbol = species.associateBy { it.symbol }
+    val bySymbol = allSpecies.associateBy { it.symbol }
     Files.createDirectories(archive.parent)
     ZipOutputStream(Files.newOutputStream(archive)).use { zip ->
       // The client refuses an archive with no directory entries as a "flattened zip structure",

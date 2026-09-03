@@ -272,7 +272,12 @@ fun main(args: Array<String>) {
       }
   val assets =
       ExpansionAssetStaging(expansionRoot, spritePack)
-          .stage(withAssets, outputData.parent.resolve("mods/monmmo-lost-knights.zip"), itemIcons)
+          .stage(
+              withAssets,
+              outputData.parent.resolve("mods/monmmo-lost-knights.zip"),
+              itemIcons,
+              allSpecies = expansion,
+          )
   Files.newBufferedWriter(outputData.parent.parent.resolve("sprite-pack.csv")).use { writer ->
     writer.appendLine("symbol,wireId,front,back")
     assets.packReport.forEach { writer.appendLine(it) }

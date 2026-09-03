@@ -264,18 +264,51 @@ constructor(
     val charId = state.characterId ?: return
     val packet = event.packet
     log.info { "[PartyReorder] char=$charId $packet" }
+    val before = placements(characters.getCharacter(charId) ?: return)
     var changed = false
     for (move in packet.moves) {
-      // Only party-to-party drags for now; PC boxes ride another container id.
-      if (move.fromContainer != PARTY_CONTAINER || move.toContainer != PARTY_CONTAINER) {
+      val from = clientContainer(move.fromContainer)
+      val to = clientContainer(move.toContainer)
+      if (from == null || to == null) {
         log.info { "[PartyReorder] unsupported containers: $move" }
         continue
       }
-      if (characters.swapPartySlots(charId, move.fromSlot, move.toSlot)) changed = true
+      if (characters.moveBetweenContainers(charId, from, move.fromSlot, to, move.toSlot))
+          changed = true
       else log.info { "[PartyReorder] rejected: $move" }
     }
-    if (changed) sendParty(ctx, charId)
+    if (!changed) return
+    // Each moved monster gets the live-record delta's container+slot pair (client f/Y9, bit 0x40):
+    // same container = slot update, another container = removed from the old one and added to
+    // the new one, and both containers are marked dirty so open windows repaint in place. A full
+    // PC container packet would instead replace the container object the open PC tab captured at
+    // construction (k01.QE1), leaving the boxes stale until reopened.
+    val after = placements(characters.getCharacter(charId) ?: return)
+    for ((id, placement) in after) {
+      if (before[id] == placement) continue
+      ctx.send(
+          de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket(
+              entityId = id,
+              listing =
+                  de.fiereu.openmmo.net.game.packets.battle.Listing(
+                      placement.first.ordinal.toByte(), placement.second),
+          ))
+    }
+    sendParty(ctx, charId)
   }
+
+  private fun placements(
+      stored: de.fiereu.openmmo.server.game.storage.StoredCharacter
+  ): Map<Long, Pair<PokemonContainer, Short>> =
+      (stored.pokemon + stored.pcStorage).associate { it.id to (it.container to it.containerSlot) }
+
+  /** The drag packet's container byte is the client's f/Cy ordinal; PC (0) and party (1) match ours. */
+  private fun clientContainer(byte: Int): PokemonContainer? =
+      when (byte) {
+        PC_CONTAINER -> PokemonContainer.PC
+        PARTY_CONTAINER -> PokemonContainer.PARTY
+        else -> null
+      }
 
   /**
    * The mid-session bag update is a per-stack delta, the same packet the shop flow uses; the full
@@ -318,7 +351,8 @@ constructor(
     /** Measured: the Ice Stone (id 21000) arrived as 18952. Validated against the bag per use. */
     const val ITEM_CODE_OFFSET = 2048
 
-    /** The client's container ordinal (f/Cy) for the party, as its drag packet writes it. */
+    /** The client's container ordinals (f/Cy) as its drag packet writes them. */
+    const val PC_CONTAINER = 0
     const val PARTY_CONTAINER = 1
 
     /** Client item id to HP restored. */

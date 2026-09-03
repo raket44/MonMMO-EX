@@ -2,8 +2,10 @@ package de.fiereu.openmmo.server.game.storage
 
 import de.fiereu.openmmo.common.CharacterInfo
 import de.fiereu.openmmo.common.DynamicWarp
+import de.fiereu.openmmo.common.MAX_PARTY_SIZE
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.Skin
+import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.common.enums.CharacterGender
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
@@ -276,6 +278,61 @@ constructor(
         stored.copy(pokemon = party)
       }
 
+  /**
+   * Move one monster between the party and the PC, or within either, the way the client's
+   * container drag (c2s 0x09) describes it: zero-based slots, PC slots absolute (box * 60 + cell).
+   * An occupied destination swaps. The party stays contiguous - leaving it closes the gap, joining
+   * it inserts at the dropped slot - and it is never emptied. False when nothing changed.
+   */
+  fun moveBetweenContainers(
+      characterId: Long,
+      from: PokemonContainer,
+      fromSlot: Int,
+      to: PokemonContainer,
+      toSlot: Int,
+  ): Boolean =
+      mutate(characterId) { stored ->
+        if (from == to && fromSlot == toSlot) return@mutate null
+        if (!validSlot(from, fromSlot) || !validSlot(to, toSlot)) return@mutate null
+        val party = stored.pokemon.toMutableList()
+        val pc = stored.pcStorage.toMutableList()
+        fun occupant(container: PokemonContainer, slot: Int): Pokemon? =
+            if (container == PokemonContainer.PARTY) party.getOrNull(slot)
+            else pc.firstOrNull { it.containerSlot.toInt() == slot }
+        val moving = occupant(from, fromSlot) ?: return@mutate null
+        val displaced = occupant(to, toSlot)
+        val leavesParty = from == PokemonContainer.PARTY && to != PokemonContainer.PARTY
+        if (leavesParty && displaced == null && party.size == 1) return@mutate null
+        if (to == PokemonContainer.PARTY && displaced == null && party.size >= MAX_PARTY_SIZE)
+            return@mutate null
+        val movedIds = setOfNotNull(moving.id, displaced?.id)
+        party.removeAll { it.id in movedIds }
+        pc.removeAll { it.id in movedIds }
+        fun place(mon: Pokemon, container: PokemonContainer, slot: Int) {
+          if (container == PokemonContainer.PARTY) {
+            party.add(minOf(slot, party.size), mon.copy(container = container))
+          } else {
+            pc.add(mon.copy(container = container, containerSlot = slot.toShort()))
+          }
+        }
+        place(moving, to, toSlot)
+        if (displaced != null) place(displaced, from, fromSlot)
+        stored.copy(
+            pokemon =
+                party
+                    .mapIndexed { slot, mon -> mon.copy(containerSlot = slot.toShort()) }
+                    .toMutableList(),
+            pcStorage = pc,
+        )
+      }
+
+  private fun validSlot(container: PokemonContainer, slot: Int): Boolean =
+      when (container) {
+        PokemonContainer.PARTY -> slot in 0 until MAX_PARTY_SIZE
+        PokemonContainer.PC -> slot in 0 until PC_CAPACITY
+        else -> false
+      }
+
   /** Replace one party monster by id, for example after a battle changed hp, xp, or level. */
   fun updatePokemon(characterId: Long, updated: Pokemon) {
     mutate(characterId) { stored ->
@@ -521,3 +578,6 @@ constructor(
     charactersByUser.remove(stored.info.userId)
   }
 }
+
+/** Slots in the client's PC container (f/Cy ordinal 0): 11 boxes of 60, addressed absolutely. */
+const val PC_CAPACITY = 660

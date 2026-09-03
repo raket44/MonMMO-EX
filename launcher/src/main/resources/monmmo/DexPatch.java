@@ -1012,4 +1012,78 @@ public final class DexPatch {
       // The log is best-effort; the fixups themselves must never depend on it.
     }
   }
+
+  /** Diagnostic: every container drag the client is about to send (entry of f/ln1.bk). */
+  public static void dragProbe(Object[] from, Object[] to) {
+    try {
+      log("[monmmo] dragProbe bk from=" + describeCells(from) + " to=" + describeCells(to));
+    } catch (Throwable error) {
+      log("[monmmo] dragProbe failed: " + error);
+    }
+  }
+
+  /**
+   * Diagnostic: the party window finishing a drag (entry of f/eI0.Kh1) - the dragged cell, whether
+   * a battle object is set (which diverts the drop), and each selected cell's hover target.
+   */
+  public static void dropProbe(Object window) {
+    try {
+      Object dragged = findField(window.getClass(), "i8").get(window);
+      Object selection = findField(window.getClass(), "lq").get(window);
+      Object battle = Class.forName("f.Ot").getField("Bu").get(null);
+      StringBuilder text = new StringBuilder("[monmmo] dropProbe Kh1 dragged=");
+      text.append(describeCell(dragged));
+      text.append(" battle=").append(battle == null ? "none" : battle.getClass().getName());
+      if (selection instanceof java.util.Collection) {
+        for (Object cell : (java.util.Collection<?>) selection) {
+          Object hover = findField(cell.getClass(), "vh1").get(cell);
+          text.append(" | selected=").append(describeCell(cell));
+          text.append(" hover=").append(describeCell(hover));
+        }
+      }
+      log(text.toString());
+    } catch (Throwable error) {
+      log("[monmmo] dropProbe failed: " + error);
+    }
+  }
+
+  private static String describeCells(Object[] cells) {
+    if (cells == null) {
+      return "null";
+    }
+    StringBuilder text = new StringBuilder("[");
+    for (int i = 0; i < cells.length; i++) {
+      if (i > 0) {
+        text.append(", ");
+      }
+      text.append(describeCell(cells[i]));
+    }
+    return text.append("]").toString();
+  }
+
+  private static String describeCell(Object cell) {
+    if (cell == null) {
+      return "null";
+    }
+    String type = cell.getClass().getName();
+    try {
+      Object container = cell.getClass().getMethod("i80").invoke(cell);
+      Object slot = cell.getClass().getMethod("i01").invoke(cell);
+      Object monster = cell.getClass().getMethod("pJ").invoke(cell);
+      String containerByte =
+          container == null
+              ? "null"
+              : String.valueOf(findField(container.getClass(), "mz1").get(container));
+      return type
+          + "{container="
+          + containerByte
+          + " slot="
+          + slot
+          + " occupied="
+          + (monster != null)
+          + "}";
+    } catch (Throwable error) {
+      return type + "{" + error.getClass().getSimpleName() + "}";
+    }
+  }
 }

@@ -258,6 +258,18 @@ fun main(args: Array<String>) {
         ConvertDiagnosticPatch::patch,
     )
 
+    // Party-to-PC drags reach the server as nothing at all; log the drop and the move sender.
+    applyOne(
+        "drag drop diagnostic",
+        DragDiagnosticPatch::isPartyWindow,
+        DragDiagnosticPatch::patchPartyWindow,
+    )
+    applyOne(
+        "drag send diagnostic",
+        DragDiagnosticPatch::isMoveSender,
+        DragDiagnosticPatch::patchMoveSender,
+    )
+
     applyOne(
         "Unova map build stage markers",
         K90DiagnosticPatch::isUnovaMap,

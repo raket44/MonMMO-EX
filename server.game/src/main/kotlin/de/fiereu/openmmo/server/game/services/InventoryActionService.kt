@@ -264,13 +264,17 @@ constructor(
     val charId = state.characterId ?: return
     val packet = event.packet
     log.info { "[PartyReorder] char=$charId $packet" }
-    val from = packet.fromSlot
-    val to = packet.toSlot
-    if (!characters.swapPartySlots(charId, from, to)) {
-      log.info { "[PartyReorder] rejected: from=$from to=$to" }
-      return
+    var changed = false
+    for (move in packet.moves) {
+      // Only party-to-party drags for now; PC boxes ride another container id.
+      if (move.fromContainer != PARTY_CONTAINER || move.toContainer != PARTY_CONTAINER) {
+        log.info { "[PartyReorder] unsupported containers: $move" }
+        continue
+      }
+      if (characters.swapPartySlots(charId, move.fromSlot, move.toSlot)) changed = true
+      else log.info { "[PartyReorder] rejected: $move" }
     }
-    sendParty(ctx, charId)
+    if (changed) sendParty(ctx, charId)
   }
 
   /**
@@ -313,6 +317,9 @@ constructor(
   private companion object {
     /** Measured: the Ice Stone (id 21000) arrived as 18952. Validated against the bag per use. */
     const val ITEM_CODE_OFFSET = 2048
+
+    /** The client's container ordinal (f/Cy) for the party, as its drag packet writes it. */
+    const val PARTY_CONTAINER = 1
 
     /** Client item id to HP restored. */
     val HEAL_ITEMS =

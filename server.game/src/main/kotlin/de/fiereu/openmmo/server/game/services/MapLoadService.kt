@@ -35,7 +35,10 @@ constructor(
       transportation: Int = 0,
       mountType: Int = -1,
       mountId: Int = -1,
+      /** Uid of the party monster chosen as follower ("Set X as Follower"); null = the lead. */
+      followerId: Long? = null,
   ): LoadEntityPacket {
+    val follower = party.firstOrNull { it.id == followerId } ?: party.firstOrNull()
     return LoadEntityPacket(
         entityId = info.id,
         skin = SkinSet(info.skinRegionSelectionIndex, skins),
@@ -56,8 +59,8 @@ constructor(
         // have - announcing one crashes the client with a zero-dimension mod atlas at spawn. No
         // follower for an imported lead until descriptors are injected alongside the sprites.
         hasFollower =
-            party.isNotEmpty() && clientSpeciesId(party.first().dexId) <= LAST_ROM_FOLLOWER_SPECIES,
-        followerDexId = clientSpeciesId(party.firstOrNull()?.dexId ?: 0).toShort(),
+            follower != null && clientSpeciesId(follower.dexId) <= LAST_ROM_FOLLOWER_SPECIES,
+        followerDexId = clientSpeciesId(follower?.dexId ?: 0).toShort(),
         railLine = railLine,
         transportation = transportation,
         mountType = mountType,
@@ -107,4 +110,4 @@ constructor(
 }
 
 /** The last species with a ROM overworld sprite the client can walk as a follower. */
-private const val LAST_ROM_FOLLOWER_SPECIES = 649
+const val LAST_ROM_FOLLOWER_SPECIES = 649

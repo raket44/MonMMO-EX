@@ -177,6 +177,11 @@ data class PlayerState(
      * with accepted=true; a cancel drops the entry and leaves the monster as it was.
      */
     val pendingEvolutions: MutableMap<Long, PendingEvolution> = ConcurrentHashMap(),
+    /**
+     * The party monster chosen as the overworld follower ("Set X as Follower", c2s 0x11), by uid;
+     * null follows the lead slot. Session-scoped, like the client's own choice.
+     */
+    @field:Volatile var followerMonId: Long? = null,
 ) {
   val blocksPlayerInput: Boolean
     get() = dialogVisible || scriptLockScope != ScriptLockScope.NONE

@@ -140,7 +140,7 @@ object GameProtocol : Protocol() {
     s2c<StoryFlagUpdatePacket>(0x2Au, StoryFlagUpdatePacketCodec)
 
     c2s<SetCharacterNamePacket>(0x2Bu, SetCharacterNamePacketCodec)
-    s2c<FollowerAdvancePacket>(0x2Bu, FollowerAdvancePacketCodec)
+    s2c<EntityFollowerPacket>(0x2Bu, EntityFollowerPacketCodec)
 
     c2s<NpcDialogResponsePacket>(0x2Cu, NpcDialogResponsePacketCodec)
     s2c<EntityTitleTagPacket>(0x2Cu, EntityTitleTagPacketCodec)

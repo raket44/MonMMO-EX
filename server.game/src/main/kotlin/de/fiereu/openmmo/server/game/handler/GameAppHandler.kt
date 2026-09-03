@@ -144,6 +144,9 @@ constructor(
 
     onSuspend<ContainerActionPacket> { event -> inventoryActionService.onContainerAction(event) }
     on<PartyReorderPacket> { event -> inventoryActionService.onPartyReorder(event) }
+    on<de.fiereu.openmmo.net.game.packets.PartyMemberSelectPacket> { event ->
+      presenceService.onPartyMemberSelect(event)
+    }
     onSuspend<de.fiereu.openmmo.net.game.packets.PokemonListAddPacket> { event ->
       inventoryActionService.onGiveHeldItem(event)
     }

@@ -1,6 +1,8 @@
 package de.fiereu.openmmo.server.game.services
 
+import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.net.game.packets.EntityLeavePacket
 import de.fiereu.openmmo.net.game.packets.LoadEntityPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
@@ -10,6 +12,9 @@ import de.fiereu.openmmo.server.game.world.interest.InterestPolicy
 import de.fiereu.openmmo.server.game.world.interest.MapInterestKey
 import javax.inject.Inject
 import javax.inject.Singleton
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val log = KotlinLogging.logger {}
 
 /**
  * Overworld presence built on the generic [InterestManager]. A player's map is one interest group.
@@ -96,6 +101,46 @@ constructor(
         state.facingDirection,
         party = stored.pokemon,
         skins = stored.skins,
-        transportation = if (state.riding) 0x02 else 0)
+        transportation = if (state.riding) 0x02 else 0,
+        followerId = state.followerMonId)
+  }
+
+  /**
+   * The party window's follower choice (c2s 0x11 = client f/ET): type 1 names a monster by uid
+   * ("Set X as Follower"), type 0 names a party slot ("Set Slot #N as Follower"), anything else
+   * dismisses the follower. The client changes nothing on its own; s2c 0x2B (client f/lPT6 ->
+   * ti.gw0) sets the entity's follower live for the player and everyone watching. Imported species
+   * have no ROM overworld descriptor yet, so they are refused rather than crash the client.
+   */
+  fun onPartyMemberSelect(
+      event: PacketEvent<de.fiereu.openmmo.net.game.packets.PartyMemberSelectPacket>
+  ) {
+    val ctx = event.session
+    val state = ctx.attributes[PLAYER_STATE] ?: return
+    val charId = state.characterId ?: return
+    val stored = characterStore.getCharacter(charId) ?: return
+    val packet = event.packet
+    val chosen =
+        when (packet.selectionType.toInt()) {
+          1 -> stored.pokemon.firstOrNull { it.id == packet.entityId }
+          0 -> stored.pokemon.getOrNull(packet.entityId.toInt())
+          else -> null
+        }
+    log.info { "[Follower] char=$charId $packet -> ${chosen?.let { "${it.dexId}#${it.id}" } ?: "none"}" }
+    val species = chosen?.let { clientSpeciesId(it.dexId) } ?: 0
+    if (chosen != null && species > LAST_ROM_FOLLOWER_SPECIES) {
+      ctx.send(notice("That species cannot follow you yet."))
+      return
+    }
+    state.followerMonId = chosen?.id
+    val update =
+        de.fiereu.openmmo.net.game.packets.EntityFollowerPacket(
+            entityId = charId,
+            species = species.toShort(),
+            gender = 0,
+            shiny = chosen?.isShiny ?: false,
+        )
+    ctx.send(update)
+    broadcastToObservers(ctx, update)
   }
 }

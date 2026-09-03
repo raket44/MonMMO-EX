@@ -19,6 +19,10 @@ data class ExpansionAssetSummary(
     val followers: Int,
     val followerFallbacks: Int,
     val failures: Map<String, String>,
+    /** Species whose battle sprites came from the Gen 5-style pack rather than the Expansion. */
+    val packSprites: Int = 0,
+    /** One `symbol,wireId,front,back` line per pack-sourced species; back may read "expansion". */
+    val packReport: List<String> = emptyList(),
 )
 
 /**
@@ -27,7 +31,10 @@ data class ExpansionAssetSummary(
  * what the client's own resources.zip ships; the archive is keyed by client wire id, so it is only
  * meaningful alongside a data.pak that registers the same ids.
  */
-class ExpansionAssetStaging(private val expansionRoot: Path) {
+class ExpansionAssetStaging(
+    private val expansionRoot: Path,
+    private val spritePack: Gen5StyleSpritePack? = null,
+) {
 
   fun stage(
       species: List<ExpansionSpeciesDef>,
@@ -39,9 +46,12 @@ class ExpansionAssetStaging(private val expansionRoot: Path) {
     var animated = 0
     var followers = 0
     var followerFallbacks = 0
+    var packSprites = 0
+    val packReport = mutableListOf<String>()
     val failures = linkedMapOf<String, String>()
     val anims = ExpansionFrontAnims.parse(expansionRoot)
     val asymFollowers = parseAsymFollowers()
+    val bySymbol = species.associateBy { it.symbol }
     Files.createDirectories(archive.parent)
     ZipOutputStream(Files.newOutputStream(archive)).use { zip ->
       // The client refuses an archive with no directory entries as a "flattened zip structure",
@@ -65,7 +75,24 @@ class ExpansionAssetStaging(private val expansionRoot: Path) {
               // Expansion keeps as a single frame - most Gen 6+ fronts, and every back - get the
               // synthesized breathing idle instead, so nothing stands frozen.
               val script = anims[entry.symbol.removePrefix("SPECIES_")].orEmpty()
-              if (script.size > 1 && front.height / FRAME > 1) {
+              val packed = spritePack?.resolve(entry, bySymbol)
+              if (packed != null) {
+                // Operator's Gen 5-style pack (stills): the same idle bounce on every side.
+                // A back the pack lacks keeps the Expansion's, so the species never goes blank.
+                zip.write("$SPRITES/$wireId-front-n.gif", packGif(packed.front))
+                zip.write("$SPRITES/$wireId-front-s.gif", packGif(packed.frontShiny ?: packed.front))
+                if (packed.back != null) {
+                  zip.write("$SPRITES/$wireId-back-n.gif", packGif(packed.back))
+                  zip.write("$SPRITES/$wireId-back-s.gif", packGif(packed.backShiny ?: packed.back))
+                } else {
+                  zip.write("$SPRITES/$wireId-back-n.gif", idleGif(back, normal, FRAME))
+                  zip.write("$SPRITES/$wireId-back-s.gif", idleGif(back, shiny, FRAME))
+                }
+                packSprites++
+                packReport +=
+                    "${entry.symbol},$wireId,${packed.front.fileName}," +
+                        (packed.back?.fileName?.toString() ?: "expansion")
+              } else if (script.size > 1 && front.height / FRAME > 1) {
                 zip.write("$SPRITES/$wireId-front-n.gif", scriptedGif(front, normal, FRAME, script))
                 zip.write("$SPRITES/$wireId-front-s.gif", scriptedGif(front, shiny, FRAME, script))
                 animated++
@@ -73,8 +100,10 @@ class ExpansionAssetStaging(private val expansionRoot: Path) {
                 zip.write("$SPRITES/$wireId-front-n.gif", idleGif(front, normal, FRAME))
                 zip.write("$SPRITES/$wireId-front-s.gif", idleGif(front, shiny, FRAME))
               }
-              zip.write("$SPRITES/$wireId-back-n.gif", idleGif(back, normal, FRAME))
-              zip.write("$SPRITES/$wireId-back-s.gif", idleGif(back, shiny, FRAME))
+              if (packed == null) {
+                zip.write("$SPRITES/$wireId-back-n.gif", idleGif(back, normal, FRAME))
+                zip.write("$SPRITES/$wireId-back-s.gif", idleGif(back, shiny, FRAME))
+              }
               // icon.png stacks the two idle-bounce frames the party UI alternates between.
               zip.write("$ICONS/$wireId-0.png", png(icon, iconPalette, ICON, 0))
               zip.write("$ICONS/$wireId-1.png", png(icon, iconPalette, ICON, ICON))
@@ -115,7 +144,39 @@ class ExpansionAssetStaging(private val expansionRoot: Path) {
       }
     }
     return ExpansionAssetSummary(
-        staged, species.size - staged, cries, animated, followers, followerFallbacks, failures)
+        staged,
+        species.size - staged,
+        cries,
+        animated,
+        followers,
+        followerFallbacks,
+        failures,
+        packSprites,
+        packReport,
+    )
+  }
+
+  /**
+   * A pack still as a looping idle GIF. The PNG is already indexed with its own transparent entry;
+   * its opaque colours are re-indexed from 1 so index 0 can be the GIF's transparent colour, the
+   * convention every other sprite here follows.
+   */
+  private fun packGif(path: Path): ByteArray {
+    val image = ImageIO.read(path.toFile()) ?: error("Unreadable pack sprite: $path")
+    val colors = linkedMapOf<Int, Int>()
+    val indices = IntArray(image.width * image.height)
+    for (y in 0 until image.height) {
+      for (x in 0 until image.width) {
+        val argb = image.getRGB(x, y)
+        indices[y * image.width + x] =
+            if (argb ushr 24 == 0) TRANSPARENT_INDEX
+            else colors.getOrPut(argb or (0xff shl 24)) { colors.size + 1 }
+      }
+    }
+    check(colors.size < 256) { "Pack sprite uses more than 255 colours: $path" }
+    val palette = IntArray(colors.size + 1)
+    colors.forEach { (argb, index) -> palette[index] = argb }
+    return idleGif(IndexedImage(image.width, image.height, indices), palette, maxOf(image.width, image.height))
   }
 
   private fun source(path: String): Path {

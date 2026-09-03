@@ -14,9 +14,9 @@ import javax.xml.transform.stream.StreamResult
 
 /** Builds inactive client content under launcher/build. It never writes to an installed client. */
 fun main(args: Array<String>) {
-  require(args.size == 5) {
+  require(args.size >= 5) {
     "Usage: <stock-data.pak> <output-data.pak> <stock-strings-en.xml> <output-strings-en.xml> " +
-        "<expansion-root>"
+        "<expansion-root> [<gen5-sprite-pack-root>]"
   }
   val stockData = Path.of(args[0])
   val outputData = Path.of(args[1])
@@ -264,9 +264,22 @@ fun main(args: Array<String>) {
       "[expansion-client] item icons staged=${iconSummary.staged}" +
           if (iconSummary.missing.isEmpty()) ""
           else " missing=${iconSummary.missing.take(10).joinToString()}")
+  // Operator's Gen 5-style battle sprites (optional sixth argument): they replace the Expansion's
+  // art for every species and form they cover; the rest keep the converted GBA sprites.
+  val spritePack =
+      args.getOrNull(5)?.let { Path.of(it) }?.takeIf { Files.isDirectory(it) }?.let {
+        Gen5StyleSpritePack(it, expansionRoot)
+      }
   val assets =
-      ExpansionAssetStaging(expansionRoot)
+      ExpansionAssetStaging(expansionRoot, spritePack)
           .stage(withAssets, outputData.parent.resolve("mods/monmmo-lost-knights.zip"), itemIcons)
+  Files.newBufferedWriter(outputData.parent.parent.resolve("sprite-pack.csv")).use { writer ->
+    writer.appendLine("symbol,wireId,front,back")
+    assets.packReport.forEach { writer.appendLine(it) }
+  }
+  println(
+      "[expansion-client] gen5-style sprite pack: " +
+          if (spritePack == null) "not present" else "${assets.packSprites} species/forms replaced")
 
   // The manifest of every item the overlay creates in the client, as id;name. The server's
   // ItemRegistry loads this from its classpath so the same items are addressable server-side -

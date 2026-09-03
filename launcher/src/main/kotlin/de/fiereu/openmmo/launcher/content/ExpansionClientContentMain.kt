@@ -277,6 +277,10 @@ fun main(args: Array<String>) {
     writer.appendLine("symbol,wireId,front,back")
     assets.packReport.forEach { writer.appendLine(it) }
   }
+  Files.newBufferedWriter(outputData.parent.parent.resolve("sprite-pack-missing.csv")).use { writer ->
+    writer.appendLine("symbol,wireId,name,nationalDex,missing")
+    assets.packMissing.forEach { writer.appendLine(it) }
+  }
   println(
       "[expansion-client] gen5-style sprite pack: " +
           if (spritePack == null) "not present" else "${assets.packSprites} species/forms replaced")

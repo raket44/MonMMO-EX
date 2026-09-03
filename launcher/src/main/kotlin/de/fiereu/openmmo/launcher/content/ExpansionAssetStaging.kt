@@ -23,6 +23,11 @@ data class ExpansionAssetSummary(
     val packSprites: Int = 0,
     /** One `symbol,wireId,front,back` line per pack-sourced species; back may read "expansion". */
     val packReport: List<String> = emptyList(),
+    /**
+     * Art the pack still lacks, one `symbol,wireId,name,nationalDex,missing` line each - the list
+     * to hand a sprite artist. `missing` is "front+back" or "back".
+     */
+    val packMissing: List<String> = emptyList(),
 )
 
 /**
@@ -48,6 +53,7 @@ class ExpansionAssetStaging(
     var followerFallbacks = 0
     var packSprites = 0
     val packReport = mutableListOf<String>()
+    val packMissing = mutableListOf<String>()
     val failures = linkedMapOf<String, String>()
     val anims = ExpansionFrontAnims.parse(expansionRoot)
     val asymFollowers = parseAsymFollowers()
@@ -76,6 +82,12 @@ class ExpansionAssetStaging(
               // synthesized breathing idle instead, so nothing stands frozen.
               val script = anims[entry.symbol.removePrefix("SPECIES_")].orEmpty()
               val packed = spritePack?.resolve(entry, bySymbol)
+              if (spritePack != null && (packed == null || packed.back == null)) {
+                val dex = spritePack.nationalDex(entry, bySymbol) ?: 0
+                packMissing +=
+                    "${entry.symbol},$wireId,${entry.displayName},$dex," +
+                        if (packed == null) "front+back" else "back"
+              }
               if (packed != null) {
                 // Operator's Gen 5-style pack (stills): the same idle bounce on every side.
                 // A back the pack lacks keeps the Expansion's, so the species never goes blank.
@@ -153,6 +165,7 @@ class ExpansionAssetStaging(
         failures,
         packSprites,
         packReport,
+        packMissing,
     )
   }
 

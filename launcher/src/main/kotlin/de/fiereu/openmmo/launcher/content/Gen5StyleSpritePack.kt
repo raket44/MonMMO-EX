@@ -73,6 +73,13 @@ class Gen5StyleSpritePack(private val root: Path, expansionRoot: Path) {
     }
   }
 
+  /** National Dex number of [entry]'s family - the number the pack's file names use. */
+  fun nationalDex(entry: ExpansionSpeciesDef, bySymbol: Map<String, ExpansionSpeciesDef>): Int? {
+    val symbol = entry.symbol.removePrefix("SPECIES_")
+    val base = formTables[symbol]?.first ?: symbol.substringBefore("_MEGA")
+    return dexOf(base, bySymbol) ?: dexOf(symbol, bySymbol)
+  }
+
   /** The pack's sprites for [entry], or null when the pack does not cover it. */
   fun resolve(entry: ExpansionSpeciesDef, bySymbol: Map<String, ExpansionSpeciesDef>): Sprites? {
     val symbol = entry.symbol.removePrefix("SPECIES_")

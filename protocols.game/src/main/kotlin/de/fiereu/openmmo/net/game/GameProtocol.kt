@@ -90,7 +90,7 @@ object GameProtocol : Protocol() {
     s2c<MoveLearnPromptPacket>(0x17u, MoveLearnPromptPacketCodec)
 
     c2s<MonsterStatusConditionPacket>(0x18u, MonsterStatusConditionPacketCodec)
-    s2c<SocialEntryPresencePacket>(0x18u, SocialEntryPresencePacketCodec)
+    s2c<EvolutionPromptPacket>(0x18u, EvolutionPromptPacketCodec)
 
     c2s<MonsterFormActionPacket>(0x19u, MonsterFormActionPacketCodec)
     s2c<SocialEntryRenamePacket>(0x19u, SocialEntryRenamePacketCodec)

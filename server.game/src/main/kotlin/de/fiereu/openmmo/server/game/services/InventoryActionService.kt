@@ -142,19 +142,17 @@ constructor(
     val currentWire = clientSpeciesId(target.dexId)
     val evolvedWire = EvolutionTable.itemEvolution(currentWire, itemId)
     if (evolvedWire != null) {
-      val newDexId = expansion.getByClientWireId(evolvedWire)?.serverId ?: evolvedWire
-      val fromName = expansion.getByClientWireId(currentWire)?.displayName ?: "The monster"
-      val toName = expansion.getByClientWireId(evolvedWire)?.displayName ?: "something new"
-      characters.updatePokemon(charId, target.copy(dexId = newDexId))
-      characters.addItem(charId, itemId, -1)
-      sendStack(ctx, charId, itemId)
-      sendParty(ctx, charId)
-      ctx.send(PokedexSpeciesUnlockPacket(evolvedWire.toShort()))
-      dexProgress.refresh(ctx, charId)
-      log.info {
-        "[UseItem] EVOLVED char=$charId monster=$monsterId wire $currentWire -> $evolvedWire"
+      if (target.heldItem in BreedingService.EVERSTONES) {
+        ctx.reply("It would have no effect.")
+        return
       }
-      ctx.reply("$fromName evolved into $toName!")
+      if (monsterId in state.pendingEvolutions) return
+      // The client plays its evolution cinematic off the prompt; the species changes and the
+      // stone is consumed only when it confirms the sequence finished (EvolutionService).
+      promptEvolution(ctx, state, target, evolvedWire, consumeItemId = itemId)
+      log.info {
+        "[UseItem] EVOLUTION OFFERED char=$charId monster=$monsterId wire $currentWire -> $evolvedWire item=$itemId"
+      }
       return
     }
 

@@ -171,6 +171,12 @@ data class PlayerState(
      * its entry scripts once.
      */
     @field:Volatile var entryScriptsMapKey: Long = -1,
+    /**
+     * Evolutions offered to the client (s2c 0x18) and not yet answered, keyed by monster uid. The
+     * species only changes when the client's evolution cinematic finishes and it answers c2s 0x0B
+     * with accepted=true; a cancel drops the entry and leaves the monster as it was.
+     */
+    val pendingEvolutions: MutableMap<Long, PendingEvolution> = ConcurrentHashMap(),
 ) {
   val blocksPlayerInput: Boolean
     get() = dialogVisible || scriptLockScope != ScriptLockScope.NONE
@@ -193,6 +199,12 @@ data class PlayerState(
     scriptLockedEntityId = null
   }
 }
+
+/**
+ * One offered evolution: the client wire id the monster becomes, and the bag item (a stone) that
+ * is consumed once the client confirms - 0 when the trigger was a level.
+ */
+data class PendingEvolution(val targetWire: Int, val consumeItemId: Int = 0)
 
 /** Packs a map address into one key for [PlayerState.loadedMaps]. */
 fun mapCacheKey(regionId: Int, bankId: Int, mapId: Int): Int =

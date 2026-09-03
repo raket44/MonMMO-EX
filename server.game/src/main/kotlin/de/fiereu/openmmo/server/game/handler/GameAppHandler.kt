@@ -107,6 +107,7 @@ constructor(
     private val shopService: ShopService,
     private val breedingService: BreedingService,
     private val inventoryActionService: InventoryActionService,
+    private val evolutionService: de.fiereu.openmmo.server.game.services.EvolutionService,
     private val appearanceService: AppearanceService,
     private val mapTourService: de.fiereu.openmmo.server.game.services.MapTourService,
     private val scriptRunner: ScriptRunner,
@@ -145,6 +146,9 @@ constructor(
     on<PartyReorderPacket> { event -> inventoryActionService.onPartyReorder(event) }
     onSuspend<de.fiereu.openmmo.net.game.packets.PokemonListAddPacket> { event ->
       inventoryActionService.onGiveHeldItem(event)
+    }
+    onSuspend<de.fiereu.openmmo.net.game.packets.EvolutionPromptResponsePacket> { event ->
+      evolutionService.onResponse(event)
     }
     on<CustomizeCharacterAppearancePacket> { event ->
       appearanceService.onCustomizeAppearance(event)

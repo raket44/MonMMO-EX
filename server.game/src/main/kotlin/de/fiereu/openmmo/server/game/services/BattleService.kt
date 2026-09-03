@@ -569,14 +569,20 @@ constructor(
   }
 
   /**
-   * Evolution happens when a victorious battle ends, the way the cartridges stage it. Every party
-   * member is checked, not only the one that just leveled, so a monster that was already past its
-   * threshold - like an unevolved level-16+ Squirtle from before evolutions existed - catches up on
-   * the next win. An Everstone holds a monster back; happiness, trade and location methods never
-   * match until those systems exist.
+   * Evolution is offered when a victorious battle ends, the way the cartridges stage it. Every
+   * party member is checked, not only the one that just leveled, so a monster that was already past
+   * its threshold - like an unevolved level-16+ Squirtle from before evolutions existed - catches up
+   * on the next win. An Everstone holds a monster back; trade and location methods never match until
+   * those systems exist.
+   *
+   * Nothing evolves here: each eligible monster gets the s2c 0x18 prompt, which the client queues
+   * behind this battle's remaining events and plays as its own evolution cinematic once the fight
+   * is over. The species changes when the client confirms (c2s 0x0B), in [EvolutionService].
    */
   private fun evolveEligible(battle: BattleInstance) {
+    val playerState = battle.session.attributes[PLAYER_STATE] ?: return
     for (state in battle.party) {
+      if (state.source.id in playerState.pendingEvolutions) continue
       val mon = state.source
       if (mon.heldItem in BreedingService.EVERSTONES) continue
       val wire = clientSpeciesId(mon.dexId)
@@ -603,26 +609,9 @@ constructor(
               ),
           ) ?: continue
       val evolvedDef = speciesRegistry.get(target) ?: continue
-      val fromName = def.name
-      val evolved = mon.copy(dexId = target)
-      val stats = StatCalculator.computeAll(evolvedDef, evolved)
-      state.source = evolved.copy(hp = minOf(state.currentHp, stats.hp.toInt()).toShort())
-      state.currentHp = minOf(state.currentHp, stats.hp.toInt())
-      state.stats = stats
-      characterStore.updatePokemon(battle.charId, state.source)
-      // The client's own evolve sequence, played on the battle entity while the scene is
-      // still open. Benched mons have no battle entity to morph; they evolve silently and the
-      // notice covers them.
-      emitter.sendEvolution(
-          battle,
-          state.entityId,
-          target.toShort(),
-          state.currentHp.toShort(),
-          stats.hp.toShort(),
-      )
-      emitter.sendNotice(battle, "$fromName evolved into ${evolvedDef.name}!")
+      promptEvolution(battle.session, playerState, mon, target)
       log.info {
-        "char=${battle.charId} $fromName (wire $wire) evolved into ${evolvedDef.name} (wire $target)"
+        "char=${battle.charId} ${def.name} (wire $wire) offered evolution into ${evolvedDef.name} (wire $target)"
       }
     }
   }

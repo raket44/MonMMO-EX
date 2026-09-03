@@ -60,6 +60,10 @@ constructor(
         // zero and crashed the client at spawn, which is what the old species cap guarded).
         hasFollower = follower != null,
         followerDexId = clientSpeciesId(follower?.dexId ?: 0).toShort(),
+        followerFlags =
+            de.fiereu.openmmo.net.game.packets.EntityFollowerPacket.followerFlags(
+                    shiny = follower?.isShiny ?: false)
+                .toInt() and 0xFF,
         railLine = railLine,
         transportation = transportation,
         mountType = mountType,

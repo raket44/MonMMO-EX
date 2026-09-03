@@ -133,8 +133,9 @@ constructor(
         de.fiereu.openmmo.net.game.packets.EntityFollowerPacket(
             entityId = charId,
             species = species.toShort(),
-            gender = 0,
-            shiny = chosen?.isShiny ?: false,
+            flags =
+                de.fiereu.openmmo.net.game.packets.EntityFollowerPacket.followerFlags(
+                    shiny = chosen?.isShiny ?: false),
         )
     ctx.send(update)
     broadcastToObservers(ctx, update)

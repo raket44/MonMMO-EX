@@ -22,6 +22,8 @@ data class LoadEntityPacket(
     val status: EntityStatus = EntityStatus.NONE,
     val hasFollower: Boolean,
     val followerDexId: Short,
+    /** Follower flag byte (bit 0x40 shiny, 0x20 female, low bits form); see EntityFollowerPacket. */
+    val followerFlags: Int = 0,
     /**
      * Gen 5 rail placement (Castelia's main city, Skyarrow Bridge...). The client's position struct
      * (f.Wi1) resolves coordinates two ways: normally `map.Pp(x, y, z)` with z as elevation, but
@@ -65,6 +67,9 @@ object LoadEntityPacketCodec : PacketCodec<LoadEntityPacket>() {
           var f = 0
           if (it.mountId >= 0) f = f or 0x02
           if (it.hasFollower) f = f or 0x04
+          // Bit 0x08 carries the follower flag byte (client pJ0.DK0 -> ti.gw0's byte): shiny
+          // and gender pick the follower sheet variant. Without it a shiny led a normal follower.
+          if (it.hasFollower && it.followerFlags != 0) f = f or 0x08
           f
         }
     if (flags and 0x01 != 0) field(S8) { 0 }
@@ -74,7 +79,7 @@ object LoadEntityPacketCodec : PacketCodec<LoadEntityPacket>() {
     }
     val hasFollower = (flags and 0x04) != 0
     val followerDexId: Short = if (hasFollower) field(S16LE, LoadEntityPacket::followerDexId) else 0
-    if (flags and 0x08 != 0) field(S8) { 0 }
+    val followerFlags = if (flags and 0x08 != 0) field(U8) { it.followerFlags } else 0
     if (flags and 0x10 != 0) {
       field(S32LE) { 0 }
       field(Utf16LeNullTerminated) { "" }
@@ -95,6 +100,7 @@ object LoadEntityPacketCodec : PacketCodec<LoadEntityPacket>() {
         status = EntityStatus.NONE,
         hasFollower = hasFollower,
         followerDexId = followerDexId,
+        followerFlags = followerFlags,
     )
   }
 }

@@ -22,6 +22,8 @@ data class BattleMonBlock(
     val currentHp: Short,
     val movesPresent: Boolean,
     val moveIds: List<Short>,
+    /** Rides the active detail's rarity flags (bit 0): the client picks the shiny sprite from it. */
+    val shiny: Boolean = false,
 ) {
   init {
     require(moveIds.size == MOVE_SLOTS) { "A battle mon block carries exactly $MOVE_SLOTS moves" }
@@ -39,16 +41,26 @@ private fun seg(hex: String): ByteArray =
 private val MOVES_HEADER = seg("000000ff03")
 private val ACTIVE_TAIL = seg("03ff0000000066666666")
 
-/** The active monster's detail block, naming only species, level, and gender. */
+/**
+ * The active monster's detail block: species, level, gender and the rarity flags.
+ *
+ * The client's reader (`f/kw0.NQ1`) takes it as: slot u8, species s16, level u8, an empty
+ * length-prefixed nickname (two zero bytes), the rarity flags s16, gender u8, one byte, then the
+ * tail. The flags reach `f/QL1.CZ0`, where bits 0 and 3 (shiny, secret shiny) select the shiny
+ * sprite for the whole battle - sent as zero, a shiny monster fought in its normal colours.
+ */
 internal data class BattleActiveDetail(
     val slot: Int,
     val species: Short,
     val level: Byte,
     val gender: Byte,
+    val flags: Short = 0,
 ) {
   companion object {
+    const val SHINY_FLAG: Short = 1
+
     fun of(slot: Int, mon: BattleMonBlock): BattleActiveDetail =
-        BattleActiveDetail(slot, mon.species, mon.level, mon.gender)
+        BattleActiveDetail(slot, mon.species, mon.level, mon.gender, if (mon.shiny) SHINY_FLAG else 0)
   }
 }
 
@@ -60,11 +72,12 @@ internal object BattleActiveDetailCodec : PacketCodec<BattleActiveDetail>() {
     val slot = field(S8) { it.slot.toByte() }.toInt()
     val species = field(S16LE) { it.species }
     val level = field(S8) { it.level }
-    padding(4)
+    padding(2) // empty nickname
+    val flags = field(S16LE) { it.flags }
     val gender = field(S8) { it.gender }
     reserved(0)
     constant(ACTIVE_TAIL)
-    return BattleActiveDetail(slot, species, level, gender)
+    return BattleActiveDetail(slot, species, level, gender, flags)
   }
 }
 

@@ -83,6 +83,7 @@ class BattleMonState(
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,
           moveIds = List(BattleMonBlock.MOVE_SLOTS) { moves.getOrNull(it)?.id ?: 0 },
+          shiny = source.isShiny,
       )
 
   private fun wireSpeciesId(): Short = clientSpeciesId(species.id).toShort()

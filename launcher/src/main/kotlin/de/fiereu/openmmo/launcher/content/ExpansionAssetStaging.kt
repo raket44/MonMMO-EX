@@ -103,7 +103,12 @@ class ExpansionAssetStaging(
                       ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
                       else idleGif(front, normal, FRAME)) to EXPANSION
               val frontS =
-                  packed?.frontShiny?.let { packGif(it) to PACK }
+                  online?.let { o ->
+                    if (o.aniFront != null && o.front != null && o.frontShiny != null)
+                        shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
+                    else null
+                  }
+                      ?: packed?.frontShiny?.let { packGif(it) to PACK }
                       ?: online?.frontShiny?.let { packGif(it) to SHOWDOWN }
                       ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
                       else idleGif(front, shiny, FRAME)) to EXPANSION
@@ -113,7 +118,12 @@ class ExpansionAssetStaging(
                       ?: online?.back?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, normal, FRAME) to EXPANSION
               val backS =
-                  packed?.backShiny?.let { packGif(it) to PACK }
+                  online?.let { o ->
+                    if (o.aniBack != null && o.back != null && o.backShiny != null)
+                        shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY
+                    else null
+                  }
+                      ?: packed?.backShiny?.let { packGif(it) to PACK }
                       ?: online?.backShiny?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, shiny, FRAME) to EXPANSION
               zip.write("$SPRITES/$wireId-front-n.gif", frontN.first)
@@ -201,7 +211,63 @@ class ExpansionAssetStaging(
    * shape of every GIF in the HD battle sprite mod. Showdown's GIFs store each frame as an offset
    * sub-rectangle with restore-to-previous disposal, and the client showed those as a still.
    */
-  private fun reencodeGif(path: Path): ByteArray {
+  private fun reencodeGif(path: Path): ByteArray = quantisedGif(decodeGif(path))
+
+  /**
+   * An animated SHINY from the normal animation: Gen 5 shinies are palette swaps of the same
+   * drawing, so the normal and shiny stills pair up pixel for pixel into a colour map, and that map
+   * recolours every frame of the normal animation. Showdown ships no shiny animations at all, and
+   * a shiny monster's summary and battle sprite would otherwise fall back to a still.
+   */
+  private fun shinyGif(animation: Path, still: Path, shinyStill: Path): ByteArray {
+    val normal = ImageIO.read(still.toFile()) ?: error("Unreadable still: $still")
+    val shiny = ImageIO.read(shinyStill.toFile()) ?: error("Unreadable shiny still: $shinyStill")
+    val votes = mutableMapOf<Int, MutableMap<Int, Int>>()
+    for (y in 0 until minOf(normal.height, shiny.height)) {
+      for (x in 0 until minOf(normal.width, shiny.width)) {
+        val from = normal.getRGB(x, y)
+        val to = shiny.getRGB(x, y)
+        if (from ushr 24 < 128 || to ushr 24 < 128) continue
+        votes.getOrPut(from or (0xff shl 24)) { mutableMapOf() }.merge(to or (0xff shl 24), 1, Int::plus)
+      }
+    }
+    val map = votes.mapValues { (_, targets) -> targets.maxByOrNull { it.value }!!.key }
+    val known = map.keys.toList()
+    fun recolour(argb: Int): Int {
+      map[argb]?.let {
+        return it
+      }
+      if (known.isEmpty()) return argb
+      var best = known[0]
+      var bestDistance = Int.MAX_VALUE
+      for (candidate in known) {
+        val dr = ((argb shr 16) and 0xff) - ((candidate shr 16) and 0xff)
+        val dg = ((argb shr 8) and 0xff) - ((candidate shr 8) and 0xff)
+        val db = (argb and 0xff) - (candidate and 0xff)
+        val distance = dr * dr + dg * dg + db * db
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = candidate
+        }
+      }
+      return map.getValue(best)
+    }
+    val frames =
+        decodeGif(animation).map { (image, delay) ->
+          val out = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_ARGB)
+          for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+              val argb = image.getRGB(x, y)
+              out.setRGB(x, y, if (argb ushr 24 < 128) 0 else recolour(argb or (0xff shl 24)))
+            }
+          }
+          out to delay
+        }
+    return quantisedGif(frames)
+  }
+
+  /** Composites every frame of a GIF onto its logical screen, honouring offsets and disposal. */
+  private fun decodeGif(path: Path): List<Pair<BufferedImage, Int>> {
     val reader = ImageIO.getImageReadersByFormatName("gif").next()
     val composed = mutableListOf<Pair<BufferedImage, Int>>()
     ImageIO.createImageInputStream(path.toFile()).use { input ->
@@ -243,7 +309,7 @@ class ExpansionAssetStaging(
       }
     }
     reader.dispose()
-    return quantisedGif(composed)
+    return composed
   }
 
   /** Full-frame ARGB images to a looping GIF on one shared palette (index 0 transparent). */
@@ -672,6 +738,7 @@ class ExpansionAssetStaging(
     const val SPRITES = "sprites/battlesprites"
     /** Sprite source labels in the staging report. */
     const val ANI = "showdown-ani"
+    const val ANI_SHINY = "showdown-ani-recoloured"
     const val PACK = "pack"
     const val SHOWDOWN = "showdown"
     const val EXPANSION = "expansion"

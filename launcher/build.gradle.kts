@@ -44,7 +44,7 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
       "$client/data/strings/strings_en.xml",
       File(output, "data/strings/strings_en.xml").path,
       rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
-      rootProject.layout.projectDirectory.dir("reference/sprite-packs/gen5-style").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
   )
 }
 

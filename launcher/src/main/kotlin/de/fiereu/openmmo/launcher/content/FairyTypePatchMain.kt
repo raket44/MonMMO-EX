@@ -275,6 +275,14 @@ fun main(args: Array<String>) {
         MovementRailLinePatch::isMovementSender,
         MovementRailLinePatch::patch,
     )
+
+    // Imported species keep rendering the wrong battle sprite file; log what the client asks
+    // the sprite registry for, and what the mod stores hold under that key.
+    applyOne(
+        "sprite fetch diagnostic",
+        SpriteFetchDiagnosticPatch::isSpriteRegistry,
+        SpriteFetchDiagnosticPatch::patch,
+    )
   }
 
   Files.createDirectories(overlay.parent)

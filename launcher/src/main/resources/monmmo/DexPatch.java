@@ -865,6 +865,72 @@ public final class DexPatch {
     log("[monmmo] locations: " + installed + " species tables installed");
   }
 
+  /** Distinct sprite requests already logged, so a battle does not flood the diagnostic. */
+  private static final java.util.Set<String> spriteProbes = new java.util.HashSet<>();
+
+  /**
+   * Entry hook on f/T81.eJ / XE0 (patched in by the overlay): logs the sprite request the client
+   * makes for a monster - side byte, species id, mod flag, shiny - and what the mod stores hold
+   * under the key the client will compute for it. Reflection throughout: the registry fields are
+   * obfuscated, and a failure here must never touch rendering.
+   */
+  public static void spriteProbe(String method, byte side, short species, boolean mods, boolean shiny) {
+    try {
+      if (species < 650 && species > 0) {
+        return; // stock species: not our mod's
+      }
+      String key = method + ":" + side + ":" + species + ":" + mods + ":" + shiny;
+      synchronized (spriteProbes) {
+        if (!spriteProbes.add(key)) {
+          return;
+        }
+      }
+      Class<?> registry = Class.forName("f.T81");
+      Object instance = registry.getField("KD1").get(null);
+      java.lang.reflect.Method k00 =
+          registry.getMethod("K00", short.class, boolean.class, boolean.class, byte.class, boolean.class, boolean.class);
+      int modKey = (Integer) k00.invoke(null, species, true, false, side, shiny, false);
+      StringBuilder line =
+          new StringBuilder("[monmmo] spriteProbe ")
+              .append(method)
+              .append(" side=")
+              .append(side)
+              .append(" species=")
+              .append(species)
+              .append(" mods=")
+              .append(mods)
+              .append(" shiny=")
+              .append(shiny)
+              .append(" key=")
+              .append(modKey);
+      for (String fieldName : new String[] {"Gv", "MV", "nY"}) {
+        try {
+          Object map = registry.getField(fieldName).get(instance);
+          Object value = map.getClass().getMethod("get", int.class).invoke(map, modKey);
+          line.append(' ').append(fieldName).append('=');
+          if (value == null) {
+            line.append("null");
+          } else if (value.getClass().isArray()) {
+            line.append("array[").append(java.lang.reflect.Array.getLength(value)).append(']');
+          } else {
+            line.append(value.getClass().getName());
+            try {
+              Object frames = value.getClass().getField("rw1").get(value);
+              line.append("{files=").append(((java.util.Map<?, ?>) frames).keySet()).append('}');
+            } catch (Exception noFiles) {
+              // Not the file holder.
+            }
+          }
+        } catch (Exception fieldError) {
+          line.append(' ').append(fieldName).append("=?").append(fieldError.getClass().getSimpleName());
+        }
+      }
+      log(line.toString());
+    } catch (Throwable error) {
+      log("[monmmo] spriteProbe failed: " + error);
+    }
+  }
+
   private static void log(String message) {
     try (FileWriter writer = new FileWriter("dex-diagnostic.log", true)) {
       writer.write(message + System.lineSeparator());

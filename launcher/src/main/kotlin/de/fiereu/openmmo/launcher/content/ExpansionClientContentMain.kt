@@ -16,7 +16,7 @@ import javax.xml.transform.stream.StreamResult
 fun main(args: Array<String>) {
   require(args.size >= 5) {
     "Usage: <stock-data.pak> <output-data.pak> <stock-strings-en.xml> <output-strings-en.xml> " +
-        "<expansion-root> [<gen5-sprite-pack-root>]"
+        "<expansion-root> [<showdown-sprite-root>]"
   }
   val stockData = Path.of(args[0])
   val outputData = Path.of(args[1])
@@ -264,18 +264,14 @@ fun main(args: Array<String>) {
       "[expansion-client] item icons staged=${iconSummary.staged}" +
           if (iconSummary.missing.isEmpty()) ""
           else " missing=${iconSummary.missing.take(10).joinToString()}")
-  // Operator's Gen 5-style battle sprites (optional sixth argument): they replace the Expansion's
-  // art for every species and form they cover; the rest keep the converted GBA sprites.
-  val spritePack =
-      args.getOrNull(5)?.let { Path.of(it) }?.takeIf { Files.isDirectory(it) }?.let {
-        Gen5StyleSpritePack(it, expansionRoot)
-      }
-  // Pokemon Showdown's Gen 5-style set, fetched by :launcher:fetchShowdownSprites beside the packs.
+  // Pokemon Showdown's Gen 5-style set (optional sixth argument, fetched by
+  // :launcher:fetchShowdownSprites): animated where it has animation, stills otherwise, for every
+  // species and form the mod stages. The Expansion's converted GBA art is only used where Showdown
+  // has nothing (operator-directed: one source, no fallback chain).
   val showdown =
-      args.getOrNull(5)?.let { Path.of(it).parent?.resolve("showdown") }?.let { ShowdownSprites(it) }
-          ?.takeIf { it.available }
+      args.getOrNull(5)?.let { Path.of(it) }?.let { ShowdownSprites(it) }?.takeIf { it.available }
   val assets =
-      ExpansionAssetStaging(expansionRoot, spritePack, showdown)
+      ExpansionAssetStaging(expansionRoot, showdown = showdown)
           .stage(
               withAssets,
               outputData.parent.resolve("mods/monmmo-lost-knights.zip"),
@@ -291,9 +287,8 @@ fun main(args: Array<String>) {
     assets.packMissing.forEach { writer.appendLine(it) }
   }
   println(
-      "[expansion-client] gen5-style sprites: ${assets.packSprites} species/forms replaced " +
-          "(showdown animated fronts=${assets.showdownAnimated}; packs " +
-          "${if (spritePack == null) "absent" else "present"}, showdown " +
+      "[expansion-client] gen5-style sprites: ${assets.packSprites} species/forms from Showdown " +
+          "(animated fronts=${assets.showdownAnimated}; showdown " +
           "${if (showdown == null) "absent" else "present"})")
 
   // The manifest of every item the overlay creates in the client, as id;name. The server's

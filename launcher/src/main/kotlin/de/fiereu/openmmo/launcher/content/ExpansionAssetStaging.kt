@@ -74,6 +74,12 @@ class ExpansionAssetStaging(
       listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/", "sprites/itemicons/")
           .forEach { zip.directory(it) }
       zip.write("info.xml", INFO_XML.toByteArray())
+      // The follower renderer slices a mod's sheets by this grid (uu1.yz1/ha1 from the loader's
+      // atlasdata parse) and reads which row faces where. Without the file the grid stays 0x0,
+      // every sheet sliced to nothing and the client crashed the moment an imported species
+      // followed. The row order (front, left, right, back) is the Gen 5 follower mod's exactly, so its
+      // descriptor is copied verbatim - the client's direction labels are its own convention.
+      zip.write("$FOLLOWERS/atlasdata.txt", FOLLOWER_ATLAS.toByteArray())
       itemIcons.forEach { (itemId, png) -> zip.write("sprites/itemicons/$itemId.png", png) }
       species.forEach { entry ->
         val wireId = entry.clientWireId ?: return@forEach
@@ -751,6 +757,18 @@ class ExpansionAssetStaging(
             RegexOption.DOT_MATCHES_ALL,
         )
     const val ICON_PALETTES = "graphics/pokemon/icon_palettes"
+    /** Same format as the Gen 5 follower mod's descriptor; cell indices run row-major. */
+    val FOLLOWER_ATLAS =
+        """
+        rows=4
+        columns=4
+
+        north=0,1,2,3
+        south=12,13,14,15
+        west=4,5,6,7
+        east=8,9,10,11
+        """
+            .trimIndent()
     val WHITESPACE = Regex("""\s+""")
     val INFO_XML =
         """

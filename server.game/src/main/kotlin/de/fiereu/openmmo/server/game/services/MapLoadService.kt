@@ -55,11 +55,10 @@ constructor(
         z = z,
         facing = facing,
         status = EntityStatus.NONE,
-        // Followers draw from ROM overworld sprite descriptors, which imported species do not
-        // have - announcing one crashes the client with a zero-dimension mod atlas at spawn. No
-        // follower for an imported lead until descriptors are injected alongside the sprites.
-        hasFollower =
-            follower != null && clientSpeciesId(follower.dexId) <= LAST_ROM_FOLLOWER_SPECIES,
+        // Imported species follow from the mod's sheets; the mod ships the atlasdata.txt grid
+        // descriptor the client's follower renderer needs (without it the mod atlas sliced to
+        // zero and crashed the client at spawn, which is what the old species cap guarded).
+        hasFollower = follower != null,
         followerDexId = clientSpeciesId(follower?.dexId ?: 0).toShort(),
         railLine = railLine,
         transportation = transportation,

@@ -128,10 +128,6 @@ constructor(
         }
     log.info { "[Follower] char=$charId $packet -> ${chosen?.let { "${it.dexId}#${it.id}" } ?: "none"}" }
     val species = chosen?.let { clientSpeciesId(it.dexId) } ?: 0
-    if (chosen != null && species > LAST_ROM_FOLLOWER_SPECIES) {
-      ctx.send(notice("That species cannot follow you yet."))
-      return
-    }
     state.followerMonId = chosen?.id
     val update =
         de.fiereu.openmmo.net.game.packets.EntityFollowerPacket(

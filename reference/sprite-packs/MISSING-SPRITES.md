@@ -6,106 +6,84 @@ Pack file names: `<dex>.png` front, `<dex>b.png` back, add `s` for shiny (`652b.
 
 Forms of Gen 1-5 species (Unown letters, Rotom appliances, Arceus types...) are left out: the client draws those natively.
 
-## 1. Back sprites needed (front exists)
+## 1. Back sprites needed (front exists) - one line per file, 74 files
 
-| Dex | Name | Wire id | Files |
+| Dex | Front file in pack | Back files to make | Used by |
 |---|---|---|---|
-| 6 | Charizard (CHARIZARD_MEGA_X) | 1098 | 6b.png, 6sb.png |
-| 6 | Charizard (CHARIZARD_MEGA_Y) | 1099 | 6b.png, 6sb.png |
-| 9 | Blastoise (BLASTOISE_MEGA) | 1100 | 9b.png, 9sb.png |
-| 15 | Beedrill (BEEDRILL_MEGA) | 1101 | 15b.png, 15sb.png |
-| 18 | Pidgeot (PIDGEOT_MEGA) | 1102 | 18b.png, 18sb.png |
-| 80 | Slowbro (SLOWBRO_MEGA) | 1104 | 80b.png, 80sb.png |
-| 94 | Gengar (GENGAR_MEGA) | 1105 | 94b.png, 94sb.png |
-| 127 | Pinsir (PINSIR_MEGA) | 1107 | 127b.png, 127sb.png |
-| 130 | Gyarados (GYARADOS_MEGA) | 1108 | 130b.png, 130sb.png |
-| 142 | Aerodactyl (AERODACTYL_MEGA) | 1109 | 142b.png, 142sb.png |
-| 150 | Mewtwo (MEWTWO_MEGA_X) | 1110 | 150b.png, 150sb.png |
-| 150 | Mewtwo (MEWTWO_MEGA_Y) | 1111 | 150b.png, 150sb.png |
-| 208 | Steelix (STEELIX_MEGA) | 1113 | 208b.png, 208sb.png |
-| 212 | Scizor (SCIZOR_MEGA) | 1114 | 212b.png, 212sb.png |
-| 229 | Houndoom (HOUNDOOM_MEGA) | 1116 | 229b.png, 229sb.png |
-| 248 | Tyranitar (TYRANITAR_MEGA) | 1117 | 248b.png, 248sb.png |
-| 254 | Sceptile (SCEPTILE_MEGA) | 1118 | 254b.png, 254sb.png |
-| 257 | Blaziken (BLAZIKEN_MEGA) | 1119 | 257b.png, 257sb.png |
-| 260 | Swampert (SWAMPERT_MEGA) | 1120 | 260b.png, 260sb.png |
-| 282 | Gardevoir (GARDEVOIR_MEGA) | 1121 | 282b.png, 282sb.png |
-| 302 | Sableye (SABLEYE_MEGA) | 1122 | 302b.png, 302sb.png |
-| 303 | Mawile (MAWILE_MEGA) | 1123 | 303b.png, 303sb.png |
-| 306 | Aggron (AGGRON_MEGA) | 1124 | 306b.png, 306sb.png |
-| 308 | Medicham (MEDICHAM_MEGA) | 1125 | 308b.png, 308sb.png |
-| 310 | Manectric (MANECTRIC_MEGA) | 1126 | 310b.png, 310sb.png |
-| 323 | Camerupt (CAMERUPT_MEGA) | 1128 | 323b.png, 323sb.png |
-| 359 | Absol (ABSOL_MEGA) | 1131 | 359b.png, 359sb.png |
-| 376 | Metagross (METAGROSS_MEGA) | 1134 | 376b.png, 376sb.png |
-| 380 | Latias (LATIAS_MEGA) | 1135 | 380b.png, 380sb.png |
-| 381 | Latios (LATIOS_MEGA) | 1136 | 381b.png, 381sb.png |
-| 428 | Lopunny (LOPUNNY_MEGA) | 1137 | 428b.png, 428sb.png |
-| 445 | Garchomp (GARCHOMP_MEGA) | 1138 | 445b.png, 445sb.png |
-| 448 | Lucario (LUCARIO_MEGA) | 1139 | 448b.png, 448sb.png |
-| 460 | Abomasnow (ABOMASNOW_MEGA) | 1140 | 460b.png, 460sb.png |
-| 531 | Audino (AUDINO_MEGA) | 1142 | 531b.png, 531sb.png |
-| 652 | Chesnaught | 670 | 652b.png, 652sb.png |
-| 654 | Braixen | 672 | 654b.png, 654sb.png |
-| 655 | Delphox | 673 | 655b.png, 655sb.png |
-| 657 | Frogadier | 675 | 657b.png, 657sb.png |
-| 660 | Diggersby | 678 | 660b.png, 660sb.png |
-| 661 | Fletchling | 679 | 661b.png, 661sb.png |
-| 662 | Fletchinder | 680 | 662b.png, 662sb.png |
-| 664 | Scatterbug (SCATTERBUG_ARCHIPELAGO) | 1516 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_CONTINENTAL) | 1510 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_ELEGANT) | 1512 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_FANCY) | 1525 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_GARDEN) | 1511 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_HIGH_PLAINS) | 1517 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_ICY_SNOW) | 682 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_JUNGLE) | 1524 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_MARINE) | 1515 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_MEADOW) | 1513 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_MODERN) | 1514 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_MONSOON) | 1520 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_OCEAN) | 1523 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_POKEBALL) | 1526 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_POLAR) | 1508 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_RIVER) | 1519 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_SANDSTORM) | 1518 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_SAVANNA) | 1521 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_SUN) | 1522 | 664b.png, 664sb.png |
-| 664 | Scatterbug (SCATTERBUG_TUNDRA) | 1509 | 664b.png, 664sb.png |
-| 668 | Pyroar | 686 | 668b.png, 668sb.png |
-| 673 | Gogoat | 691 | 673b.png, 673sb.png |
-| 675 | Pangoro | 693 | 675b.png, 675sb.png |
-| 679 | Honedge | 697 | 679b.png, 679sb.png |
-| 680 | Doublade | 698 | 680b.png, 680sb.png |
-| 681 | Aegislash (AEGISLASH_BLADE) | 1347 | 681b.png, 681sb.png |
-| 681 | Aegislash (AEGISLASH_SHIELD) | 699 | 681b.png, 681sb.png |
-| 686 | Inkay | 704 | 686b.png, 686sb.png |
-| 687 | Malamar | 705 | 687b.png, 687sb.png |
-| 689 | Barbaracle | 707 | 689b.png, 689sb.png |
-| 691 | Dragalge | 709 | 691b.png, 691sb.png |
-| 693 | Clawitzer | 711 | 693b.png, 693sb.png |
-| 695 | Heliolisk | 713 | 695b.png, 695sb.png |
-| 696 | Tyrunt | 714 | 696b.png, 696sb.png |
-| 698 | Amaura | 716 | 698b.png, 698sb.png |
-| 699 | Aurorus | 717 | 699b.png, 699sb.png |
-| 700 | Sylveon | 718 | 700b.png, 700sb.png |
-| 705 | Sliggoo | 723 | 705b.png, 705sb.png |
-| 706 | Goodra | 724 | 706b.png, 706sb.png |
-| 709 | Trevenant | 727 | 709b.png, 709sb.png |
-| 711 | Gourgeist (GOURGEIST_AVERAGE) | 729 | 711b.png, 711sb.png |
-| 711 | Gourgeist (GOURGEIST_LARGE) | 1352 | 711b.png, 711sb.png |
-| 711 | Gourgeist (GOURGEIST_SMALL) | 1351 | 711b.png, 711sb.png |
-| 711 | Gourgeist (GOURGEIST_SUPER) | 1353 | 711b.png, 711sb.png |
-| 713 | Avalugg | 731 | 713b.png, 713sb.png |
-| 714 | Noibat | 732 | 714b.png, 714sb.png |
-| 715 | Noivern | 733 | 715b.png, 715sb.png |
-| 716 | Xerneas (XERNEAS_ACTIVE) | 1354 | 716b.png, 716sb.png |
-| 716 | Xerneas (XERNEAS_NEUTRAL) | 734 | 716b.png, 716sb.png |
-| 717 | Yveltal | 735 | 717b.png, 717sb.png |
-| 719 | Diancie (DIANCIE_MEGA) | 1143 | 719b.png, 719sb.png |
-| 719 | Diancie | 737 | 719b.png, 719sb.png |
-| 720 | Hoopa (HOOPA_UNBOUND) | 1359 | 720b.png, 720sb.png |
-| 721 | Volcanion | 739 | 721b.png, 721sb.png |
+| 6 | 006_2.png | 006_2b.png, 006_2sb.png | CHARIZARD_MEGA_X |
+| 6 | 006_3.png | 006_3b.png, 006_3sb.png | CHARIZARD_MEGA_Y |
+| 9 | 009_2.png | 009_2b.png, 009_2sb.png | BLASTOISE_MEGA |
+| 15 | 015_2.png | 015_2b.png, 015_2sb.png | BEEDRILL_MEGA |
+| 18 | 018_2.png | 018_2b.png, 018_2sb.png | PIDGEOT_MEGA |
+| 80 | 080_2.png | 080_2b.png, 080_2sb.png | SLOWBRO_MEGA |
+| 94 | 094_2.png | 094_2b.png, 094_2sb.png | GENGAR_MEGA |
+| 127 | 127_2.png | 127_2b.png, 127_2sb.png | PINSIR_MEGA |
+| 130 | 130_2.png | 130_2b.png, 130_2sb.png | GYARADOS_MEGA |
+| 142 | 142_2.png | 142_2b.png, 142_2sb.png | AERODACTYL_MEGA |
+| 150 | 150_2.png | 150_2b.png, 150_2sb.png | MEWTWO_MEGA_X |
+| 150 | 150_3.png | 150_3b.png, 150_3sb.png | MEWTWO_MEGA_Y |
+| 208 | 208_2.png | 208_2b.png, 208_2sb.png | STEELIX_MEGA |
+| 212 | 212_2.png | 212_2b.png, 212_2sb.png | SCIZOR_MEGA |
+| 229 | 229_2.png | 229_2b.png, 229_2sb.png | HOUNDOOM_MEGA |
+| 248 | 248_2.png | 248_2b.png, 248_2sb.png | TYRANITAR_MEGA |
+| 254 | 254_2.png | 254_2b.png, 254_2sb.png | SCEPTILE_MEGA |
+| 257 | 257_2.png | 257_2b.png, 257_2sb.png | BLAZIKEN_MEGA |
+| 260 | 260_2.png | 260_2b.png, 260_2sb.png | SWAMPERT_MEGA |
+| 282 | 282_2.png | 282_2b.png, 282_2sb.png | GARDEVOIR_MEGA |
+| 302 | 302_2.png | 302_2b.png, 302_2sb.png | SABLEYE_MEGA |
+| 303 | 303_2.png | 303_2b.png, 303_2sb.png | MAWILE_MEGA |
+| 306 | 306_2.png | 306_2b.png, 306_2sb.png | AGGRON_MEGA |
+| 308 | 308_2.png | 308_2b.png, 308_2sb.png | MEDICHAM_MEGA |
+| 310 | 310_2.png | 310_2b.png, 310_2sb.png | MANECTRIC_MEGA |
+| 323 | 323_2.png | 323_2b.png, 323_2sb.png | CAMERUPT_MEGA |
+| 359 | 359_2.png | 359_2b.png, 359_2sb.png | ABSOL_MEGA |
+| 376 | 376_2.png | 376_2b.png, 376_2sb.png | METAGROSS_MEGA |
+| 380 | 380_2.png | 380_2b.png, 380_2sb.png | LATIAS_MEGA |
+| 381 | 381_2.png | 381_2b.png, 381_2sb.png | LATIOS_MEGA |
+| 428 | 428_2.png | 428_2b.png, 428_2sb.png | LOPUNNY_MEGA |
+| 445 | 445_2.png | 445_2b.png, 445_2sb.png | GARCHOMP_MEGA |
+| 448 | 448_2.png | 448_2b.png, 448_2sb.png | LUCARIO_MEGA |
+| 460 | 460_2.png | 460_2b.png, 460_2sb.png | ABOMASNOW_MEGA |
+| 531 | 531_2.png | 531_2b.png, 531_2sb.png | AUDINO_MEGA |
+| 652 | 652.png | 652b.png, 652sb.png | CHESNAUGHT |
+| 654 | 654.png | 654b.png, 654sb.png | BRAIXEN |
+| 655 | 655.png | 655b.png, 655sb.png | DELPHOX |
+| 657 | 657.png | 657b.png, 657sb.png | FROGADIER |
+| 660 | 660.png | 660b.png, 660sb.png | DIGGERSBY |
+| 661 | 661.png | 661b.png, 661sb.png | FLETCHLING |
+| 662 | 662.png | 662b.png, 662sb.png | FLETCHINDER |
+| 664 | 664.png | 664b.png, 664sb.png | SCATTERBUG_ICY_SNOW, SCATTERBUG_POLAR, SCATTERBUG_TUNDRA, SCATTERBUG_CONTINENTAL, SCATTERBUG_GARDEN, SCATTERBUG_ELEGANT, SCATTERBUG_MEADOW, SCATTERBUG_MODERN, SCATTERBUG_MARINE, SCATTERBUG_ARCHIPELAGO, SCATTERBUG_HIGH_PLAINS, SCATTERBUG_SANDSTORM, SCATTERBUG_RIVER, SCATTERBUG_MONSOON, SCATTERBUG_SAVANNA, SCATTERBUG_SUN, SCATTERBUG_OCEAN, SCATTERBUG_JUNGLE, SCATTERBUG_FANCY, SCATTERBUG_POKEBALL |
+| 668 | 668m.png | 668mb.png, 668msb.png | PYROAR |
+| 673 | 673.png | 673b.png, 673sb.png | GOGOAT |
+| 675 | 675.png | 675b.png, 675sb.png | PANGORO |
+| 679 | 679_1.png | 679_1b.png, 679_1sb.png | HONEDGE |
+| 680 | 680_1.png | 680_1b.png, 680_1sb.png | DOUBLADE |
+| 681 | 681_1.png | 681_1b.png, 681_1sb.png | AEGISLASH_SHIELD |
+| 681 | 681_2.png | 681_2b.png, 681_2sb.png | AEGISLASH_BLADE |
+| 686 | 686.png | 686b.png, 686sb.png | INKAY |
+| 687 | 687.png | 687b.png, 687sb.png | MALAMAR |
+| 689 | 689.png | 689b.png, 689sb.png | BARBARACLE |
+| 691 | 691.png | 691b.png, 691sb.png | DRAGALGE |
+| 693 | 693.png | 693b.png, 693sb.png | CLAWITZER |
+| 695 | 695.png | 695b.png, 695sb.png | HELIOLISK |
+| 696 | 696.png | 696b.png, 696sb.png | TYRUNT |
+| 698 | 698.png | 698b.png, 698sb.png | AMAURA |
+| 699 | 699.png | 699b.png, 699sb.png | AURORUS |
+| 700 | 700.png | 700b.png, 700sb.png | SYLVEON |
+| 705 | 705.png | 705b.png, 705sb.png | SLIGGOO |
+| 706 | 706.png | 706b.png, 706sb.png | GOODRA |
+| 709 | 709.png | 709b.png, 709sb.png | TREVENANT |
+| 711 | 711_1.png | 711_1b.png, 711_1sb.png | GOURGEIST_AVERAGE, GOURGEIST_SMALL, GOURGEIST_LARGE, GOURGEIST_SUPER |
+| 713 | 713.png | 713b.png, 713sb.png | AVALUGG |
+| 714 | 714.png | 714b.png, 714sb.png | NOIBAT |
+| 715 | 715.png | 715b.png, 715sb.png | NOIVERN |
+| 716 | 716_1.png | 716_1b.png, 716_1sb.png | XERNEAS_NEUTRAL |
+| 716 | 716_2.png | 716_2b.png, 716_2sb.png | XERNEAS_ACTIVE |
+| 717 | 717.png | 717b.png, 717sb.png | YVELTAL |
+| 719 | 719_1.png | 719_1b.png, 719_1sb.png | DIANCIE |
+| 719 | 719_2.png | 719_2b.png, 719_2sb.png | DIANCIE_MEGA |
+| 720 | 720_2.png | 720_2b.png, 720_2sb.png | HOOPA_UNBOUND |
+| 721 | 721.png | 721b.png, 721sb.png | VOLCANION |
 
 ## 2. Gen 6-8 forms with no art at all
 

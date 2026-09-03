@@ -889,51 +889,50 @@ public final class DexPatch {
       Object instance = registry.getField("KD1").get(null);
       java.lang.reflect.Method k00 =
           registry.getMethod("K00", short.class, boolean.class, boolean.class, byte.class, boolean.class, boolean.class);
-      int modKey = (Integer) k00.invoke(null, species, true, false, side, shiny, false);
+      Object gv = registry.getField("Gv").get(instance);
+      java.lang.reflect.Method get = gv.getClass().getMethod("get", int.class);
       StringBuilder line =
           new StringBuilder("[monmmo] spriteProbe ")
               .append(method)
-              .append(" side=")
+              .append(" a1=")
               .append(side)
               .append(" species=")
               .append(species)
-              .append(" mods=")
+              .append(" a3=")
               .append(mods)
-              .append(" shiny=")
-              .append(shiny)
-              .append(" key=")
-              .append(modKey);
-      for (String fieldName : new String[] {"Gv", "MV", "nY"}) {
+              .append(" a4=")
+              .append(shiny);
+      // K00(species, back, pngFrames, gender, shiny, x). eJ with a3 true reads the back key
+      // (back=true, gender=a1, shiny=a4); with a3 false it falls to X81 = the front key. Both are
+      // resolved here, plus the gender-0 fallback for each, so the file the caller really gets
+      // is on record.
+      Object[][] variants = {
+        {"front", false, side, shiny}, {"front-g0", false, (byte) 0, shiny},
+        {"back", true, side, shiny}, {"back-g0", true, (byte) 0, shiny},
+      };
+      for (Object[] variant : variants) {
+        int variantKey = (Integer) k00.invoke(null, species, variant[1], false, variant[2], variant[3], false);
+        Object value = get.invoke(gv, variantKey);
+        line.append(' ').append(variant[0]).append('[').append(variantKey).append("]=");
+        if (value == null) {
+          line.append("null");
+          continue;
+        }
         try {
-          Object map = registry.getField(fieldName).get(instance);
-          Object value = map.getClass().getMethod("get", int.class).invoke(map, modKey);
-          line.append(' ').append(fieldName).append('=');
-          if (value == null) {
-            line.append("null");
-          } else if (value.getClass().isArray()) {
-            line.append("array[").append(java.lang.reflect.Array.getLength(value)).append(']');
-          } else {
-            line.append(value.getClass().getName());
-            try {
-              // f/Qy1: the GIF sprite - VR() is its decoder (f/Lb), ZG1 the decoded frame count,
-              // J51() the timing table it will animate with.
-              Object decoder = value.getClass().getMethod("VR").invoke(value);
-              int frames = decoder.getClass().getField("ZG1").getInt(decoder);
-              int[] timings = (int[]) value.getClass().getMethod("J51").invoke(value);
-              Object file = value.getClass().getMethod("bF1").invoke(value);
-              line.append("{frames=")
-                  .append(frames)
-                  .append(" timings=")
-                  .append(timings == null ? "null" : String.valueOf(timings.length))
-                  .append(" file=")
-                  .append(file)
-                  .append('}');
-            } catch (Exception notGif) {
-              line.append("{").append(notGif.getClass().getSimpleName()).append('}');
-            }
-          }
-        } catch (Exception fieldError) {
-          line.append(' ').append(fieldName).append("=?").append(fieldError.getClass().getSimpleName());
+          // f/Qy1: the GIF sprite - VR() is its decoder (f/Lb), ZG1 the decoded frame count,
+          // J51() the timing table the summary animates with (needs length > 2).
+          Object decoder = value.getClass().getMethod("VR").invoke(value);
+          int frames = decoder.getClass().getField("ZG1").getInt(decoder);
+          int[] timings = (int[]) value.getClass().getMethod("J51").invoke(value);
+          Object file = value.getClass().getMethod("bF1").invoke(value);
+          line.append(file)
+              .append("{frames=")
+              .append(frames)
+              .append(" timings=")
+              .append(timings == null ? "null" : java.util.Arrays.toString(timings))
+              .append('}');
+        } catch (Exception notGif) {
+          line.append(value.getClass().getName());
         }
       }
       StackTraceElement[] stack = Thread.currentThread().getStackTrace();

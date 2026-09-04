@@ -1094,8 +1094,19 @@ public final class DexPatch {
    * region rebuilds every index of that region with the same reader on a background thread.
    */
   public static void dumpNdsMap2(Object map, Object reader, short index, byte b3, short s4, Object wj1) {
+    // Opt-in only: doing any of this inside the client's map build blacked out Johto and Sinnoh
+    // and froze Unova. With the marker present the work happens on a background thread a few
+    // seconds after the map is in use; without it the hook is inert.
+    if (!new java.io.File("nds-dump", "enabled").exists()) return;
+    Thread worker = new Thread(() -> dumpNdsMapLater(map, reader, index, b3, s4, wj1), "monmmo-nds-map");
+    worker.setDaemon(true);
+    worker.start();
+  }
+
+  private static void dumpNdsMapLater(Object map, Object reader, short index, byte b3, short s4, Object wj1) {
     byte region;
     try {
+      Thread.sleep(5_000);
       region = (Byte) reader.getClass().getMethod("me1").invoke(reader);
     } catch (Throwable error) {
       log("[monmmo] dumpNdsMap2: no region from " + reader.getClass().getName() + ": " + error);

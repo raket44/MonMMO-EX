@@ -283,6 +283,14 @@ fun main(args: Array<String>) {
         K90DiagnosticPatch::patch,
     )
 
+    // Every DS map the client builds is written out with its own tile and event answers, for
+    // the server's Johto/Sinnoh/Unova importer.
+    applyOne(
+        "NDS map dump",
+        NdsMapDumpPatch::isNdsMap,
+        NdsMapDumpPatch::patch,
+    )
+
     applyOne(
         "silent packet-drop diagnostic",
         PacketDropDiagnosticPatch::isPacketRegistry,

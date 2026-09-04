@@ -1014,6 +1014,164 @@ public final class DexPatch {
     }
   }
 
+  private static final java.util.Set<String> ndsMapsDumped = new java.util.HashSet<>();
+
+  /**
+   * Writes one NDS map the client just built from its own ROM readers: the tile grid with the
+   * client's walkability/terrain answers (nds-dump/tiles-<region>-<index>.tsv) and the event
+   * records - npcs, warps, triggers - with every field the client parsed
+   * (nds-dump/events-<region>-<index>.tsv). Once per map per client run; the server imports it.
+   */
+  public static void dumpNdsMap(Object map, byte region, short index) {
+    String key = region + "-" + index;
+    synchronized (ndsMapsDumped) {
+      if (!ndsMapsDumped.add(key)) return;
+    }
+    try {
+      java.io.File dir = new java.io.File("nds-dump");
+      dir.mkdirs();
+      java.io.File tiles = new java.io.File(dir, "tiles-" + key + ".tsv");
+      if (!tiles.exists()) dumpNdsTiles(map, region, index, tiles);
+      java.io.File events = new java.io.File(dir, "events-" + key + ".tsv");
+      if (!events.exists()) dumpNdsEvents(map, region, index, events);
+    } catch (Throwable error) {
+      log("[monmmo] dumpNdsMap " + key + " failed: " + error);
+    }
+  }
+
+  private static void dumpNdsTiles(Object map, byte region, short index, java.io.File out)
+      throws Exception {
+    Class<?> mapClass = map.getClass();
+    java.lang.reflect.Method tileAt = null;
+    for (Class<?> c = mapClass; c != null && tileAt == null; c = c.getSuperclass()) {
+      try {
+        tileAt = c.getDeclaredMethod("ky1", int.class, int.class);
+      } catch (NoSuchMethodException ignored) {
+      }
+    }
+    if (tileAt == null) throw new IllegalStateException("no tile accessor");
+    tileAt.setAccessible(true);
+    Class<?> jp0 = Class.forName("f.jp0");
+    byte bank = (Byte) jp0.getMethod("aW0", short.class).invoke(null, index);
+    byte mapId = (Byte) jp0.getMethod("As0", short.class).invoke(null, index);
+    try (java.io.PrintWriter w =
+        new java.io.PrintWriter(out, java.nio.charset.StandardCharsets.UTF_8)) {
+      w.println("# region=" + region + " index=" + index + " bank=" + (bank & 0xFF) + " map=" + (mapId & 0xFF));
+      w.println("x\ty\ttype\tcoll\tTl\tWU1\tsD1\twalk\tjk\tiA0\tch0");
+      int maxY = 0;
+      int maxX = 0;
+      for (int y = 0; y < 2048; y++) {
+        int rowTiles = 0;
+        for (int x = 0; x < 2048; x++) {
+          Object tile;
+          try {
+            tile = tileAt.invoke(map, x, y);
+          } catch (Throwable error) {
+            tile = null;
+          }
+          if (tile == null) {
+            if (x > 64 && x > maxX + 8) break;
+            continue;
+          }
+          rowTiles++;
+          if (x > maxX) maxX = x;
+          w.println(
+              x + "\t" + y + "\t" + call(tile, "Xd0") + "\t" + call(tile, "Gh0") + "\t"
+                  + field(tile, "Tl") + "\t" + call(tile, "WU1") + "\t" + call(tile, "sD1") + "\t"
+                  + dirs(tile, "X02") + "\t" + dirs(tile, "jk") + "\t" + call(tile, "iA0") + "\t"
+                  + call(tile, "ch0"));
+        }
+        if (rowTiles == 0 && y > 64 && y > maxY + 8) break;
+        if (rowTiles > 0) maxY = y;
+      }
+      w.println("# width=" + (maxX + 1) + " height=" + (maxY + 1));
+    }
+  }
+
+  private static String dirs(Object tile, String method) {
+    StringBuilder b = new StringBuilder();
+    for (byte d = 0; d < 4; d++) {
+      try {
+        java.lang.reflect.Method m = tile.getClass().getMethod(method, byte.class);
+        b.append(Boolean.TRUE.equals(m.invoke(tile, d)) ? '1' : '0');
+      } catch (Throwable error) {
+        b.append('?');
+      }
+    }
+    return b.toString();
+  }
+
+  private static String call(Object target, String method) {
+    try {
+      return String.valueOf(target.getClass().getMethod(method).invoke(target));
+    } catch (Throwable error) {
+      return "?";
+    }
+  }
+
+  private static String field(Object target, String name) {
+    for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
+      try {
+        java.lang.reflect.Field f = c.getDeclaredField(name);
+        f.setAccessible(true);
+        return String.valueOf(f.get(target));
+      } catch (NoSuchFieldException ignored) {
+      } catch (Throwable error) {
+        return "?";
+      }
+    }
+    return "?";
+  }
+
+  private static void dumpNdsEvents(Object map, byte region, short index, java.io.File out)
+      throws Exception {
+    Object events = map.getClass().getMethod("cu").invoke(map);
+    try (java.io.PrintWriter w =
+        new java.io.PrintWriter(out, java.nio.charset.StandardCharsets.UTF_8)) {
+      w.println("# region=" + region + " index=" + index + " events=" + (events == null ? "none" : events.getClass().getName()));
+      if (events == null) return;
+      for (String arrayName : new String[] {"nv1", "ny0", "mx1", "eL"}) {
+        Object array = field(events, arrayName).equals("?") ? null : eventsArray(events, arrayName);
+        if (array == null) continue;
+        int n = java.lang.reflect.Array.getLength(array);
+        for (int i = 0; i < n; i++) {
+          Object record = java.lang.reflect.Array.get(array, i);
+          if (record == null) continue;
+          StringBuilder line = new StringBuilder();
+          line.append(arrayName).append('\t').append(i).append('\t').append(record.getClass().getName());
+          for (Class<?> c = record.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+              if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+              try {
+                f.setAccessible(true);
+                Object v = f.get(record);
+                if (v == null || v.getClass().isPrimitive() || v instanceof Number || v instanceof Boolean || v instanceof String || v instanceof Character) {
+                  line.append('\t').append(f.getName()).append('=').append(v);
+                }
+              } catch (Throwable ignored) {
+              }
+            }
+          }
+          w.println(line);
+        }
+      }
+    }
+  }
+
+  private static Object eventsArray(Object events, String name) {
+    for (Class<?> c = events.getClass(); c != null; c = c.getSuperclass()) {
+      try {
+        java.lang.reflect.Field f = c.getDeclaredField(name);
+        f.setAccessible(true);
+        return f.get(events);
+      } catch (NoSuchFieldException ignored) {
+      } catch (Throwable error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   private static boolean battleStringsDumped;
 
   /**

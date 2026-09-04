@@ -347,7 +347,11 @@ constructor(
         val fixed = rolled.copy(iVs = ivs)
         rolled = fixed.copy(hp = computeWildStats(def, fixed).hp.toShort())
       }
-      enemies += BattleMonState(rolled.id, def, null, rolled, computeWildStats(def, rolled))
+      val enemy = BattleMonState(rolled.id, def, null, rolled, computeWildStats(def, rolled))
+      log.info {
+        "Wild ${def.name} seed=${rolled.seed} slots=${def.ability1}/${def.ability2} -> ${enemy.ability} (char=$charId)"
+      }
+      enemies += enemy
     }
     log.info {
       "Starting battle for char=$charId (${stored.info.name}) against " +

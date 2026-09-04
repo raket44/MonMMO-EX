@@ -521,8 +521,8 @@ constructor(
           categoryMatches(move, it.params.getOrNull(0)) && abilityMatches(attacker, it.params.getOrNull(1))
         }
     if (!continuing) spendPp(attacker, action.defender, move, events)
-    if (items.isChoice(items.of(attacker)) && attacker.choiceLockedMove == 0) attacker.choiceLockedMove = move.id
     else events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slotOf(attacker, move), ppOf(attacker, move))
+    if (items.isChoice(items.of(attacker)) && attacker.choiceLockedMove == 0) attacker.choiceLockedMove = move.id
 
     // Two-turn moves: the first use charges (or hides), the second one strikes. A Power Herb
     // skips the charge.

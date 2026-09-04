@@ -316,6 +316,14 @@ internal constructor(
     return if (given != null) 0 else 2
   }
 
+  /** IsPlayerLeftOfVermilionSailor: the player stands at a lower x than the npc's placement. */
+  fun isPlayerLeftOfNpc(localId: Int): Boolean {
+    val (px, _) = playerXy() ?: return false
+    val info = characterId?.let { characters?.getCharacter(it)?.info } ?: return false
+    val npc = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.npcs?.getOrNull(localId) ?: return false
+    return px < npc.x
+  }
+
   /** The player's money, for checkmoney. */
   fun money(): Int = characterId?.let { characters?.getCharacter(it)?.info?.money } ?: 0
 

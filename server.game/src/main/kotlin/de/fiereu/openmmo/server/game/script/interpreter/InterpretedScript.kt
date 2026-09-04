@@ -366,6 +366,11 @@ class InterpretedScript(
           val function = instruction.arg(1).token
           val result =
               if (function == "GetBattleOutcome") state.lastBattleOutcome
+              else if (function == "IsPlayerLeftOfVermilionSailor") {
+                // field_specials.c: player x below the sailor's x.
+                val sailor = state.activeProgram.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: program.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: 5
+                if (ctx.isPlayerLeftOfNpc(sailor)) 1 else 0
+              }
               else InterpreterSupport.SPECIALVAR_RESULTS[function]
                   ?: throw UnsupportedScriptCommandException(
                       program.id.stable, "specialvar $function", instruction.sourceLine)
@@ -624,6 +629,8 @@ class InterpretedScript(
   ): MovementTarget? {
     val token = arg.token
     if (token == "LOCALID_NONE") return null
+    // The camera object only exists for GBA panning; its movements have nothing to drive here.
+    if (token == "LOCALID_CAMERA") return null
     if (token == "LOCALID_PLAYER") return MovementTarget.Player
     // Shared scripts (data/scripts) address a map's objects through the script that called them,
     // so the root program's table and then any library program's table are consulted too.

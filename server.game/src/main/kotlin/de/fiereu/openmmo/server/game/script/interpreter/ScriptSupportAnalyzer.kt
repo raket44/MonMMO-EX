@@ -202,7 +202,7 @@ class ScriptSupportAnalyzer(
           "showobjectat",
           "hideobjectat" -> args.size == 2
           in InterpreterSupport.DEFEATED_BRANCHES -> args.size == 2
-          "giveitem_msg" -> args.size in 2..3
+          "giveitem_msg" -> args.size in 2..4
           "setobjectxy",
           "setobjectxyperm",
           "warp" -> args.size == 3
@@ -280,7 +280,8 @@ class ScriptSupportAnalyzer(
     }
     if (instruction.command == "specialvar" &&
         args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS &&
-        args[1].token != "GetBattleOutcome") {
+        args[1].token != "GetBattleOutcome" &&
+        args[1].token != "IsPlayerLeftOfVermilionSailor") {
       return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
     }
     if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {
@@ -469,7 +470,7 @@ class ScriptSupportAnalyzer(
   }
 
   private fun canResolveObject(program: ScriptProgram, token: String): Boolean =
-      token in setOf("LOCALID_NONE", "LOCALID_PLAYER", "VAR_LAST_TALKED") ||
+      token in setOf("LOCALID_NONE", "LOCALID_PLAYER", "LOCALID_CAMERA", "VAR_LAST_TALKED") ||
           token.startsWith("VAR_") ||
           token in program.objectIds ||
           sourceInt(token) != null

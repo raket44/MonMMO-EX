@@ -15,6 +15,9 @@ internal object InterpreterSupport {
           // The monster picture window has no client counterpart on this dialog channel.
           "showmonpic",
           "hidemonpic",
+          "fadeoutbgm",
+          "fadeinbgm",
+          "fadenewbgm",
           "playse",
           "waitse",
           "playbgm",
@@ -84,6 +87,14 @@ internal object InterpreterSupport {
           "GetPlayerBigGuyGirlString",
           // Dex "seen" bookkeeping is the dex service's, not the script's.
           "SetSeenMon",
+          "RemoveCameraObject",
+          "SpawnCameraObject",
+          "AnimateTeleporterHousing",
+          "AnimateTeleporterCable",
+          // The Sevii ferry: the client has no destination menu yet, so the menu draws nothing and
+          // GetSelectedSeagallopDestination answers "cancel"; the sailor's own lines still play.
+          "DrawSeagallopDestinationMenu",
+          "DoSeagallopFerryScene",
       )
 
   /**
@@ -119,6 +130,7 @@ internal object InterpreterSupport {
           "IsPokerusInParty" to 0,
           // The ferry desk: Vermilion is seagallop number 7 (src/seagallop.c).
           "GetSeagallopNumber" to 7,
+          "GetSelectedSeagallopDestination" to 127,
           "IsNationalPokedexEnabled" to 0,
           // No Vs Seeker / Match Call rematch offers until the server models them; scripts fall
           // through to their ordinary already-defeated dialog.

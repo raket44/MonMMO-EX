@@ -389,7 +389,7 @@ constructor(
                   de.fiereu.openmmo.net.game.packets.MapData.NdsMapData(
                       lighting = de.fiereu.openmmo.common.enums.Lighting.REGULAR,
                       weather = de.fiereu.openmmo.common.enums.Weather.REGULAR_WEATHER,
-                      mapType = de.fiereu.openmmo.common.enums.MapType.ROUTE,
+                      mapType = NdsMapTypes.typeOf(regionId.toInt() and 0xFF, bankId.toInt() and 0xFF, mapId.toInt() and 0xFF),
                   )),
       )
       // The rail line is not persisted across sessions; a relog on a rail tile must re-attach or

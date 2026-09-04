@@ -290,7 +290,7 @@ constructor(
                 de.fiereu.openmmo.net.game.packets.MapData.NdsMapData(
                     lighting = de.fiereu.openmmo.common.enums.Lighting.REGULAR,
                     weather = de.fiereu.openmmo.common.enums.Weather.REGULAR_WEATHER,
-                    mapType = de.fiereu.openmmo.common.enums.MapType.ROUTE,
+                    mapType = NdsMapTypes.typeOf(regionId and 0xFF, bankId and 0xFF, mapId and 0xFF),
                 )),
     )
     log.info { "Player $charId raw-warped to $regionId:$bankId:$mapId ($x, $y)" }

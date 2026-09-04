@@ -26,7 +26,7 @@ internal val COMMON_WEATHER_MAP =
 internal val COMMON_MAP_TYPE_MAP =
     mapOf(
         "MAP_TYPE_INDOOR" to "MapType.INSIDE",
-        "MAP_TYPE_TOWN" to "MapType.UNKNOWN_0x01",
+        "MAP_TYPE_TOWN" to "MapType.VILLAGE",
         "MAP_TYPE_CITY" to "MapType.CITY",
         "MAP_TYPE_ROUTE" to "MapType.ROUTE",
         "MAP_TYPE_UNDERGROUND" to "MapType.UNDERGROUND",

@@ -211,6 +211,8 @@ class ScriptSupportAnalyzer(
           "multichoicegrid" -> args.size == 5
           "checkpartymove" -> args.size == 1
           "checkmoney" -> args.size in 1..2
+          "addmoney",
+          "removemoney" -> args.size in 1..2
           "givemon" -> args.size in 2..3
           "braillemessage" -> args.size == 1
           "getpartysize",
@@ -344,11 +346,13 @@ class ScriptSupportAnalyzer(
           "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
           "warp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
-          "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg && args[3] is TextArg
+          "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
           "braillemessage" -> args[0] is TextArg
-          "copyobjectxytoperm" -> args[0] is ObjectArg
-          "checkmoney" -> isValue(args[0])
+          "copyobjectxytoperm" -> args[0] is ObjectArg || (args[0] is SymbolArg && args[0].token.startsWith("LOCALID_"))
+          "checkmoney",
+          "addmoney",
+          "removemoney" -> isValue(args[0])
           "setwildbattle" -> isValue(args[0]) && isValue(args[1]) && (args.size < 3 || isValue(args[2]))
           in InterpreterSupport.DEFEATED_BRANCHES -> args[0] is TrainerArg && args[1] is LabelArg
           "setvar",
@@ -558,6 +562,8 @@ class ScriptSupportAnalyzer(
             "multichoicegrid",
             "checkpartymove",
             "checkmoney",
+            "addmoney",
+            "removemoney",
             "givemon",
             "braillemessage",
             "getpartysize",

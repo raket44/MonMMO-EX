@@ -319,6 +319,17 @@ internal constructor(
   /** The player's money, for checkmoney. */
   fun money(): Int = characterId?.let { characters?.getCharacter(it)?.info?.money } ?: 0
 
+  /** addmoney / removemoney: the wallet moves and the client's own counter follows. */
+  fun addMoney(delta: Int) {
+    val id = characterId ?: return
+    val store = characters ?: return
+    val info = store.getCharacter(id)?.info ?: return
+    val updated = info.copy(money = (info.money + delta).coerceIn(0, MAX_MONEY))
+    store.updateCharacter(updated)
+    store.flushCharacterAsync(id)
+    session.send(de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket(money = updated.money))
+  }
+
   /** getpartysize. */
   fun partySize(): Int = characterId?.let { characters?.getCharacter(it)?.pokemon?.size } ?: 0
 
@@ -534,3 +545,6 @@ internal constructor(
 
 /** Transportation byte while surfing: bit 0x01, client f.ti.J10. */
 private const val SURF_TRANSPORTATION = 0x01
+
+/** The GBA wallet cap. */
+private const val MAX_MONEY = 999_999

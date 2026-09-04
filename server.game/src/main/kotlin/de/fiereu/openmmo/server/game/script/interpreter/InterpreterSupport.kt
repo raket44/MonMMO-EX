@@ -90,7 +90,8 @@ internal object InterpreterSupport {
    * String-buffer commands with no dialog channel to carry them yet: the ROM line renders its
    * variable unfilled. Cosmetic, against Cut and Surf not working at all.
    */
-  val BUFFER_COMMANDS = setOf("bufferpartymonnick", "buffermovename", "bufferstdstring", "buffernumberstring")
+  val BUFFER_COMMANDS =
+      setOf("bufferpartymonnick", "buffermovename", "bufferstdstring", "buffernumberstring", "bufferspeciesname", "bufferitemname", "bufferleadmonspeciesname", "bufferfirstpokemon")
 
   /**
    * ROM multichoice menus the client draws from its own registry (category 10 sets, f/Lx.R40):

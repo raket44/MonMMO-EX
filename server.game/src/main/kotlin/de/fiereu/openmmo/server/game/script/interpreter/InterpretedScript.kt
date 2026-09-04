@@ -262,6 +262,14 @@ class InterpretedScript(
           ctx.setVar(namespaced("VAR_RESULT"), if (ctx.money() >= amount) 1 else 0)
           state.pc++
         }
+        "addmoney" -> {
+          ctx.addMoney(value(ctx, instruction.arg(0)))
+          state.pc++
+        }
+        "removemoney" -> {
+          ctx.addMoney(-value(ctx, instruction.arg(0)))
+          state.pc++
+        }
         "getpartysize" -> {
           ctx.setVar(namespaced("VAR_RESULT"), ctx.partySize())
           state.pc++
@@ -302,7 +310,7 @@ class InterpretedScript(
         }
         "copyobjectxytoperm" -> {
           val target =
-              resolveMovementTarget(ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
+              resolveMovementTarget(ctx, state.activeProgram, instruction, ObjectArg(instruction.arg(0).token), true)
           if (target is MovementTarget.Npc) ctx.copyNpcXyToPerm(target.localId)
           state.pc++
         }

@@ -62,7 +62,7 @@ fun movementService(
       mapManager,
       store,
       EncounterService(store, battles),
-      MapScriptService(entryScripts, scriptRunner(store, mapManager, interest, battles), npcs),
+      MapScriptService(entryScripts, scriptRunner(store, mapManager, interest, battles), npcs, store),
       de.fiereu.openmmo.server.game.services.CustomWarps(),
       de.fiereu.openmmo.server.game.services.NdsWarps(),
       de.fiereu.openmmo.server.game.services.WarpRules(),

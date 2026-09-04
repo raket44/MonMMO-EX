@@ -397,7 +397,9 @@ class InterpretedScript(
               resolveMovementTarget(
                   ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
           if (target is MovementTarget.Npc) {
-            if (instruction.command == "removeobject") ctx.removeNpc(target.localId, persist = true)
+            // GBA removeobject hides for this map visit only; a lasting removal is the script's own
+            // setflag. Persisting it here kept cut trees cut and blocked npcs blocked forever.
+            if (instruction.command == "removeobject") ctx.removeNpc(target.localId, persist = false)
             else ctx.showNpc(target.localId)
           }
           state.pc++

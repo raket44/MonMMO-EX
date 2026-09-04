@@ -21,6 +21,7 @@ constructor(
     private val entryScripts: MapEntryScripts,
     private val scriptRunner: ScriptRunner,
     private val npcService: NpcService,
+    private val characterStore: de.fiereu.openmmo.server.game.storage.CharacterStore,
 ) {
   fun onMapEnter(session: SessionContext, state: PlayerState, map: MapDef) {
     // A script is already running for this player, do not start a second one on top of it.
@@ -31,6 +32,12 @@ constructor(
     if (state.entryScriptsMapKey == arrivalKey) return
     state.entryScriptsMapKey = arrivalKey
     val charId = state.characterId
+    // The GBA forgets two things on every map load, and ON_TRANSITION rewrites what still
+    // applies: the FLAG_TEMP_* flags and setobjectxyperm placements. Keeping them made the
+    // Cerulean policeman stay in front of the door after the S.S. Ticket, and cut trees cut.
+    if (charId != null && resetMapLocalState(charId, map)) {
+      npcService.refreshDynamicNpcs(session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+    }
     val entry = entryScripts.onEntry(state, map)
     val hasArrivalTrigger = entryScripts.hasCoordinate(map, state.x.toInt(), state.y.toInt())
     if (entry.isEmpty() && !hasArrivalTrigger) return
@@ -47,6 +54,22 @@ constructor(
       }
     }
     scriptRunner.run(session, state, entrySequence, entityId = -1)
+  }
+
+  /** Clears this map's object placements and every temporary flag; true when anything was set. */
+  private fun resetMapLocalState(charId: Long, map: MapDef): Boolean {
+    val stored = characterStore.getCharacter(charId) ?: return false
+    val prefix = npcService.xyOverridePrefix(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+    var changed = false
+    stored.storyVars.keys.filter { it.startsWith(prefix) }.forEach {
+      characterStore.setStoryVar(charId, it, 0)
+      changed = true
+    }
+    stored.storyFlags.filter { it.contains("/FLAG_TEMP_") }.forEach {
+      characterStore.clearStoryFlag(charId, it)
+      changed = true
+    }
+    return changed
   }
 
   companion object {

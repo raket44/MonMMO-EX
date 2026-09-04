@@ -160,6 +160,12 @@ constructor(
           ?.storyVars
           .orEmpty()
 
+  /** Every xy override key of one map starts with this. */
+  fun xyOverridePrefix(regionId: Int, bankId: Int, mapId: Int): String {
+    val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()
+    return "$namespace/objxy/$bankId:$mapId:"
+  }
+
   /** The story-var key setobjectxyperm writes an npc's overridden tile into (x shl 12 or y). */
   fun xyOverrideKey(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int): String {
     val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()

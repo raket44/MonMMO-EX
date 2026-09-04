@@ -121,13 +121,14 @@ public class Npcs4 {
       if (ev.length < 4) continue;
       int nBg = u32(ev, p); p += 4;
       for (int k = 0; k < nBg && p + 20 <= ev.length; k++, p += 20) {
-        out.println("bg;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + (ox + s32(ev, p + 4)) + ";" + (oy + s32(ev, p + 12)) + ";" + s32(ev, p + 8) + ";" + u16(ev, p + 16));
+        // Event coordinates are already matrix-global (Cianwood: land x 160-191, npcs at x 173).
+        out.println("bg;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + s32(ev, p + 4) + ";" + s32(ev, p + 8) + ";" + s32(ev, p + 12) + ";" + u16(ev, p + 16));
         bgs++;
       }
       if (p + 4 > ev.length) continue;
       int nObj = u32(ev, p); p += 4;
       for (int k = 0; k < nObj && p + 32 <= ev.length; k++, p += 32) {
-        out.println("obj;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + u16(ev, p + 4) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + u16(ev, p + 10) + ";" + s16(ev, p + 12) + ";" + s16(ev, p + 20) + ";" + s16(ev, p + 22) + ";" + (ox + u16(ev, p + 24)) + ";" + (oy + s32(ev, p + 28)) + ";" + u16(ev, p + 26));
+        out.println("obj;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + u16(ev, p + 4) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + u16(ev, p + 10) + ";" + s16(ev, p + 12) + ";" + s16(ev, p + 20) + ";" + s16(ev, p + 22) + ";" + u16(ev, p + 24) + ";" + u16(ev, p + 26) + ";" + s32(ev, p + 28));
         objs++;
       }
       if (p + 4 > ev.length) continue;
@@ -135,7 +136,7 @@ public class Npcs4 {
       if (p + 4 > ev.length) continue;
       int nCoord = u32(ev, p); p += 4;
       for (int k = 0; k < nCoord && p + 16 <= ev.length; k++, p += 16) {
-        out.println("coord;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + (ox + s16(ev, p + 2)) + ";" + (oy + s16(ev, p + 10)) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + s16(ev, p + 4) + ";" + u16(ev, p + 12) + ";" + u16(ev, p + 14));
+        out.println("coord;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + s16(ev, p + 2) + ";" + s16(ev, p + 4) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + u16(ev, p + 10) + ";" + u16(ev, p + 12) + ";" + u16(ev, p + 14));
         coords++;
       }
     }

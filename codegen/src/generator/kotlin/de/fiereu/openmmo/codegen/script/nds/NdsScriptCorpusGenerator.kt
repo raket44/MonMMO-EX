@@ -267,7 +267,9 @@ class NdsScriptCorpusGenerator {
       // A bare number in a message command indexes the owning map header's own text bank.
       val a = line.drop(1).map { t -> if (msgBank != null && name in MESSAGE_COMMANDS && t.toIntOrNull() != null) "msg_%04d_MAP_%05d".format(msgBank, t.toInt()) else t }
       val next = lines.getOrNull(i + 1)
-      when (name) {
+      when {
+        name.startsWith("Buffer") -> {}
+        else -> when (name) {
         // -- flow
         "End" -> out += "end"
         "Return" -> out += "return"
@@ -375,6 +377,13 @@ class NdsScriptCorpusGenerator {
           } else out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
         }
         "ReturnCommonScript" -> out += "return"
+        "Switch" -> out += "switch ${a[0]}"
+        "Case" -> out += "case ${a[0]}, ${a[1]}"
+        "SetPosition" -> {
+          val target = OBJECT_ALIASES[a[0]] ?: a[0]
+          out += "setobjectxy $target, ${a[1]}, ${a[2]}"
+          FACE_MOVEMENTS[a[4]]?.let { out += "applymovement $target, $it" }
+        }
         "GetRandom" -> {
           out += "random ${a[1]}"
           resultCopy(out, a[0])
@@ -494,13 +503,17 @@ class NdsScriptCorpusGenerator {
           out += "getpartysize"
           resultCopy(out, a.getOrNull(0))
         }
-        // -- presentation with no server counterpart: dropped, the client owns audio and fades
+        // -- presentation with no server counterpart: dropped, the client owns audio and fades.
+        // Buffer* fill text placeholders; the client formats DS text from message args, which
+        // the server does not pass yet, so they are no-ops for now.
         in DROPPED -> {}
+        "WaitForAnimation" -> {}
         else -> {
           // Unnamed engine commands: the ones that answer into a var get a zero, the rest vanish.
           if (name.startsWith("ScrCmd_")) a.lastOrNull { it.startsWith("VAR_") }?.let { out += "setvar $it, 0" }
           else out += "ds_${name.lowercase()}" + if (a.isEmpty()) "" else " " + a.joinToString(", ")
         }
+      }
       }
       i++
     }
@@ -699,7 +712,7 @@ class NdsScriptCorpusGenerator {
     /** Queries with a fixed answer on this server: the var they fill and the value. */
     val STUB_QUERIES = mapOf(
         "GetNationalDexEnabled" to 1, "GetGameVersion" to 0, "GetPartyLeadAlive" to 1, "DressUpPhotoHasData" to 0,
-        "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
+        "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "CheckItemIsPlate" to 0, "GetTimeOfDay" to 1, "CheckPartyHasSpecies" to 0, "CheckPoketchAppRegistered" to 0, "GetTrCardStars" to 0, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
         "CheckPlayerOnBike" to 0, "PlayerOnBikeCheck" to 0, "CheckRegisteredPhoneNumber" to 0, "GetPhoneBookRematch" to 0,
         "GetRematchTrainerID" to 0, "IsItemTMHM" to 0, "ItemIsTMOrHM" to 0, "GetCoinsAmount" to 0, "GetCoinAmount" to 0,
     )
@@ -720,7 +733,8 @@ class NdsScriptCorpusGenerator {
             "InitTurnbackCave", "InitPersistedMapFeaturesForDistortionWorld", "ShowDressUpPhoto", "SetWarpEventPos",
             "CallBattleTowerFunction", "ClearHasPartner", "LoadTVInterviewMessage", "SetObjectEventMovementType", "SetMovementType",
             "ScriptOverlayCmd", "ShowMoney", "HideMoney", "ShowMoneyBox", "HideMoneyBox", "UpdateMoneyDisplay", "UpdateMoneyBox",
-            "ShowCoins", "HideCoins", "UpdateCoinDisplay",
+            "ShowCoins", "HideCoins", "UpdateCoinDisplay", "TrySetUnusedCollectedOrbFlag", "PlayDoorOpenAnimation", "PlayDoorCloseAnimation",
+            "RegisterGearNumber", "ScreenShake", "SetBikeStateLock", "MoveGreatMarshTram", "SetSubScene63",
         )
     val MOVEMENT_STEPS: Map<String, String> = buildMap {
       val dirs = mapOf("North" to "up", "South" to "down", "West" to "left", "East" to "right")

@@ -498,18 +498,18 @@ class InterpretedScript(
       "Script ${program.id.stable} supports current-map applymovement only in " +
           "`${instruction.sourceLine}`"
     }
+    val resolved =
+        resolveMovementTarget(ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
+    // The GBA camera object (Bill's teleporter pan) has nothing to drive here: skip the walk.
+    if (resolved == null && objectArg(instruction, 0).token == "LOCALID_CAMERA") {
+      state.pc++
+      return
+    }
     val target =
-        checkNotNull(
-            resolveMovementTarget(
-                ctx,
-                state.activeProgram,
-                instruction,
-                objectArg(instruction, 0),
-                true,
-            )) {
-              "Script ${program.id.stable} cannot apply movement to LOCALID_NONE from " +
-                  "`${instruction.sourceLine}`"
-            }
+        checkNotNull(resolved) {
+          "Script ${program.id.stable} cannot apply movement to LOCALID_NONE from " +
+              "`${instruction.sourceLine}`"
+        }
     val movementLabel = movementArg(instruction, 1).token
     val movement =
         movementPrograms[movementLabel]

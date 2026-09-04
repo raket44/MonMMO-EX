@@ -116,6 +116,12 @@ class InterpretedScript(
           tracedWait(ctx, "dialog choice") { runYesNoBox(ctx, state, instruction) }
           state.pc++
         }
+        // Gen 4 yes/no writes 0 for YES and 1 for NO into a named var; yesnobox leaves 1 for yes.
+        "ds_yesno" -> {
+          val yes = ctx.getVar(namespaced("VAR_RESULT")) == 1
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
+          state.pc++
+        }
         "textcolor" -> {
           runTextColor(ctx, instruction)
           state.pc++

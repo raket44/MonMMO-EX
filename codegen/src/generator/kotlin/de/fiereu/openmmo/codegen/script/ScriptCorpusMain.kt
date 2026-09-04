@@ -2,6 +2,8 @@
 
 package de.fiereu.openmmo.codegen.script
 
+import de.fiereu.openmmo.codegen.script.nds.NdsScriptCorpusGenerator
+
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -16,7 +18,8 @@ fun main(args: Array<String>) {
       args.drop(4).map { encoded ->
         val parts = encoded.split('|', limit = 4)
         require(parts.size == 4) { "Invalid script corpus spec $encoded" }
-        generator.build(
+        buildCorpus(
+            generator,
             ScriptCorpusSpec(
                 storyNamespace = parts[0],
                 source = parts[1],
@@ -26,7 +29,7 @@ fun main(args: Array<String>) {
       }
 
   corpora.forEach { corpus ->
-    val display = if (corpus.spec.source == "firered") "FireRed" else "Emerald"
+    val display = corpus.spec.source.replaceFirstChar { it.uppercase() }
     println(
         "[script-corpus] $display: indexed=${corpus.indexedLabels}, " +
             "programs=${corpus.programs.size}, parseFailures=" +
@@ -59,3 +62,7 @@ fun main(args: Array<String>) {
         appendLine("}")
       })
 }
+
+private fun buildCorpus(generator: ScriptCorpusGenerator, spec: ScriptCorpusSpec): BuiltScriptCorpus =
+    if (spec.source in setOf("platinum", "heartgold")) NdsScriptCorpusGenerator().build(spec)
+    else generator.build(spec)

@@ -520,6 +520,7 @@ class ScriptSupportAnalyzer(
     val SUPPORTED_TRAINER_MUSIC = setOf("NO_MUSIC", "FALSE", "TRUE")
     val SUPPORTED_COMMANDS =
         setOf(
+            "ds_yesno",
             "msgbox",
             "message",
             "lock",

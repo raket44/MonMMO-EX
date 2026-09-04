@@ -125,6 +125,9 @@ jteCodegen {
             listOf(
                 "kanto|firered|BPRE|${rootProject.layout.projectDirectory.dir("decomp/pokefirered").asFile.absolutePath}",
                 "hoenn|emerald|BPEE|${rootProject.layout.projectDirectory.dir("decomp/pokeemerald").asFile.absolutePath}",
+                // DS regions: the decomps' disassembled ROM scripts, bound by ROM map header id.
+                "sinnoh|platinum|CPUE|${rootProject.layout.projectDirectory.dir("decomp/pokeplatinum").asFile.absolutePath}",
+                "johto|heartgold|IPKE|${rootProject.layout.projectDirectory.dir("decomp/pokeheartgold").asFile.absolutePath}",
             ))
   }
 }

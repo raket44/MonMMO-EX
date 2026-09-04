@@ -14,6 +14,8 @@ internal fun gbaScriptSource(regionId: Int): String? =
     when (Region.byId(regionId)) {
       Region.KANTO -> "firered"
       Region.HOENN -> "emerald"
+      Region.SINNOH -> "platinum"
+      Region.JOHTO -> "heartgold"
       else -> null
     }
 

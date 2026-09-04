@@ -33,6 +33,33 @@ constructor(
     private val scriptMovement: ScriptMovementService,
 ) {
 
+  /**
+   * A DS-map npc: the ROM's own event table gives its script index, the client's bank/map pair is
+   * the ROM map header id, and the DS corpus binds the two as `NDS_<header>_<index>`.
+   */
+  private fun onNdsEntityInteract(session: SessionContext, state: PlayerState, npcEntityId: Long) {
+    val regionId = state.regionId
+    val bankId = state.bankId
+    val mapId = state.mapId
+    val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
+    scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
+    // Ids from 2000 up are Platinum's shared script chunks (common, signposts, trainers...).
+    val label =
+        if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"
+    val script =
+        try {
+          scriptRegistry.forLabel(label, gbaScriptSource(regionId))
+        } catch (e: ScriptResolutionException) {
+          log.info { "DS npc idx=${npc.index} $label: ${e.message}" }
+          null
+        }
+    if (script != null) {
+      runScript(session, state, script, npcEntityId)
+    } else {
+      log.info { "DS npc idx=${npc.index} script=${npc.script} ($label) has no wired dialog" }
+    }
+  }
+
   /** The player pressed the action button on a specific entity, that is an npc. */
   fun onEntityInteract(event: PacketEvent<EntityInteractPacket>) {
     val session = event.session
@@ -51,6 +78,10 @@ constructor(
             stored.info.positionMapId,
         )
     if (currentMap == null) {
+      if (state.regionId in 2..4) {
+        onNdsEntityInteract(session, state, npcEntityId)
+        return
+      }
       log.warn { "Interaction on unloaded map ${state.regionId}:${state.bankId}:${state.mapId}" }
       return
     }

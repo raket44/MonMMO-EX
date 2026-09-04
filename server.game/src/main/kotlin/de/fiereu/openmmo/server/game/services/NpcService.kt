@@ -189,6 +189,10 @@ constructor(
   }
 
   /** Allocate (or return) the stable entity id for a map npc by its decomp local id. */
+  /** The ROM npc behind a DS-map entity id, for interaction. */
+  fun ndsNpcForEntity(regionId: Int, bankId: Int, mapId: Int, entityId: Long): NdsNpcs.Npc? =
+      ndsNpcs.of(regionId, bankId, mapId).firstOrNull { entityIdFor(regionId, bankId, mapId, it.index) == entityId }
+
   fun entityIdFor(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int): Long =
       npcEntityIds.getOrPut(key(regionId, bankId, mapId, entityIdx)) {
         npcEntityIdCounter.incrementAndGet()

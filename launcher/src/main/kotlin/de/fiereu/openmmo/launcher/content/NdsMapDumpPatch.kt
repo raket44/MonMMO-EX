@@ -54,6 +54,28 @@ object NdsMapDumpPatch {
             val base = super.visitMethod(access, name, descriptor, signature, exceptions)
             if (name != CTOR || descriptor != DESC) return base
             return object : MethodVisitor(Opcodes.ASM9, base) {
+              override fun visitMethodInsn(
+                  opcode: Int,
+                  owner: String,
+                  name: String,
+                  descriptor: String,
+                  isInterface: Boolean,
+              ) {
+                // The map-environment lookup (f/SQ0.ZM0) is null for any map outside the region
+                // the client currently shows; its only use here is a class comparison, so the
+                // call is routed through a helper that hands back a placeholder instead of null.
+                if (owner == "f/SQ0" && name == "ZM0") {
+                  super.visitMethodInsn(
+                      Opcodes.INVOKESTATIC,
+                      "monmmo/DexPatch",
+                      "mapEnvironment",
+                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                      false)
+                  return
+                }
+                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface)
+              }
+
               override fun visitInsn(opcode: Int) {
                 if (opcode == Opcodes.RETURN) {
                   // The map is fully built here: this, region, index -> the dumper.

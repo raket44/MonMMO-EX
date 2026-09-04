@@ -192,6 +192,7 @@ public final class DexPatch {
     try {
       run();
       dumpBattleStrings();
+
     } catch (Throwable error) {
       StringBuilder where = new StringBuilder("[monmmo] dex fixups failed: " + error);
       StackTraceElement[] trace = error.getStackTrace();
@@ -1015,6 +1016,94 @@ public final class DexPatch {
   }
 
   private static final java.util.Set<String> ndsMapsDumped = new java.util.HashSet<>();
+  /**
+   * Stands in for `f.SQ0.ZM0(map)` inside the NDS map constructor: the real lookup is null for
+   * every map outside the region the client is showing, and the constructor only compares the
+   * result's class, so a plain Object keeps offline map building alive.
+   */
+  public static Object mapEnvironment(Object manager, Object map) {
+    try {
+      for (java.lang.reflect.Method m : manager.getClass().getMethods()) {
+        if (m.getName().equals("ZM0") && m.getParameterCount() == 1) {
+          Object env = m.invoke(manager, map);
+          if (env != null) return env;
+          break;
+        }
+      }
+    } catch (Throwable ignored) {
+    }
+    return new Object();
+  }
+
+  /**
+   * Builds every DS map through the client's own constructor (`f.Fk1(region, index)`) so the
+   * constructor hook writes them all, without anyone having to walk there. Runs once per
+   * client start on a background thread after the readers are up; a region stops after a long
+   * run of indices that do not build. Marker files skip regions already dumped.
+   */
+  public static void dumpNdsRegion(byte region) {
+    Thread worker =
+        new Thread(
+            () -> {
+              try {
+                Thread.sleep(3_000);
+                java.io.File dir = new java.io.File("nds-dump");
+                dir.mkdirs();
+                Class<?> mapClass = Class.forName("f.Fk1");
+                java.lang.reflect.Constructor<?> ctor =
+                    mapClass.getConstructor(byte.class, short.class);
+                {
+                  java.io.File marker = new java.io.File(dir, "done-" + region);
+                  if (marker.exists()) return;
+                  int built = 0;
+                  int misses = 0;
+                  for (int index = 0; index < 2048 && misses < 96; index++) {
+                    try {
+                      ctor.newInstance(region, (short) index);
+                      built++;
+                      misses = 0;
+                    } catch (Throwable error) {
+                      misses++;
+                      if (misses <= 3 || index % 128 == 0) {
+                        log("[monmmo] nds map " + region + "-" + index + " did not build: " + rootCause(error));
+                      }
+                    }
+                  }
+                  log("[monmmo] nds region " + region + ": built " + built + " maps");
+                  if (built > 0) marker.createNewFile();
+                }
+              } catch (Throwable error) {
+                log("[monmmo] dumpAllNdsMaps failed: " + error);
+              }
+            },
+            "monmmo-nds-dump");
+    worker.setDaemon(true);
+    worker.start();
+  }
+
+  private static String rootCause(Throwable error) {
+    Throwable t = error;
+    while (t.getCause() != null && t.getCause() != t) t = t.getCause();
+    return t.toString();
+  }
+
+  private static boolean hasTiles(Object map) {
+    try {
+      java.lang.reflect.Method tileAt = null;
+      for (Class<?> c = map.getClass(); c != null && tileAt == null; c = c.getSuperclass()) {
+        try {
+          tileAt = c.getDeclaredMethod("ky1", int.class, int.class);
+        } catch (NoSuchMethodException ignored) {
+        }
+      }
+      if (tileAt == null) return false;
+      tileAt.setAccessible(true);
+      return tileAt.invoke(map, 1, 0) != null || tileAt.invoke(map, 0, 1) != null;
+    } catch (Throwable error) {
+      return false;
+    }
+  }
+
 
   /**
    * Writes one NDS map the client just built from its own ROM readers: the tile grid with the
@@ -1024,16 +1113,23 @@ public final class DexPatch {
    */
   public static void dumpNdsMap(Object map, byte region, short index) {
     String key = region + "-" + index;
-    synchronized (ndsMapsDumped) {
-      if (!ndsMapsDumped.add(key)) return;
-    }
     try {
+      // A map built while its region is not the client's current one comes back empty; only a
+      // real build is worth a file, and the first real build of a region is the sign that the
+      // region's ROM is loaded, so every other map of that region is built right behind it.
+      if (!hasTiles(map)) return;
+      synchronized (ndsMapsDumped) {
+        if (!ndsMapsDumped.add(key)) return;
+      }
       java.io.File dir = new java.io.File("nds-dump");
       dir.mkdirs();
       java.io.File tiles = new java.io.File(dir, "tiles-" + key + ".tsv");
       if (!tiles.exists()) dumpNdsTiles(map, region, index, tiles);
       java.io.File events = new java.io.File(dir, "events-" + key + ".tsv");
       if (!events.exists()) dumpNdsEvents(map, region, index, events);
+      synchronized (ndsMapsDumped) {
+        if (ndsMapsDumped.add("region-" + region)) dumpNdsRegion(region);
+      }
     } catch (Throwable error) {
       log("[monmmo] dumpNdsMap " + key + " failed: " + error);
     }

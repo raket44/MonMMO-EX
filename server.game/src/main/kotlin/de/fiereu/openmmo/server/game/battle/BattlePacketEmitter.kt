@@ -28,8 +28,11 @@ import de.fiereu.openmmo.net.game.packets.battle.OpposingSide
 import de.fiereu.openmmo.server.game.services.notice
 import de.fiereu.openmmo.server.game.world.interest.InterestManager
 import de.fiereu.openmmo.typechart.TypeChart
+import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private val log = KotlinLogging.logger {}
 
 private const val ACTION_PROMPT: Byte = -128 // 0x80
 private const val MOVE_EVENT_KIND: Byte = 1
@@ -98,78 +101,98 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     sendPrompt(battle)
   }
 
+  /**
+   * A [BattleEvent.MoveUsed] or [BattleEvent.TurnEffect] opens one move-event packet; the target
+   * events that follow ride under it, one [BattleEffectTarget] per affected monster, until the
+   * next opener. The client animates what it finds there: an hp update moves the bar (and faints
+   * the monster at 0, so no faint sub-event is sent), a stat change with a non-zero delta plays
+   * the stage animation, a status change sets the status byte and prints its line, a weather
+   * change switches the field. A miss or failure is the outcome word alone with nothing under it.
+   * Events the client has no verified rendering for yet (a lost action, a multi-hit count, a
+   * charge turn, Protect) are logged and otherwise silent.
+   */
   fun sendEvents(battle: BattleInstance, events: List<BattleEvent>) {
-    var i = 0
-    while (i < events.size) {
-      val event = events[i]
+    var group: EventGroup? = null
+    fun flush() {
+      val current = group ?: return
+      group = null
+      if (current.targets.isEmpty() && current.moveId == 0.toShort()) return
+      broadcast(
+          battle,
+          BattleEntityMoveEventPacket(
+              current.sourceId,
+              current.moveId,
+              MOVE_EVENT_KIND,
+              current.targets.values.map { it.build() }))
+    }
+    fun target(entityId: Long): TargetAccumulator {
+      val current = group ?: EventGroup(entityId, 0).also { group = it }
+      return current.targets.getOrPut(entityId) { TargetAccumulator(entityId) }
+    }
+    for (event in events) {
       when (event) {
         is BattleEvent.MoveUsed -> {
+          flush()
           if (battle.isPlayerSide(event.attackerId)) {
             battle.session.send(
                 EntityMovePpPacket(
                     event.attackerId, event.moveSlot.toByte(), event.ppLeft.toByte()))
           }
-          // The move's outcome rides inside the move event so the client animates it. A hit carries
-          // the target's resulting hp, a stat change carries the affected stat and its signed stage
-          // delta. A capped change reports no delta, so it stays unanimated.
-          val targets =
-              when (val next = events.getOrNull(i + 1)) {
-                is BattleEvent.DamageDealt -> {
-                  i++
-                  // The client faints the target on hp reaching 0, as the real server does, so no
-                  // faint sub-event is sent here.
-                  val subEvents =
-                      mutableListOf(
-                          BattleActionEvent(
-                              null, null, BattleEventBody.HpUpdate(next.newHp.toShort())))
-                  // A secondary stage change rides under the same target as the damage, the way
-                  // the captured Rock Tomb does. One aimed elsewhere gets a target of its own.
-                  var elsewhere = emptyList<BattleEffectTarget>()
-                  val secondary = events.getOrNull(i + 1)
-                  if (secondary is BattleEvent.StageChanged && !secondary.failed) {
-                    i++
-                    val body =
-                        BattleEventBody.StatChange(
-                            statIndex(secondary.stat), secondary.delta.toShort())
-                    if (secondary.targetId == next.targetId) {
-                      subEvents += BattleActionEvent(null, null, body)
-                    } else {
-                      elsewhere = listOf(target(secondary.targetId, DEFAULT_TARGET_MOVE, body))
-                    }
-                  }
-                  val outcome = HP_TARGET_MOVE.toInt() or effectivenessBit(next.effectiveness)
-                  listOf(BattleEffectTarget(next.targetId, outcome.toShort(), subEvents)) +
-                      elsewhere
-                }
-                is BattleEvent.StageChanged ->
-                    if (!next.failed) {
-                      i++
-                      listOf(
-                          target(
-                              next.targetId,
-                              DEFAULT_TARGET_MOVE,
-                              BattleEventBody.StatChange(
-                                  statIndex(next.stat), next.delta.toShort())))
-                    } else {
-                      emptyList()
-                    }
-                is BattleEvent.MoveWithoutTarget -> {
-                  i++
-                  listOf(failTarget(battle, event.attackerId, next))
-                }
-                else -> emptyList()
-              }
-          broadcast(
-              battle,
-              BattleEntityMoveEventPacket(event.attackerId, event.moveId, MOVE_EVENT_KIND, targets))
+          group = EventGroup(event.attackerId, event.moveId)
         }
-        is BattleEvent.DamageDealt -> Unit
-        is BattleEvent.StageChanged -> Unit
+        is BattleEvent.TurnEffect -> {
+          flush()
+          group = EventGroup(event.sourceId, 0)
+        }
+        is BattleEvent.DamageDealt -> {
+          val acc = target(event.targetId)
+          acc.outcome = (HP_TARGET_MOVE.toInt() or effectivenessBit(event.effectiveness)).toShort()
+          acc.subEvents += BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
+        }
+        is BattleEvent.HpChanged ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
+        is BattleEvent.StageChanged ->
+            if (!event.failed) {
+              target(event.targetId).subEvents +=
+                  BattleActionEvent(
+                      null, null, BattleEventBody.StatChange(statIndex(event.stat), event.delta.toShort()))
+            }
+        is BattleEvent.StatusChanged ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.StatusChange(event.status.toByte()))
+        is BattleEvent.WeatherChanged -> {
+          val current = group ?: EventGroup(battle.activeMon().entityId, 0).also { group = it }
+          target(current.sourceId).subEvents +=
+              BattleActionEvent(
+                  null, null, BattleEventBody.WeatherChange((event.weather?.wireValue ?: 0).toByte()))
+        }
+        is BattleEvent.MoveWithoutTarget -> {
+          val defender =
+              if (battle.isPlayerSide(event.attackerId)) battle.opponentMon().entityId
+              else battle.activeMon().entityId
+          target(defender).outcome =
+              if (event is BattleEvent.MoveMissed) MISSED_TARGET_MOVE else FAILED_TARGET_MOVE
+        }
         is BattleEvent.Fainted -> Unit
-        is BattleEvent.MoveWithoutTarget -> Unit
+        is BattleEvent.CantMove,
+        is BattleEvent.Charging,
+        is BattleEvent.MultiHit,
+        is BattleEvent.Protected -> log.debug { "silent battle event $event" }
       }
-      i++
     }
+    flush()
+  }
+
+  private class EventGroup(val sourceId: Long, val moveId: Short) {
+    val targets = LinkedHashMap<Long, TargetAccumulator>()
+  }
+
+  private class TargetAccumulator(val entityId: Long) {
+    var outcome: Short = DEFAULT_TARGET_MOVE
+    val subEvents = mutableListOf<BattleActionEvent>()
+
+    fun build(): BattleEffectTarget = BattleEffectTarget(entityId, outcome, subEvents.toList())
   }
 
   fun sendSwitchIn(battle: BattleInstance, oldSlot: Int, fullBlock: Boolean) {
@@ -316,26 +339,6 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
 
   fun sendNotice(battle: BattleInstance, message: String) {
     battle.session.send(notice(message))
-  }
-
-  private fun target(entityId: Long, targetMove: Short, body: BattleEventBody): BattleEffectTarget =
-      BattleEffectTarget(entityId, targetMove, listOf(BattleActionEvent(null, null, body)))
-
-  // A missed or failed move carries no target of its own, so it lands on the attacker's opponent.
-  // A miss is the target move word on its own with no events under it. The client writes the miss
-  // line from that, so sending an event as well makes it print an unrelated message.
-  private fun failTarget(
-      battle: BattleInstance,
-      attackerId: Long,
-      event: BattleEvent.MoveWithoutTarget,
-  ): BattleEffectTarget {
-    val defender =
-        if (battle.isPlayerSide(attackerId)) battle.opponentMon().entityId
-        else battle.activeMon().entityId
-    return when (event) {
-      is BattleEvent.MoveMissed -> BattleEffectTarget(defender, MISSED_TARGET_MOVE, emptyList())
-      is BattleEvent.MoveFailed -> BattleEffectTarget(defender, FAILED_TARGET_MOVE, emptyList())
-    }
   }
 
   /** The effectiveness line rides in the outcome word rather than in an event of its own. */

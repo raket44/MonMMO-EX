@@ -7,4 +7,15 @@ enum class MoveFlag(val bit: Int) {
   SNATCH_AFFECTED(1 shl 3),
   MIRROR_MOVE_AFFECTED(1 shl 4),
   KINGS_ROCK_AFFECTED(1 shl 5),
+  /** Hits 2-5 times (the Expansion's `multiHit`). */
+  MULTI_HIT(1 shl 6),
+  /** A frozen user can use it and thaws out. */
+  THAWS_USER(1 shl 7),
+  ALWAYS_CRIT(1 shl 8),
+  POWDER(1 shl 9),
+  SOUND(1 shl 10),
+  HEALING(1 shl 11),
+  PUNCH(1 shl 12),
+  BITE(1 shl 13),
+  MINIMIZE_DOUBLE_DAMAGE(1 shl 14),
 }

@@ -5,10 +5,13 @@
 @param List<List<ParsedMove>> chunks
 package de.fiereu.openmmo.moves.generated
 
+import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
 import de.fiereu.openmmo.common.enums.MoveEffect
 import de.fiereu.openmmo.common.enums.MoveFlag
 import de.fiereu.openmmo.common.enums.MoveTarget
 import de.fiereu.openmmo.common.enums.PokemonType
+import de.fiereu.openmmo.moves.AdditionalEffect
+import de.fiereu.openmmo.moves.MoveArgument
 import de.fiereu.openmmo.moves.MoveDef
 import de.fiereu.openmmo.moves.MoveRegistry
 

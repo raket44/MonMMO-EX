@@ -433,6 +433,7 @@ constructor(
     if (next < 0) return
     val fullBlock = next !in battle.opponentSeen
     val oldSlot = battle.opponentSlot
+    battle.opponent[battle.opponentSlot].resetVolatile()
     battle.opponentSlot = next
     battle.opponentSeen.add(next)
     log.info { "Opponent sends out slot $next for char=${battle.charId}" }
@@ -442,6 +443,8 @@ constructor(
   private fun performSwitch(battle: BattleInstance, target: Int) {
     val oldSlot = battle.activeSlot
     val fullBlock = target !in battle.seenActive
+    // Stages, confusion, Leech Seed and the rest stay on the field, not on the monster.
+    battle.party[oldSlot].resetVolatile()
     battle.activeSlot = target
     battle.seenActive.add(target)
     log.info { "Switch char=${battle.charId} slot $oldSlot -> $target (fullBlock=$fullBlock)" }
@@ -636,9 +639,16 @@ constructor(
   private fun persistParty(battle: BattleInstance, skip: Long? = null) {
     for (state in battle.party) {
       if (state.entityId == skip) continue
+      // Toxic poison leaves the battle as ordinary poison, as the cartridges do.
+      val status =
+          if (state.status and de.fiereu.openmmo.common.StatusCondition.TOXIC != 0)
+              (state.status and de.fiereu.openmmo.common.StatusCondition.TOXIC.inv()) or
+                  de.fiereu.openmmo.common.StatusCondition.POISON
+          else state.status
       val updated =
           state.source.copy(
               hp = state.currentHp.toShort(),
+              status = if (state.currentHp <= 0) 0 else status,
               moves = state.moves.map { PokemonMove(it.id, it.pp) },
           )
       characterStore.updatePokemon(battle.charId, updated)

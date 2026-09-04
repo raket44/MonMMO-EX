@@ -85,7 +85,11 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     field(S64LE, Pokemon::ownerId)
     val ot = field(Utf16LeNullTerminated, Pokemon::ot)
     val nickname = field(Utf16LeNullTerminated, Pokemon::nickname)
-    field(reserved("0000")) {}
+    field(U8) { 0 }
+    // Non-volatile status (client k91.Vy1, read straight after the nickname's trailing byte):
+    // sleep turns in the low three bits, then poison 8, burn 16, freeze 32, paralysis 64, toxic
+    // 128 - the party cell's status icon (k91.OX -> Rp0.fu0) switches on exactly those values.
+    val status = field(U8) { it.status and 0xFF }
     val level = field(S8, Pokemon::level)
     val hp = field(S16LE, Pokemon::hp)
     // Held item id, 0 for none. Client field k91.eE0: the held-item getter vh1() returns the
@@ -121,6 +125,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
         ownerId = ownerId,
         container = container,
         containerSlot = containerSlot,
+        status = status,
         dexId = canonicalSpeciesId(wireDexId),
         seed = seed,
         ot = ot,

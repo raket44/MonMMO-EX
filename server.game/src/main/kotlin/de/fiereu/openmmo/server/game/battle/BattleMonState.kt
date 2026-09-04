@@ -23,6 +23,12 @@ class BattleMonState(
 ) {
   var currentHp: Int = source.hp.toInt().coerceIn(0, stats.hp)
 
+  /** Non-volatile status in the record's bit layout; carried in and out of the battle. */
+  var status: Int = source.status and 0xFF
+
+  /** Turns of Toxic so far, which scales its damage; resets when the monster leaves the field. */
+  var toxicCounter: Int = 0
+
   /** Gained at least one level in this battle - the cartridge gate for a level evolution. */
   var leveledThisBattle: Boolean = false
   val moves: MutableList<PokemonMove> =
@@ -30,11 +36,78 @@ class BattleMonState(
 
   private val stages = EnumMap<BattleStat, Int>(BattleStat::class.java)
 
+  // Volatile state, cleared when the monster leaves the field.
+  var confusionTurns: Int = 0
+  var flinched: Boolean = false
+  var protectedThisTurn: Boolean = false
+  var protectStreak: Int = 0
+  var enduring: Boolean = false
+  var leechSeeded: Boolean = false
+  var focusEnergy: Boolean = false
+  var minimized: Boolean = false
+  var defenseCurled: Boolean = false
+  var identified: Boolean = false
+  var lockedOn: Boolean = false
+  var cursed: Boolean = false
+  var nightmare: Boolean = false
+  var ingrained: Boolean = false
+  var mustRecharge: Boolean = false
+  var trappedTurns: Int = 0
+  var drowsyTurns: Int = 0
+  var wishTurns: Int = 0
+  /** A two-turn move in progress: the first half was used, the second executes next turn. */
+  var chargingMoveId: Int = 0
+  var semiInvulnerable: Boolean = false
+  /** Damage taken this turn, for Counter / Mirror Coat and Revenge. */
+  var lastDamageTaken: Int = 0
+  var lastDamagePhysical: Boolean = true
+  var movedThisTurn: Boolean = false
+
+  /** Everything a switch or a faint forgets: stages and the per-battle flags. */
+  fun resetVolatile() {
+    stages.clear()
+    toxicCounter = 0
+    confusionTurns = 0
+    flinched = false
+    protectedThisTurn = false
+    protectStreak = 0
+    enduring = false
+    leechSeeded = false
+    focusEnergy = false
+    minimized = false
+    defenseCurled = false
+    identified = false
+    lockedOn = false
+    cursed = false
+    nightmare = false
+    ingrained = false
+    mustRecharge = false
+    trappedTurns = 0
+    drowsyTurns = 0
+    wishTurns = 0
+    chargingMoveId = 0
+    semiInvulnerable = false
+    lastDamageTaken = 0
+    movedThisTurn = false
+  }
+
+  /** Per-turn flags, cleared at the end of every turn. */
+  fun endTurn() {
+    flinched = false
+    protectedThisTurn = false
+    enduring = false
+    lastDamageTaken = 0
+    movedThisTurn = false
+  }
+
   val level: Int
     get() = source.level.toInt()
 
   val fainted: Boolean
     get() = currentHp <= 0
+
+  val maxHp: Int
+    get() = stats.hp
 
   fun stage(stat: BattleStat): Int = stages[stat] ?: 0
 

@@ -45,6 +45,11 @@ class ExpansionMoveParser(private val rootDir: File) {
               target = targetRef(target(body, config)),
               priority = numeric(body, "priority", updatedThrough) ?: 0,
               flags = flagRefs(flags(body, config).joinToString("|")),
+              argumentKind = argument(body, config, updatedThrough)?.first,
+              argument = argument(body, config, updatedThrough)?.second,
+              additionalEffects = additionalEffects(body, config, updatedThrough),
+              strikeCount = numeric(body, "strikeCount", updatedThrough) ?: 0,
+              criticalHitStage = numeric(body, "criticalHitStage", updatedThrough) ?: 0,
           )
         }
         .toList()
@@ -89,6 +94,16 @@ class ExpansionMoveParser(private val rootDir: File) {
       if (on("snatchAffected")) add("FLAG_SNATCH_AFFECTED")
       if (!on("mirrorMoveBanned")) add("FLAG_MIRROR_MOVE_AFFECTED")
       if (!on("ignoresKingsRock")) add("FLAG_KINGS_ROCK_AFFECTED")
+      // The Expansion's per-move booleans the battle engine branches on.
+      if (on("multiHit")) add("FLAG_MULTI_HIT")
+      if (on("thawsUser")) add("FLAG_THAWS_USER")
+      if (on("alwaysCriticalHit")) add("FLAG_ALWAYS_CRIT")
+      if (on("powderMove")) add("FLAG_POWDER")
+      if (on("soundMove")) add("FLAG_SOUND")
+      if (on("healingMove")) add("FLAG_HEALING")
+      if (on("punchingMove")) add("FLAG_PUNCH")
+      if (on("bitingMove")) add("FLAG_BITE")
+      if (on("minimizeDoubleDamage")) add("FLAG_MINIMIZE_DOUBLE_DAMAGE")
     }
   }
 
@@ -119,6 +134,62 @@ class ExpansionMoveParser(private val rootDir: File) {
     val suffix = if (damaging) "_HIT" else ""
     val candidate = "${stat.first}_$direction$stages$suffix"
     return if (candidate in ENGINE_STAT_EFFECTS) "EFFECT_$candidate" else null
+  }
+
+  /**
+   * The `.argument = { .kind = value }` pair. Numeric ternaries resolve like every other number;
+   * the ice-weather preference resolves to hail, the Gen 3 weather the client draws. Multi-line
+   * arguments (Counter's reflectDamage struct) are left out.
+   */
+  private fun argument(
+      body: String,
+      config: ExpansionConfig,
+      updatedThrough: Int,
+  ): Pair<String, String>? {
+    val match = ARGUMENT.find(body) ?: return null
+    val kind = match.groupValues[1]
+    var value = match.groupValues[2].trim().trimEnd(',').trim()
+    if ("B_PREFERRED_ICE_WEATHER" in value) return kind to "BATTLE_WEATHER_HAIL"
+    NUMBER_TERNARY.find(value)?.let { ternary ->
+      val generation = ternary.groupValues[1].toInt()
+      value =
+          if (updatedThrough >= generation) ternary.groupValues[2] else ternary.groupValues[3]
+    }
+    return kind to resolveToken(value, config)
+  }
+
+  /** Every `ADDITIONAL_EFFECTS` entry, in order; a missing chance means the effect always lands. */
+  private fun additionalEffects(
+      body: String,
+      config: ExpansionConfig,
+      updatedThrough: Int,
+  ): List<ParsedAdditionalEffect> {
+    val start = body.indexOf("ADDITIONAL_EFFECTS(")
+    if (start < 0) return emptyList()
+    val end = body.indexOf("})", start).takeIf { it >= 0 } ?: return emptyList()
+    val block = body.substring(start, end + 1)
+    return EFFECT_ENTRY.findAll(block)
+        .mapNotNull { entry ->
+          val text = entry.groupValues[1]
+          val token = raw(text, "moveEffect")?.let { resolveToken(it, config) } ?: return@mapNotNull null
+          val effect =
+              when {
+                token.endsWith("_PLUS") -> "MOVE_EFFECT_STAT_PLUS"
+                token.endsWith("_MINUS") -> "MOVE_EFFECT_STAT_MINUS"
+                else -> token
+              }
+          val stats =
+              STATS.mapNotNull { (field, name) ->
+                Regex("""\.$field\s*=\s*(\d+)""").find(text)?.let { name to it.groupValues[1].toInt() }
+              }
+          ParsedAdditionalEffect(
+              effect = effect,
+              chance = numeric(text, "chance", updatedThrough)?.takeIf { it > 0 } ?: 100,
+              self = config.boolean(raw(text, "self") ?: "FALSE") == true,
+              stats = stats,
+          )
+        }
+        .toList()
   }
 
   /** The chance on the first additional effect, which is what the old table recorded. */
@@ -255,6 +326,7 @@ class ExpansionMoveParser(private val rootDir: File) {
             "SPEED_UP_2",
         )
     val EFFECT_ENTRY = Regex("""\{([^{}]*)}""")
+    val ARGUMENT = Regex("""\.argument\s*=\s*\{\s*\.(\w+)\s*=\s*([^{}\n]+?)\s*,?\s*}""")
     val CONTROL = Regex("""\\+[nlp]""")
     val WHITESPACE = Regex("""\s+""")
   }

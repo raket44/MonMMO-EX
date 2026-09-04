@@ -52,6 +52,8 @@ data class Pokemon(
     val heldItem: Int = 0,
     /** Happiness 0-255; 70 wild base, 120 hatched, 220 evolves the happiness families. */
     val friendship: Int = 70,
+    /** Non-volatile status as [StatusCondition] bits; persists between battles until healed. */
+    val status: Int = StatusCondition.NONE,
 ) {
   // seed is an unsigned 32-bit value on the wire, so mask before the modulo to avoid a negative
   // index when the high bit is set.

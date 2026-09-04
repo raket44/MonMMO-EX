@@ -36,7 +36,41 @@ sealed interface BattleEventBody {
 
   /** Event 0x40, BattleMoveFailed. [moveId] names the move in the "it failed" message. */
   data class MoveFailed(val moveId: Short) : BattleEventBody
+
+  /**
+   * Event 2, the non-volatile status change (client f/Et0): [kind] 0 sets the target's status
+   * byte to [status] and prints the inflicted line when a status appears or the cured line when
+   * it clears (the client compares the old and new bytes itself); [status] uses the record's
+   * encoding (sleep turns in the low bits, poison 8, burn 16, freeze 32, paralysis 64, toxic 128).
+   * [aux] is the trailing short the client stores unused on this path.
+   */
+  data class StatusChange(val status: Byte, val kind: Byte = 0, val aux: Short = 0) :
+      BattleEventBody
+
+  /**
+   * Event 12, the field weather (client f/W31): one byte looked up through the client's weather
+   * enum (f/xG1.U00). 0 clears the weather.
+   */
+  data class WeatherChange(val weather: Byte) : BattleEventBody
 }
+
+private val WeatherChangeBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val weather = field(S8) { (it as BattleEventBody.WeatherChange).weather }
+        return BattleEventBody.WeatherChange(weather)
+      }
+    }
+
+private val StatusChangeBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val kind = field(S8) { (it as BattleEventBody.StatusChange).kind }
+        val status = field(S8) { (it as BattleEventBody.StatusChange).status }
+        val aux = field(S16LE) { (it as BattleEventBody.StatusChange).aux }
+        return BattleEventBody.StatusChange(status, kind, aux)
+      }
+    }
 
 private val HpUpdateBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
@@ -105,6 +139,8 @@ private val MoveFailedBodyCodec: Codec<BattleEventBody> =
 enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   HP_UPDATE(id = 0, codec = HpUpdateBodyCodec),
   STAT_CHANGE(id = 1, codec = StatChangeBodyCodec),
+  STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
+  WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
   MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
@@ -121,6 +157,8 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.Faint -> POKEMON_FAINTED
           is BattleEventBody.MoveFailed -> MOVE_FAILED
           is BattleEventBody.Evolution -> EVOLUTION
+          is BattleEventBody.StatusChange -> STATUS_CHANGE
+          is BattleEventBody.WeatherChange -> WEATHER_CHANGE
         }
   }
 }

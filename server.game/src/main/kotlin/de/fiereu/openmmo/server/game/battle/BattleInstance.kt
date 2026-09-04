@@ -54,9 +54,20 @@ class BattleInstance(
   /** Result held until the client confirms that its battle-to-map transition has finished. */
   var pendingResult: BattleResult? = null
 
+  var weather: Weather? = null
+  var weatherTurns: Int = 0
+  val playerSide = SideState()
+  val opponentSide = SideState()
+
   fun activeMon(): BattleMonState = party[activeSlot]
 
   fun opponentMon(): BattleMonState = opponent[opponentSlot]
 
   fun isPlayerSide(entityId: Long): Boolean = party.any { it.entityId == entityId }
+
+  fun sideOf(mon: BattleMonState): SideState =
+      if (isPlayerSide(mon.entityId)) playerSide else opponentSide
+
+  fun opponentOf(mon: BattleMonState): BattleMonState =
+      if (isPlayerSide(mon.entityId)) opponentMon() else activeMon()
 }

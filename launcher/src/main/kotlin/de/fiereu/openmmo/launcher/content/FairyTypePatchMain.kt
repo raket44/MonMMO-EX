@@ -285,12 +285,16 @@ fun main(args: Array<String>) {
 
     // Every DS map the client builds is written out with its own tile and event answers, for
     // the server's Johto/Sinnoh/Unova importer.
-    for (mapClass in listOf("f/Hv0", "f/k90", "f/QK")) {
-      applyOne(
-          "NDS map dump $mapClass",
-          NdsMapDumpPatch.named(mapClass),
-          NdsMapDumpPatch::patch,
-      )
+    // The DS map dump hook is OFF: even inert it sat inside the client's map build and Johto
+    // stayed black. Re-enable only for a deliberate dump session.
+    if (System.getenv("MONMMO_NDS_DUMP") == "1") {
+      for (mapClass in listOf("f/Hv0", "f/k90", "f/QK")) {
+        applyOne(
+            "NDS map dump $mapClass",
+            NdsMapDumpPatch.named(mapClass),
+            NdsMapDumpPatch::patch,
+        )
+      }
     }
 
     applyOne(

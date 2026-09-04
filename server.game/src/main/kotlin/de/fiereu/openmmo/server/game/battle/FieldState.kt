@@ -1,16 +1,18 @@
 package de.fiereu.openmmo.server.game.battle
 
 /**
- * Field weather. [wireValue] is what the client's weather event (f/W31, sub-event 12) reads
- * through its weather enum's byte lookup (f/xG1.U00). The enum carries eight constants with
- * bytes 0, 1, 2, 3, 5, 6, 10 and one more; 2 and 10 are its two "damaging" weathers. Rain 1,
- * sandstorm 2, sun 3 and hail 10 is the working assignment until the in-game text confirms it.
+ * Field weather. [wireValue] is the byte the client's weather event (f/W31, sub-event 12) and
+ * the weather-damage line (f/uC, sub-event 13) look up through f/xG1's byte table. Decoded from
+ * the client's switch map (f/R11.xS0) against the lines it prints: byte 1 "The harsh sunlight
+ * beats down.", 2 and 10 "It is raining.", 3 "The sandstorm rages." (and the sandstorm buffet
+ * line), 5 "The fog is thick.", 6 "Snow is falling." - the client's ice weather, which the
+ * buffet line calls hail. Byte 0 clears the weather with the matching "stopped" line.
  */
 enum class Weather(val wireValue: Int) {
-  RAIN(1),
-  SANDSTORM(2),
-  SUN(3),
-  HAIL(10),
+  RAIN(2),
+  SANDSTORM(3),
+  SUN(1),
+  HAIL(6),
 }
 
 /** Per-side field effects: screens, Safeguard and Mist, each as turns remaining. */

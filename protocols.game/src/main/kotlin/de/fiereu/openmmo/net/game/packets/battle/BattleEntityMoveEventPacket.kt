@@ -52,7 +52,117 @@ sealed interface BattleEventBody {
    * enum (f/xG1.U00). 0 clears the weather.
    */
   data class WeatherChange(val weather: Byte) : BattleEventBody
+
+  /**
+   * Event 92 (client f/G61 -> QL1.Ww0): fades the target's sprite out while it is out of reach
+   * (Fly, Dig, Dive, Bounce) and back in when it strikes. One boolean.
+   */
+  data class Visibility(val hidden: Boolean) : BattleEventBody
+
+  /**
+   * One of the client's fixed-shape battle lines, by sub-event id. Decoded from the client's
+   * event factory (f/SF1) and each renderer's message bases against the ROM text bank the client
+   * itself dumped (reference/client-31914/battle-strings.tsv). [values] are the body fields in
+   * wire order; [BattleLine] fixes the shape.
+   */
+  data class Line(val line: BattleLine, val values: List<Int> = emptyList()) : BattleEventBody
 }
+
+/** Field shapes of the fixed battle lines. */
+enum class LineShape {
+  EMPTY,
+  BYTE,
+  SHORT,
+  BYTE_SHORT,
+  SHORT_BYTE_SHORT,
+  BYTE_SHORT_SHORT,
+}
+
+/**
+ * Battle sub-events that print one line (and, where noted, move an hp bar). The comment is the
+ * client's text for the first variant; `{00}` is the target's name.
+ */
+enum class BattleLine(val id: Int, val shape: LineShape) {
+  /** 3 f/jK: "{00} was hurt by its burn!" with the new hp. */
+  BURN_DAMAGE(3, LineShape.SHORT),
+  /** 4 f/s20: "{00} flinched and couldn't move!" */
+  FLINCHED(4, LineShape.EMPTY),
+  /** 5 f/TG1: true "{00} was frozen solid!" with the freeze animation, false "{00} thawed out!" */
+  FREEZE(5, LineShape.BYTE),
+  /** 6 f/W0: "{00} was hurt by poison!" with the new hp. */
+  POISON_DAMAGE(6, LineShape.SHORT),
+  /** 7 f/Kz: false "{00} is fast asleep.", true "{00} woke up!" */
+  SLEEP(7, LineShape.BYTE),
+  /** 8 f/uO0: false "{00} is paralyzed! It can't move!" */
+  PARALYZED(8, LineShape.BYTE),
+  /** 10 f/L0: 0 became confused, 1 snapped out, 2 is confused and hurt itself, 3 is confused, 4 already. */
+  CONFUSION(10, LineShape.BYTE),
+  /** 13 f/uC: weather byte (sandstorm 3, else hail) and the new hp: "{00} is buffeted by the sandstorm!" */
+  WEATHER_DAMAGE(13, LineShape.BYTE_SHORT),
+  /** 14 f/j21: new hp, packed position of the healed monster (0xFF none), its hp: "sapped by Leech Seed!" */
+  LEECH_SEED_DRAIN(14, LineShape.SHORT_BYTE_SHORT),
+  /** 18 f/mv: 0 and the new hp: "{00} is afflicted by the curse!" */
+  CURSE_DAMAGE(18, LineShape.BYTE_SHORT),
+  /** 19 f/LPt4: new hp: "{00} is locked in a nightmare!" */
+  NIGHTMARE_DAMAGE(19, LineShape.SHORT),
+  /** 22 f/AN: 0 "{00} endured the hit!" */
+  ENDURED(22, LineShape.BYTE),
+  /** 24 f/N00: 1 hurt by the trapping move (hp, move id), 2 freed from it. */
+  TRAP(24, LineShape.BYTE_SHORT_SHORT),
+  /** 27 f/qw: 0 "{00} was seeded!" */
+  SEEDED(27, LineShape.BYTE),
+  /** 34 f/q21: "{00} grew drowsy!" */
+  DROWSY(34, LineShape.EMPTY),
+  /** 37 f/K60: "{00} can no longer escape!" */
+  NO_ESCAPE(37, LineShape.EMPTY),
+  /** 38 f/cV0: "{00} planted its roots!" */
+  ROOTED(38, LineShape.EMPTY),
+  /** 39 f/VJ0: new hp: "{00} absorbed nutrients with its roots!" */
+  ROOT_HEAL(39, LineShape.SHORT),
+  /** 73 f/eh1: move id: "{00} was identified!" */
+  IDENTIFIED(73, LineShape.SHORT),
+  /** 126 f/wT0: "{00}'s stat changes were removed!" */
+  STATS_CLEARED(126, LineShape.EMPTY);
+
+  companion object {
+    fun ofId(id: Int): BattleLine? = entries.firstOrNull { it.id == id }
+  }
+}
+
+private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEventBody>() {
+  override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+    fun value(i: Int): (BattleEventBody) -> Int = { (it as BattleEventBody.Line).values.getOrElse(i) { 0 } }
+    val values =
+        when (line.shape) {
+          LineShape.EMPTY -> emptyList()
+          LineShape.BYTE -> listOf(field(S8) { value(0)(it).toByte() }.toInt())
+          LineShape.SHORT -> listOf(field(S16LE) { value(0)(it).toShort() }.toInt())
+          LineShape.BYTE_SHORT ->
+              listOf(
+                  field(S8) { value(0)(it).toByte() }.toInt(),
+                  field(S16LE) { value(1)(it).toShort() }.toInt())
+          LineShape.SHORT_BYTE_SHORT ->
+              listOf(
+                  field(S16LE) { value(0)(it).toShort() }.toInt(),
+                  field(S8) { value(1)(it).toByte() }.toInt(),
+                  field(S16LE) { value(2)(it).toShort() }.toInt())
+          LineShape.BYTE_SHORT_SHORT ->
+              listOf(
+                  field(S8) { value(0)(it).toByte() }.toInt(),
+                  field(S16LE) { value(1)(it).toShort() }.toInt(),
+                  field(S16LE) { value(2)(it).toShort() }.toInt())
+        }
+    return BattleEventBody.Line(line, values)
+  }
+}
+
+private val VisibilityBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val hidden = field(Bool) { (it as BattleEventBody.Visibility).hidden }
+        return BattleEventBody.Visibility(hidden)
+      }
+    }
 
 private val WeatherChangeBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
@@ -141,6 +251,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   STAT_CHANGE(id = 1, codec = StatChangeBodyCodec),
   STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
+  VISIBILITY(id = 92, codec = VisibilityBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
   MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
@@ -159,34 +270,57 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.Evolution -> EVOLUTION
           is BattleEventBody.StatusChange -> STATUS_CHANGE
           is BattleEventBody.WeatherChange -> WEATHER_CHANGE
+          is BattleEventBody.Visibility -> VISIBILITY
+          is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }
+}
+
+/** The wire id and codec of a body: the typed enum for the decoded events, the line table otherwise. */
+private fun bodyId(body: BattleEventBody): Int =
+    if (body is BattleEventBody.Line) body.line.id else BattleEventType.ofBody(body).id
+
+private fun bodyCodec(id: Int): Codec<BattleEventBody> {
+  BattleLine.ofId(id)?.let { return LineBodyCodec(it) }
+  return BattleEventType.ofId(id).codec
 }
 
 private const val FLAG_ENTITY_A = 0x01
 private const val FLAG_ENTITY_B = 0x02
 
 /**
- * One nested battle action event. The variable header is a type id, a presence-flags byte, then the
- * entity ids the flags select. [entityA] and [entityB] are present only when their flag bit is set.
+ * Header flag bit the hp-update renderer (f/hD1, `DZ.K91(8)`) treats as "quiet": the bar moves
+ * but neither the faint line nor "HP was restored" is printed.
  */
-data class BattleActionEvent(val entityA: Long?, val entityB: Long?, val body: BattleEventBody)
+const val EVENT_FLAG_QUIET_HP = 0x08
+
+/**
+ * One nested battle action event. The variable header is a type id, a flags byte, then the entity
+ * ids the low two flag bits select. [entityA] and [entityB] are present only when their bit is
+ * set; [flags] carries any further header bits (see [EVENT_FLAG_CRITICAL_HIT]).
+ */
+data class BattleActionEvent(
+    val entityA: Long?,
+    val entityB: Long?,
+    val body: BattleEventBody,
+    val flags: Int = 0,
+)
 
 private val BattleActionEventCodec: Codec<BattleActionEvent> =
     object : PacketCodec<BattleActionEvent>() {
       override fun CodecScope<BattleActionEvent>.body(): BattleActionEvent {
-        val typeId = field(U8) { BattleEventType.ofBody(it.body).id }
+        val typeId = field(U8) { bodyId(it.body) }
         val aux =
             field(U8) {
-              var flags = 0
+              var flags = it.flags and (FLAG_ENTITY_A or FLAG_ENTITY_B).inv()
               if (it.entityA != null) flags = flags or FLAG_ENTITY_A
               if (it.entityB != null) flags = flags or FLAG_ENTITY_B
               flags
             }
         val entityA = optionalField((aux and FLAG_ENTITY_A) != 0, S64LE) { it.entityA }
         val entityB = optionalField((aux and FLAG_ENTITY_B) != 0, S64LE) { it.entityB }
-        val body = field(BattleEventType.ofId(typeId).codec) { it.body }
-        return BattleActionEvent(entityA, entityB, body)
+        val body = field(bodyCodec(typeId)) { it.body }
+        return BattleActionEvent(entityA, entityB, body, aux and (FLAG_ENTITY_A or FLAG_ENTITY_B).inv())
       }
     }
 

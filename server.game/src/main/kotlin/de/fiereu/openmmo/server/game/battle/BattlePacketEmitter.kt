@@ -52,12 +52,20 @@ private const val OPPONENT_SIDE: Byte = 1
 
 private val CAPTURED_APPEARANCE = "00024c031aac0f00038001a40004".hexToBytes()
 
-// The target's outcome word, which picks the line the client prints for that target. A damaging
-// hit is 0x0200, a miss 1, a failure 4, and a status move that only moves a stat carries none of
-// them. The events under the target are read either way.
+// The target's outcome word: a bit set, each bit a line the client prints for that target
+// (f/O20.t20 - decompiled): 1 "avoided the attack", 2 "A critical hit!", 4 "But it failed!",
+// 8 "It doesn't affect {00}...", 0x10 "not very effective", 0x20 "super effective", 0x80
+// "{00} protected itself!". 0x200 marks a damaging hit and prints nothing; a status move that
+// only moves a stat carries none of them. The events under the target are read either way.
 private const val HP_TARGET_MOVE: Short = 0x0200
 private const val MISSED_TARGET_MOVE: Short = 1
+private const val CRITICAL_HIT_BIT = 0x02
 private const val FAILED_TARGET_MOVE: Short = 4
+private const val IMMUNE_TARGET_MOVE: Short = 8
+private const val PROTECTED_TARGET_MOVE: Short = 0x80
+// 0x40 on the attacker's own entry marks the first half of a two-turn move: the client picks the
+// line from the move id ("{00} flew up high!", "burrowed its way under the ground!", ...).
+private const val CHARGING_TARGET_MOVE: Short = 0x40
 private const val DEFAULT_TARGET_MOVE: Short = 0
 private const val SUPER_EFFECTIVE_BIT = 0x20
 private const val NOT_VERY_EFFECTIVE_BIT = 0x10
@@ -146,9 +154,18 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         }
         is BattleEvent.DamageDealt -> {
           val acc = target(event.targetId)
-          acc.outcome = (HP_TARGET_MOVE.toInt() or effectivenessBit(event.effectiveness)).toShort()
+          acc.outcome =
+              (HP_TARGET_MOVE.toInt() or
+                      effectivenessBit(event.effectiveness) or
+                      (if (event.crit) CRITICAL_HIT_BIT else 0))
+                  .toShort()
           acc.subEvents += BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
         }
+        is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
+        is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
+        is BattleEvent.Line ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.Line(event.line, event.values))
         is BattleEvent.HpChanged ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
@@ -174,11 +191,13 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
           target(defender).outcome =
               if (event is BattleEvent.MoveMissed) MISSED_TARGET_MOVE else FAILED_TARGET_MOVE
         }
+        is BattleEvent.Hidden ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.Visibility(event.hidden))
         is BattleEvent.Fainted -> Unit
+        is BattleEvent.Charging -> target(event.attackerId).outcome = CHARGING_TARGET_MOVE
         is BattleEvent.CantMove,
-        is BattleEvent.Charging,
-        is BattleEvent.MultiHit,
-        is BattleEvent.Protected -> log.debug { "silent battle event $event" }
+        is BattleEvent.MultiHit -> log.debug { "silent battle event $event" }
       }
     }
     flush()

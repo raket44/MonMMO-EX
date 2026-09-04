@@ -7,6 +7,7 @@ import de.fiereu.openmmo.common.enums.EVs
 import de.fiereu.openmmo.common.enums.IVs
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.moves.MoveRegistry
+import de.fiereu.openmmo.net.game.packets.battle.BattleLine
 import de.fiereu.openmmo.pokemon.SpeciesRegistry
 import de.fiereu.openmmo.server.game.testsupport.FakeSession
 import de.fiereu.openmmo.typechart.TypeChart
@@ -119,7 +120,7 @@ class BattleMechanicsTest :
           val player = state(PIDGEOT, 60, listOf(THUNDER_WAVE), PLAYER_ID)
           val wild = state(SANDSHREW, 5, listOf(SPLASH), WILD_ID)
           val events = engine.resolveTurn(battle(player, wild, seed), THUNDER_WAVE)
-          events.filterIsInstance<BattleEvent.MoveFailed>().first().attackerId shouldBe PLAYER_ID
+          events.filterIsInstance<BattleEvent.Immune>().first().targetId shouldBe WILD_ID
           wild.status shouldBe StatusCondition.NONE
         }
       }
@@ -132,9 +133,13 @@ class BattleMechanicsTest :
 
         val (events, _, rat) =
             firstSeedWhere(listOf(TOXIC), RATTATA, 5, TOXIC) { _, _, w -> StatusCondition.isBadlyPoisoned(w.status) }
-        // The first end-of-turn tick takes 1/16.
+        // The first end-of-turn tick takes 1/16; the poison line carries the new hp.
         val expected = rat.maxHp - (rat.maxHp / 16).coerceAtLeast(1)
-        events.filterIsInstance<BattleEvent.HpChanged>().first { it.targetId == WILD_ID }.newHp shouldBe expected
+        val tick =
+            events.filterIsInstance<BattleEvent.Line>().first {
+              it.targetId == WILD_ID && it.line == BattleLine.POISON_DAMAGE
+            }
+        tick.values.first() shouldBe expected
       }
 
       test("poison takes an eighth at the end of the turn") {
@@ -142,8 +147,11 @@ class BattleMechanicsTest :
         val wild = state(SNORLAX, 50, listOf(SPLASH), WILD_ID)
         wild.status = StatusCondition.POISON
         val events = engine.resolveTurn(battle(player, wild, 1), SPLASH)
-        val tick = events.filterIsInstance<BattleEvent.HpChanged>().first { it.targetId == WILD_ID }
-        tick.newHp shouldBe wild.maxHp - wild.maxHp / 8
+        val tick =
+            events.filterIsInstance<BattleEvent.Line>().first {
+              it.targetId == WILD_ID && it.line == BattleLine.POISON_DAMAGE
+            }
+        tick.values.first() shouldBe wild.maxHp - wild.maxHp / 8
         wild.currentHp shouldBe wild.maxHp - wild.maxHp / 8
       }
 
@@ -173,7 +181,7 @@ class BattleMechanicsTest :
         val wild = state(SNORLAX, 50, listOf(TACKLE), WILD_ID)
         val events = engine.resolveTurn(battle(player, wild, 1), PROTECT)
         events.filterIsInstance<BattleEvent.Protected>().first().targetId shouldBe PLAYER_ID
-        events.filterIsInstance<BattleEvent.MoveFailed>().first().attackerId shouldBe WILD_ID
+        events.filterIsInstance<BattleEvent.DamageDealt>().none { it.targetId == PLAYER_ID }.shouldBeTrue()
         player.currentHp shouldBe player.maxHp
       }
 
@@ -243,8 +251,11 @@ class BattleMechanicsTest :
 
         val (events, seeder, seeded) =
             firstSeedWhere(listOf(LEECH_SEED), SNORLAX, 50, LEECH_SEED) { _, _, w -> w.leechSeeded }
-        val drained = events.filterIsInstance<BattleEvent.HpChanged>().first { it.targetId == WILD_ID }
-        drained.newHp shouldBe seeded.maxHp - seeded.maxHp / 8
+        val drained =
+            events.filterIsInstance<BattleEvent.Line>().first {
+              it.targetId == WILD_ID && it.line == BattleLine.LEECH_SEED_DRAIN
+            }
+        drained.values.first() shouldBe seeded.maxHp - seeded.maxHp / 8
         seeder.currentHp shouldBe seeder.maxHp
       }
 

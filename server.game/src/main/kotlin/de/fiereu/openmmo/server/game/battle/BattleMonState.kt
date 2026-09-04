@@ -53,6 +53,8 @@ class BattleMonState(
   var ingrained: Boolean = false
   var mustRecharge: Boolean = false
   var trappedTurns: Int = 0
+  /** The move that trapped it, named in the "hurt by" and "freed from" lines. */
+  var trappingMoveId: Int = 0
   var drowsyTurns: Int = 0
   var wishTurns: Int = 0
   /** A two-turn move in progress: the first half was used, the second executes next turn. */
@@ -83,6 +85,7 @@ class BattleMonState(
     ingrained = false
     mustRecharge = false
     trappedTurns = 0
+    trappingMoveId = 0
     drowsyTurns = 0
     wishTurns = 0
     chargingMoveId = 0

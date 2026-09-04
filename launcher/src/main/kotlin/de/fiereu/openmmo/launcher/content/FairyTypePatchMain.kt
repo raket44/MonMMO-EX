@@ -270,6 +270,13 @@ fun main(args: Array<String>) {
         DragDiagnosticPatch::patchMoveSender,
     )
 
+    // The battle text bank, dumped through the client's own accessor at the first battle event.
+    applyOne(
+        "battle text dump",
+        BattleTextDumpPatch::isEventFactory,
+        BattleTextDumpPatch::patch,
+    )
+
     applyOne(
         "Unova map build stage markers",
         K90DiagnosticPatch::isUnovaMap,

@@ -191,6 +191,7 @@ public final class DexPatch {
     applied = true;
     try {
       run();
+      dumpBattleStrings();
     } catch (Throwable error) {
       StringBuilder where = new StringBuilder("[monmmo] dex fixups failed: " + error);
       StackTraceElement[] trace = error.getStackTrace();
@@ -1010,6 +1011,74 @@ public final class DexPatch {
       writer.write(message + System.lineSeparator());
     } catch (Exception ignored) {
       // The log is best-effort; the fixups themselves must never depend on it.
+    }
+  }
+
+  private static boolean battleStringsDumped;
+
+  /**
+   * Writes the client's battle text bank to battle-strings.log, once. The battle event renderers
+   * fetch their lines with {@code nV0.Pe1((byte) rom, cX.pa, 14, base + variant, args)}, which is
+   * {@code nV0.bw1[rom][pa.hu].oG1(14, 0, index)}: bank 14 of the category the client built from
+   * the ROM's text at load time. Reading it through the client's own accessor keeps the ROM
+   * itself untouched. Hooked at the end of the dex fixups and at the first battle event, whichever
+   * finds the bank loaded first.
+   */
+  public static void dumpBattleStrings() {
+    if (battleStringsDumped) {
+      return;
+    }
+    try {
+      Class<?> categories = Class.forName("f.cX");
+      Object battleCategory = categories.getField("pa").get(null);
+      byte categoryIndex = categories.getField("hu").getByte(battleCategory);
+      Object[][] table = (Object[][]) Class.forName("f.nV0").getField("bw1").get(null);
+      java.lang.reflect.Method line = null;
+      StringBuilder out = new StringBuilder();
+      int found = 0;
+      for (int rom = 0; rom < table.length; rom++) {
+        Object[] byCategory = table[rom];
+        if (byCategory == null || categoryIndex >= byCategory.length) {
+          continue;
+        }
+        Object bank = byCategory[categoryIndex];
+        if (bank == null) {
+          continue;
+        }
+        if (line == null) {
+          line = bank.getClass().getMethod("oG1", int.class, int.class, int.class);
+        }
+        for (int bankIndex = 0; bankIndex < 64; bankIndex++) {
+          int misses = 0;
+          for (int index = 0; index < 4000 && misses < 300; index++) {
+            String text;
+            try {
+              text = (String) line.invoke(bank, bankIndex, 0, index);
+            } catch (Throwable error) {
+              text = null;
+            }
+            if (text == null || text.isEmpty() || text.equals("--")) {
+              misses++;
+              continue;
+            }
+            misses = 0;
+            found++;
+            out.append(rom).append('\t').append(bankIndex).append('\t').append(index).append('\t')
+                .append(text.replace("\r", "\\r").replace("\n", "\\n")).append(System.lineSeparator());
+          }
+        }
+      }
+      if (found == 0) {
+        log("[monmmo] battle strings: bank not loaded yet (" + table.length + " rom slots)");
+        return;
+      }
+      try (FileWriter writer = new FileWriter("battle-strings.log", false)) {
+        writer.write(out.toString());
+      }
+      battleStringsDumped = true;
+      log("[monmmo] battle strings: wrote " + found + " lines to battle-strings.log");
+    } catch (Throwable error) {
+      log("[monmmo] battle strings dump failed: " + error);
     }
   }
 

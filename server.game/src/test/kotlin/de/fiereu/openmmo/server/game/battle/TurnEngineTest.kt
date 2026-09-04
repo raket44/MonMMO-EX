@@ -163,7 +163,7 @@ class TurnEngineTest :
         val before = wild.currentHp
         val events = engine.resolveTurn(battle(player, wild, seed = 3), TACKLE)
 
-        events.filterIsInstance<BattleEvent.MoveFailed>().first { it.attackerId == PLAYER_ID }
+        events.filterIsInstance<BattleEvent.Immune>().first { it.targetId == WILD_ID }
         events
             .filterIsInstance<BattleEvent.DamageDealt>()
             .none { it.targetId == WILD_ID }

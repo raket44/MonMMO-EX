@@ -18,4 +18,6 @@ enum class MoveFlag(val bit: Int) {
   PUNCH(1 shl 12),
   BITE(1 shl 13),
   MINIMIZE_DOUBLE_DAMAGE(1 shl 14),
+  /** The user faints after using it (Explosion, Self-Destruct). */
+  EXPLOSION(1 shl 15),
 }

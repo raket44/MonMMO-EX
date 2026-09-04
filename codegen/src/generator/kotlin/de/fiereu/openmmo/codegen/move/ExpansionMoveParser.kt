@@ -104,6 +104,7 @@ class ExpansionMoveParser(private val rootDir: File) {
       if (on("punchingMove")) add("FLAG_PUNCH")
       if (on("bitingMove")) add("FLAG_BITE")
       if (on("minimizeDoubleDamage")) add("FLAG_MINIMIZE_DOUBLE_DAMAGE")
+      if (on("explosion")) add("FLAG_EXPLOSION")
     }
   }
 

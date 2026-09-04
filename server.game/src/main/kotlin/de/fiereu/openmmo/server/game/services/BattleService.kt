@@ -393,7 +393,16 @@ constructor(
           emitter.sendSwitchPrompt(battle)
         } else {
           battle.turn += 1
-          emitter.sendPrompt(battle)
+          // A two-turn move or a recharge turn owns the next action: no prompt, the turn runs
+          // straight on with the locked move, the way the cartridges keep the player out of the menu.
+          val active = battle.activeMon()
+          val locked =
+              when {
+                active.chargingMoveId != 0 -> active.chargingMoveId
+                active.mustRecharge -> active.moves.firstOrNull { it.id.toInt() != 0 }?.id?.toInt() ?: 0
+                else -> 0
+              }
+          if (locked != 0) resolveTurn(battle, locked.toShort()) else emitter.sendPrompt(battle)
         }
       }
     }

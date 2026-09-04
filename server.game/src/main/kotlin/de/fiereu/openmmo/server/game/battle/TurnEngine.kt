@@ -9,6 +9,7 @@ import de.fiereu.openmmo.common.enums.PokemonType
 import de.fiereu.openmmo.moves.AdditionalEffect
 import de.fiereu.openmmo.moves.MoveDef
 import de.fiereu.openmmo.moves.MoveRegistry
+import de.fiereu.openmmo.net.game.packets.battle.BattleLine
 import de.fiereu.openmmo.typechart.TypeChart
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -143,10 +144,14 @@ constructor(
       attacker.semiInvulnerable = move.effect == MoveEffect.SEMI_INVULNERABLE
       if (move.effect == MoveEffect.SKULL_BASH) applyStage(action, StageEffect(BattleStat.DEFENSE, 1, true), events)
       events += BattleEvent.Charging(attacker.entityId, move.id.toShort())
+      if (attacker.semiInvulnerable) events += BattleEvent.Hidden(attacker.entityId, true)
       return
     }
     attacker.chargingMoveId = 0
-    attacker.semiInvulnerable = false
+    if (attacker.semiInvulnerable) {
+      attacker.semiInvulnerable = false
+      events += BattleEvent.Hidden(attacker.entityId, false)
+    }
 
     if (move.power > 0 || isDamagingEffect(move)) {
       attack(battle, action, move, events)
@@ -176,8 +181,14 @@ constructor(
       move: MoveDef,
       events: MutableList<BattleEvent>,
   ): Boolean {
+    // Lines the client prints for a lost action ride under the monster's own entry, so a packet is
+    // opened for it here; the MoveUsed that would normally open one never comes.
+    fun own() {
+      events += BattleEvent.TurnEffect(mon.entityId)
+    }
     if (mon.mustRecharge) {
       mon.mustRecharge = false
+      own()
       events += BattleEvent.CantMove(mon.entityId, CantMoveReason.RECHARGING)
       return false
     }
@@ -185,39 +196,54 @@ constructor(
       val left = StatusCondition.sleepTurns(mon.status) - 1
       mon.status = (mon.status and StatusCondition.SLEEP_MASK.inv()) or left.coerceAtLeast(0)
       if (left > 0) {
+        own()
+        events += BattleEvent.Line(mon.entityId, BattleLine.SLEEP, listOf(0))
         events += BattleEvent.CantMove(mon.entityId, CantMoveReason.ASLEEP)
         return false
       }
       mon.nightmare = false
+      own()
       events += BattleEvent.StatusChanged(mon.entityId, mon.status)
     }
     if (StatusCondition.isFrozen(mon.status)) {
       if (move.hasFlag(MoveFlag.THAWS_USER) || battle.rng.accuracyRoll() <= 20) {
         mon.status = mon.status and StatusCondition.FREEZE.inv()
+        own()
         events += BattleEvent.StatusChanged(mon.entityId, mon.status)
       } else {
+        own()
+        events += BattleEvent.Line(mon.entityId, BattleLine.FREEZE, listOf(1))
         events += BattleEvent.CantMove(mon.entityId, CantMoveReason.FROZEN)
         return false
       }
     }
     if (mon.flinched) {
+      own()
+      events += BattleEvent.Line(mon.entityId, BattleLine.FLINCHED)
       events += BattleEvent.CantMove(mon.entityId, CantMoveReason.FLINCHED)
       return false
     }
     if (mon.confusionTurns > 0) {
       mon.confusionTurns--
-      if (mon.confusionTurns > 0 && battle.rng.coinFlip()) {
+      own()
+      if (mon.confusionTurns == 0) {
+        events += BattleEvent.Line(mon.entityId, BattleLine.CONFUSION, listOf(1))
+      } else if (battle.rng.coinFlip()) {
         // Hits itself: a typeless 40-power physical hit with its own attack and defense.
         val damage = baseDamage(mon, mon, CONFUSION_SELF_HIT_POWER, physical = true, crit = false, battle.rng)
         mon.currentHp = (mon.currentHp - damage.coerceAtLeast(1)).coerceAtLeast(0)
-        events += BattleEvent.CantMove(mon.entityId, CantMoveReason.CONFUSED)
-        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.Line(mon.entityId, BattleLine.CONFUSION, listOf(2))
         events += BattleEvent.HpChanged(mon.entityId, mon.currentHp)
+        events += BattleEvent.CantMove(mon.entityId, CantMoveReason.CONFUSED)
         if (mon.fainted) events += BattleEvent.Fainted(mon.entityId)
         return false
+      } else {
+        events += BattleEvent.Line(mon.entityId, BattleLine.CONFUSION, listOf(3))
       }
     }
     if (StatusCondition.isParalyzed(mon.status) && battle.rng.accuracyRoll() <= 25) {
+      own()
+      events += BattleEvent.Line(mon.entityId, BattleLine.PARALYZED, listOf(0))
       events += BattleEvent.CantMove(mon.entityId, CantMoveReason.PARALYZED)
       return false
     }
@@ -277,7 +303,7 @@ constructor(
 
     if (defender.protectedThisTurn && move.hasFlag(MoveFlag.PROTECT_AFFECTED)) {
       events += BattleEvent.Protected(defender.entityId)
-      events += BattleEvent.MoveFailed(attacker.entityId, moveId)
+      if (move.hasFlag(MoveFlag.EXPLOSION)) explode(attacker, events)
       return
     }
     if (move.effect == MoveEffect.DREAM_EATER && !StatusCondition.isAsleep(defender.status)) {
@@ -308,10 +334,12 @@ constructor(
       return
     }
 
+    val explodes = move.hasFlag(MoveFlag.EXPLOSION) || move.effect == MoveEffect.EXPLOSION
     val effectiveType = moveType(battle, attacker, move)
     val effectiveness = effectivenessAgainst(effectiveType, defender)
     if (effectiveness == 0 && move.effect != MoveEffect.OHKO) {
-      events += BattleEvent.MoveFailed(attacker.entityId, moveId)
+      events += BattleEvent.Immune(defender.entityId)
+      if (explodes) explode(attacker, events)
       return
     }
     if (!accuracyCheck(battle, action, move, events)) {
@@ -320,6 +348,7 @@ constructor(
         val wouldDeal = hit(battle, action, move, effectiveType, effectiveness, powerOf(battle, action, move)).damage
         loseHp(attacker, (wouldDeal / 2).coerceAtLeast(1), events)
       }
+      if (explodes) explode(attacker, events)
       return
     }
 
@@ -366,8 +395,10 @@ constructor(
       }
       val result = hit(battle, action, move, effectiveType, effectiveness, power)
       var damage = result.damage
+      var endured = false
       if (damage >= defender.currentHp) {
         val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring
+        endured = survive && defender.enduring
         damage = if (survive) (defender.currentHp - 1).coerceAtLeast(0) else defender.currentHp
       }
       defender.currentHp -= damage
@@ -377,6 +408,7 @@ constructor(
       lastCrit = result.crit
       struck++
       events += BattleEvent.DamageDealt(defender.entityId, defender.currentHp, result.crit, effectiveness)
+      if (endured) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
     }
     if (struck > 1) events += BattleEvent.MultiHit(attacker.entityId, struck)
     if (struck == 0) return
@@ -404,15 +436,19 @@ constructor(
       MoveEffect.STRUGGLE -> loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events)
       MoveEffect.ABSORB, MoveEffect.DREAM_EATER ->
           healHp(attacker, (totalDamage * (move.argumentValue ?: 50) / 100).coerceAtLeast(1), events)
-      MoveEffect.EXPLOSION -> {
-        attacker.currentHp = 0
-        events += BattleEvent.TurnEffect(attacker.entityId)
-        events += BattleEvent.HpChanged(attacker.entityId, 0)
-        events += BattleEvent.Fainted(attacker.entityId)
-      }
       else -> Unit
     }
+    if (explodes) explode(attacker, events)
     secondaryEffects(battle, action, move, events)
+  }
+
+  /** Explosion and Self-Destruct: the user faints whatever happened to the target. */
+  private fun explode(attacker: BattleMonState, events: MutableList<BattleEvent>) {
+    if (attacker.fainted) return
+    attacker.currentHp = 0
+    events += BattleEvent.TurnEffect(attacker.entityId)
+    events += BattleEvent.HpChanged(attacker.entityId, 0)
+    events += BattleEvent.Fainted(attacker.entityId)
   }
 
   private fun dealFixed(action: TurnAction, amount: Int, events: MutableList<BattleEvent>) {
@@ -561,7 +597,10 @@ constructor(
     val crit =
         move.hasFlag(MoveFlag.ALWAYS_CRIT) ||
             battle.rng.critRoll(CRIT_DENOMINATORS[critStage.coerceIn(0, CRIT_DENOMINATORS.lastIndex)])
-    var dmg = baseDamage(attacker, defender, power, physical, crit, battle.rng, explosion = move.effect == MoveEffect.EXPLOSION)
+    var dmg =
+        baseDamage(
+            attacker, defender, power, physical, crit, battle.rng,
+            explosion = move.hasFlag(MoveFlag.EXPLOSION) || move.effect == MoveEffect.EXPLOSION)
     if (physical && StatusCondition.isBurned(attacker.status)) dmg /= 2
     val side = battle.sideOf(defender)
     if (!crit && ((physical && side.reflectTurns > 0) || (!physical && side.lightScreenTurns > 0))) dmg /= 2
@@ -695,8 +734,16 @@ constructor(
           applyStage(action, StageEffect(stat, sign * stages, extra.self), events)
         }
       }
-      MoveAdditionalEffect.WRAP -> if (target.trappedTurns == 0) target.trappedTurns = 2 + battle.rng.pick(4)
-      MoveAdditionalEffect.PREVENT_ESCAPE, MoveAdditionalEffect.TRAP_BOTH -> if (target.trappedTurns == 0) target.trappedTurns = 99
+      MoveAdditionalEffect.WRAP ->
+          if (target.trappedTurns == 0) {
+            target.trappedTurns = 2 + battle.rng.pick(4)
+            target.trappingMoveId = move.id
+          }
+      MoveAdditionalEffect.PREVENT_ESCAPE, MoveAdditionalEffect.TRAP_BOTH ->
+          if (target.trappedTurns == 0) {
+            target.trappedTurns = 99
+            events += BattleEvent.Line(target.entityId, BattleLine.NO_ESCAPE)
+          }
       MoveAdditionalEffect.RECHARGE -> attacker.mustRecharge = true
       MoveAdditionalEffect.RECOIL_HP_25 -> loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events)
       MoveAdditionalEffect.REMOVE_STATUS -> {
@@ -711,14 +758,17 @@ constructor(
       MoveAdditionalEffect.SUN -> setWeather(battle, Weather.SUN, events)
       MoveAdditionalEffect.SANDSTORM -> setWeather(battle, Weather.SANDSTORM, events)
       MoveAdditionalEffect.HAIL -> setWeather(battle, Weather.HAIL, events)
-      MoveAdditionalEffect.HAZE -> {
-        for (stat in BattleStat.entries) {
-          attacker.changeStage(stat, -attacker.stage(stat))
-          defender.changeStage(stat, -defender.stage(stat))
-        }
-      }
+      MoveAdditionalEffect.HAZE -> haze(attacker, defender, events)
       MoveAdditionalEffect.AROMATHERAPY, MoveAdditionalEffect.HEAL_TEAM -> cureStatus(attacker, events)
       else -> Unit
+    }
+  }
+
+  private fun haze(attacker: BattleMonState, defender: BattleMonState, events: MutableList<BattleEvent>) {
+    for (mon in listOf(attacker, defender)) {
+      var any = false
+      for (stat in BattleStat.entries) if (mon.changeStage(stat, -mon.stage(stat)) != 0) any = true
+      if (any) events += BattleEvent.Line(mon.entityId, BattleLine.STATS_CLEARED)
     }
   }
 
@@ -738,7 +788,6 @@ constructor(
     val targetsFoe = move.target != MoveTarget.USER && move.target != MoveTarget.FIELD
     if (targetsFoe && defender.protectedThisTurn && move.hasFlag(MoveFlag.PROTECT_AFFECTED)) {
       events += BattleEvent.Protected(defender.entityId)
-      events += BattleEvent.MoveFailed(attacker.entityId, moveId)
       return
     }
     if (targetsFoe && defender.semiInvulnerable && move.accuracy > 0) {
@@ -795,10 +844,14 @@ constructor(
           if (StatusCondition.hasAny(defender.status) || defender.drowsyTurns > 0) return fail()
           if (!accurate()) return
           defender.drowsyTurns = 2
+          events += BattleEvent.Line(defender.entityId, BattleLine.DROWSY)
           return
         }
         if (status == 0) return fail()
-        if (effectivenessAgainst(move.type, defender) == 0) return fail()
+        if (effectivenessAgainst(move.type, defender) == 0) {
+          events += BattleEvent.Immune(defender.entityId)
+          return
+        }
         if (!canReceiveStatus(battle, attacker, defender, status)) return fail()
         if (!accurate()) return
         inflictStatus(battle, attacker, defender, status, events)
@@ -891,12 +944,7 @@ constructor(
         if (side.mistTurns > 0) return fail()
         side.mistTurns = SCREEN_TURNS
       }
-      MoveEffect.HAZE -> {
-        for (stat in BattleStat.entries) {
-          attacker.changeStage(stat, -attacker.stage(stat))
-          defender.changeStage(stat, -defender.stage(stat))
-        }
-      }
+      MoveEffect.HAZE -> haze(attacker, defender, events)
       MoveEffect.FOCUS_ENERGY, MoveEffect.LASER_FOCUS -> {
         if (attacker.focusEnergy) return fail()
         attacker.focusEnergy = true
@@ -923,6 +971,7 @@ constructor(
       MoveEffect.INGRAIN -> {
         if (attacker.ingrained) return fail()
         attacker.ingrained = true
+        events += BattleEvent.Line(attacker.entityId, BattleLine.ROOTED)
       }
       MoveEffect.WISH -> {
         if (attacker.wishTurns > 0) return fail()
@@ -939,11 +988,13 @@ constructor(
       MoveEffect.MEAN_LOOK -> {
         if (defender.trappedTurns > 0) return fail()
         defender.trappedTurns = 99
+        events += BattleEvent.Line(defender.entityId, BattleLine.NO_ESCAPE)
       }
       MoveEffect.LOCK_ON -> attacker.lockedOn = true
       MoveEffect.FORESIGHT, MoveEffect.MIRACLE_EYE -> {
         if (defender.identified) return fail()
         defender.identified = true
+        events += BattleEvent.Line(defender.entityId, BattleLine.IDENTIFIED, listOf(move.id))
       }
       MoveEffect.NIGHTMARE -> {
         if (!StatusCondition.isAsleep(defender.status) || defender.nightmare) return fail()
@@ -1040,11 +1091,13 @@ constructor(
     if (target.fainted || target.confusionTurns > 0) return
     if (source !== target && battle.sideOf(target).safeguardTurns > 0) return
     target.confusionTurns = 2 + battle.rng.pick(4)
+    events += BattleEvent.Line(target.entityId, BattleLine.CONFUSION, listOf(0))
   }
 
   private fun seed(source: BattleMonState, target: BattleMonState, events: MutableList<BattleEvent>) {
     if (target.leechSeeded || target.species.hasType(PokemonType.GRASS)) return
     target.leechSeeded = true
+    events += BattleEvent.Line(target.entityId, BattleLine.SEEDED, listOf(0))
   }
 
   private fun cureStatus(mon: BattleMonState, events: MutableList<BattleEvent>) {
@@ -1119,8 +1172,14 @@ constructor(
                 else -> false
               }
           if (hurt && !mon.semiInvulnerable) {
+            mon.currentHp = (mon.currentHp - (mon.maxHp / 16).coerceAtLeast(1)).coerceAtLeast(0)
             events += BattleEvent.TurnEffect(mon.entityId)
-            loseHp(mon, (mon.maxHp / 16).coerceAtLeast(1), events)
+            events +=
+                BattleEvent.Line(
+                    mon.entityId,
+                    BattleLine.WEATHER_DAMAGE,
+                    listOf(battle.weather?.wireValue ?: 0, mon.currentHp))
+            if (mon.fainted) events += BattleEvent.Fainted(mon.entityId)
           }
         }
       }
@@ -1129,9 +1188,17 @@ constructor(
     for (mon in order) {
       if (mon.fainted) continue
       val other = battle.opponentOf(mon)
-      if (mon.ingrained && mon.currentHp < mon.maxHp) {
+      // Each line below carries the new hp, so the client moves the bar from the line itself.
+      fun hurt(amount: Int, line: BattleLine, prefix: List<Int> = emptyList(), suffix: List<Int> = emptyList()) {
+        mon.currentHp = (mon.currentHp - amount.coerceAtLeast(1)).coerceAtLeast(0)
         events += BattleEvent.TurnEffect(mon.entityId)
-        healHp(mon, (mon.maxHp / 16).coerceAtLeast(1), events)
+        events += BattleEvent.Line(mon.entityId, line, prefix + mon.currentHp + suffix)
+        if (mon.fainted) events += BattleEvent.Fainted(mon.entityId)
+      }
+      if (mon.ingrained && mon.currentHp < mon.maxHp) {
+        mon.currentHp = (mon.currentHp + (mon.maxHp / 16).coerceAtLeast(1)).coerceAtMost(mon.maxHp)
+        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.Line(mon.entityId, BattleLine.ROOT_HEAL, listOf(mon.currentHp))
       }
       if (mon.wishTurns > 0) {
         mon.wishTurns--
@@ -1142,37 +1209,34 @@ constructor(
       }
       if (mon.leechSeeded && !other.fainted) {
         val drained = (mon.maxHp / 8).coerceAtLeast(1).coerceAtMost(mon.currentHp)
-        events += BattleEvent.TurnEffect(other.entityId)
-        loseHp(mon, drained, events)
+        hurt(drained, BattleLine.LEECH_SEED_DRAIN, suffix = listOf(0xFF, 0))
         healHp(other, drained, events)
       }
       if (mon.fainted) continue
       if (StatusCondition.isBadlyPoisoned(mon.status)) {
         mon.toxicCounter = (mon.toxicCounter + 1).coerceAtMost(15)
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp * mon.toxicCounter / 16).coerceAtLeast(1), events)
+        hurt(mon.maxHp * mon.toxicCounter / 16, BattleLine.POISON_DAMAGE)
       } else if (StatusCondition.isPoisoned(mon.status)) {
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp / 8).coerceAtLeast(1), events)
+        hurt(mon.maxHp / 8, BattleLine.POISON_DAMAGE)
       } else if (StatusCondition.isBurned(mon.status)) {
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp / 8).coerceAtLeast(1), events)
+        hurt(mon.maxHp / 8, BattleLine.BURN_DAMAGE)
       }
       if (mon.fainted) continue
       if (mon.nightmare && StatusCondition.isAsleep(mon.status)) {
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp / 4).coerceAtLeast(1), events)
+        hurt(mon.maxHp / 4, BattleLine.NIGHTMARE_DAMAGE)
       }
       if (mon.fainted) continue
-      if (mon.cursed) {
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp / 4).coerceAtLeast(1), events)
-      }
+      if (mon.cursed) hurt(mon.maxHp / 4, BattleLine.CURSE_DAMAGE, prefix = listOf(0))
       if (mon.fainted) continue
       if (mon.trappedTurns in 1..98) {
         mon.trappedTurns--
-        events += BattleEvent.TurnEffect(mon.entityId)
-        loseHp(mon, (mon.maxHp / 16).coerceAtLeast(1), events)
+        if (mon.trappedTurns == 0) {
+          events += BattleEvent.TurnEffect(mon.entityId)
+          events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.currentHp, mon.trappingMoveId))
+          mon.trappingMoveId = 0
+        } else {
+          hurt(mon.maxHp / 16, BattleLine.TRAP, prefix = listOf(1), suffix = listOf(mon.trappingMoveId))
+        }
       }
       if (mon.fainted) continue
       if (mon.drowsyTurns > 0) {

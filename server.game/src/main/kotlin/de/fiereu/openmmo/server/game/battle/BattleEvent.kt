@@ -58,7 +58,24 @@ sealed interface BattleEvent {
 
   data class MultiHit(val attackerId: Long, val hits: Int) : BattleEvent
 
+  /** The monster left the field of view (Fly, Dig...) or came back. */
+  data class Hidden(val targetId: Long, val hidden: Boolean) : BattleEvent
+
+  /**
+   * One of the client's fixed battle lines, with its body values; lines that carry an hp move the
+   * bar as well, so no separate [HpChanged] is needed for them.
+   */
+  data class Line(
+      val targetId: Long,
+      val line: de.fiereu.openmmo.net.game.packets.battle.BattleLine,
+      val values: List<Int> = emptyList(),
+  ) : BattleEvent
+
+  /** The target's Protect blocked the move: the client prints "{00} protected itself!". */
   data class Protected(val targetId: Long) : BattleEvent
+
+  /** The move's type cannot touch the target: "It doesn't affect {00}...". */
+  data class Immune(val targetId: Long) : BattleEvent
 }
 
 enum class CantMoveReason {

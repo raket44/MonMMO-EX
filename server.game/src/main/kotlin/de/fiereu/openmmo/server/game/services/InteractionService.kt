@@ -116,9 +116,21 @@ constructor(
         }
     if (bgEvent == null) {
       // Pokecenter PCs are engine tiles (MB_PC), not bg events - the behavior is the trigger.
-      if (currentMap.tileAt(facingX, facingY)?.behavior ==
-          de.fiereu.openmmo.common.enums.TileBehavior.PC) {
+      val behavior = currentMap.tileAt(facingX, facingY)?.behavior
+      if (behavior == de.fiereu.openmmo.common.enums.TileBehavior.PC) {
         openPcStorage(session, state, stored)
+        return
+      }
+      // Facing water on foot is the ROM's Surf prompt (field script, not a map event).
+      if (behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER && !state.surfing) {
+        val surf =
+            try {
+              scriptRegistry.forLabel("EventScript_UseSurf", gbaScriptSource(state.regionId))
+            } catch (e: ScriptResolutionException) {
+              log.info { "Surf prompt unavailable: ${e.message}" }
+              null
+            }
+        if (surf != null) runScript(session, state, surf, entityId = -1)
         return
       }
       log.debug { "Tile interaction at ($facingX, $facingY) has no bg event" }

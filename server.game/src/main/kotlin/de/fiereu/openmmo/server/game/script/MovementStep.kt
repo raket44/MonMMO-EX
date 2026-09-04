@@ -84,6 +84,8 @@ enum class MovementStep(
           "delay_8" -> DELAY_8
           "delay_16" -> DELAY_16
           "set_invisible" -> SET_INVISIBLE
+          // The felled Cut tree vanishes in place; the script removes the object right after.
+          "cut_tree" -> SET_INVISIBLE
           // The rest are approximations onto capture-verified action bytes: slow walks play at
           // normal speed, in-place walks at the faster tempo, and pure animations (emotes, the
           // nurse's bow) become a beat of delay so sequence timing survives.

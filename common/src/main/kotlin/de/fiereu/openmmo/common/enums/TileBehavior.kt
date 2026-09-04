@@ -25,7 +25,9 @@ enum class TileBehavior {
   EAST_ARROW_WARP,
   WEST_ARROW_WARP,
   /** A storage PC (MB_PC): pressing A while facing it opens the client's storage UI. */
-  PC;
+  PC,
+  /** Surfable water (pond, deep, ocean, seaweed): blocked on foot, open while surfing. Appended - ordinals are baked into generated maps. */
+  WATER;
 
   /** The direction the player must walk while standing here to be warped. */
   val warpsWhenWalking: Direction?

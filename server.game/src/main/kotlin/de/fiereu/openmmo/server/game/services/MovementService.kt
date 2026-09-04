@@ -342,7 +342,7 @@ constructor(
       // door warp. A claim further than one tile (or into a wall) is still a real desync.
       val adjacent =
           Math.abs(msg.x - fromX) + Math.abs(msg.y - fromY) == 1 &&
-              isWalkable(currentMap, msg.x, msg.y)
+              isWalkable(currentMap, msg.x, msg.y, state.surfing)
       if (!adjacent) {
         log.info {
           "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
@@ -427,7 +427,7 @@ constructor(
     val stepsIntoWarp =
         when (targetRule?.fire) {
           WarpRules.Fire.STEP -> targetRule.press == msg.direction
-          WarpRules.Fire.CONTACT -> state.creative || isWalkable(currentMap, toX, toY)
+          WarpRules.Fire.CONTACT -> state.creative || isWalkable(currentMap, toX, toY, state.surfing)
           // STAND fixtures never fire from the step toward them; no rule = not a warp fixture.
           WarpRules.Fire.STAND,
           null -> false
@@ -440,7 +440,7 @@ constructor(
     }
 
     // Creative admins walk through anything; the client shows the wall, the server allows it.
-    if (!state.creative && !isWalkable(currentMap, toX, toY)) {
+    if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing)) {
       log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
       sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
       return
@@ -449,6 +449,7 @@ constructor(
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
     state.x = toX.toShort()
     state.y = toY.toShort()
+    dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
 
     // The client already walked itself there, so only the observers need telling.
     presenceService.broadcastToObservers(
@@ -559,10 +560,21 @@ constructor(
     )
   }
 
-  private fun isWalkable(map: MapDef, x: Int, y: Int): Boolean {
+  private fun isWalkable(map: MapDef, x: Int, y: Int, surfing: Boolean = false): Boolean {
     if (x !in 0 until map.width || y !in 0 until map.height) return false
     val tile = map.tileAt(x, y) ?: return true
+    // Water blocks feet and carries a surfer.
+    if (tile.behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER) return surfing
     return !tile.blocksMovement()
+  }
+
+  /** Stepping from water onto land ends the surf: the client's own bit clears the same way. */
+  private fun dismountIfAshore(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int) {
+    if (!state.surfing) return
+    if (map.tileAt(x, y)?.behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER) return
+    state.surfing = false
+    ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0))
+    log.info { "Surf ended for char=$charId at ($x, $y)" }
   }
 
   private fun edgeTransition(

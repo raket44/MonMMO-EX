@@ -162,6 +162,7 @@ constructor(
     // riding never survives one. The arrival spawn already carries transportation 0; clearing
     // the flag keeps the server's idea of the player in step with what the client will draw.
     state?.riding = false
+    state?.surfing = false
 
     // Only fade out and send the map. onRequestPlayer does the arrival and fades back in.
     ctx.send(MapTransitionPacket())

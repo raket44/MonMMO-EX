@@ -307,6 +307,31 @@ internal constructor(
         .startTrainerBattle(session, region, trainerId)
   }
 
+  /** checkpartymove: the party slot of the first monster knowing [moveId], PARTY_SIZE (6) if none. */
+  fun partyIndexWithMove(moveId: Int): Int {
+    val party = characterId?.let { characters?.getCharacter(it)?.pokemon }.orEmpty()
+    val index = party.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
+    return if (index < 0) de.fiereu.openmmo.common.MAX_PARTY_SIZE else index
+  }
+
+  /**
+   * FLDEFF_USE_SURF: the player mounts (transportation bit 0x01, client f.ti.J10) and takes the
+   * step onto the water it faces. Land clears the bit again in MovementService.
+   */
+  suspend fun startSurfing() {
+    state.riding = false
+    state.surfing = true
+    session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(playerEntityId, SURF_TRANSPORTATION.toByte()))
+    val step =
+        when (state.facingDirection) {
+          Direction.UP -> MovementStep.WALK_UP
+          Direction.LEFT -> MovementStep.WALK_LEFT
+          Direction.RIGHT -> MovementStep.WALK_RIGHT
+          else -> MovementStep.WALK_DOWN
+        }
+    movement.moveSelf(session, state, listOf(step))
+  }
+
   /** How many party monsters can still fight - the vanilla double-battle entry gate reads it. */
   internal fun ablePartyCount(): Int =
       characterId?.let { id -> characters?.getCharacter(id)?.pokemon?.count { it.hp > 0 } } ?: 0
@@ -474,3 +499,6 @@ internal constructor(
     const val STORY_PLAYER_UNAVAILABLE = "Story player service is unavailable"
   }
 }
+
+/** Transportation byte while surfing: bit 0x01, client f.ti.J10. */
+private const val SURF_TRANSPORTATION = 0x01

@@ -252,6 +252,24 @@ class InterpretedScript(
           state.pc = target.pc
         }
         "end" -> return
+        "checkpartymove" -> {
+          val moveId = (instruction.arg(0) as IntArg).value
+          ctx.setVar(namespaced("VAR_RESULT"), ctx.partyIndexWithMove(moveId))
+          state.pc++
+        }
+        "dofieldeffect" -> {
+          // Surf is the one field effect with a server-side state; the rest (Cut's swing, the
+          // flash, the rock smash) are client visuals this dialog channel cannot trigger yet, and
+          // the scripts around them already carry the outcome (removeobject, the message).
+          if (instruction.arg(0).token == "FLDEFF_USE_SURF") tracedWait(ctx, "surf") { ctx.startSurfing() }
+          state.pc++
+        }
+        "multichoicedefault",
+        "multichoicegrid" -> {
+          tracedWait(ctx, "dialog choice") { runMultichoice(ctx, state, instruction) }
+          state.pc++
+        }
+        in InterpreterSupport.BUFFER_COMMANDS -> state.pc++
         in InterpreterSupport.NOOP_COMMANDS -> state.pc++
         "delay" -> {
           val frames = (instruction.arg(0) as? IntArg)?.value ?: 0
@@ -786,17 +804,29 @@ class InterpretedScript(
       state: RuntimeState,
       instruction: ScriptInstruction,
   ) {
-    check(instruction.arg(2).token == "MULTICHOICE_YES_NO") {
-      "Script ${program.id.stable} cannot run multichoice menu ${instruction.arg(2).token} " +
-          "from `${instruction.sourceLine}`"
-    }
-    val line =
-        state.currentMessage
-            ?: error(
-                "Script ${program.id.stable} has no current message for " +
-                    "`${instruction.sourceLine}`")
-    // Multichoice answers are list indices: YES is 0, NO is 1.
-    ctx.setVar(namespaced("VAR_RESULT"), if (ctx.askYesNo(line)) 0 else 1)
+    val menu = instruction.arg(2).token
+    val line = state.currentMessage
+    // Multichoice answers are list indices: YES is 0, NO is 1. The client renders the ROM's
+    // yes/no box and its own registry menus (BUILTIN_MENUS); a menu it has no set for behaves as
+    // if B was pressed (MULTI_B_PRESSED) so the script takes its cancel path instead of dying
+    // at resolution time and taking the whole npc with it.
+    val builtin = InterpreterSupport.BUILTIN_MENUS[menu]
+    val result =
+        when {
+          menu == "MULTICHOICE_YES_NO" || menu == "MULTI_YESNO" -> {
+            checkNotNull(line) { "Script ${program.id.stable} has no current message for `${instruction.sourceLine}`" }
+            if (ctx.askYesNo(line)) 0 else 1
+          }
+          builtin != null && line != null -> {
+            val pick = ctx.builtinMenu(line, builtin)
+            if (pick <= 0) MULTI_B_PRESSED else pick - 1
+          }
+          else -> {
+            log.warn { "Script ${program.id.stable}: no client menu for $menu, answering as B pressed" }
+            MULTI_B_PRESSED
+          }
+        }
+    ctx.setVar(namespaced("VAR_RESULT"), result)
   }
 
   private fun multichoiceFollows(state: RuntimeState): Boolean {
@@ -807,7 +837,7 @@ class InterpretedScript(
         pc++
         continue
       }
-      return command == "multichoice"
+      return command == "multichoice" || command == "multichoicedefault" || command == "multichoicegrid"
     }
     return false
   }
@@ -1348,3 +1378,6 @@ internal object TrainerStoryState {
   fun rematchReady(namespace: String, baseTrainerId: Int): String =
       "$namespace/trainer/$baseTrainerId/rematch-ready"
 }
+
+/** The GBA answer when a multichoice is cancelled with B. */
+private const val MULTI_B_PRESSED = 127

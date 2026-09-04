@@ -205,6 +205,10 @@ class ScriptSupportAnalyzer(
           "setobjectxyperm",
           "warp" -> args.size == 3
           "multichoice" -> args.size == 4
+          "multichoicedefault",
+          "multichoicegrid" -> args.size == 5
+          "checkpartymove" -> args.size == 1
+          in InterpreterSupport.BUFFER_COMMANDS -> args.size == 2
           "checkplayergender" -> args.isEmpty()
           "end",
           "return",
@@ -263,9 +267,6 @@ class ScriptSupportAnalyzer(
     if (instruction.command == "specialvar" &&
         args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS) {
       return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
-    }
-    if (instruction.command == "multichoice" && args[2].token != "MULTICHOICE_YES_NO") {
-      return sourceReason(instruction, "unsupported multichoice menu ${args[2].token}")
     }
     if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {
       if (items.byScriptConstant(args[0].token) == null) {
@@ -530,6 +531,9 @@ class ScriptSupportAnalyzer(
             "special",
             "specialvar",
             "multichoice",
+            "multichoicedefault",
+            "multichoicegrid",
+            "checkpartymove",
             "removeobject",
             "addobject",
             "checkplayergender",

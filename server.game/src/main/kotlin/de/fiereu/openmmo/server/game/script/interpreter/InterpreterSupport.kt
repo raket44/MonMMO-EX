@@ -81,6 +81,19 @@ internal object InterpreterSupport {
           "GetPlayerBigGuyGirlString",
       )
 
+  /**
+   * String-buffer commands with no dialog channel to carry them yet: the ROM line renders its
+   * variable unfilled. Cosmetic, against Cut and Surf not working at all.
+   */
+  val BUFFER_COMMANDS = setOf("bufferpartymonnick", "buffermovename")
+
+  /**
+   * ROM multichoice menus the client draws from its own registry (category 10 sets, f/Lx.R40):
+   * menu constant -> set id. Sets are matched by the ROM text ids they list; unmatched menus
+   * answer as B pressed. Only the yes/no set is verified so far.
+   */
+  val BUILTIN_MENUS: Map<String, Int> = emptyMap()
+
   /** Specials the executor implements for real. */
   val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty")
 

@@ -92,6 +92,8 @@ data class PlayerState(
      * doors lead indoors, and vanilla kicks you off the bike at the doorway.
      */
     @field:Volatile var riding: Boolean = false,
+    /** Surfing: transportation bit 0x01 (client f.ti.J10, which it clears itself off water). */
+    @field:Volatile var surfing: Boolean = false,
     /**
      * The emergence step: after this arrival's LoadEntity, the server sends an EntityMove one tile
      * in this direction and the CLIENT walks it - the client's 0xE4 handler routes any entity, the

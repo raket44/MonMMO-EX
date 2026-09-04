@@ -44,7 +44,10 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
     val battleBoxExtraSlots = field(S8, CharacterInfo::battleBoxExtraSlots)
     val templateAmount = field(S8, CharacterInfo::templateAmount)
     field(S8) { 0 }
-    // Captured markers precede the complete position block.
+    // Captured markers precede the complete position block. The client (f/tK0.kq) discards the
+    // three marker bytes, then reads [region u8][bank u8][map u8][pad u8][x s16][y s16][pad][pad]
+    // into f/ZZ.m30/AJ1/i1/h11/Vo0 - the s16 map's high byte is its pad. Verified against the
+    // 32710 capture (region 2, bank 133, map 1, 782/749).
     field(S8, CharacterInfo::positionRegionId)
     field(S8) { -1 }
     field(S8) { 2 }

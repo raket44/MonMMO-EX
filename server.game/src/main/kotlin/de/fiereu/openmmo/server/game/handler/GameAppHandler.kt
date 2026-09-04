@@ -144,6 +144,15 @@ constructor(
 
     onSuspend<ContainerActionPacket> { event -> inventoryActionService.onContainerAction(event) }
     on<PartyReorderPacket> { event -> inventoryActionService.onPartyReorder(event) }
+    on<de.fiereu.openmmo.net.game.packets.ChannelChangePacket> { event ->
+      // The Change Channel window. This server runs one channel, so the switch is declined in the
+      // client's own words instead of dropping the frame.
+      val channel = event.packet.channel + 1
+      log.info { "Channel change to ch.$channel preferred=${event.packet.preferred} from ${event.session}" }
+      event.session.send(
+          de.fiereu.openmmo.server.game.services.notice(
+              "Channel $channel is not available: this server runs a single channel."))
+    }
     on<de.fiereu.openmmo.net.game.packets.PartyMemberSelectPacket> { event ->
       presenceService.onPartyMemberSelect(event)
     }

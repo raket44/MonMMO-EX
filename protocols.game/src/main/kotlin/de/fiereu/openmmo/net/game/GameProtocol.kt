@@ -73,7 +73,8 @@ object GameProtocol : Protocol() {
     c2s<PartyMemberSelectPacket>(0x11u, PartyMemberSelectPacketCodec)
     s2c<NpcUpdatePacket>(0x11u, NpcUpdatePacketCodec)
 
-    bidi<NpcSpawnPacket>(0x12u, NpcSpawnPacketCodec)
+    c2s<ChannelChangePacket>(0x12u, ChannelChangePacketCodec)
+    s2c<NpcSpawnPacket>(0x12u, NpcSpawnPacketCodec)
 
     bidi<PokemonContainerPacket>(0x13u, PokemonContainerPacketCodec)
 

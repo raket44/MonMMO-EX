@@ -85,9 +85,22 @@ object RetailEncounters {
    * Johto; the server's map regions share the 0/1 assignments it hosts.
    */
   fun entriesFor(sourceName: String, regionId: Int): List<Entry> =
-      byLocation[normalize(sourceName.substringBefore('_'))].orEmpty().filter {
-        it.regionId == regionId
-      }
+      locationKey(sourceName)?.let { key -> byLocation[key].orEmpty().filter { it.regionId == regionId } }.orEmpty()
+
+  /**
+   * The retail location a decomp map name belongs to. Names are `Area_Sub_Floor` chains: the whole
+   * chain, then every shorter run of its segments, is tried longest first, so `PokemonTower_3F`
+   * finds "Pokémon Tower" and `SevenIsland_SevaultCanyon_Entrance` finds "Sevault Canyon" rather
+   * than Seven Island.
+   */
+  private fun locationKey(sourceName: String): String? {
+    val parts = sourceName.split('_').filter { it.isNotEmpty() }
+    val candidates = mutableListOf<String>()
+    for (length in parts.size downTo 1) {
+      for (start in 0..parts.size - length) candidates += parts.subList(start, start + length).joinToString("")
+    }
+    return candidates.map(::normalize).firstOrNull { it in byLocation }
+  }
 
   /**
    * The rollable wild pool for a map under the given conditions. Base forms only - a form entry
@@ -116,5 +129,18 @@ object RetailEncounters {
   private fun percentWeight(rarity: String): Int? =
       rarity.removeSuffix("%").toDoubleOrNull()?.let { (it * 100).toInt() }?.takeIf { it > 0 }
 
-  private fun normalize(name: String): String = name.lowercase().filter { it.isLetterOrDigit() }
+  /** Every (region, location name) the retail dump knows, for coverage reports. */
+  fun locationNames(): Set<Pair<Int, String>> =
+      byLocation.values.flatten().map { it.regionId to it.locationName }.toSet()
+
+  fun sameLocation(sourceName: String, locationName: String): Boolean =
+      locationKey(sourceName) == normalize(locationName)
+
+  /** Lower-case ASCII letters and digits: "Pokémon Tower" and `PokemonTower` meet in the middle. */
+  private fun normalize(name: String): String =
+      java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+          .lowercase()
+          .filter { it in 'a'..'z' || it in '0'..'9' }
+          // The dex says "Three Isle Port" where the decomp says ThreeIsland_Port.
+          .replace("island", "isle")
 }

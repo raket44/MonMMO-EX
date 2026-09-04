@@ -161,6 +161,17 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                   .toShort()
           acc.subEvents += BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
         }
+        is BattleEvent.AbilityShown ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(
+                    null,
+                    null,
+                    BattleEventBody.AbilityPopup(
+                        abilityId = event.ability.ordinal,
+                        kind = (if (event.otherId != 0L) 1 else 0) or (if (event.moveId != 0) 2 else 0),
+                        self = event.targetId,
+                        other = event.otherId,
+                        moveId = event.moveId))
         is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
         is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
         is BattleEvent.Line ->

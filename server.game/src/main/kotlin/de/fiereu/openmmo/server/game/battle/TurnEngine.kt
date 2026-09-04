@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.openmmo.common.StatusCondition
+import de.fiereu.openmmo.common.enums.Ability
 import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
 import de.fiereu.openmmo.common.enums.MoveEffect
 import de.fiereu.openmmo.common.enums.MoveFlag
@@ -102,18 +103,124 @@ constructor(
   }
 
   private fun order(battle: BattleInstance, a: TurnAction, b: TurnAction): List<TurnAction> {
-    val pa = a.move?.priority ?: 0
-    val pb = b.move?.priority ?: 0
+    fun priority(action: TurnAction): Int {
+      val move = action.move ?: return 0
+      return move.priority + Abilities.priorityBonus(action.attacker, move)
+    }
+    val pa = priority(a)
+    val pb = priority(b)
     if (pa != pb) return if (pa > pb) listOf(a, b) else listOf(b, a)
-    val sa = speedOf(a.attacker)
-    val sb = speedOf(b.attacker)
+    val sa = speedOf(battle, a.attacker)
+    val sb = speedOf(battle, b.attacker)
     if (sa != sb) return if (sa > sb) listOf(a, b) else listOf(b, a)
     return if (battle.rng.coinFlip()) listOf(a, b) else listOf(b, a)
   }
 
-  private fun speedOf(mon: BattleMonState): Int {
-    val speed = mon.effective(BattleStat.SPEED)
-    return if (StatusCondition.isParalyzed(mon.status)) speed / 4 else speed
+  private fun speedOf(battle: BattleInstance, mon: BattleMonState): Int {
+    var speed = mon.effective(BattleStat.SPEED) * Abilities.speedMultiplierPercent(mon, weather(battle)) / 100
+    if (StatusCondition.isParalyzed(mon.status) && Abilities.paralysisSlows(mon)) speed /= 4
+    return speed
+  }
+
+  /** The weather as it acts on the field: Air Lock and Cloud Nine switch its effects off. */
+  private fun weather(battle: BattleInstance): Weather? =
+      if (Abilities.weatherNegated(battle.activeMon(), battle.opponentMon())) null else battle.weather
+
+  /** A monster's own stat stage change (an ability's doing), reported like any other. */
+  private fun ownStage(mon: BattleMonState, stat: BattleStat, delta: Int, events: MutableList<BattleEvent>): Boolean {
+    if (mon.fainted) return false
+    val applied = mon.changeStage(stat, if (mon.ability == Ability.CONTRARY) -delta else if (mon.ability == Ability.SIMPLE) delta * 2 else delta)
+    val value = if (stat == BattleStat.ACCURACY || stat == BattleStat.EVASION) 0 else mon.effective(stat)
+    events += BattleEvent.StageChanged(mon.entityId, stat, mon.stage(stat), value, applied, applied == 0)
+    return applied != 0
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Abilities that fire on entering the field
+
+  /** Runs the switch-in abilities of [mon] against the monster facing it. */
+  fun switchIn(battle: BattleInstance, mon: BattleMonState, events: MutableList<BattleEvent>) {
+    if (mon.fainted) return
+    val foe = battle.opponentOf(mon)
+    fun shown(other: Long = 0, moveId: Int = 0) {
+      events += BattleEvent.TurnEffect(mon.entityId)
+      events += BattleEvent.AbilityShown(mon.entityId, mon.ability, other, moveId)
+    }
+    when (mon.ability) {
+      Ability.INTIMIDATE -> {
+        shown(foe.entityId)
+        if (!foe.fainted) {
+          when {
+            foe.ability == Ability.GUARD_DOG -> ownStage(foe, BattleStat.ATTACK, 1, events)
+            Abilities.blocksStatDrop(foe, BattleStat.ATTACK) || foe.ability == Ability.INNER_FOCUS ||
+                foe.ability == Ability.OBLIVIOUS || foe.ability == Ability.OWN_TEMPO || foe.ability == Ability.SCRAPPY -> {
+              events += BattleEvent.AbilityShown(foe.entityId, foe.ability)
+            }
+            else -> {
+              ownStage(foe, BattleStat.ATTACK, -1, events)
+              if (foe.ability == Ability.RATTLED) ownStage(foe, BattleStat.SPEED, 1, events)
+              if (foe.ability == Ability.DEFIANT) ownStage(foe, BattleStat.ATTACK, 2, events)
+              if (foe.ability == Ability.COMPETITIVE) ownStage(foe, BattleStat.SP_ATTACK, 2, events)
+            }
+          }
+        }
+      }
+      Ability.DRIZZLE, Ability.PRIMORDIAL_SEA -> if (battle.weather != Weather.RAIN) { shown(); setWeather(battle, Weather.RAIN, events) }
+      Ability.DROUGHT, Ability.DESOLATE_LAND, Ability.ORICHALCUM_PULSE ->
+          if (battle.weather != Weather.SUN) { shown(); setWeather(battle, Weather.SUN, events) }
+      Ability.SAND_STREAM, Ability.SAND_SPIT -> if (battle.weather != Weather.SANDSTORM) { shown(); setWeather(battle, Weather.SANDSTORM, events) }
+      Ability.SNOW_WARNING -> if (battle.weather != Weather.HAIL) { shown(); setWeather(battle, Weather.HAIL, events) }
+      Ability.PRESSURE, Ability.MOLD_BREAKER, Ability.TURBOBLAZE, Ability.TERAVOLT, Ability.UNNERVE,
+      Ability.AIR_LOCK, Ability.CLOUD_NINE, Ability.COMATOSE, Ability.NEUTRALIZING_GAS -> shown()
+      Ability.SLOW_START -> { mon.slowStartTurns = 5; shown() }
+      Ability.INTREPID_SWORD -> { shown(); ownStage(mon, BattleStat.ATTACK, 1, events) }
+      Ability.DAUNTLESS_SHIELD -> { shown(); ownStage(mon, BattleStat.DEFENSE, 1, events) }
+      Ability.DOWNLOAD -> {
+        shown()
+        val stat = if (foe.effective(BattleStat.DEFENSE) < foe.effective(BattleStat.SP_DEFENSE)) BattleStat.ATTACK else BattleStat.SP_ATTACK
+        ownStage(mon, stat, 1, events)
+      }
+      Ability.TRACE -> {
+        if (foe.ability != Ability.NONE && foe.ability !in UNTRACEABLE) {
+          shown(foe.entityId)
+          mon.ability = foe.ability
+          switchIn(battle, mon, events)
+        }
+      }
+      Ability.ANTICIPATION -> {
+        val dangerous = foe.moves.any { m ->
+          val def = moves.get(m.id.toInt()) ?: return@any false
+          def.power > 0 && (def.effect == MoveEffect.OHKO || effectivenessAgainst(def.type, mon, foe) > TypeChart.NEUTRAL)
+        }
+        if (dangerous) shown()
+      }
+      Ability.FOREWARN -> {
+        val strongest = foe.moves.mapNotNull { moves.get(it.id.toInt()) }.maxByOrNull { it.power }
+        if (strongest != null) {
+          events += BattleEvent.TurnEffect(mon.entityId)
+          events += BattleEvent.Line(foe.entityId, BattleLine.IDENTIFIED, listOf(strongest.id))
+        }
+      }
+      Ability.SCREEN_CLEANER -> {
+        shown()
+        for (side in listOf(battle.playerSide, battle.opponentSide)) { side.reflectTurns = 0; side.lightScreenTurns = 0 }
+      }
+      Ability.SUPERSWEET_SYRUP -> { shown(); if (!foe.fainted) ownStage(foe, BattleStat.EVASION, -1, events) }
+      else -> Unit
+    }
+  }
+
+  /** Whether the player's active monster may run from the wild monster in front of it. */
+  fun canFlee(battle: BattleInstance): Boolean {
+    val runner = battle.activeMon()
+    val blocker = battle.opponentMon()
+    if (runner.ability == Ability.RUN_AWAY || blocker.fainted) return true
+    return when (blocker.ability) {
+      Ability.SHADOW_TAG -> runner.ability == Ability.SHADOW_TAG
+      Ability.ARENA_TRAP -> runner.species.hasType(PokemonType.FLYING) || runner.ability == Ability.LEVITATE
+      Ability.MAGNET_PULL -> !runner.species.hasType(PokemonType.STEEL)
+      else -> true
+    }
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -135,7 +242,7 @@ constructor(
     if (!canMove(battle, attacker, move, events)) return
 
     val continuing = attacker.chargingMoveId == move.id
-    if (!continuing) spendPp(attacker, move, events)
+    if (!continuing) spendPp(attacker, action.defender, move, events)
     else events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slotOf(attacker, move), ppOf(attacker, move))
 
     // Two-turn moves: the first use charges (or hides), the second one strikes.
@@ -154,16 +261,18 @@ constructor(
     }
 
     if (move.power > 0 || isDamagingEffect(move)) {
-      attack(battle, action, move, events)
+      attack(battle, action, move, events, movesLast)
     } else {
       statusMove(battle, action, move, movesLast, events)
     }
   }
 
-  private fun spendPp(attacker: BattleMonState, move: MoveDef, events: MutableList<BattleEvent>) {
+  private fun spendPp(attacker: BattleMonState, defender: BattleMonState, move: MoveDef, events: MutableList<BattleEvent>) {
     val slot = slotOf(attacker, move)
     if (slot >= 0 && attacker.moves[slot].pp > 0) {
-      attacker.moves[slot].pp = (attacker.moves[slot].pp - 1).toByte()
+      // Pressure makes every move aimed at its holder cost one more.
+      val cost = if (defender.ability == Ability.PRESSURE && move.target != MoveTarget.USER && move.target != MoveTarget.FIELD) 2 else 1
+      attacker.moves[slot].pp = (attacker.moves[slot].pp - cost).coerceAtLeast(0).toByte()
     }
     events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slot.coerceAtLeast(0), ppOf(attacker, move))
   }
@@ -192,8 +301,18 @@ constructor(
       events += BattleEvent.CantMove(mon.entityId, CantMoveReason.RECHARGING)
       return false
     }
+    if (mon.ability == Ability.TRUANT) {
+      if (mon.truantLoafs) {
+        mon.truantLoafs = false
+        own()
+        events += BattleEvent.AbilityShown(mon.entityId, Ability.TRUANT)
+        events += BattleEvent.CantMove(mon.entityId, CantMoveReason.RECHARGING)
+        return false
+      }
+      mon.truantLoafs = true
+    }
     if (StatusCondition.isAsleep(mon.status)) {
-      val left = StatusCondition.sleepTurns(mon.status) - 1
+      val left = StatusCondition.sleepTurns(mon.status) - (if (mon.ability == Ability.EARLY_BIRD) 2 else 1)
       mon.status = (mon.status and StatusCondition.SLEEP_MASK.inv()) or left.coerceAtLeast(0)
       if (left > 0) {
         own()
@@ -221,6 +340,10 @@ constructor(
       own()
       events += BattleEvent.Line(mon.entityId, BattleLine.FLINCHED)
       events += BattleEvent.CantMove(mon.entityId, CantMoveReason.FLINCHED)
+      if (mon.ability == Ability.STEADFAST) {
+        events += BattleEvent.AbilityShown(mon.entityId, Ability.STEADFAST)
+        ownStage(mon, BattleStat.SPEED, 1, events)
+      }
       return false
     }
     if (mon.confusionTurns > 0) {
@@ -257,7 +380,7 @@ constructor(
         MoveEffect.SKULL_BASH,
         MoveEffect.RAZOR_WIND,
         MoveEffect.SKY_ATTACK -> true
-        MoveEffect.SOLAR_BEAM -> battle.weather != Weather.SUN
+        MoveEffect.SOLAR_BEAM -> weather(battle) != Weather.SUN
         else -> false
       }
 
@@ -296,6 +419,7 @@ constructor(
       action: TurnAction,
       move: MoveDef,
       events: MutableList<BattleEvent>,
+      movesLast: Boolean = false,
   ) {
     val attacker = action.attacker
     val defender = action.defender
@@ -335,11 +459,26 @@ constructor(
     }
 
     val explodes = move.hasFlag(MoveFlag.EXPLOSION) || move.effect == MoveEffect.EXPLOSION
+    if (explodes && (attacker.ability == Ability.DAMP || defender.ability == Ability.DAMP)) {
+      events += BattleEvent.AbilityShown(if (attacker.ability == Ability.DAMP) attacker.entityId else defender.entityId, Ability.DAMP)
+      events += BattleEvent.MoveFailed(attacker.entityId, moveId)
+      return
+    }
     val effectiveType = moveType(battle, attacker, move)
-    val effectiveness = effectivenessAgainst(effectiveType, defender)
+    val effectiveness = effectivenessAgainst(effectiveType, defender, attacker)
     if (effectiveness == 0 && move.effect != MoveEffect.OHKO) {
       events += BattleEvent.Immune(defender.entityId)
       if (explodes) explode(attacker, events)
+      return
+    }
+    if (absorbedByAbility(battle, action, move, effectiveType, events)) {
+      if (explodes) explode(attacker, events)
+      return
+    }
+    if (Abilities.wonderGuard(defender, attacker, effectiveness, move.power) ||
+        (move.effect == MoveEffect.OHKO && Abilities.sturdy(defender, attacker))) {
+      events += BattleEvent.AbilityShown(defender.entityId, defender.ability)
+      events += BattleEvent.Immune(defender.entityId)
       return
     }
     if (!accuracyCheck(battle, action, move, events)) {
@@ -393,14 +532,17 @@ constructor(
         healHp(defender, defender.maxHp / 4, events)
         return
       }
-      val result = hit(battle, action, move, effectiveType, effectiveness, power)
+      val result = hit(battle, action, move, effectiveType, effectiveness, power, movesLast)
       var damage = result.damage
       var endured = false
+      var sturdy = false
       if (damage >= defender.currentHp) {
-        val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring
+        sturdy = defender.currentHp == defender.maxHp && Abilities.sturdy(defender, attacker)
+        val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring || sturdy
         endured = survive && defender.enduring
         damage = if (survive) (defender.currentHp - 1).coerceAtLeast(0) else defender.currentHp
       }
+      val hpBefore = defender.currentHp
       defender.currentHp -= damage
       defender.lastDamageTaken = damage
       defender.lastDamagePhysical = MoveCategory.isPhysical(effectiveType)
@@ -409,9 +551,15 @@ constructor(
       struck++
       events += BattleEvent.DamageDealt(defender.entityId, defender.currentHp, result.crit, effectiveness)
       if (endured) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
+      if (sturdy) {
+        events += BattleEvent.AbilityShown(defender.entityId, Ability.STURDY)
+        events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
+      }
+      hitReactions(battle, action, move, effectiveType, result.crit, hpBefore, events)
     }
     if (struck > 1) events += BattleEvent.MultiHit(attacker.entityId, struck)
     if (struck == 0) return
+    if (defender.fainted) koReactions(attacker, events)
 
     // A Fire hit thaws; Smelling Salt cures the paralysis it doubled on.
     if (effectiveType == PokemonType.FIRE && StatusCondition.isFrozen(defender.status)) {
@@ -430,16 +578,141 @@ constructor(
     if (defender.fainted) events += BattleEvent.Fainted(defender.entityId)
 
     // After-hit effects on the user.
+    val recoils = !Abilities.noRecoil(attacker)
     when (move.effect) {
-      MoveEffect.RECOIL, MoveEffect.DOUBLE_EDGE -> loseHp(attacker, (totalDamage * (move.argumentValue ?: 25) / 100).coerceAtLeast(1), events)
-      MoveEffect.MAX_HP_50_RECOIL -> loseHp(attacker, (attacker.maxHp / 2).coerceAtLeast(1), events)
-      MoveEffect.STRUGGLE -> loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events)
+      MoveEffect.RECOIL, MoveEffect.DOUBLE_EDGE ->
+          if (recoils) loseHp(attacker, (totalDamage * (move.argumentValue ?: 25) / 100).coerceAtLeast(1), events)
+      MoveEffect.MAX_HP_50_RECOIL -> if (recoils) loseHp(attacker, (attacker.maxHp / 2).coerceAtLeast(1), events)
+      MoveEffect.STRUGGLE -> if (attacker.ability != Ability.MAGIC_GUARD) loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events)
       MoveEffect.ABSORB, MoveEffect.DREAM_EATER ->
           healHp(attacker, (totalDamage * (move.argumentValue ?: 50) / 100).coerceAtLeast(1), events)
       else -> Unit
     }
     if (explodes) explode(attacker, events)
     secondaryEffects(battle, action, move, events)
+  }
+
+  /**
+   * What the defender's (and attacker's) abilities do once a hit has landed: contact statuses,
+   * Rough Skin, the stat reactions, Aftermath and Innards Out on a faint.
+   */
+  private fun hitReactions(
+      battle: BattleInstance,
+      action: TurnAction,
+      move: MoveDef,
+      type: PokemonType,
+      crit: Boolean,
+      hpBefore: Int,
+      events: MutableList<BattleEvent>,
+  ) {
+    val attacker = action.attacker
+    val defender = action.defender
+    val contact = move.hasFlag(MoveFlag.MAKES_CONTACT) && attacker.ability != Ability.LONG_REACH
+    val physical = MoveCategory.isPhysical(type)
+    fun shown(mon: BattleMonState) = events.add(BattleEvent.AbilityShown(mon.entityId, mon.ability))
+    fun roll(chance: Int) = battle.rng.accuracyRoll() <= chance
+    // The defender's abilities, felt by the attacker.
+    if (contact && !attacker.fainted) {
+      when (defender.ability) {
+        Ability.STATIC -> if (roll(30) && canReceiveStatus(battle, defender, attacker, StatusCondition.PARALYSIS)) { shown(defender); inflictStatus(battle, defender, attacker, StatusCondition.PARALYSIS, events) }
+        Ability.POISON_POINT -> if (roll(30) && canReceiveStatus(battle, defender, attacker, StatusCondition.POISON)) { shown(defender); inflictStatus(battle, defender, attacker, StatusCondition.POISON, events) }
+        Ability.FLAME_BODY -> if (roll(30) && canReceiveStatus(battle, defender, attacker, StatusCondition.BURN)) { shown(defender); inflictStatus(battle, defender, attacker, StatusCondition.BURN, events) }
+        Ability.EFFECT_SPORE ->
+            if (roll(30)) {
+              val status = listOf(StatusCondition.POISON, StatusCondition.PARALYSIS, StatusCondition.asleep(2 + battle.rng.pick(4)))[battle.rng.pick(3)]
+              if (canReceiveStatus(battle, defender, attacker, status)) { shown(defender); inflictStatus(battle, defender, attacker, status, events) }
+            }
+        Ability.ROUGH_SKIN, Ability.IRON_BARBS ->
+            if (attacker.ability != Ability.MAGIC_GUARD) { shown(defender); loseHp(attacker, (attacker.maxHp / 8).coerceAtLeast(1), events) }
+        Ability.GOOEY, Ability.TANGLING_HAIR -> { shown(defender); ownStage(attacker, BattleStat.SPEED, -1, events) }
+        Ability.AFTERMATH ->
+            if (defender.fainted && attacker.ability != Ability.MAGIC_GUARD) { shown(defender); loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events) }
+        else -> Unit
+      }
+      when (attacker.ability) {
+        Ability.POISON_TOUCH -> if (roll(30) && canReceiveStatus(battle, attacker, defender, StatusCondition.POISON)) { shown(attacker); inflictStatus(battle, attacker, defender, StatusCondition.POISON, events) }
+        Ability.STENCH -> if (roll(10) && !defender.movedThisTurn && !Abilities.blocksFlinch(defender)) defender.flinched = true
+        else -> Unit
+      }
+    }
+    if (defender.fainted) {
+      if (defender.ability == Ability.INNARDS_OUT && attacker.ability != Ability.MAGIC_GUARD && !attacker.fainted) {
+        shown(defender)
+        loseHp(attacker, hpBefore.coerceAtLeast(1), events)
+      }
+      return
+    }
+    // The defender's abilities, felt by itself.
+    val crossedHalf = hpBefore * 2 > defender.maxHp && defender.currentHp * 2 <= defender.maxHp
+    when (defender.ability) {
+      Ability.WEAK_ARMOR -> if (physical) { shown(defender); ownStage(defender, BattleStat.DEFENSE, -1, events); ownStage(defender, BattleStat.SPEED, 2, events) }
+      Ability.STAMINA -> { shown(defender); ownStage(defender, BattleStat.DEFENSE, 1, events) }
+      Ability.WATER_COMPACTION -> if (type == PokemonType.WATER) { shown(defender); ownStage(defender, BattleStat.DEFENSE, 2, events) }
+      Ability.STEAM_ENGINE -> if (type == PokemonType.FIRE || type == PokemonType.WATER) { shown(defender); ownStage(defender, BattleStat.SPEED, 6, events) }
+      Ability.JUSTIFIED -> if (type == PokemonType.DARK) { shown(defender); ownStage(defender, BattleStat.ATTACK, 1, events) }
+      Ability.RATTLED -> if (type == PokemonType.BUG || type == PokemonType.GHOST || type == PokemonType.DARK) { shown(defender); ownStage(defender, BattleStat.SPEED, 1, events) }
+      Ability.ANGER_POINT -> if (crit) { shown(defender); ownStage(defender, BattleStat.ATTACK, 12, events) }
+      Ability.BERSERK -> if (crossedHalf) { shown(defender); ownStage(defender, BattleStat.SP_ATTACK, 1, events) }
+      Ability.ANGER_SHELL ->
+          if (crossedHalf) {
+            shown(defender)
+            ownStage(defender, BattleStat.ATTACK, 1, events); ownStage(defender, BattleStat.SP_ATTACK, 1, events); ownStage(defender, BattleStat.SPEED, 1, events)
+            ownStage(defender, BattleStat.DEFENSE, -1, events); ownStage(defender, BattleStat.SP_DEFENSE, -1, events)
+          }
+      Ability.COTTON_DOWN -> { shown(defender); ownStage(attacker, BattleStat.SPEED, -1, events) }
+      Ability.SAND_SPIT -> if (battle.weather != Weather.SANDSTORM) { shown(defender); setWeather(battle, Weather.SANDSTORM, events) }
+      Ability.THERMAL_EXCHANGE -> if (type == PokemonType.FIRE) { shown(defender); ownStage(defender, BattleStat.ATTACK, 1, events) }
+      else -> Unit
+    }
+  }
+
+  /** The attacker's reward for a knockout. */
+  private fun koReactions(attacker: BattleMonState, events: MutableList<BattleEvent>) {
+    if (attacker.fainted) return
+    fun boost(stat: BattleStat) {
+      events += BattleEvent.AbilityShown(attacker.entityId, attacker.ability)
+      ownStage(attacker, stat, 1, events)
+    }
+    when (attacker.ability) {
+      Ability.MOXIE, Ability.CHILLING_NEIGH, Ability.AS_ONE_ICE_RIDER -> boost(BattleStat.ATTACK)
+      Ability.GRIM_NEIGH, Ability.AS_ONE_SHADOW_RIDER, Ability.SOUL_HEART -> boost(BattleStat.SP_ATTACK)
+      Ability.BEAST_BOOST -> {
+        val best =
+            listOf(BattleStat.ATTACK, BattleStat.DEFENSE, BattleStat.SP_ATTACK, BattleStat.SP_DEFENSE, BattleStat.SPEED)
+                .maxByOrNull { attacker.unstaged(it) } ?: BattleStat.ATTACK
+        boost(best)
+      }
+      else -> Unit
+    }
+  }
+
+  /**
+   * A defender ability that swallows the move: Levitate, the absorbers, Flash Fire, Soundproof...
+   * True when the move ends here (the ability's own effect has been applied and announced).
+   */
+  private fun absorbedByAbility(
+      battle: BattleInstance,
+      action: TurnAction,
+      move: MoveDef,
+      type: PokemonType,
+      events: MutableList<BattleEvent>,
+  ): Boolean {
+    val attacker = action.attacker
+    val defender = action.defender
+    if (Abilities.ignoresTargetAbilities(attacker)) return false
+    val absorb = Abilities.absorb(defender, type, move) ?: return false
+    events += BattleEvent.AbilityShown(defender.entityId, defender.ability)
+    when (absorb) {
+      Abilities.Absorb.IMMUNE -> events += BattleEvent.Immune(defender.entityId)
+      Abilities.Absorb.HEAL_QUARTER ->
+          if (defender.currentHp < defender.maxHp) healHp(defender, (defender.maxHp / 4).coerceAtLeast(1), events)
+      Abilities.Absorb.SP_ATTACK_UP -> ownStage(defender, BattleStat.SP_ATTACK, 1, events)
+      Abilities.Absorb.SPEED_UP -> ownStage(defender, BattleStat.SPEED, 1, events)
+      Abilities.Absorb.ATTACK_UP -> ownStage(defender, BattleStat.ATTACK, 1, events)
+      Abilities.Absorb.DEFENSE_UP_2 -> ownStage(defender, BattleStat.DEFENSE, 2, events)
+      Abilities.Absorb.FLASH_FIRE -> defender.flashFire = true
+    }
+    return true
   }
 
   /** Explosion and Self-Destruct: the user faints whatever happened to the target. */
@@ -483,25 +756,31 @@ constructor(
   private fun rerollsPerHit(move: MoveDef): Boolean =
       move.effect == MoveEffect.TRIPLE_KICK || move.strikeCount >= 10
 
-  private fun moveType(battle: BattleInstance, attacker: BattleMonState, move: MoveDef): PokemonType =
-      when (move.effect) {
-        MoveEffect.HIDDEN_POWER -> hiddenPowerType(attacker)
-        MoveEffect.WEATHER_BALL ->
-            when (battle.weather) {
-              Weather.RAIN -> PokemonType.WATER
-              Weather.SUN -> PokemonType.FIRE
-              Weather.SANDSTORM -> PokemonType.ROCK
-              Weather.HAIL -> PokemonType.ICE
-              null -> PokemonType.NORMAL
-            }
-        else -> move.type
-      }
+  private fun moveType(battle: BattleInstance, attacker: BattleMonState, move: MoveDef): PokemonType {
+    if (attacker.ability == Ability.NORMALIZE) return PokemonType.NORMAL
+    val base =
+        when (move.effect) {
+          MoveEffect.HIDDEN_POWER -> hiddenPowerType(attacker)
+          MoveEffect.WEATHER_BALL ->
+              when (weather(battle)) {
+                Weather.RAIN -> PokemonType.WATER
+                Weather.SUN -> PokemonType.FIRE
+                Weather.SANDSTORM -> PokemonType.ROCK
+                Weather.HAIL -> PokemonType.ICE
+                null -> PokemonType.NORMAL
+              }
+          else -> move.type
+        }
+    if (base == PokemonType.NORMAL) Abilities.retypedNormal(attacker)?.let { return it }
+    return base
+  }
 
-  private fun effectivenessAgainst(type: PokemonType, defender: BattleMonState): Int {
+  private fun effectivenessAgainst(type: PokemonType, defender: BattleMonState, attacker: BattleMonState? = null): Int {
     val species = defender.species
     var eff = typeChart.effectiveness(type, species.type1, species.type2)
-    // Foresight lets Normal and Fighting hit a Ghost.
-    if (eff == 0 && defender.identified && species.hasType(PokemonType.GHOST) &&
+    // Foresight (or Scrappy) lets Normal and Fighting hit a Ghost.
+    val seesGhosts = defender.identified || (attacker != null && Abilities.hitsGhosts(attacker))
+    if (eff == 0 && seesGhosts && species.hasType(PokemonType.GHOST) &&
         (type == PokemonType.NORMAL || type == PokemonType.FIGHTING)) {
       val other = if (species.type1 == PokemonType.GHOST) species.type2 else species.type1
       eff = typeChart.multiplier(type, other)
@@ -555,9 +834,9 @@ constructor(
           MoveEffect.POWER_BASED_ON_USER_HP -> (150 * hp / max.coerceAtLeast(1)).coerceAtLeast(1)
           MoveEffect.POWER_BASED_ON_TARGET_HP ->
               (120 * defender.currentHp / defender.maxHp.coerceAtLeast(1)).coerceAtLeast(1)
-          MoveEffect.WEATHER_BALL -> if (battle.weather != null) 100 else 50
+          MoveEffect.WEATHER_BALL -> if (weather(battle) != null) 100 else 50
           MoveEffect.SOLAR_BEAM ->
-              if (battle.weather != null && battle.weather != Weather.SUN) move.power / 2 else move.power
+              if (weather(battle) != null && weather(battle) != Weather.SUN) move.power / 2 else move.power
           else -> move.power
         }
     when (move.effect) {
@@ -586,6 +865,7 @@ constructor(
       type: PokemonType,
       effectiveness: Int,
       power: Int,
+      movesLast: Boolean = false,
   ): HitResult {
     val attacker = action.attacker
     val defender = action.defender
@@ -593,25 +873,34 @@ constructor(
     val critStage =
         (if (attacker.focusEnergy) 2 else 0) +
             (if (move.effect == MoveEffect.HIGH_CRITICAL) 1 else 0) +
-            move.criticalHitStage
+            move.criticalHitStage +
+            Abilities.critStages(attacker)
+    val critBlocked = Abilities.noCrits(defender) && !Abilities.ignoresTargetAbilities(attacker)
     val crit =
-        move.hasFlag(MoveFlag.ALWAYS_CRIT) ||
-            battle.rng.critRoll(CRIT_DENOMINATORS[critStage.coerceIn(0, CRIT_DENOMINATORS.lastIndex)])
+        !critBlocked &&
+            (move.hasFlag(MoveFlag.ALWAYS_CRIT) ||
+                (attacker.ability == Ability.MERCILESS && StatusCondition.isPoisoned(defender.status)) ||
+                battle.rng.critRoll(CRIT_DENOMINATORS[critStage.coerceIn(0, CRIT_DENOMINATORS.lastIndex)]))
     var dmg =
         baseDamage(
             attacker, defender, power, physical, crit, battle.rng,
-            explosion = move.hasFlag(MoveFlag.EXPLOSION) || move.effect == MoveEffect.EXPLOSION)
-    if (physical && StatusCondition.isBurned(attacker.status)) dmg /= 2
+            explosion = move.hasFlag(MoveFlag.EXPLOSION) || move.effect == MoveEffect.EXPLOSION,
+            defenseStatPercent = Abilities.defenseStatPercent(defender, attacker, physical))
+    if (physical && StatusCondition.isBurned(attacker.status) && attacker.ability != Ability.GUTS) dmg /= 2
     val side = battle.sideOf(defender)
     if (!crit && ((physical && side.reflectTurns > 0) || (!physical && side.lightScreenTurns > 0))) dmg /= 2
-    when (battle.weather) {
+    val weather = weather(battle)
+    when (weather) {
       Weather.RAIN -> if (type == PokemonType.WATER) dmg = dmg * 3 / 2 else if (type == PokemonType.FIRE) dmg /= 2
       Weather.SUN -> if (type == PokemonType.FIRE) dmg = dmg * 3 / 2 else if (type == PokemonType.WATER) dmg /= 2
       else -> Unit
     }
-    if (crit) dmg *= 2
-    if (attacker.species.hasType(type)) dmg = dmg * 3 / 2
+    if (crit) dmg = if (attacker.ability == Ability.SNIPER) dmg * 3 else dmg * 2
+    val stab = attacker.species.hasType(type)
+    if (stab) dmg = if (attacker.ability == Ability.ADAPTABILITY) dmg * 2 else dmg * 3 / 2
     dmg = dmg * effectiveness / TypeChart.NEUTRAL
+    dmg = dmg * Abilities.offensePercent(attacker, move, type, power, physical, weather, effectiveness, movesLast, defender) / 100
+    dmg = dmg * Abilities.defensePercent(defender, attacker, move, type, physical, effectiveness) / 100
     dmg = dmg * battle.rng.damageRoll() / 100
     return HitResult(dmg.coerceAtLeast(1), crit)
   }
@@ -625,14 +914,19 @@ constructor(
       crit: Boolean,
       rng: BattleRng,
       explosion: Boolean = false,
+      defenseStatPercent: Int = 100,
   ): Int {
     val atkStat = if (physical) BattleStat.ATTACK else BattleStat.SP_ATTACK
     val defStat = if (physical) BattleStat.DEFENSE else BattleStat.SP_DEFENSE
-    // A crit ignores the attacker's negative stages and the defender's positive stages.
+    // A crit ignores the attacker's negative stages and the defender's positive stages; Unaware
+    // ignores the other side's stages altogether.
     val atk =
-        if (crit && attacker.stage(atkStat) < 0) attacker.unstaged(atkStat) else attacker.effective(atkStat)
+        if ((crit && attacker.stage(atkStat) < 0) || defender.ability == Ability.UNAWARE) attacker.unstaged(atkStat)
+        else attacker.effective(atkStat)
     var def =
-        if (crit && defender.stage(defStat) > 0) defender.unstaged(defStat) else defender.effective(defStat)
+        if ((crit && defender.stage(defStat) > 0) || attacker.ability == Ability.UNAWARE) defender.unstaged(defStat)
+        else defender.effective(defStat)
+    def = def * defenseStatPercent / 100
     if (explosion) def = (def / 2).coerceAtLeast(1)
     return (2 * attacker.level / 5 + 2) * power * atk / def.coerceAtLeast(1) / 50 + 2
   }
@@ -649,6 +943,7 @@ constructor(
       attacker.lockedOn = false
       return true
     }
+    if (attacker.ability == Ability.NO_GUARD || defender.ability == Ability.NO_GUARD) return true
     if (defender.semiInvulnerable) {
       val allowed =
           when (move.effect) {
@@ -663,16 +958,25 @@ constructor(
       return battle.rng.accuracyRoll() <= 30 + (attacker.level - defender.level)
     }
     var accuracy = move.accuracy
+    val weather = weather(battle)
     if (move.effect == MoveEffect.THUNDER) {
-      when (battle.weather) {
+      when (weather) {
         Weather.RAIN -> return true
         Weather.SUN -> accuracy = 50
         else -> Unit
       }
     }
     if (accuracy == 0) return true
-    val stage = attacker.stage(BattleStat.ACCURACY) - defender.stage(BattleStat.EVASION)
-    val threshold = StatStages.scaleAccuracy(accuracy, stage)
+    // Keen Eye and Mind's Eye look past evasion boosts; Unaware on either side drops the other's stages.
+    val evasionStage =
+        if (attacker.ability == Ability.KEEN_EYE || attacker.ability == Ability.MINDS_EYE || attacker.ability == Ability.UNAWARE)
+            defender.stage(BattleStat.EVASION).coerceAtMost(0)
+        else defender.stage(BattleStat.EVASION)
+    val accuracyStage = if (defender.ability == Ability.UNAWARE) 0 else attacker.stage(BattleStat.ACCURACY)
+    val stage = accuracyStage - evasionStage
+    var threshold = StatStages.scaleAccuracy(accuracy, stage)
+    threshold = threshold * Abilities.accuracyPercent(attacker, move, MoveCategory.isPhysical(move.type)) / 100
+    if (!Abilities.ignoresTargetAbilities(attacker)) threshold = threshold * Abilities.evasionPercent(defender, move, weather) / 100
     return battle.rng.accuracyRoll() <= threshold
   }
 
@@ -687,8 +991,12 @@ constructor(
   ) {
     val attacker = action.attacker
     val defender = action.defender
+    val sheerForce = attacker.ability == Ability.SHEER_FORCE
+    val shieldDust = Abilities.blocksSecondaryEffects(defender) && !Abilities.ignoresTargetAbilities(attacker)
     for (extra in move.additionalEffects) {
-      if (extra.chance < 100 && battle.rng.accuracyRoll() > extra.chance) continue
+      if (!extra.self && (sheerForce || shieldDust)) continue
+      val chance = (extra.chance * Abilities.secondaryChanceMultiplier(attacker)).coerceAtMost(100)
+      if (extra.chance < 100 && battle.rng.accuracyRoll() > chance) continue
       if (!extra.self && defender.fainted) continue
       applyAdditional(battle, action, move, extra, events)
     }
@@ -726,7 +1034,11 @@ constructor(
       }
       MoveAdditionalEffect.SECRET_POWER -> inflictStatus(battle, attacker, target, StatusCondition.PARALYSIS, events)
       MoveAdditionalEffect.CONFUSION -> confuse(battle, attacker, target, events)
-      MoveAdditionalEffect.FLINCH -> if (!target.movedThisTurn) target.flinched = true
+      MoveAdditionalEffect.FLINCH ->
+          if (!target.movedThisTurn) {
+            if (Abilities.blocksFlinch(target) && !Abilities.ignoresTargetAbilities(attacker)) Unit
+            else target.flinched = true
+          }
       MoveAdditionalEffect.STAT_PLUS, MoveAdditionalEffect.STAT_MINUS -> {
         val sign = if (extra.effect == MoveAdditionalEffect.STAT_PLUS) 1 else -1
         for ((name, stages) in extra.stats) {
@@ -794,6 +1106,7 @@ constructor(
       events += BattleEvent.MoveMissed(attacker.entityId, moveId)
       return
     }
+    if (targetsFoe && move.effect != MoveEffect.NON_VOLATILE_STATUS && absorbedByAbility(battle, action, move, move.type, events)) return
     fun fail() {
       events += BattleEvent.MoveFailed(attacker.entityId, moveId)
     }
@@ -848,11 +1161,16 @@ constructor(
           return
         }
         if (status == 0) return fail()
-        if (effectivenessAgainst(move.type, defender) == 0) {
+        if (effectivenessAgainst(move.type, defender, attacker) == 0) {
           events += BattleEvent.Immune(defender.entityId)
           return
         }
-        if (!canReceiveStatus(battle, attacker, defender, status)) return fail()
+        if (absorbedByAbility(battle, action, move, move.type, events)) return
+        if (!canReceiveStatus(battle, attacker, defender, status)) {
+          if (Abilities.blocksStatus(defender, status, weather(battle), fromMove = true) && !Abilities.ignoresTargetAbilities(attacker))
+              events += BattleEvent.AbilityShown(defender.entityId, defender.ability)
+          return fail()
+        }
         if (!accurate()) return
         inflictStatus(battle, attacker, defender, status, events)
       }
@@ -885,7 +1203,7 @@ constructor(
       MoveEffect.MORNING_SUN, MoveEffect.SYNTHESIS, MoveEffect.MOONLIGHT -> {
         if (attacker.currentHp >= attacker.maxHp) return fail()
         val amount =
-            when (battle.weather) {
+            when (weather(battle)) {
               null -> attacker.maxHp / 2
               Weather.SUN -> attacker.maxHp * 2 / 3
               else -> attacker.maxHp / 4
@@ -1063,6 +1381,9 @@ constructor(
   private fun canReceiveStatus(battle: BattleInstance, source: BattleMonState, target: BattleMonState, status: Int): Boolean {
     if (StatusCondition.hasAny(target.status)) return false
     if (source !== target && battle.sideOf(target).safeguardTurns > 0) return false
+    if (Abilities.blocksStatus(target, status, weather(battle), fromMove = source !== target) &&
+        !(source !== target && Abilities.ignoresTargetAbilities(source)))
+        return false
     val species = target.species
     return when {
       status and StatusCondition.BURN != 0 -> !species.hasType(PokemonType.FIRE)
@@ -1084,12 +1405,25 @@ constructor(
     target.status = status
     if (status and StatusCondition.TOXIC != 0) target.toxicCounter = 0
     events += BattleEvent.StatusChanged(target.entityId, target.status)
+    // Synchronize hands poison, burn and paralysis back to whoever caused them.
+    if (target.ability == Ability.SYNCHRONIZE && source !== target &&
+        status and (StatusCondition.POISON or StatusCondition.TOXIC or StatusCondition.BURN or StatusCondition.PARALYSIS) != 0 &&
+        canReceiveStatus(battle, target, source, status)) {
+      events += BattleEvent.AbilityShown(target.entityId, Ability.SYNCHRONIZE)
+      source.status = status
+      if (status and StatusCondition.TOXIC != 0) source.toxicCounter = 0
+      events += BattleEvent.StatusChanged(source.entityId, source.status)
+    }
     return true
   }
 
   private fun confuse(battle: BattleInstance, source: BattleMonState, target: BattleMonState, events: MutableList<BattleEvent>) {
     if (target.fainted || target.confusionTurns > 0) return
     if (source !== target && battle.sideOf(target).safeguardTurns > 0) return
+    if (Abilities.blocksConfusion(target) && !(source !== target && Abilities.ignoresTargetAbilities(source))) {
+      events += BattleEvent.AbilityShown(target.entityId, target.ability)
+      return
+    }
     target.confusionTurns = 2 + battle.rng.pick(4)
     events += BattleEvent.Line(target.entityId, BattleLine.CONFUSION, listOf(0))
   }
@@ -1133,7 +1467,25 @@ constructor(
   private fun applyStage(action: TurnAction, effect: StageEffect, events: MutableList<BattleEvent>): Boolean {
     val target = if (effect.onSelf) action.attacker else action.defender
     if (target.fainted) return false
-    val applied = target.changeStage(effect.stat, effect.delta)
+    var delta = effect.delta
+    val byFoe = !effect.onSelf && action.attacker !== target
+    if (byFoe && delta < 0 && !Abilities.ignoresTargetAbilities(action.attacker)) {
+      if (Abilities.blocksStatDrop(target, effect.stat)) {
+        events += BattleEvent.AbilityShown(target.entityId, target.ability)
+        return false
+      }
+      if (target.ability == Ability.MIRROR_ARMOR) {
+        events += BattleEvent.AbilityShown(target.entityId, target.ability)
+        return ownStage(action.attacker, effect.stat, delta, events)
+      }
+    }
+    if (target.ability == Ability.CONTRARY) delta = -delta
+    if (target.ability == Ability.SIMPLE) delta *= 2
+    val applied = target.changeStage(effect.stat, delta)
+    if (byFoe && applied < 0) {
+      if (target.ability == Ability.DEFIANT) ownStage(target, BattleStat.ATTACK, 2, events)
+      if (target.ability == Ability.COMPETITIVE) ownStage(target, BattleStat.SP_ATTACK, 2, events)
+    }
     val value =
         when (effect.stat) {
           BattleStat.ACCURACY,
@@ -1152,7 +1504,7 @@ constructor(
   private fun endOfTurn(battle: BattleInstance, events: MutableList<BattleEvent>) {
     val player = battle.activeMon()
     val enemy = battle.opponentMon()
-    val order = if (speedOf(player) >= speedOf(enemy)) listOf(player, enemy) else listOf(enemy, player)
+    val order = if (speedOf(battle, player) >= speedOf(battle, enemy)) listOf(player, enemy) else listOf(enemy, player)
 
     // Weather: counts down, then hurts whoever it hurts.
     if (battle.weather != null) {
@@ -1160,18 +1512,18 @@ constructor(
       if (battle.weatherTurns <= 0) {
         battle.weather = null
         events += BattleEvent.WeatherChanged(null)
-      } else {
+      } else if (weather(battle) != null) {
         for (mon in order) {
           if (mon.fainted) continue
           val hurt =
               when (battle.weather) {
                 Weather.SANDSTORM ->
                     !mon.species.hasType(PokemonType.ROCK) && !mon.species.hasType(PokemonType.GROUND) &&
-                        !mon.species.hasType(PokemonType.STEEL)
-                Weather.HAIL -> !mon.species.hasType(PokemonType.ICE)
+                        !mon.species.hasType(PokemonType.STEEL) && !Abilities.immuneToSandstorm(mon)
+                Weather.HAIL -> !mon.species.hasType(PokemonType.ICE) && !Abilities.immuneToHail(mon)
                 else -> false
               }
-          if (hurt && !mon.semiInvulnerable) {
+          if (hurt && !mon.semiInvulnerable && !Abilities.noIndirectDamage(mon)) {
             mon.currentHp = (mon.currentHp - (mon.maxHp / 16).coerceAtLeast(1)).coerceAtLeast(0)
             events += BattleEvent.TurnEffect(mon.entityId)
             events +=
@@ -1189,12 +1541,52 @@ constructor(
       if (mon.fainted) continue
       val other = battle.opponentOf(mon)
       // Each line below carries the new hp, so the client moves the bar from the line itself.
+      // Magic Guard takes none of this damage.
       fun hurt(amount: Int, line: BattleLine, prefix: List<Int> = emptyList(), suffix: List<Int> = emptyList()) {
+        if (Abilities.noIndirectDamage(mon)) return
         mon.currentHp = (mon.currentHp - amount.coerceAtLeast(1)).coerceAtLeast(0)
         events += BattleEvent.TurnEffect(mon.entityId)
         events += BattleEvent.Line(mon.entityId, line, prefix + mon.currentHp + suffix)
         if (mon.fainted) events += BattleEvent.Fainted(mon.entityId)
       }
+      fun abilityHeal(amount: Int) {
+        if (mon.currentHp >= mon.maxHp) return
+        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.AbilityShown(mon.entityId, mon.ability)
+        healHp(mon, amount.coerceAtLeast(1), events)
+      }
+      fun abilityHurt(amount: Int) {
+        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.AbilityShown(mon.entityId, mon.ability)
+        loseHp(mon, amount.coerceAtLeast(1), events)
+      }
+      val weather = weather(battle)
+      when (mon.ability) {
+        Ability.SPEED_BOOST -> { events += BattleEvent.TurnEffect(mon.entityId); events += BattleEvent.AbilityShown(mon.entityId, mon.ability); ownStage(mon, BattleStat.SPEED, 1, events) }
+        Ability.SHED_SKIN -> if (StatusCondition.hasAny(mon.status) && battle.rng.accuracyRoll() <= 30) { events += BattleEvent.TurnEffect(mon.entityId); events += BattleEvent.AbilityShown(mon.entityId, mon.ability); cureStatus(mon, events) }
+        Ability.HYDRATION -> if (StatusCondition.hasAny(mon.status) && weather == Weather.RAIN) { events += BattleEvent.TurnEffect(mon.entityId); events += BattleEvent.AbilityShown(mon.entityId, mon.ability); cureStatus(mon, events) }
+        Ability.RAIN_DISH -> if (weather == Weather.RAIN) abilityHeal(mon.maxHp / 16)
+        Ability.ICE_BODY -> if (weather == Weather.HAIL) abilityHeal(mon.maxHp / 16)
+        Ability.DRY_SKIN -> if (weather == Weather.RAIN) abilityHeal(mon.maxHp / 8) else if (weather == Weather.SUN) abilityHurt(mon.maxHp / 8)
+        Ability.SOLAR_POWER -> if (weather == Weather.SUN) abilityHurt(mon.maxHp / 8)
+        Ability.MOODY -> {
+          val stats = listOf(BattleStat.ATTACK, BattleStat.DEFENSE, BattleStat.SP_ATTACK, BattleStat.SP_DEFENSE, BattleStat.SPEED)
+          val up = stats[battle.rng.pick(stats.size)]
+          val down = stats.filter { it != up }[battle.rng.pick(stats.size - 1)]
+          events += BattleEvent.TurnEffect(mon.entityId)
+          events += BattleEvent.AbilityShown(mon.entityId, mon.ability)
+          ownStage(mon, up, 2, events)
+          ownStage(mon, down, -1, events)
+        }
+        Ability.BAD_DREAMS -> if (StatusCondition.isAsleep(other.status) && !other.fainted && !Abilities.noIndirectDamage(other)) {
+          events += BattleEvent.TurnEffect(mon.entityId)
+          events += BattleEvent.AbilityShown(mon.entityId, mon.ability)
+          loseHp(other, (other.maxHp / 8).coerceAtLeast(1), events)
+        }
+        Ability.SLOW_START -> if (mon.slowStartTurns > 0) { mon.slowStartTurns--; if (mon.slowStartTurns == 0) { events += BattleEvent.TurnEffect(mon.entityId); events += BattleEvent.AbilityShown(mon.entityId, mon.ability) } }
+        else -> Unit
+      }
+      if (mon.fainted) continue
       if (mon.ingrained && mon.currentHp < mon.maxHp) {
         mon.currentHp = (mon.currentHp + (mon.maxHp / 16).coerceAtLeast(1)).coerceAtMost(mon.maxHp)
         events += BattleEvent.TurnEffect(mon.entityId)
@@ -1213,7 +1605,9 @@ constructor(
         healHp(other, drained, events)
       }
       if (mon.fainted) continue
-      if (StatusCondition.isBadlyPoisoned(mon.status)) {
+      if (mon.ability == Ability.POISON_HEAL && StatusCondition.isPoisoned(mon.status)) {
+        abilityHeal(mon.maxHp / 8)
+      } else if (StatusCondition.isBadlyPoisoned(mon.status)) {
         mon.toxicCounter = (mon.toxicCounter + 1).coerceAtMost(15)
         hurt(mon.maxHp * mon.toxicCounter / 16, BattleLine.POISON_DAMAGE)
       } else if (StatusCondition.isPoisoned(mon.status)) {
@@ -1331,6 +1725,14 @@ constructor(
       }
 
   private companion object {
+    val UNTRACEABLE =
+        setOf(
+            Ability.TRACE, Ability.MULTITYPE, Ability.ILLUSION, Ability.IMPOSTER, Ability.STANCE_CHANGE,
+            Ability.ZEN_MODE, Ability.FLOWER_GIFT, Ability.FORECAST, Ability.SCHOOLING, Ability.DISGUISE,
+            Ability.BATTLE_BOND, Ability.POWER_CONSTRUCT, Ability.RKS_SYSTEM, Ability.COMATOSE,
+            Ability.SHIELDS_DOWN, Ability.RECEIVER, Ability.POWER_OF_ALCHEMY, Ability.ICE_FACE,
+            Ability.GULP_MISSILE, Ability.HUNGER_SWITCH, Ability.ZERO_TO_HERO, Ability.COMMANDER)
+
     val HIDDEN_POWER_TYPES =
         listOf(
             PokemonType.FIGHTING,

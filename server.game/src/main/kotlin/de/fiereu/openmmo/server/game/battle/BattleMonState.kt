@@ -26,6 +26,14 @@ class BattleMonState(
   /** Non-volatile status in the record's bit layout; carried in and out of the battle. */
   var status: Int = source.status and 0xFF
 
+  /** The ability in effect; Trace, Skill Swap and the like change it for the battle. */
+  var ability: de.fiereu.openmmo.common.enums.Ability = Abilities.of(species, source)
+
+  // Ability bookkeeping.
+  var truantLoafs: Boolean = false
+  var slowStartTurns: Int = 0
+  var flashFire: Boolean = false
+
   /** Turns of Toxic so far, which scales its damage; resets when the monster leaves the field. */
   var toxicCounter: Int = 0
 
@@ -69,6 +77,10 @@ class BattleMonState(
   fun resetVolatile() {
     stages.clear()
     toxicCounter = 0
+    ability = Abilities.of(species, source)
+    truantLoafs = false
+    slowStartTurns = 0
+    flashFire = false
     confusionTurns = 0
     flinched = false
     protectedThisTurn = false
@@ -154,7 +166,7 @@ class BattleMonState(
           species = wireSpeciesId(),
           level = source.level,
           gender = gender,
-          abilityId = species.ability1Id.toShort(),
+          abilityId = ability.ordinal.toShort(),
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,

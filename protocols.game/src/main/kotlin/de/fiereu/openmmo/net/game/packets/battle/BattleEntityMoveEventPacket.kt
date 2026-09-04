@@ -66,7 +66,37 @@ sealed interface BattleEventBody {
    * wire order; [BattleLine] fixes the shape.
    */
   data class Line(val line: BattleLine, val values: List<Int> = emptyList()) : BattleEventBody
+
+  /**
+   * Event 51, the ability activation (client f/sL): shows the "{00}'s {ability}" banner on the
+   * monster's panel and, for abilities the client knows a line for (keyed by ability id: Limber,
+   * Insomnia, Immunity, Water Veil, Magma Armor, Pressure, Mold Breaker, Trace...), prints it.
+   * [kind] bits: 1 = [other] names a second monster, 2 = [moveId] names a move, 8 = [itemId] an
+   * item. [abilityId] is the ability's ordinal (the client resolves its name from string
+   * 210000 + id).
+   */
+  data class AbilityPopup(
+      val abilityId: Int,
+      val kind: Int = 0,
+      val self: Long = 0,
+      val other: Long = 0,
+      val moveId: Int = 0,
+      val itemId: Int = 0,
+  ) : BattleEventBody
 }
+
+private val AbilityPopupBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val kind = field(S8) { (it as BattleEventBody.AbilityPopup).kind.toByte() }.toInt()
+        val ability = field(S16LE) { (it as BattleEventBody.AbilityPopup).abilityId.toShort() }.toInt()
+        val self = field(S64LE) { (it as BattleEventBody.AbilityPopup).self }
+        val other = field(S64LE) { (it as BattleEventBody.AbilityPopup).other }
+        val moveId = field(S16LE) { (it as BattleEventBody.AbilityPopup).moveId.toShort() }.toInt()
+        val itemId = field(S16LE) { (it as BattleEventBody.AbilityPopup).itemId.toShort() }.toInt()
+        return BattleEventBody.AbilityPopup(ability, kind, self, other, moveId, itemId)
+      }
+    }
 
 /** Field shapes of the fixed battle lines. */
 enum class LineShape {
@@ -252,6 +282,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
   VISIBILITY(id = 92, codec = VisibilityBodyCodec),
+  ABILITY_POPUP(id = 51, codec = AbilityPopupBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
   MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
@@ -271,6 +302,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.StatusChange -> STATUS_CHANGE
           is BattleEventBody.WeatherChange -> WEATHER_CHANGE
           is BattleEventBody.Visibility -> VISIBILITY
+          is BattleEventBody.AbilityPopup -> ABILITY_POPUP
           is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }

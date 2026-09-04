@@ -76,6 +76,14 @@ sealed interface BattleEvent {
 
   /** The move's type cannot touch the target: "It doesn't affect {00}...". */
   data class Immune(val targetId: Long) : BattleEvent
+
+  /** An ability activated: the client shows its banner and any line it knows for it. */
+  data class AbilityShown(
+      val targetId: Long,
+      val ability: de.fiereu.openmmo.common.enums.Ability,
+      val otherId: Long = 0,
+      val moveId: Int = 0,
+  ) : BattleEvent
 }
 
 enum class CantMoveReason {

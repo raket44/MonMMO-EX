@@ -367,6 +367,13 @@ constructor(
     battle.seenActive.add(firstAlive)
     interestManager.join(session, battle.key)
     emitter.sendStart(battle, stored.info.name)
+    // Both leads' switch-in abilities fire as the battle opens, the faster one first.
+    val opening = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+    val leads = listOf(battle.activeMon(), battle.opponentMon())
+    for (mon in leads.sortedByDescending { it.effective(de.fiereu.openmmo.server.game.battle.BattleStat.SPEED) }) {
+      engine.switchIn(battle, mon, opening)
+    }
+    emitter.sendEvents(battle, opening)
     // Facing a species is seeing it: the Pokedex tiers update the moment the battle opens.
     dexProgress.markSeen(session, charId, enemies.map { clientSpeciesId(it.source.dexId) })
     return battle
@@ -447,23 +454,48 @@ constructor(
     battle.opponentSeen.add(next)
     log.info { "Opponent sends out slot $next for char=${battle.charId}" }
     emitter.sendOpponentSwitchIn(battle, oldSlot, fullBlock)
+    val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+    engine.switchIn(battle, battle.opponentMon(), entering)
+    emitter.sendEvents(battle, entering)
   }
 
   private fun performSwitch(battle: BattleInstance, target: Int) {
     val oldSlot = battle.activeSlot
     val fullBlock = target !in battle.seenActive
     // Stages, confusion, Leech Seed and the rest stay on the field, not on the monster.
-    battle.party[oldSlot].resetVolatile()
+    val outgoing = battle.party[oldSlot]
+    if (!outgoing.fainted) {
+      if (outgoing.ability == de.fiereu.openmmo.common.enums.Ability.NATURAL_CURE) outgoing.status = 0
+      if (outgoing.ability == de.fiereu.openmmo.common.enums.Ability.REGENERATOR)
+          outgoing.currentHp = (outgoing.currentHp + outgoing.maxHp / 3).coerceAtMost(outgoing.maxHp)
+    }
+    outgoing.resetVolatile()
     battle.activeSlot = target
     battle.seenActive.add(target)
     log.info { "Switch char=${battle.charId} slot $oldSlot -> $target (fullBlock=$fullBlock)" }
     emitter.sendSwitchIn(battle, oldSlot, fullBlock)
+    val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+    engine.switchIn(battle, battle.activeMon(), entering)
+    emitter.sendEvents(battle, entering)
   }
 
-  private fun flee(battle: BattleInstance) {
+  private suspend fun flee(battle: BattleInstance) {
     if (!battle.escapable) {
       emitter.sendNotice(battle, "You can't run from this battle.")
       emitter.sendPrompt(battle)
+      return
+    }
+    if (!engine.canFlee(battle)) {
+      // Shadow Tag, Arena Trap or Magnet Pull on the wild side: the turn is lost, the wild attacks.
+      val blocker = battle.opponentMon()
+      val events = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+      events += de.fiereu.openmmo.server.game.battle.BattleEvent.TurnEffect(blocker.entityId)
+      events += de.fiereu.openmmo.server.game.battle.BattleEvent.AbilityShown(blocker.entityId, blocker.ability)
+      events += de.fiereu.openmmo.server.game.battle.BattleEvent.Line(
+          battle.activeMon().entityId, de.fiereu.openmmo.net.game.packets.battle.BattleLine.NO_ESCAPE)
+      emitter.sendEvents(battle, events)
+      emitter.sendEvents(battle, engine.resolveSwitchTurn(battle))
+      afterTurn(battle)
       return
     }
     emitter.sendFled(battle)

@@ -51,7 +51,7 @@ ping 127.0.0.1 -n 4 >nul
 
 if not exist logs mkdir logs
 rem Keep the previous run: battle diagnostics live in these and a restart used to wipe them.
-for %%F in (server-login.log server-login.err.log server-game.log server-game.err.log) do if exist "logs%%F" move /y "logs%%F" "logsprev-%%F" >nul
+for %%F in (server-login.log server-login.err.log server-game.log server-game.err.log) do if exist "logs\%%F" move /y "logs\%%F" "logs\prev-%%F" >nul
 
 rem Prefer the INSTALLED distributions: a plain JVM start opens the ports in ~2s, instead of the
 rem Gradle daemon prelude that made the client's "connecting..." hang after clicking log-in.

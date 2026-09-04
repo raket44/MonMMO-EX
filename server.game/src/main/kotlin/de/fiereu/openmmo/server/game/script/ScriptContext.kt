@@ -307,6 +307,37 @@ internal constructor(
         .startTrainerBattle(session, region, trainerId)
   }
 
+  /**
+   * givemon: a gift monster into the party. Returns the ROM's MON_GIVEN_TO_PARTY (0) or
+   * MON_CANT_GIVE (2); the PC fallback (1) is not modelled, a full party refuses the gift.
+   */
+  suspend fun giveMonster(dexId: Int, level: Int): Int {
+    val given = player?.givePokemon(session, state, dexId, level, moveIds = null) ?: return 2
+    return if (given != null) 0 else 2
+  }
+
+  /** The player's money, for checkmoney. */
+  fun money(): Int = characterId?.let { characters?.getCharacter(it)?.info?.money } ?: 0
+
+  /** getpartysize. */
+  fun partySize(): Int = characterId?.let { characters?.getCharacter(it)?.pokemon?.size } ?: 0
+
+  /** setwildbattle + dowildbattle: a scripted wild encounter the script waits out. */
+  internal suspend fun wildBattle(dexId: Int, level: Int): BattleResult =
+      checkNotNull(battles) { "Battle service is unavailable" }.startScriptedWildBattle(session, dexId, level)
+
+  /**
+   * copyobjectxytoperm: an npc's current tile becomes its permanent one. The live tile is the
+   * override a script already wrote, else the map's own placement.
+   */
+  fun copyNpcXyToPerm(localId: Int) {
+    val key = movement.npcXyOverrideKey(state, localId) ?: return
+    if (getVar(key) != 0) return
+    val info = characterId?.let { characters?.getCharacter(it)?.info } ?: return
+    val npc = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.npcs?.getOrNull(localId) ?: return
+    setNpcXyOverride(localId, npc.x, npc.y)
+  }
+
   /** checkpartymove: the party slot of the first monster knowing [moveId], PARTY_SIZE (6) if none. */
   fun partyIndexWithMove(moveId: Int): Int {
     val party = characterId?.let { characters?.getCharacter(it)?.pokemon }.orEmpty()
@@ -357,9 +388,10 @@ internal constructor(
   internal suspend fun trainerBattle(
       trainer: TrainerDef,
       defeatTextId: Int? = null,
+      whiteoutOnDefeat: Boolean = true,
   ): BattleResult =
       checkNotNull(battles) { "Battle service is unavailable" }
-          .startTrainerBattle(session, trainer, defeatTextId)
+          .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat)
 
   /**
    * Walk the map npc with decomp local id [localId] (its entityIdx) through [steps] and wait for

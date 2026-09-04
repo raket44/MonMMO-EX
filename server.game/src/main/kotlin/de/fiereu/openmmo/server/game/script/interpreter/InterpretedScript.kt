@@ -257,6 +257,58 @@ class InterpretedScript(
           ctx.setVar(namespaced("VAR_RESULT"), ctx.partyIndexWithMove(moveId))
           state.pc++
         }
+        "checkmoney" -> {
+          val amount = value(ctx, instruction.arg(0))
+          ctx.setVar(namespaced("VAR_RESULT"), if (ctx.money() >= amount) 1 else 0)
+          state.pc++
+        }
+        "getpartysize" -> {
+          ctx.setVar(namespaced("VAR_RESULT"), ctx.partySize())
+          state.pc++
+        }
+        "setwildbattle" -> {
+          state.wildSpecies = value(ctx, instruction.arg(0))
+          state.wildLevel = value(ctx, instruction.arg(1))
+          state.pc++
+        }
+        "dowildbattle" -> {
+          check(state.wildSpecies > 0) { "Script ${program.id.stable} has no setwildbattle before `${instruction.sourceLine}`" }
+          val result = tracedWait(ctx, "wild battle ${state.wildSpecies}") { ctx.wildBattle(state.wildSpecies, state.wildLevel) }
+          state.lastBattleOutcome =
+              when (result) {
+                BattleResult.VICTORY -> B_OUTCOME_WON
+                BattleResult.DEFEAT -> B_OUTCOME_LOST
+                BattleResult.CAUGHT -> B_OUTCOME_CAUGHT
+                else -> B_OUTCOME_RAN
+              }
+          if (result == BattleResult.DEFEAT || result == BattleResult.DISCONNECTED) return
+          state.pc++
+        }
+        "trainerbattle_earlyrival" -> {
+          if (!runTrainerBattle(ctx, state, instruction, rematch = false, whiteoutOnDefeat = false, earlyRival = true)) return
+        }
+        "givemon" -> {
+          val species = value(ctx, instruction.arg(0))
+          val level = value(ctx, instruction.arg(1))
+          val result = tracedWait(ctx, "givemon $species") { ctx.giveMonster(species, level) }
+          ctx.setVar(namespaced("VAR_RESULT"), result)
+          state.pc++
+        }
+        "braillemessage" -> {
+          // Braille signs read as plain sign text on this client.
+          val line = textLine(textArg(instruction, 0).token, instruction)
+          tracedWait(ctx, "dialog") { ctx.sign(line) }
+          state.pc++
+        }
+        "copyobjectxytoperm" -> {
+          val target =
+              resolveMovementTarget(ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
+          if (target is MovementTarget.Npc) ctx.copyNpcXyToPerm(target.localId)
+          state.pc++
+        }
+        "map_script",
+        "map_script_2" ->
+            error("Script ${program.id.stable} executed a map script table row at `${instruction.sourceLine}`")
         "dofieldeffect" -> {
           // Surf is the one field effect with a server-side state; the rest (Cut's swing, the
           // flash, the rock smash) are client visuals this dialog channel cannot trigger yet, and
@@ -279,6 +331,22 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
+            "SetVermilionTrashCans" -> {
+              // src/field_specials.c: the live can is random, the second switch sits beside it
+              // (right or below when there is room, else left or above) in the 5x3 grid.
+              val idx = 1 + kotlin.random.Random.nextInt(15)
+              val right = idx % 5 != 0
+              val below = idx <= 10
+              val second =
+                  when {
+                    right && below -> if (kotlin.random.Random.nextBoolean()) idx + 1 else idx + 5
+                    right -> idx + 1
+                    below -> idx + 5
+                    else -> idx - 1
+                  }
+              ctx.setVar(namespaced("VAR_0x8004"), idx)
+              ctx.setVar(namespaced("VAR_0x8005"), second)
+            }
             in InterpreterSupport.NOOP_SPECIALS -> Unit
             else ->
                 throw UnsupportedScriptCommandException(
@@ -289,7 +357,8 @@ class InterpretedScript(
         "specialvar" -> {
           val function = instruction.arg(1).token
           val result =
-              InterpreterSupport.SPECIALVAR_RESULTS[function]
+              if (function == "GetBattleOutcome") state.lastBattleOutcome
+              else InterpreterSupport.SPECIALVAR_RESULTS[function]
                   ?: throw UnsupportedScriptCommandException(
                       program.id.stable, "specialvar $function", instruction.sourceLine)
           ctx.setVar(namespaced(varArg(instruction, 0).token), result)
@@ -548,9 +617,14 @@ class InterpretedScript(
     val token = arg.token
     if (token == "LOCALID_NONE") return null
     if (token == "LOCALID_PLAYER") return MovementTarget.Player
-    activeProgram.objectIds[token]?.let {
-      return MovementTarget.Npc(it)
-    }
+    // Shared scripts (data/scripts) address a map's objects through the script that called them,
+    // so the root program's table and then any library program's table are consulted too.
+    (activeProgram.objectIds[token]
+            ?: program.objectIds[token]
+            ?: programLibrary.values.firstNotNullOfOrNull { it.objectIds[token] })
+        ?.let {
+          return MovementTarget.Npc(it)
+        }
     if (token == "VAR_LAST_TALKED") {
       return MovementTarget.Npc(
           ctx.interactingLocalId()
@@ -752,7 +826,10 @@ class InterpretedScript(
         state.pc++
         true
       }
-      BattleResult.DEFEAT,
+      BattleResult.DEFEAT -> {
+        state.lastBattleOutcome = B_OUTCOME_LOST
+        false
+      }
       BattleResult.DISCONNECTED -> false
       BattleResult.FAILED,
       BattleResult.FLED,
@@ -940,15 +1017,18 @@ class InterpretedScript(
       state: RuntimeState,
       instruction: ScriptInstruction,
       rematch: Boolean,
+      whiteoutOnDefeat: Boolean = true,
+      earlyRival: Boolean = false,
   ): Boolean {
-    val expectedArgs = if (rematch) setOf(3) else setOf(3, 4, 5)
+    // trainerbattle_earlyrival: trainer, battle kind, defeat speech, the rival's victory speech.
+    val expectedArgs = if (rematch) setOf(3) else if (earlyRival) setOf(4) else setOf(3, 4, 5)
     check(instruction.args.size in expectedArgs) {
       "Script ${program.id.stable} expected ${expectedArgs.joinToString(" or ")} arguments in " +
           "`${instruction.sourceLine}`"
     }
 
     val base = resolveTrainer(ctx, trainerArg(instruction, 0), instruction)
-    val intro = textLine(textArg(instruction, 1).token, instruction)
+    val intro = if (earlyRival) null else textLine(textArg(instruction, 1).token, instruction)
     // The trainerbattle macro's third argument is the trainer's IN-BATTLE defeat speech - the
     // GBA engine shows it in the battle screen before control returns to the script. The battle
     // end packet carries its ROM dialog id and the client renders it before the prize money.
@@ -973,16 +1053,18 @@ class InterpretedScript(
     }
 
     val opponent = if (rematch) resolveRematchTrainer(ctx, base, instruction) else base
-    tracedWait(ctx, "trainer dialog") { ctx.say(intro) }
+    if (intro != null) tracedWait(ctx, "trainer dialog") { ctx.say(intro) }
     return when (val result =
         tracedWait(ctx, "battle ${opponent.constant}") {
-          ctx.trainerBattle(opponent, defeat.textId)
+          ctx.trainerBattle(opponent, defeat.textId, whiteoutOnDefeat)
         }) {
       BattleResult.VICTORY -> {
+        state.lastBattleOutcome = B_OUTCOME_WON
         ctx.setFlag(TrainerStoryState.defeated(program.storyNamespace, opponent.id))
         if (rematch) ctx.setVar(readyKey, 0)
         val continuation =
-            (instruction.args.getOrNull(3) as? LabelArg)?.takeUnless { it.token == "FALSE" }
+            if (earlyRival) null
+            else (instruction.args.getOrNull(3) as? LabelArg)?.takeUnless { it.token == "FALSE" }
         if (continuation == null) {
           false
         } else {
@@ -990,7 +1072,11 @@ class InterpretedScript(
           true
         }
       }
-      BattleResult.DEFEAT,
+      BattleResult.DEFEAT -> {
+        state.lastBattleOutcome = B_OUTCOME_LOST
+        // The early rival: the script carries on after a loss (Oak's lab, Route 22).
+        if (whiteoutOnDefeat) false else { state.pc++; true }
+      }
       BattleResult.DISCONNECTED -> false
       BattleResult.FAILED,
       BattleResult.FLED,
@@ -1186,7 +1272,13 @@ class InterpretedScript(
             when (arg.token) {
               "TRUE" -> 1
               "FALSE" -> 0
-              else -> error("Script ${program.id.stable} cannot resolve ${arg.token}")
+              // A map-local object id used as a value (setvar VAR_LAST_TALKED, LOCALID_X): the
+              // pret local id, one above the object index, so a later applymovement finds it.
+              else ->
+                  (program.objectIds[arg.token]
+                          ?: programLibrary.values.firstNotNullOfOrNull { it.objectIds[arg.token] })
+                      ?.let { it + PRET_LOCAL_ID_OFFSET }
+                      ?: error("Script ${program.id.stable} cannot resolve ${arg.token}")
             }
         else -> error("Script ${program.id.stable} expected a value, got ${arg.token}")
       }
@@ -1311,6 +1403,10 @@ class InterpretedScript(
       var lastMovementTarget: MovementTarget? = null,
       var currentMessage: DialogLine? = null,
       var skipNextWaitMessage: Boolean = false,
+      /** GetBattleOutcome after the last scripted battle (B_OUTCOME_*). */
+      var lastBattleOutcome: Int = B_OUTCOME_WON,
+      var wildSpecies: Int = 0,
+      var wildLevel: Int = 0,
   )
 
   private data class ScriptLocation(
@@ -1381,3 +1477,8 @@ internal object TrainerStoryState {
 
 /** The GBA answer when a multichoice is cancelled with B. */
 private const val MULTI_B_PRESSED = 127
+
+private const val B_OUTCOME_WON = 1
+private const val B_OUTCOME_LOST = 2
+private const val B_OUTCOME_RAN = 4
+private const val B_OUTCOME_CAUGHT = 7

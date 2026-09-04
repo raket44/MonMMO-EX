@@ -45,7 +45,8 @@ constructor(
       state: PlayerState,
       dexId: Int,
       level: Int,
-      moveIds: List<Int>,
+      /** Null keeps the level-up moves the roll produced (gift monsters). */
+      moveIds: List<Int>?,
       isShiny: Boolean = false,
   ): Pokemon? {
     val characterId = state.characterId ?: return null
@@ -58,7 +59,7 @@ constructor(
             container = PokemonContainer.PARTY,
             containerSlot = stored.pokemon.size.toShort(),
             ot = stored.info.name,
-            moves = paddedMoves(moveIds),
+            moves = moveIds?.let(::paddedMoves) ?: rolled.moves,
             isShiny = isShiny,
         )
     // Only tell the client about it once the database has it.

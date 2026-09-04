@@ -21,6 +21,8 @@ data class BattleRules(
     val trainer: TrainerDef? = null,
     /** ROM dialog id of the trainer's in-battle defeat speech; shown before the prize money. */
     val defeatTextId: Int? = null,
+    /** False for the early rival: a loss hands the outcome to the script instead of a whiteout. */
+    val whiteoutOnDefeat: Boolean = true,
 )
 
 /** One running battle. A wild encounter is the case where [opponent] holds a single monster. */
@@ -37,6 +39,8 @@ class BattleInstance(
     val trainer: TrainerDef? = null,
     /** ROM dialog id of the trainer's in-battle defeat speech; shown before the prize money. */
     val defeatTextId: Int? = null,
+    /** False for the early rival: a loss hands the outcome to the script instead of a whiteout. */
+    val whiteoutOnDefeat: Boolean = true,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1

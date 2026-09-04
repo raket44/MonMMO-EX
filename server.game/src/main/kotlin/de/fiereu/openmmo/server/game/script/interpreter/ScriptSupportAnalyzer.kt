@@ -102,7 +102,9 @@ class ScriptSupportAnalyzer(
       }
     }
     instruction.args.filterIsInstance<ObjectArg>().forEach { objectRef ->
-      if (!canResolveObject(activeProgram, objectRef.token)) {
+      if (!canResolveObject(activeProgram, objectRef.token) &&
+          !canResolveObject(script.program, objectRef.token) &&
+          script.programLibrary.values.none { objectRef.token in it.objectIds }) {
         return sourceReason(instruction, "unresolved object ${objectRef.token}")
       }
     }
@@ -208,6 +210,16 @@ class ScriptSupportAnalyzer(
           "multichoicedefault",
           "multichoicegrid" -> args.size == 5
           "checkpartymove" -> args.size == 1
+          "checkmoney" -> args.size in 1..2
+          "givemon" -> args.size in 2..3
+          "braillemessage" -> args.size == 1
+          "getpartysize",
+          "dowildbattle" -> args.isEmpty()
+          "setwildbattle" -> args.size in 2..3
+          "trainerbattle_earlyrival" -> args.size == 4
+          "copyobjectxytoperm" -> args.size == 1
+          "map_script" -> args.size == 2
+          "map_script_2" -> args.size == 3
           in InterpreterSupport.BUFFER_COMMANDS -> args.size == 2
           "checkplayergender" -> args.isEmpty()
           "end",
@@ -265,7 +277,8 @@ class ScriptSupportAnalyzer(
       return sourceReason(instruction, "unsupported special ${args[0].token}")
     }
     if (instruction.command == "specialvar" &&
-        args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS) {
+        args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS &&
+        args[1].token != "GetBattleOutcome") {
       return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
     }
     if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {
@@ -331,6 +344,12 @@ class ScriptSupportAnalyzer(
           "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
           "warp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
+          "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg && args[3] is TextArg
+          "givemon" -> isValue(args[0]) && isValue(args[1])
+          "braillemessage" -> args[0] is TextArg
+          "copyobjectxytoperm" -> args[0] is ObjectArg
+          "checkmoney" -> isValue(args[0])
+          "setwildbattle" -> isValue(args[0]) && isValue(args[1]) && (args.size < 3 || isValue(args[2]))
           in InterpreterSupport.DEFEATED_BRANCHES -> args[0] is TrainerArg && args[1] is LabelArg
           "setvar",
           "setorcopyvar",
@@ -373,7 +392,11 @@ class ScriptSupportAnalyzer(
   }
 
   private fun isValue(arg: de.fiereu.openmmo.script.ScriptArg): Boolean =
-      arg is IntArg || arg is VarArg || (arg is SymbolArg && arg.token in BOOLEAN_SYMBOLS)
+      arg is IntArg ||
+          arg is VarArg ||
+          // A map-local object id as a value (setvar VAR_LAST_TALKED, LOCALID_X): the executor
+          // resolves it through the program's object table.
+          (arg is SymbolArg && (arg.token in BOOLEAN_SYMBOLS || arg.token.startsWith("LOCALID_")))
 
   private fun isImmediate(arg: de.fiereu.openmmo.script.ScriptArg): Boolean =
       arg is IntArg || (arg is SymbolArg && arg.token in BOOLEAN_SYMBOLS)
@@ -534,6 +557,16 @@ class ScriptSupportAnalyzer(
             "multichoicedefault",
             "multichoicegrid",
             "checkpartymove",
+            "checkmoney",
+            "givemon",
+            "braillemessage",
+            "getpartysize",
+            "setwildbattle",
+            "dowildbattle",
+            "trainerbattle_earlyrival",
+            "copyobjectxytoperm",
+            "map_script",
+            "map_script_2",
             "removeobject",
             "addobject",
             "checkplayergender",
@@ -551,6 +584,7 @@ class ScriptSupportAnalyzer(
             COMPARISON_BRANCHES +
             FLAG_BRANCHES +
             InterpreterSupport.NOOP_COMMANDS +
+            InterpreterSupport.BUFFER_COMMANDS +
             InterpreterSupport.ITEM_COMMANDS
   }
 }

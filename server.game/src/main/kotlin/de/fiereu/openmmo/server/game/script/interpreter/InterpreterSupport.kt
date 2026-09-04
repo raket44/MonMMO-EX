@@ -12,6 +12,9 @@ internal object InterpreterSupport {
    */
   val NOOP_COMMANDS =
       setOf(
+          // The monster picture window has no client counterpart on this dialog channel.
+          "showmonpic",
+          "hidemonpic",
           "playse",
           "waitse",
           "playbgm",
@@ -79,13 +82,15 @@ internal object InterpreterSupport {
           // a cosmetic gap in one line, against whole trainers doing nothing (the pre-battle
           // approach with no battle). Revisit with the text-override pipeline.
           "GetPlayerBigGuyGirlString",
+          // Dex "seen" bookkeeping is the dex service's, not the script's.
+          "SetSeenMon",
       )
 
   /**
    * String-buffer commands with no dialog channel to carry them yet: the ROM line renders its
    * variable unfilled. Cosmetic, against Cut and Surf not working at all.
    */
-  val BUFFER_COMMANDS = setOf("bufferpartymonnick", "buffermovename")
+  val BUFFER_COMMANDS = setOf("bufferpartymonnick", "buffermovename", "bufferstdstring", "buffernumberstring")
 
   /**
    * ROM multichoice menus the client draws from its own registry (category 10 sets, f/Lx.R40):
@@ -95,7 +100,7 @@ internal object InterpreterSupport {
   val BUILTIN_MENUS: Map<String, Int> = emptyMap()
 
   /** Specials the executor implements for real. */
-  val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty")
+  val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty", "SetVermilionTrashCans")
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
 
@@ -111,6 +116,9 @@ internal object InterpreterSupport {
           "PlayerNotAtTrainerHillEntrance" to 1,
           "BufferUnionRoomPlayerName" to 0,
           "IsPokerusInParty" to 0,
+          // The ferry desk: Vermilion is seagallop number 7 (src/seagallop.c).
+          "GetSeagallopNumber" to 7,
+          "IsNationalPokedexEnabled" to 0,
           // No Vs Seeker / Match Call rematch offers until the server models them; scripts fall
           // through to their ordinary already-defeated dialog.
           "ShouldTryRematchBattle" to 0,

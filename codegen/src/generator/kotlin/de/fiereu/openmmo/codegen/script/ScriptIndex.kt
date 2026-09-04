@@ -30,6 +30,13 @@ private constructor(
 
   companion object {
     private val labelLine = Regex("^(\\w+)::?\\s*$")
+    private val aliasLine = Regex("^\\.(?:equ|set)\\s+(\\w+)\\s*,\\s*(.+)$")
+
+    private fun applyAliases(line: String, aliases: Map<String, String>): String {
+      var out = line
+      for ((name, value) in aliases) out = out.replace(Regex("\\b" + Regex.escape(name) + "\\b"), value)
+      return out
+    }
 
     fun build(decompDir: File): ScriptIndex {
       val roots = listOf(File(decompDir, "data/maps"), File(decompDir, "data/scripts"))
@@ -105,7 +112,16 @@ private constructor(
       // A single-colon label whose block is `.2byte` rows - Emerald's mart shelves. FireRed
       // declares its shelves with `::` and they come through the ordinary path.
       var dataLabel: String? = null
-      for (raw in lines) {
+      // File-local assembler aliases (`.equ SWITCH2_ID, VAR_0x8005` in the Vermilion Gym) are
+      // substituted into every later line, so scripts read the var they actually mean.
+      val aliases = LinkedHashMap<String, String>()
+      for (rawLine in lines) {
+        val aliasMatch = aliasLine.matchEntire(rawLine.trim())
+        if (aliasMatch != null) {
+          aliases[aliasMatch.groupValues[1]] = aliasMatch.groupValues[2].trim()
+          continue
+        }
+        val raw = if (aliases.isEmpty()) rawLine else applyAliases(rawLine, aliases)
         val line = raw.trim()
         val match = labelLine.matchEntire(line)
         if (match != null) {

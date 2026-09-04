@@ -188,7 +188,8 @@ constructor(
     val battle = battles.byChar(charId) ?: return null
     val result = battle.pendingResult ?: return null
     finishBattle(battle, result)
-    return result
+    // A scripted loss without whiteout (early rival) is the script's to handle.
+    return if (result == BattleResult.DEFEAT && !battle.whiteoutOnDefeat) null else result
   }
 
   /** True while the character has a battle running, so callers can skip starting another. */
@@ -231,11 +232,15 @@ constructor(
     return startTrainerBattle(session, trainer)
   }
 
-  /** Runs a battle against a trainer's whole team and waits for its scene. */
+  /**
+   * Runs a battle against a trainer's whole team and waits for its scene. [whiteoutOnDefeat]
+   * false is the early rival: losing just hands the outcome back to the script.
+   */
   suspend fun startTrainerBattle(
       session: SessionContext,
       trainer: TrainerDef,
       defeatTextId: Int? = null,
+      whiteoutOnDefeat: Boolean = true,
   ): BattleResult {
     val battle =
         createBattle(
@@ -245,7 +250,14 @@ constructor(
             escapable = false,
             trainer = trainer,
             defeatTextId = defeatTextId,
+            whiteoutOnDefeat = whiteoutOnDefeat,
         ) ?: return BattleResult.FAILED
+    return battle.completion.await()
+  }
+
+  /** A scripted wild battle (setwildbattle/dowildbattle: legendaries, Snorlax) awaited by the script. */
+  suspend fun startScriptedWildBattle(session: SessionContext, dexId: Int, level: Int): BattleResult {
+    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
 
@@ -279,6 +291,7 @@ constructor(
       escapable: Boolean,
       trainer: TrainerDef? = null,
       defeatTextId: Int? = null,
+      whiteoutOnDefeat: Boolean = true,
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {

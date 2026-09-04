@@ -28,6 +28,7 @@ class EncounterService
 constructor(
     private val characterStore: CharacterStore,
     private val battleService: BattleService,
+    private val ndsLand: NdsLand = NdsLand(),
 ) {
 
   private val random: Random = Random.Default
@@ -93,6 +94,35 @@ constructor(
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
     battleService.startWildBattle(session, slot.speciesId, level)
+  }
+
+  /**
+   * A step on a DS map (Johto, Sinnoh; Unova once its land file exists): the ROM's tile type says
+   * grass or cave floor, the map directory names the map, and the dex tables of that region roll
+   * the encounter exactly as on the GBA maps.
+   */
+  fun onNdsStep(session: SessionContext, charId: Long, region: Int, bank: Int, map: Int, x: Int, y: Int) {
+    val type = ndsLand.typeAt(region, bank, map, x, y) ?: return
+    val types =
+        when {
+          ndsLand.isGrass(type) -> setOf("Grass", "Dark Grass")
+          ndsLand.isCaveFloor(type) -> setOf("Cave")
+          else -> return
+        }
+    if (battleService.inBattle(charId) || !hasUsablePartyMon(charId)) return
+    val name = NdsMapTypes.nameOf(region, bank, map) ?: return
+    val season = WorldClock.season()
+    val time = WorldClock.timeOfDay()
+    val pool = RetailEncounters.wildPoolForNdsName(name, region, types, season, time)
+    if (pool.isEmpty()) {
+      log.debug { "[Encounter] DS map $region:$bank:$map '$name' has no ${types.first()} table" }
+      return
+    }
+    if (random.nextInt(ENCOUNTER_ROLL_MAX) >= DEFAULT_ENCOUNTER_RATE * ENCOUNTER_RATE_SCALE) return
+    val slot = pickRetailSlot(pool) ?: return
+    val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
+    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
+    battleService.startWildBattle(session, slot.dexId, level)
   }
 
   /** Picks from the retail pool weighted by its per-time rarity. */

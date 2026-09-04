@@ -1,1136 +1,1136 @@
-Everywhere;4;0;0;10;10
-Nothing;4;1;0;10;10
-Underground;4;2;0;10;10
-Jubilife City;4;3;0;10;10
-Jubilife City Mart;4;4;0;10;10
-Unused Jubilife City House 1;4;5;0;10;10
-Jubilife City Pokecenter 1f;4;6;0;10;10
-Jubilife City Pokecenter 2f;4;7;0;10;10
-Poketch Co 1f;4;8;0;10;10
-Poketch Co 2f;4;9;0;10;10
-Poketch Co 3f;4;10;0;10;10
-Jubilife Tv 1f;4;11;0;10;10
-Jubilife Tv 2f;4;12;0;10;10
-Jubilife Tv 3f;4;13;0;10;10
-Jubilife Tv 4f;4;14;0;10;10
-Jubilife Tv 2f Gallery;4;15;0;10;10
-Jubilife Tv 3f Global Ranking Room;4;16;0;10;10
-Jubilife Tv 3f Group Ranking Room;4;17;0;10;10
-Jubilife Tv Elevator;4;18;0;10;10
-Jubilife City South House 1f;4;19;0;10;10
-Jubilife City South House 2f;4;20;0;10;10
-Unused Jubilife City South House 3f;4;21;0;10;10
-Unused Jubilife City South House 4f;4;22;0;10;10
-Unused Jubilife City House 2;4;23;0;10;10
-Jubilife City Condominiums 1f;4;24;0;10;10
-Jubilife City Condominiums 2f;4;25;0;10;10
-Unused Jubilife City Condominiums 3f;4;26;0;10;10
-Unused Jubilife City Condominiums 4f;4;27;0;10;10
-Global Terminal 1f;4;28;0;10;10
-Trainers School;4;29;0;10;10
-Jubilife City Southwest House 1f;4;30;0;10;10
-Unused Jubilife City House 3;4;31;0;10;10
-Unused Jubilife City House 4;4;32;0;10;10
-Canalave City;4;33;0;10;10
-Canalave City Mart;4;34;0;10;10
-Canalave City Gym;4;35;0;10;10
-Canalave City Pokecenter 1f;4;36;0;10;10
-Canalave City Pokecenter 2f;4;37;0;10;10
-Canalave Library 1f;4;38;0;10;10
-Canalave Library 2f;4;39;0;10;10
-Canalave Library 3f;4;40;0;10;10
-Canalave City Southeast House;4;41;0;10;10
-Canalave City East House;4;42;0;10;10
-Canalave City Harbor Inn;4;43;0;10;10
-Canalave City Sailor Eldritch House;4;44;0;10;10
-Oreburgh City;4;45;0;10;10
-Oreburgh City Mart;4;46;0;10;10
-Oreburgh City Gym;4;47;0;10;10
-Oreburgh City Pokecenter 1f;4;48;0;10;10
-Oreburgh City Pokecenter 2f;4;49;0;10;10
-Oreburgh City Northwest House 1f;4;50;0;10;10
-Oreburgh City Northwest House 2f;4;51;0;10;10
-Unused Oreburgh City Northwest House 3f;4;52;0;10;10
-Unused Oreburgh City Northwest House 4f;4;53;0;10;10
-Oreburgh City North House 1f;4;54;0;10;10
-Oreburgh City North House 2f;4;55;0;10;10
-Unused Oreburgh City North House 3f;4;56;0;10;10
-Unused Oreburgh City North House 4f;4;57;0;10;10
-Oreburgh City Middle House;4;58;0;10;10
-Mining Museum;4;59;0;10;10
-Oreburgh City West House;4;60;0;10;10
-Oreburgh City East House 1f;4;61;0;10;10
-Oreburgh City East House 2f;4;62;0;10;10
-Unused Oreburgh City East House 3f;4;63;0;10;10
-Oreburgh City South House;4;64;0;10;10
-Eterna City;4;65;0;10;10
-Eterna City Mart;4;66;0;10;10
-Eterna City Gym;4;67;0;10;10
-Eterna City Dp Gym;4;68;0;10;10
-Eterna City Pokecenter 1f;4;69;0;10;10
-Eterna City Pokecenter 2f;4;70;0;10;10
-Cycle Shop;4;71;0;10;10
-Team Galactic Eterna Building 1f;4;72;0;10;10
-Team Galactic Eterna Building 2f;4;73;0;10;10
-Team Galactic Eterna Building 3f;4;74;0;10;10
-Team Galactic Eterna Building 4f;4;75;0;10;10
-Eterna City Condominiums 1f;4;76;0;10;10
-Eterna City Condominiums 2f;4;77;0;10;10
-Eterna City Condominiums 3f;4;78;0;10;10
-Unused Eterna City Condominiums 4f;4;79;0;10;10
-Route 206 Cycling Road North Gate;4;80;0;10;10
-Eterna City Herb Shop;4;81;0;10;10
-Eterna City South House;4;82;0;10;10
-Eterna City East House;4;83;0;10;10
-Eterna City Underground Man House;4;84;0;10;10
-Unused Eterna City House;4;85;0;10;10
-Hearthome City;4;86;0;10;10
-Hearthome City Mart;4;87;0;10;10
-Hearthome City Gym Entrance Room;4;88;0;10;10
-Hearthome City Gym Trainer Room 1;4;89;0;10;10
-Hearthome City Gym Trainer Room 2;4;90;0;10;10
-Hearthome City Gym Leader Room;4;91;0;10;10
-Hearthome City Dp Gym Trainer Room 1;4;92;0;10;10
-Hearthome City Dp Gym Elevator Room 1;4;93;0;10;10
-Hearthome City Dp Gym Trainer Room 2;4;94;0;10;10
-Hearthome City Dp Gym Elevator Room 2;4;95;0;10;10
-Hearthome City Dp Gym Trainer Room 3;4;96;0;10;10
-Hearthome City Dp Gym Trainer Room 4;4;97;0;10;10
-Hearthome City Dp Gym Trainer Room 5;4;98;0;10;10
-Hearthome City Dp Gym Trainer Room 6;4;99;0;10;10
-Hearthome City Dp Gym Leader Room;4;100;0;10;10
-Hearthome City Pokecenter 1f;4;101;0;10;10
-Hearthome City Pokecenter 2f;4;102;0;10;10
-Hearthome City Southeast House 1f;4;103;0;10;10
-Hearthome City Southeast House 2f;4;104;0;10;10
-Hearthome City Southeast House Elevator;4;105;0;10;10
-Hearthome City Pokemon Fan Club;4;106;0;10;10
-Hearthome City West Gate To Amity Square;4;107;0;10;10
-Hearthome City East Gate To Amity Square;4;108;0;10;10
-Route 208 Gate To Hearthome City;4;109;0;10;10
-Route 209 Gate To Hearthome City;4;110;0;10;10
-Route 212 Gate To Hearthome City;4;111;0;10;10
-Hearthome City Northeast House 1f;4;112;0;10;10
-Hearthome City Northeast House 2f;4;113;0;10;10
-Hearthome City Northeast House Elevator;4;114;0;10;10
-Hearthome City Northwest House;4;115;0;10;10
-Poffin House;4;116;0;10;10
-Contest Hall Lobby;4;117;0;10;10
-Contest Hall Stage Ongoing Contest;4;118;0;10;10
-Foreign Building;4;119;0;10;10
-Pastoria City;4;120;0;10;10
-Pastoria City Mart;4;121;0;10;10
-Pastoria City Gym;4;122;0;10;10
-Pastoria City Pokecenter 1f;4;123;0;10;10
-Pastoria City Pokecenter 2f;4;124;0;10;10
-Pastoria City Observatory Gate 1f;4;125;0;10;10
-Pastoria City Observatory Gate 2f;4;126;0;10;10
-Pastoria City Southwest House;4;127;0;10;10
-Pastoria City Middle House;4;128;0;10;10
-Pastoria City East House;4;129;0;10;10
-Pastoria City North House;4;130;0;10;10
-Pastoria City Northeast House;4;131;0;10;10
-Veilstone City;4;132;0;10;10
-Veilstone City Gym;4;133;0;10;10
-Veilstone City Pokecenter 1f;4;134;0;10;10
-Veilstone City Pokecenter 2f;4;135;0;10;10
-Game Corner;4;136;0;10;10
-Veilstone Store 1f;4;137;0;10;10
-Veilstone Store 2f;4;138;0;10;10
-Veilstone Store 3f;4;139;0;10;10
-Veilstone Store 4f;4;140;0;10;10
-Veilstone Store 5f;4;141;0;10;10
-Veilstone Store Elevator;4;142;0;10;10
-Veilstone City Galactic Warehouse;4;143;0;10;10
-Veilstone City Prize Exchange;4;144;0;10;10
-Veilstone City Southeast House;4;145;0;10;10
-Veilstone City Northwest House;4;146;0;10;10
-Veilstone City Northeast House;4;147;0;10;10
-Veilstone City Southwest House;4;148;0;10;10
-Route 215 Gate To Veilstone City;4;149;0;10;10
-Sunyshore City;4;150;0;10;10
-Sunyshore City Pokecenter 1f;4;151;0;10;10
-Sunyshore City Pokecenter 2f;4;152;0;10;10
-Sunyshore City Mart;4;153;0;10;10
-Sunyshore City Gym Room 1;4;154;0;10;10
-Sunyshore City Gym Room 2;4;155;0;10;10
-Sunyshore City Gym Room 3;4;156;0;10;10
-Sunyshore Market;4;157;0;10;10
-Sunyshore City Northeast House;4;158;0;10;10
-Sunyshore City West House;4;159;0;10;10
-Sunyshore City Northwest House;4;160;0;10;10
-Unused Sunyshore City House 1;4;161;0;10;10
-Unused Sunyshore City House 2;4;162;0;10;10
-Sunyshore City East House;4;163;0;10;10
-Vista Lighthouse;4;164;0;10;10
-Snowpoint City;4;165;0;10;10
-Snowpoint City Mart;4;166;0;10;10
-Snowpoint City Gym;4;167;0;10;10
-Snowpoint City Pokecenter 1f;4;168;0;10;10
-Snowpoint City Pokecenter 2f;4;169;0;10;10
-Snowpoint City West House;4;170;0;10;10
-Snowpoint City East House;4;171;0;10;10
-Pokemon League;4;172;0;10;10
-Pokemon League South Pokecenter 1f;4;173;0;10;10
-Pokemon League South Pokecenter 2f;4;174;0;10;10
-Pokemon League North Pokecenter 1f;4;175;0;10;10
-Pokemon League Elevator To Aaron Room;4;176;0;10;10
-Pokemon League Aaron Room;4;177;0;10;10
-Pokemon League Elevator To Bertha Room;4;178;0;10;10
-Pokemon League Bertha Room;4;179;0;10;10
-Pokemon League Elevator To Flint Room;4;180;0;10;10
-Pokemon League Flint Room;4;181;0;10;10
-Pokemon League Elevator To Lucian Room;4;182;0;10;10
-Pokemon League Lucian Room;4;183;0;10;10
-Pokemon League Elevator To Champion Room;4;184;0;10;10
-Pokemon League Champion Room;4;185;0;10;10
-Pokemon League Hallway To Hall Of Fame;4;186;0;10;10
-Pokemon League Hall Of Fame;4;187;0;10;10
-Fight Area;4;188;0;10;10
-Fight Area Pokecenter 1f;4;189;0;10;10
-Fight Area Pokecenter 2f;4;190;0;10;10
-Fight Area Mart;4;191;0;10;10
-Unused Battle Park Gate To Fight Area;4;192;0;10;10
-Route 225 Gate To Fight Area;4;193;0;10;10
-Fight Area Middle House;4;194;0;10;10
-Fight Area South House;4;195;0;10;10
-Unused Fight Area House;4;196;0;10;10
-Unknown 197;4;197;0;10;10
-Oreburgh Mine B1f;4;198;0;10;10
-Oreburgh Mine B2f;4;199;0;10;10
-Valley Windworks Outside;4;200;0;10;10
-Valley Windworks Building;4;201;0;10;10
-Eterna Forest Outside;4;202;0;10;10
-Eterna Forest;4;203;0;10;10
-Fuego Ironworks Outside;4;204;0;10;10
-Fuego Ironworks Building;4;205;0;10;10
-Unknown 206;4;206;0;10;10
-Mt Coronet 1f South;4;207;0;10;10
-Mt Coronet 2f;4;208;0;10;10
-Mt Coronet 3f;4;209;0;10;10
-Mt Coronet Outside North;4;210;0;10;10
-Mt Coronet Outside South;4;211;0;10;10
-Mt Coronet 4f Rooms 1 And 2;4;212;0;10;10
-Mt Coronet 4f Room 3;4;213;0;10;10
-Mt Coronet 5f;4;214;0;10;10
-Mt Coronet 6f;4;215;0;10;10
-Mt Coronet 1f Tunnel Room;4;216;0;10;10
-Mt Coronet 1f North Room 2;4;217;0;10;10
-Mt Coronet 1f North Room 1;4;218;0;10;10
-Mt Coronet B1f;4;219;0;10;10
-Spear Pillar;4;220;0;10;10
-Spear Pillar Distorted;4;221;0;10;10
-Unknown 222;4;222;0;10;10
-Pastoria City Dp Great Marsh;4;223;0;10;10
-Unknown 224;4;224;0;10;10
-Solaceon Ruins Maniac Tunnel Room;4;225;0;10;10
-Solaceon Ruins Room 1;4;226;0;10;10
-Solaceon Ruins Room 2 Northeast Dead End;4;227;0;10;10
-Solaceon Ruins Room 1 Northwest Dead End;4;228;0;10;10
-Solaceon Ruins Room 2;4;229;0;10;10
-Solaceon Ruins Room 1 Southeast Dead End;4;230;0;10;10
-Solaceon Ruins Room 3;4;231;0;10;10
-Solaceon Ruins Room 2 Southeast Dead End;4;232;0;10;10
-Solaceon Ruins Room 6 Southeast Dead End;4;233;0;10;10
-Solaceon Ruins Room 5 Southwest Dead End;4;234;0;10;10
-Solaceon Ruins Room 3 Northwest Dead End;4;235;0;10;10
-Solaceon Ruins Room 3 Southwest Dead End;4;236;0;10;10
-Solaceon Ruins Room 4;4;237;0;10;10
-Solaceon Ruins Room 6;4;238;0;10;10
-Solaceon Ruins Room 5;4;239;0;10;10
-Solaceon Ruins Room 7;4;240;0;10;10
-Solaceon Ruins Room 4 Southeast Dead End;4;241;0;10;10
-Solaceon Ruins Room 6 Northwest Dead End;4;242;0;10;10
-Unknown 243;4;243;0;10;10
-Victory Road 1f;4;244;0;10;10
-Victory Road 2f;4;245;0;10;10
-Victory Road B1f;4;246;0;10;10
-Victory Road 1f Room 2;4;247;0;10;10
-Victory Road 1f Room 1;4;248;0;10;10
-Victory Road 1f Room 3;4;249;0;10;10
-Unknown 250;4;250;0;10;10
-Pal Park;4;251;0;10;10
-Unknown 252;4;252;0;10;10
-Amity Square;4;253;0;10;10
-Ravaged Path;4;254;0;10;10
-Unknown 255;4;255;0;10;10
-Floaroma Meadow;4;0;1;10;10
-Floaroma Meadow House;4;1;1;10;10
-Oreburgh Gate 1f;4;2;1;10;10
-Oreburgh Gate B1f;4;3;1;10;10
-Fullmoon Island;4;4;1;10;10
-Fullmoon Island Forest;4;5;1;10;10
-Stark Mountain Outside;4;6;1;10;10
-Stark Mountain Room 1;4;7;1;10;10
-Stark Mountain Room 2;4;8;1;10;10
-Stark Mountain Room 3;4;9;1;10;10
-Unknown 266;4;10;1;10;10
-Sendoff Spring;4;11;1;10;10
-Turnback Cave Entrance;4;12;1;10;10
-Turnback Cave Pillar Room;4;13;1;10;10
-Turnback Cave Giratina Room;4;14;1;10;10
-Turnback Cave Pillar 1 Room 1;4;15;1;10;10
-Turnback Cave Pillar 1 Room 2;4;16;1;10;10
-Turnback Cave Pillar 1 Room 3;4;17;1;10;10
-Flower Paradise;4;18;1;10;10
-Unknown 275;4;19;1;10;10
-Unknown 276;4;20;1;10;10
-Unknown 277;4;21;1;10;10
-Snowpoint Temple 1f;4;22;1;10;10
-Snowpoint Temple B1f;4;23;1;10;10
-Snowpoint Temple B2f;4;24;1;10;10
-Snowpoint Temple B3f;4;25;1;10;10
-Snowpoint Temple B4f;4;26;1;10;10
-Snowpoint Temple B5f;4;27;1;10;10
-Wayward Cave 1f;4;28;1;10;10
-Wayward Cave B1f;4;29;1;10;10
-Ruin Maniac Cave Short;4;30;1;10;10
-Trophy Garden;4;31;1;10;10
-Iron Island;4;32;1;10;10
-Iron Island 1f;4;33;1;10;10
-Iron Island B1f Left Room;4;34;1;10;10
-Iron Island B1f Right Room;4;35;1;10;10
-Iron Island B2f Right Room;4;36;1;10;10
-Iron Island B2f Left Room;4;37;1;10;10
-Iron Island B3f;4;38;1;10;10
-Old Chateau;4;39;1;10;10
-Old Chateau Dining Area;4;40;1;10;10
-Old Chateau Side Rooms;4;41;1;10;10
-Old Chateau Corridor;4;42;1;10;10
-Old Chateau Back West Room;4;43;1;10;10
-Old Chateau Back Middle West Room;4;44;1;10;10
-Old Chateau Back Middle Room;4;45;1;10;10
-Old Chateau Back Middle East Room;4;46;1;10;10
-Old Chateau Back East Room;4;47;1;10;10
-Unknown 304;4;48;1;10;10
-Galactic Hq 1f;4;49;1;10;10
-Galactic Hq 2f;4;50;1;10;10
-Galactic Hq 3f;4;51;1;10;10
-Galactic Hq 4f;4;52;1;10;10
-Galactic Hq B1f;4;53;1;10;10
-Galactic Hq B2f;4;54;1;10;10
-Lake Verity Low Water;4;55;1;10;10
-Lake Verity;4;56;1;10;10
-Verity Cavern;4;57;1;10;10
-Lake Valor Drained;4;58;1;10;10
-Lake Valor;4;59;1;10;10
-Valor Cavern;4;60;1;10;10
-Lake Acuity Low Water;4;61;1;10;10
-Lake Acuity;4;62;1;10;10
-Acuity Cavern;4;63;1;10;10
-Newmoon Island;4;64;1;10;10
-Newmoon Island Forest;4;65;1;10;10
-Unused Battle Park;4;66;1;10;10
-Unused Battle Park Exchange Service Corner;4;67;1;10;10
-Unknown 324;4;68;1;10;10
-Unknown 325;4;69;1;10;10
-Battle Tower;4;70;1;10;10
-Battle Tower Elevator;4;71;1;10;10
-Battle Tower Corridor;4;72;1;10;10
-Battle Tower Corridor Multi;4;73;1;10;10
-Battle Tower Battle Room;4;74;1;10;10
-Battle Tower Multi Battle Room;4;75;1;10;10
-Communication Club Colosseum 2p;4;76;1;10;10
-Communication Club Colosseum 4p;4;77;1;10;10
-Verity Lakefront;4;78;1;10;10
-Unused Verity Lakefront House;4;79;1;10;10
-Valor Lakefront;4;80;1;10;10
-Restaurant;4;81;1;10;10
-Grand Lake Valor Lakefront East House;4;82;1;10;10
-Grand Lake Valor Lakefront West House;4;83;1;10;10
-Acuity Lakefront;4;84;1;10;10
-Spring Path;4;85;1;10;10
-Route 201;4;86;1;10;10
-Route 202;4;87;1;10;10
-Route 203;4;88;1;10;10
-Route 204 South;4;89;1;10;10
-Route 204 North;4;90;1;10;10
-Route 205 South;4;91;1;10;10
-Route 205 House;4;92;1;10;10
-Route 205 North;4;93;1;10;10
-Route 206;4;94;1;10;10
-Route 206 Cycling Road South Gate;4;95;1;10;10
-Unused Gate Between Eterna City Route 206;4;96;1;10;10
-Route 207;4;97;1;10;10
-Route 208;4;98;1;10;10
-Route 208 House;4;99;1;10;10
-Route 209;4;100;1;10;10
-Route 209 Lost Tower 1f;4;101;1;10;10
-Route 209 Lost Tower 2f;4;102;1;10;10
-Route 209 Lost Tower 3f;4;103;1;10;10
-Route 209 Lost Tower 4f;4;104;1;10;10
-Route 209 Lost Tower 5f;4;105;1;10;10
-Route 210 South;4;106;1;10;10
-Route 210 North;4;107;1;10;10
-Route 210 Grandma Wilma House;4;108;1;10;10
-Route 211 West;4;109;1;10;10
-Route 211 East;4;110;1;10;10
-Route 212 North;4;111;1;10;10
-Pokemon Mansion;4;112;1;10;10
-Pokemon Mansion Maids Room;4;113;1;10;10
-Pokemon Mansion Office;4;114;1;10;10
-Route 212 South;4;115;1;10;10
-Route 212 House;4;116;1;10;10
-Route 213;4;117;1;10;10
-Route 213 Gate To Pastoria City;4;118;1;10;10
-Footstep House;4;119;1;10;10
-Grand Lake Route 213 Lobby;4;120;1;10;10
-Grand Lake Route 213 East House;4;121;1;10;10
-Grand Lake Route 213 Northwest House;4;122;1;10;10
-Grand Lake Route 213 Northeast House;4;123;1;10;10
-Route 214;4;124;1;10;10
-Route 214 Gate To Veilstone City;4;125;1;10;10
-Route 215;4;126;1;10;10
-Route 216;4;127;1;10;10
-Route 216 House;4;128;1;10;10
-Route 217;4;129;1;10;10
-Route 217 West House;4;130;1;10;10
-Route 217 Northeast House;4;131;1;10;10
-Route 218;4;132;1;10;10
-Route 218 Gate To Jubilife City;4;133;1;10;10
-Route 218 Gate To Canalave City;4;134;1;10;10
-Route 219;4;135;1;10;10
-Route 221;4;136;1;10;10
-Pal Park Lobby;4;137;1;10;10
-Route 221 House;4;138;1;10;10
-Route 222;4;139;1;10;10
-Route 222 West House;4;140;1;10;10
-Route 222 East House;4;141;1;10;10
-Route 222 Gate To Sunyshore City;4;142;1;10;10
-Route 224;4;143;1;10;10
-Route 225;4;144;1;10;10
-Unknown 401;4;145;1;10;10
-Unknown 402;4;146;1;10;10
-Route 227;4;147;1;10;10
-Unknown 404;4;148;1;10;10
-Unknown 405;4;149;1;10;10
-Route 228;4;150;1;10;10
-Route 229;4;151;1;10;10
-Unknown 408;4;152;1;10;10
-Unknown 409;4;153;1;10;10
-Record Mixing Room;4;154;1;10;10
-Twinleaf Town;4;155;1;10;10
-Twinleaf Town Rival House 1f;4;156;1;10;10
-Twinleaf Town Rival House 2f;4;157;1;10;10
-Twinleaf Town Player House 1f;4;158;1;10;10
-Twinleaf Town Player House 2f;4;159;1;10;10
-Twinleaf Town Northeast House;4;160;1;10;10
-Twinleaf Town Southwest House;4;161;1;10;10
-Sandgem Town;4;162;1;10;10
-Sandgem Town Mart;4;163;1;10;10
-Sandgem Town Pokecenter 1f;4;164;1;10;10
-Sandgem Town Pokecenter 2f;4;165;1;10;10
-Sandgem Town Pokemon Research Lab;4;166;1;10;10
-Sandgem Town Counterpart House 1f;4;167;1;10;10
-Sandgem Town Counterpart House 2f;4;168;1;10;10
-Sandgem Town House;4;169;1;10;10
-Floaroma Town;4;170;1;10;10
-Floaroma Town Mart;4;171;1;10;10
-Floaroma Town Pokecenter 1f;4;172;1;10;10
-Floaroma Town Pokecenter 2f;4;173;1;10;10
-Flower Shop;4;174;1;10;10
-Floaroma Town Southeast House;4;175;1;10;10
-Floaroma Town Middle House;4;176;1;10;10
-Solaceon Town;4;177;1;10;10
-Solaceon Town Mart;4;178;1;10;10
-Solaceon Town Pokecenter 1f;4;179;1;10;10
-Solaceon Town Pokecenter 2f;4;180;1;10;10
-Pokemon Day Care;4;181;1;10;10
-Solaceon Town Northeast House;4;182;1;10;10
-Solaceon Town Pokemon News Press;4;183;1;10;10
-Solaceon Town North House;4;184;1;10;10
-Solaceon Town East House;4;185;1;10;10
-Celestic Town;4;186;1;10;10
-Celestic Town Pokecenter 1f;4;187;1;10;10
-Celestic Town Pokecenter 2f;4;188;1;10;10
-Celestic Town North House;4;189;1;10;10
-Celestic Town Northwest House;4;190;1;10;10
-Celestic Town Northeast House;4;191;1;10;10
-Celestic Town Southwest House;4;192;1;10;10
-Celestic Town Cave;4;193;1;10;10
-Survival Area;4;194;1;10;10
-Survival Area Mart;4;195;1;10;10
-Survival Area Pokecenter 1f;4;196;1;10;10
-Survival Area Pokecenter 2f;4;197;1;10;10
-Battleground;4;198;1;10;10
-Survival Area South House;4;199;1;10;10
-Survival Area North House;4;200;1;10;10
-Resort Area;4;201;1;10;10
-Unused Resort Area Mart;4;202;1;10;10
-Resort Area Pokecenter 1f;4;203;1;10;10
-Resort Area Pokecenter 2f;4;204;1;10;10
-Resort Area Ribbon Syndicate 1f;4;205;1;10;10
-Resort Area Ribbon Syndicate 2f;4;206;1;10;10
-Resort Area Ribbon Syndicate Elevator;4;207;1;10;10
-Villa;4;208;1;10;10
-Resort Area House;4;209;1;10;10
-Union Room;4;210;1;10;10
-Route 220;4;211;1;10;10
-Route 223;4;212;1;10;10
-Route 226;4;213;1;10;10
-Unknown 470;4;214;1;10;10
-Route 230;4;215;1;10;10
-Seabreak Path;4;216;1;10;10
-Unknown 473;4;217;1;10;10
-Jubilife City Pokecenter B1f;4;218;1;10;10
-Canalave City Pokecenter B1f;4;219;1;10;10
-Oreburgh City Pokecenter B1f;4;220;1;10;10
-Eterna City Pokecenter B1f;4;221;1;10;10
-Hearthome City Pokecenter B1f;4;222;1;10;10
-Pastoria City Pokecenter B1f;4;223;1;10;10
-Veilstone City Pokecenter B1f;4;224;1;10;10
-Sunyshore City Pokecenter B1f;4;225;1;10;10
-Snowpoint City Pokecenter B1f;4;226;1;10;10
-Pokemon League South Pokecenter B1f;4;227;1;10;10
-Fight Area Pokecenter B1f;4;228;1;10;10
-Sandgem Town Pokecenter B1f;4;229;1;10;10
-Floaroma Town Pokecenter B1f;4;230;1;10;10
-Solaceon Town Pokecenter B1f;4;231;1;10;10
-Celestic Town Pokecenter B1f;4;232;1;10;10
-Survival Area Pokecenter B1f;4;233;1;10;10
-Resort Area Pokecenter B1f;4;234;1;10;10
-Canalave City West House;4;235;1;10;10
-Cafe;4;236;1;10;10
-Battle Tower Battle Salon;4;237;1;10;10
-Galactic Hq Control Room;4;238;1;10;10
-Pokemon League North Pokecenter 2f;4;239;1;10;10
-Pokemon League North Pokecenter B1f;4;240;1;10;10
-Galactic Hq Laboratory;4;241;1;10;10
-Route 225 House;4;242;1;10;10
-Route 226 House;4;243;1;10;10
-Route 227 House;4;244;1;10;10
-Route 228 Gate To Route 226;4;245;1;10;10
-Route 228 North House;4;246;1;10;10
-Route 228 South House;4;247;1;10;10
-Great Marsh 1;4;248;1;10;10
-Great Marsh 2;4;249;1;10;10
-Great Marsh 3;4;250;1;10;10
-Great Marsh 4;4;251;1;10;10
-Great Marsh 5;4;252;1;10;10
-Great Marsh 6;4;253;1;10;10
-Hall Of Origin;4;254;1;10;10
-Unknown 511;4;255;1;10;10
-Ruin Maniac Cave Long;4;0;2;10;10
-Maniac Tunnel;4;1;2;10;10
-Iron Island House;4;2;2;10;10
-Solaceon Ruins Room 5 Southeast Deadend;4;3;2;10;10
-Vista Lighthouse Elevator;4;4;2;10;10
-Jubilife City Southwest House 2f;4;5;2;10;10
-Turnback Cave Pillar 1 Room 4;4;6;2;10;10
-Turnback Cave Pillar 1 Room 5;4;7;2;10;10
-Turnback Cave Pillar 1 Room 6;4;8;2;10;10
-Turnback Cave Pillar 2 Room 1;4;9;2;10;10
-Turnback Cave Pillar 2 Room 2;4;10;2;10;10
-Turnback Cave Pillar 2 Room 3;4;11;2;10;10
-Turnback Cave Pillar 2 Room 4;4;12;2;10;10
-Turnback Cave Pillar 2 Room 5;4;13;2;10;10
-Turnback Cave Pillar 2 Room 6;4;14;2;10;10
-Turnback Cave Pillar 3 Room 1;4;15;2;10;10
-Turnback Cave Pillar 3 Room 2;4;16;2;10;10
-Turnback Cave Pillar 3 Room 3;4;17;2;10;10
-Turnback Cave Pillar 3 Room 4;4;18;2;10;10
-Turnback Cave Pillar 3 Room 5;4;19;2;10;10
-Turnback Cave Pillar 3 Room 6;4;20;2;10;10
-Unknown 533;4;21;2;10;10
-Unknown 534;4;22;2;10;10
-Unknown 535;4;23;2;10;10
-Unknown 536;4;24;2;10;10
-Unknown 537;4;25;2;10;10
-Unknown 538;4;26;2;10;10
-Unknown 539;4;27;2;10;10
-Unknown 540;4;28;2;10;10
-Unknown 541;4;29;2;10;10
-Unknown 542;4;30;2;10;10
-Unknown 543;4;31;2;10;10
-Unknown 544;4;32;2;10;10
-Unknown 545;4;33;2;10;10
-Unknown 546;4;34;2;10;10
-Unknown 547;4;35;2;10;10
-Unknown 548;4;36;2;10;10
-Unknown 549;4;37;2;10;10
-Unknown 550;4;38;2;10;10
-Unknown 551;4;39;2;10;10
-Unknown 552;4;40;2;10;10
-Unknown 553;4;41;2;10;10
-Unknown 554;4;42;2;10;10
-Unknown 555;4;43;2;10;10
-Unknown 556;4;44;2;10;10
-Unknown 557;4;45;2;10;10
-Contest Hall Stage No Contest;4;46;2;10;10
-Battle Frontier;4;47;2;10;10
-Battle Frontier Gate To Fight Area;4;48;2;10;10
-Unknown 561;4;49;2;10;10
-Battle Factory;4;50;2;10;10
-Battle Hall;4;51;2;10;10
-Battle Castle;4;52;2;10;10
-Battle Arcade;4;53;2;10;10
-Veilstone Store B1f;4;54;2;10;10
-Global Terminal 2f;4;55;2;10;10
-Global Terminal 3f;4;56;2;10;10
-Galactic Hq Hall;4;57;2;10;10
-Unknown 570;4;58;2;10;10
-Rotoms Room;4;59;2;10;10
-Unknown 572;4;60;2;10;10
-Distortion World 1f;4;61;2;10;10
-Distortion World B1f;4;62;2;10;10
-Distortion World B2f;4;63;2;10;10
-Distortion World B3f;4;64;2;10;10
-Distortion World B4f;4;65;2;10;10
-Unknown 578;4;66;2;10;10
-Distortion World B5f;4;67;2;10;10
-Distortion World B6f;4;68;2;10;10
-Distortion World B7f;4;69;2;10;10
-Distortion World Giratina Room;4;70;2;10;10
-Distortion World Turnback Cave Room;4;71;2;10;10
-Spear Pillar Dialga;4;72;2;10;10
-Spear Pillar Palkia;4;73;2;10;10
-Wifi Plaza Entrance;4;74;2;10;10
-Iron Island Iron Ruins;4;75;2;10;10
-Iron Ruins;4;76;2;10;10
-Mt Coronet Iceberg Ruins;4;77;2;10;10
-Iceberg Ruins;4;78;2;10;10
-Route 228 Rock Peak Ruins;4;79;2;10;10
-Rock Peak Ruins;4;80;2;10;10
 Everywhere;3;0;0;10;10
 Nothing;3;1;0;10;10
-Union;3;2;0;10;10
-Underground;3;3;0;10;10
-Wifi Single Battle Area;3;4;0;10;10
-Wifi Multi Battle Area;3;5;0;10;10
-Bellchime Tower;3;6;0;10;10
-Burned Tower 1f;3;7;0;10;10
-Ruins Of Alph Unused;3;8;0;10;10
-Route 1;3;9;0;10;10
-Route 2;3;10;0;10;10
-Route 3;3;11;0;10;10
-Route 4;3;12;0;10;10
-Route 5;3;13;0;10;10
-Route 6;3;14;0;10;10
-Route 7;3;15;0;10;10
-Route 8;3;16;0;10;10
-Route 9;3;17;0;10;10
-Route 10;3;18;0;10;10
-Route 11;3;19;0;10;10
-Route 12;3;20;0;10;10
-Route 13;3;21;0;10;10
-Route 14;3;22;0;10;10
-Route 15;3;23;0;10;10
-Route 16;3;24;0;10;10
-Route 17;3;25;0;10;10
-Route 18;3;26;0;10;10
-Route 22;3;27;0;10;10
-Route 24;3;28;0;10;10
-Route 25;3;29;0;10;10
-Route 26;3;30;0;10;10
-Route 27;3;31;0;10;10
-Route 28;3;32;0;10;10
-Route 29;3;33;0;10;10
-Route 30;3;34;0;10;10
-Route 31;3;35;0;10;10
-Route 32;3;36;0;10;10
-Route 33;3;37;0;10;10
-Route 34;3;38;0;10;10
-Route 35;3;39;0;10;10
-Route 36;3;40;0;10;10
-Route 37;3;41;0;10;10
-Route 38;3;42;0;10;10
-Route 39;3;43;0;10;10
-Route 42;3;44;0;10;10
-Route 43;3;45;0;10;10
-Route 44;3;46;0;10;10
-Route 45;3;47;0;10;10
-Route 46;3;48;0;10;10
-Pallet;3;49;0;10;10
-Viridian;3;50;0;10;10
-Pewter;3;51;0;10;10
-Cerulean;3;52;0;10;10
-Lavender;3;53;0;10;10
-Vermilion;3;54;0;10;10
-Celadon;3;55;0;10;10
-Fuchsia;3;56;0;10;10
-Cinnabar Island;3;57;0;10;10
-Indigo Plateau;3;58;0;10;10
-Saffron;3;59;0;10;10
-New Bark;3;60;0;10;10
-New Bark Elms Lab 1f;3;61;0;10;10
-New Bark Elms Lab 2f;3;62;0;10;10
-New Bark Player House 1f;3;63;0;10;10
-New Bark Player House 2f;3;64;0;10;10
-New Bark Southwest House;3;65;0;10;10
-New Bark Rival House 1f;3;66;0;10;10
-Cherrygrove;3;67;0;10;10
-Cherrygrove Pokemart;3;68;0;10;10
-Cherrygrove Pokecenter 1f;3;69;0;10;10
-Cherrygrove Southwest House;3;70;0;10;10
-Cherrygrove Guide Gent House;3;71;0;10;10
-Cherrygrove Southeast House;3;72;0;10;10
-Violet;3;73;0;10;10
-Azalea;3;74;0;10;10
-Cianwood;3;75;0;10;10
-Goldenrod;3;76;0;10;10
-Olivine;3;77;0;10;10
-Ecruteak;3;78;0;10;10
-Ecruteak Pokemart;3;79;0;10;10
-Ecruteak Gym;3;80;0;10;10
-Ecruteak Pokecenter 1f;3;81;0;10;10
-Ecruteak Unused House;3;82;0;10;10
-Ecruteak Bell Tower Barrier Station;3;83;0;10;10
-Ecruteak Dowsing Machine House;3;84;0;10;10
-Ecruteak Southwest House;3;85;0;10;10
-Ecruteak Dance Theater;3;86;0;10;10
-Mahogany;3;87;0;10;10
-Lake Of Rage;3;88;0;10;10
-Blackthorn;3;89;0;10;10
-Mount Silver;3;90;0;10;10
-Route 19;3;91;0;10;10
-Route 20;3;92;0;10;10
-Route 21;3;93;0;10;10
-Route 40;3;94;0;10;10
-Route 41;3;95;0;10;10
-National Park;3;96;0;10;10
-Route 31 Violet Gatehouse;3;97;0;10;10
-Route 32 Ruins Of Alph Gatehouse;3;98;0;10;10
-Union Cave 1f;3;99;0;10;10
-Azalea Ilex Forest Gatehouse;3;100;0;10;10
-Route 35 Goldenrod Gatehouse;3;101;0;10;10
-Route 35 National Park Pokeathalon Gatehouse;3;102;0;10;10
-Route 36 Ruins Of Alph Gatehouse;3;103;0;10;10
-Route 36 National Park Gatehouse;3;104;0;10;10
-Ecruteak Unused Gatehouse;3;105;0;10;10
-Diglett Cave;3;106;0;10;10
-Mount Moon;3;107;0;10;10
-Rock Tunnel 1f;3;108;0;10;10
-Pal Park;3;109;0;10;10
-Sprout Tower 1f;3;110;0;10;10
-Bell Tower 1f;3;111;0;10;10
-Goldenrod Radio Tower 1f;3;112;0;10;10
-Ruins Of Alph;3;113;0;10;10
-Slowpoke Well Entrance;3;114;0;10;10
-Olivine Lighthouse 1f;3;115;0;10;10
-Mahogany Souvenir Shop;3;116;0;10;10
-Ilex Forest;3;117;0;10;10
-Goldenrod Tunnel 1f;3;118;0;10;10
-Mount Mortar 1f Entrance;3;119;0;10;10
-Ice Path 1f;3;120;0;10;10
-Whirl Islands 1f;3;121;0;10;10
-Mount Silver Cave 1f;3;122;0;10;10
-Dark Cave Route 45 Side;3;123;0;10;10
-Victory Road 1f;3;124;0;10;10
-Dragons Den Entrance;3;125;0;10;10
-Tohjo Falls;3;126;0;10;10
-Route 30 Apricorn House;3;127;0;10;10
-Ecruteak Pokecenter Unused 1;3;128;0;10;10
-Ecruteak Pokecenter Unused 2;3;129;0;10;10
-Ecruteak Pokecenter Unused 3;3;130;0;10;10
-Ecruteak Pokecenter B1f;3;131;0;10;10
-Route 42 Ecruteak Gatehouse;3;132;0;10;10
-Mahogany East House;3;133;0;10;10
-Route 29 Route 46 Gatehouse;3;134;0;10;10
-Violet Gym;3;135;0;10;10
-Azalea Gym Entrance;3;136;0;10;10
-Goldenrod Gym;3;137;0;10;10
-Olivine Gym;3;138;0;10;10
-Cianwood Gym;3;139;0;10;10
-Mahogany Gym Leader Room;3;140;0;10;10
-Blackthorn Gym;3;141;0;10;10
-Route 43 Mahogany Gatehouse;3;142;0;10;10
-Route 30 Mr Pokemon House;3;143;0;10;10
-Cherrygrove Pokecenter B1f;3;144;0;10;10
-Cerulean Cave 1f;3;145;0;10;10
-Seafoam Islands 1f;3;146;0;10;10
-Viridian Forest;3;147;0;10;10
-Route 9 Unused;3;148;0;10;10
-Violet Route 36 Gatehouse;3;149;0;10;10
-National Park Unused Gatehouse;3;150;0;10;10
-Route 47;3;151;0;10;10
-Route 48;3;152;0;10;10
-Union Cave B1f;3;153;0;10;10
-Union Cave B2f;3;154;0;10;10
-Sprout Tower 2f;3;155;0;10;10
-Sprout Tower 3f;3;156;0;10;10
-Violet Pokemart;3;157;0;10;10
-Violet Pokecenter 1f;3;158;0;10;10
-Violet Pokemon School;3;159;0;10;10
-Violet Northwest House;3;160;0;10;10
-Violet Unused;3;161;0;10;10
-Violet Bellsprout Onyx Trade House;3;162;0;10;10
-Azalea Charcoal Kiln;3;163;0;10;10
-Azalea Kurt House;3;164;0;10;10
-Azalea Pokemart;3;165;0;10;10
-Azalea Pokecenter 1f;3;166;0;10;10
-Violet Pokecenter B1f;3;167;0;10;10
-Azalea Pokecenter B1f;3;168;0;10;10
-Route 32 Pokecenter 1f;3;169;0;10;10
-Route 32 Pokecenter B1f;3;170;0;10;10
-Route 34 Ilex Forest Gatehouse;3;171;0;10;10
-Route 38 Ecruteak Gatehouse;3;172;0;10;10
-Safari Zone Entrance Interior;3;173;0;10;10
-Safari Zone Gate;3;174;0;10;10
-Ecruteak Unused 1;3;175;0;10;10
-Dark Cave Route 31 Side;3;176;0;10;10
-Slowpoke Well B1f;3;177;0;10;10
-Victory Road 2f;3;178;0;10;10
-Victory Road 3f;3;179;0;10;10
-Azalea Gym;3;180;0;10;10
-Slowpoke Well B2f;3;181;0;10;10
-Goldenrod Bike Shop;3;182;0;10;10
-Goldenrod Game Corner Jp;3;183;0;10;10
-Goldenrod Flower Shop;3;184;0;10;10
-Goldenrod Pokecenter 1f;3;185;0;10;10
-Goldenrod Radio Tower 2f;3;186;0;10;10
-Goldenrod Radio Tower 3f;3;187;0;10;10
-Goldenrod Radio Tower 4f;3;188;0;10;10
-Goldenrod Radio Tower 5f;3;189;0;10;10
-Goldenrod Radio Tower Observation Deck;3;190;0;10;10
-Goldenrod Department Store 1f;3;191;0;10;10
-Goldenrod Department Store 2f;3;192;0;10;10
-Goldenrod Department Store 3f;3;193;0;10;10
-Goldenrod Department Store 4f;3;194;0;10;10
-Goldenrod Department Store 5f;3;195;0;10;10
-Goldenrod Department Store 6f;3;196;0;10;10
-Goldenrod Magnet Train Station 1f;3;197;0;10;10
-Goldenrod Magnet Train Station 2f;3;198;0;10;10
-Goldenrod Tunnel B1f;3;199;0;10;10
-Goldenrod Department Store Basement;3;200;0;10;10
-Goldenrod Tunnel B2f;3;201;0;10;10
-Goldenrod Tunnel Warehouse;3;202;0;10;10
-Goldenrod Bills House;3;203;0;10;10
-Goldenrod Friendship Checker House;3;204;0;10;10
-Goldenrod Northeast House;3;205;0;10;10
-Goldenrod Name Rater House;3;206;0;10;10
-Goldenrod Global Terminal 1f;3;207;0;10;10
-Goldenrod Unused 1;3;208;0;10;10
-Goldenrod Unused 2;3;209;0;10;10
-Goldenrod Unused 3;3;210;0;10;10
-Goldenrod Unused 4;3;211;0;10;10
-Goldenrod Unused 5;3;212;0;10;10
-Goldenrod Unused 6;3;213;0;10;10
-Route 39 Moomoo Farm House;3;214;0;10;10
-Route 39 Moomoo Farm Stable;3;215;0;10;10
-Ecruteak Bell Tower Barrier Station Corridor;3;216;0;10;10
-Burned Tower B1f;3;217;0;10;10
-Ruins Of Alph Unused 2;3;218;0;10;10
-Goldenrod Pokecenter B1f;3;219;0;10;10
-Olivine Lighthouse 2f;3;220;0;10;10
-Olivine Lighthouse Exterior;3;221;0;10;10
-Olivine Lighthouse 3f;3;222;0;10;10
-Olivine Lighthouse 4f;3;223;0;10;10
-Olivine Lighthouse 5f;3;224;0;10;10
-Olivine Lighthouse Light Room;3;225;0;10;10
-Olivine Pokecenter 1f;3;226;0;10;10
-Olivine Pokemart;3;227;0;10;10
-Olivine North House;3;228;0;10;10
-Olivine Northeast House;3;229;0;10;10
-Olivine Northwest House;3;230;0;10;10
-Olivine Cafe;3;231;0;10;10
-Cianwood Kirks House;3;232;0;10;10
-Cianwood Pharmacy;3;233;0;10;10
-Cianwood Camerons House;3;234;0;10;10
-Cianwood Central House;3;235;0;10;10
-Cianwood Pokecenter 1f;3;236;0;10;10
-Ice Path B1f;3;237;0;10;10
-Ice Path B2f;3;238;0;10;10
-Ice Path B3f;3;239;0;10;10
-Ss Aqua Olivine Port Interior;3;240;0;10;10
-Cianwood Pokecenter B1f;3;241;0;10;10
-Whirl Islands B1f;3;242;0;10;10
-Whirl Islands B2f;3;243;0;10;10
-Whirl Islands B3f Lugia Cave;3;244;0;10;10
-Route 43 Gatehouse;3;245;0;10;10
-Mahogany Pokecenter 1f;3;246;0;10;10
-Team Rocket Headquarters B1f;3;247;0;10;10
-Team Rocket Headquarters B2f;3;248;0;10;10
-Team Rocket Headquarters B3f;3;249;0;10;10
-Mount Mortar 1f Back;3;250;0;10;10
-Mount Mortar 2f;3;251;0;10;10
-Mount Mortar B1f;3;252;0;10;10
-Dragons Den;3;253;0;10;10
-Fight Area Unused 1;3;254;0;10;10
-Fight Area Unused 2;3;255;0;10;10
-Fight Area Unused 3;3;0;1;10;10
-Fight Area Unused 4;3;1;1;10;10
-Fight Area Unused 5;3;2;1;10;10
-Fight Area Unused 6;3;3;1;10;10
-Fight Area Unused 7;3;4;1;10;10
-Fight Area Unused 8;3;5;1;10;10
-Fight Area Unused 9;3;6;1;10;10
-Battle Park Unused 1;3;7;1;10;10
-Battle Park Unused 2;3;8;1;10;10
-Battle Tower;3;9;1;10;10
-Battle Tower Elevator;3;10;1;10;10
-Battle Tower Unused 1;3;11;1;10;10
-Battle Tower Unused 2;3;12;1;10;10
-Battle Tower Unused 3;3;13;1;10;10
-Battle Tower Unused 4;3;14;1;10;10
-Battle Tower Partner Room;3;15;1;10;10
-Battle Frontier;3;16;1;10;10
-Battle Frontier Frontier Access Gatehouse;3;17;1;10;10
-Battle Frontier Battle Tower Unused;3;18;1;10;10
-Battle Frontier Battle Factory;3;19;1;10;10
-Battle Frontier Battle Hall;3;20;1;10;10
-Battle Frontier Battle Castle;3;21;1;10;10
-Battle Frontier Battle Arcade;3;22;1;10;10
-Cliff Edge Gate;3;23;1;10;10
-Pokeathlon Dome;3;24;1;10;10
-Pokeathlon Dome Interior 1f;3;25;1;10;10
-Pokeathlon Dome Interior 2f;3;26;1;10;10
-Pokeathlon Dome Interior 2f Entrance;3;27;1;10;10
-Pokeathlon Dome Interior B1f Solidarity Room;3;28;1;10;10
-Pokeathlon Dome Interior B1f Trust Room;3;29;1;10;10
-Pokeathlon Dome Interior B1f Potential Room;3;30;1;10;10
-Pokeathlon Dome Interior B1f Friendship Room;3;31;1;10;10
-Dragons Den Shrine;3;32;1;10;10
-Blackthorn West House;3;33;1;10;10
-Blackthorn East House;3;34;1;10;10
-Blackthorn Move Tutor House;3;35;1;10;10
-Blackthorn Pokemart;3;36;1;10;10
-Blackthorn Pokecenter 1f;3;37;1;10;10
-Lake Of Rage Hidden Power House;3;38;1;10;10
-Lake Of Rage Fishing Guru House;3;39;1;10;10
-Route 26 North House;3;40;1;10;10
-Route 26 Week Siblings House;3;41;1;10;10
-Tohjo Falls Hidden Room;3;42;1;10;10
-Route 22 Pokemon League Reception Gate;3;43;1;10;10
-Pokemon League Entrance;3;44;1;10;10
-Pokemon League Will Room;3;45;1;10;10
-Pokemon League Koga Room;3;46;1;10;10
-Pokemon League Bruno Room;3;47;1;10;10
-Pokemon League Karen Room;3;48;1;10;10
-Pokemon League Lance Room;3;49;1;10;10
-Pokemon League Hall Of Fame;3;50;1;10;10
-Ss Aqua 1f;3;51;1;10;10
-Ss Aqua Captain Room;3;52;1;10;10
-Ss Aqua 1f Southeast Rooms;3;53;1;10;10
-Ss Aqua 1f Southwest Rooms;3;54;1;10;10
-Ss Aqua 1f Northeast Rooms;3;55;1;10;10
-Ruins Of Alph Northeast Entrance First Room;3;56;1;10;10
-Ruins Of Alph Northeast Hidden Room;3;57;1;10;10
-Ruins Of Alph Southeast Entrance First Room;3;58;1;10;10
-Ruins Of Alph Underground Hall;3;59;1;10;10
-Ruins Of Alph Southwest Entrance First Room;3;60;1;10;10
-Ruins Of Alph Southwest Hidden Room;3;61;1;10;10
-Ruins Of Alph Northwest Entrance First Room;3;62;1;10;10
-Ruins Of Alph Northwest Hidden Room;3;63;1;10;10
-Ruins Of Alph Southeast Hidden Room;3;64;1;10;10
-Ruins Of Alph Research Center;3;65;1;10;10
-Route 27 House;3;66;1;10;10
-Ruins Of Alph Hall Entrance;3;67;1;10;10
-Ruins Of Alph Northeast Entrance Second Room;3;68;1;10;10
-Ruins Of Alph Southeast Entrance Second Room;3;69;1;10;10
-Ruins Of Alph Northwest Entrance Second Room;3;70;1;10;10
-Ruins Of Alph Southwest Entrance Second Room;3;71;1;10;10
-Ss Aqua 1f Northwest Rooms;3;72;1;10;10
-Ss Aqua B1f;3;73;1;10;10
-Ss Aqua Olivine Port Exterior;3;74;1;10;10
-Route 34 Daycare;3;75;1;10;10
-Bell Tower 2f;3;76;1;10;10
-Bell Tower 3f;3;77;1;10;10
-Bell Tower 4f;3;78;1;10;10
-Bell Tower 5f;3;79;1;10;10
-Bell Tower 6f;3;80;1;10;10
-Bell Tower 7f;3;81;1;10;10
-Bell Tower 8f;3;82;1;10;10
-Bell Tower 9f;3;83;1;10;10
-Bell Tower Roof;3;84;1;10;10
-Bell Tower 10f;3;85;1;10;10
-Cliff Cave;3;86;1;10;10
-Safari Zone 01;3;87;1;10;10
-Safari Zone 02;3;88;1;10;10
-Safari Zone 03;3;89;1;10;10
-Safari Zone 04;3;90;1;10;10
-Safari Zone 05;3;91;1;10;10
-Safari Zone 06;3;92;1;10;10
-Safari Zone 07;3;93;1;10;10
-Safari Zone 08;3;94;1;10;10
-Safari Zone 09;3;95;1;10;10
-Safari Zone 10;3;96;1;10;10
-Safari Zone 11;3;97;1;10;10
-Safari Zone 12;3;98;1;10;10
-Safari Zone 13;3;99;1;10;10
-Safari Zone 14;3;100;1;10;10
-Safari Zone Entrance Exterior;3;101;1;10;10
-Vermilion Pokecenter 1f;3;102;1;10;10
-Vermilion Pokecenter B1f;3;103;1;10;10
-Vermilion Pokemart;3;104;1;10;10
-Vermilion Fishing Dude House;3;105;1;10;10
-Vermilion Pokemon Fan Club;3;106;1;10;10
-Vermilion Central House;3;107;1;10;10
-Vermilion South House;3;108;1;10;10
-Vermilion Gym;3;109;1;10;10
-Route 40 Battle Frontier Gatehouse;3;110;1;10;10
-Olivine Pokecenter B1f;3;111;1;10;10
-Mahogany Pokecenter B1f;3;112;1;10;10
-Blackthorn Pokecenter B1f;3;113;1;10;10
-Celadon Department Store 1f;3;114;1;10;10
-Celadon Department Store 2f;3;115;1;10;10
-Celadon Department Store 3f;3;116;1;10;10
-Celadon Department Store 4f;3;117;1;10;10
-Celadon Department Store 5f;3;118;1;10;10
-Celadon Department Store Roof;3;119;1;10;10
-Celadon Condominiums 1f;3;120;1;10;10
-Celadon Condominiums 2f;3;121;1;10;10
-Celadon Condominiums 3f;3;122;1;10;10
-Celadon Condominiums Roof;3;123;1;10;10
-Celadon Condominiums Roof Room;3;124;1;10;10
-Celadon Game Corner Jp;3;125;1;10;10
-Celadon Prize Corner;3;126;1;10;10
-Celadon Restaurant;3;127;1;10;10
-New Bark Rival House 2f;3;128;1;10;10
-Cianwood North House;3;129;1;10;10
-Ss Aqua Vermilion Port Interior;3;130;1;10;10
-Ss Aqua Vermilion Port Exterior;3;131;1;10;10
-Route 10 South;3;132;1;10;10
-Route 6 Saffron Gatehouse;3;133;1;10;10
-Route 8 Saffron Gatehouse;3;134;1;10;10
-Route 5 Saffron Gatehouse;3;135;1;10;10
-Route 15 Fuchsia Gatehouse;3;136;1;10;10
-Celadon Pokecenter 1f;3;137;1;10;10
-Celadon Pokecenter B1f;3;138;1;10;10
-Celadon Gym;3;139;1;10;10
-Mahogany Gym Room 2;3;140;1;10;10
-Mahogany Gym Room 1;3;141;1;10;10
-Saffron Fighting Dojo;3;142;1;10;10
-Saffron Mr Psychic House;3;143;1;10;10
-Saffron Magnet Train Station 1f;3;144;1;10;10
-Saffron Magnet Train Station 2f;3;145;1;10;10
-Saffron Silph Co Hq;3;146;1;10;10
-Saffron Silph Co Rotom Room;3;147;1;10;10
-Saffron Copycat House 1f;3;148;1;10;10
-Saffron Copycat House 2f;3;149;1;10;10
-Saffron Unused;3;150;1;10;10
-Saffron Pokecenter 1f;3;151;1;10;10
-Saffron Pokecenter 2f;3;152;1;10;10
-Saffron Pokemart;3;153;1;10;10
-Saffron Gym;3;154;1;10;10
-Battle Frontier Frontier Access;3;155;1;10;10
-Goldenrod Global Terminal 2f;3;156;1;10;10
-Goldenrod Global Terminal 3f;3;157;1;10;10
-Route 2 East;3;158;1;10;10
-Route 16 House;3;159;1;10;10
-Route 20 Unused;3;160;1;10;10
-Route 2 House;3;161;1;10;10
-Route 2 Southeast Gatehouse;3;162;1;10;10
-Route 2 Viridian Forest South Gatehouse;3;163;1;10;10
-Route 2 Viridian Forest North Gatehouse;3;164;1;10;10
-Route 16 Gatehouse;3;165;1;10;10
-Route 16 East;3;166;1;10;10
-Route 18 Gatehouse;3;167;1;10;10
-Route 19 Fuchsia Gatehouse;3;168;1;10;10
-Route 19 Route 12 Gatehouse;3;169;1;10;10
-Cerulean Pokemart;3;170;1;10;10
-Cerulean Gym;3;171;1;10;10
-Cerulean Pokecenter 1f;3;172;1;10;10
-Cerulean North House;3;173;1;10;10
-Cerulean East House;3;174;1;10;10
-Cerulean West House;3;175;1;10;10
-Cerulean Bike Maniac House;3;176;1;10;10
-Lavender Pokemart;3;177;1;10;10
-Lavender Pokecenter 1f;3;178;1;10;10
-Lavender Volunteer Pokemon House;3;179;1;10;10
-Lavender Southwest House;3;180;1;10;10
-Lavender Name Rater;3;181;1;10;10
-Lavender House Of Memories;3;182;1;10;10
-Lavender Radio Station;3;183;1;10;10
-Route 25 Sea Cottage;3;184;1;10;10
-Goldenrod Department Store Elevator;3;185;1;10;10
-Celadon Department Store Elevator;3;186;1;10;10
-Celadon Condominiums Left Elevator;3;187;1;10;10
-Celadon Condominiums Right Elevator;3;188;1;10;10
-Saffron Silph Co Elevator;3;189;1;10;10
-Olivine Lighthouse Elevator;3;190;1;10;10
-Goldenrod Radio Tower Elevator;3;191;1;10;10
-Mount Moon Square Entrance;3;192;1;10;10
-Mount Moon Square;3;193;1;10;10
-Cerulean Cave 2f;3;194;1;10;10
-Cerulean Cave B1f;3;195;1;10;10
-Rock Tunnel B1f;3;196;1;10;10
-Seafoam Islands B1f;3;197;1;10;10
-Seafoam Islands B2f;3;198;1;10;10
-Seafoam Islands B3f;3;199;1;10;10
-Seafoam Islands B4f;3;200;1;10;10
-Seafoam Islands Cinnabar Gym;3;201;1;10;10
-Seafoam Islands Unused;3;202;1;10;10
-Mount Silver Cave Upper Mountainside;3;203;1;10;10
-Mount Silver Cave Lower Mountainside;3;204;1;10;10
-Mount Silver Cave Expert Belt Chamber;3;205;1;10;10
-Mount Silver Cave Moltres Chamber;3;206;1;10;10
-Mount Silver Cave 2f;3;207;1;10;10
-Mount Silver Cave 3f;3;208;1;10;10
-Mount Silver Cave Summit;3;209;1;10;10
-Route 10 Pokecenter 1f;3;210;1;10;10
-Route 10 Power Plant Repaired;3;211;1;10;10
-Route 5 Unused;3;212;1;10;10
-Route 5 Underground Path Gate;3;213;1;10;10
-Route 6 Underground Path Gate;3;214;1;10;10
-Pewter Museum Of Science;3;215;1;10;10
-Pewter Northeast House;3;216;1;10;10
-Pewter Gym;3;217;1;10;10
-Pewter Pokemart;3;218;1;10;10
-Pewter Pokecenter 1f;3;219;1;10;10
-Pewter Pokecenter B1f;3;220;1;10;10
-Pewter Southwest House;3;221;1;10;10
-Fuchsia Pokemart;3;222;1;10;10
-Fuchsia Pal Park Entrance;3;223;1;10;10
-Fuchsia Gym;3;224;1;10;10
-Fuchsia Southwest House;3;225;1;10;10
-Fuchsia Pokecenter 1f;3;226;1;10;10
-Fuchsia Safari Zone Warden House;3;227;1;10;10
-Route 10 Pokecenter B1f;3;228;1;10;10
-Fuchsia Pokecenter B1f;3;229;1;10;10
-Whirl Islands B3f;3;230;1;10;10
-National Park Bug Catching Contest;3;231;1;10;10
-National Park Unused;3;232;1;10;10
-Route 10 Power Plant Broken;3;233;1;10;10
-Ruins Of Alph Underground Hall Sinjoh Event;3;234;1;10;10
-Ruins Of Alph Hall Entrance Sinjoh Event;3;235;1;10;10
-Ruins Of Alph Underground Hall Sinjoh Event 2;3;236;1;10;10
-Route 7 Saffron Gatehouse;3;237;1;10;10
-Lavender Pokecenter B1f;3;238;1;10;10
-Cerulean Pokecenter B1f;3;239;1;10;10
-Viridian Gym;3;240;1;10;10
-Viridian Northeast House;3;241;1;10;10
-Viridian Trainer House 1f;3;242;1;10;10
-Viridian Trainer House B1f;3;243;1;10;10
-Viridian Pokemart;3;244;1;10;10
-Viridian Pokecenter 1f;3;245;1;10;10
-Viridian Pokecenter B1f;3;246;1;10;10
-Pallet Town Reds House 1f;3;247;1;10;10
-Pallet Town Blues House 1f;3;248;1;10;10
-Pallet Town Oaks Lab;3;249;1;10;10
-Pallet Town Reds House 2f;3;250;1;10;10
-Pallet Town Blues House 2f;3;251;1;10;10
-Cinnabar Island Pokecenter 1f;3;252;1;10;10
-Cinnabar Island Pokecenter B1f;3;253;1;10;10
-Route 28 House;3;254;1;10;10
-Route 3 Pokecenter 1f;3;255;1;10;10
-Route 3 Pokecenter B1f;3;0;2;10;10
-Mount Moon Square Clefairy Event;3;1;2;10;10
-Mount Silver Pokecenter 1f;3;2;2;10;10
-Mount Silver Pokecenter B1f;3;3;2;10;10
-Wifi Plaza Warp Room;3;4;2;10;10
-Route 5 House;3;5;2;10;10
-Mount Moon Square Shop;3;6;2;10;10
-Goldenrod Magnet Train Station 2f Empty;3;7;2;10;10
-Saffron Magnet Train Station 2f Empty;3;8;2;10;10
-Sinjoh Ruins Exterior;3;9;2;10;10
-Sinjoh Ruins Mystri Stage;3;10;2;10;10
-Sinjoh Ruins Cabin;3;11;2;10;10
-Embedded Tower Groudon Room;3;12;2;10;10
-Embedded Tower Kyogre Room;3;13;2;10;10
-Embedded Tower Rayquaza Room;3;14;2;10;10
-Viridian Route 1 Gatehouse;3;15;2;10;10
-Frontier Access Pokecenter 1f;3;16;2;10;10
-Frontier Access Pokecenter B1f;3;17;2;10;10
-Frontier Access Pokemart;3;18;2;10;10
-Frontier Access Move Tutor House;3;19;2;10;10
-Route 5 Underground Path;3;20;2;10;10
-Route 12 Fishing Brother House;3;21;2;10;10
-Safari Zone Gate Pokecenter 1f;3;22;2;10;10
-Safari Zone Gate Pokecenter B1f;3;23;2;10;10
-Goldenrod Game Corner;3;24;2;10;10
-Celadon Game Corner;3;25;2;10;10
-Unused;3;26;2;10;10
-Pokemon League Entrance Wifi Room;3;27;2;10;10
+Underground;3;2;0;10;10
+Jubilife City;3;3;0;10;10
+Jubilife City Mart;3;4;0;10;10
+Unused Jubilife City House 1;3;5;0;10;10
+Jubilife City Pokecenter 1f;3;6;0;10;10
+Jubilife City Pokecenter 2f;3;7;0;10;10
+Poketch Co 1f;3;8;0;10;10
+Poketch Co 2f;3;9;0;10;10
+Poketch Co 3f;3;10;0;10;10
+Jubilife Tv 1f;3;11;0;10;10
+Jubilife Tv 2f;3;12;0;10;10
+Jubilife Tv 3f;3;13;0;10;10
+Jubilife Tv 4f;3;14;0;10;10
+Jubilife Tv 2f Gallery;3;15;0;10;10
+Jubilife Tv 3f Global Ranking Room;3;16;0;10;10
+Jubilife Tv 3f Group Ranking Room;3;17;0;10;10
+Jubilife Tv Elevator;3;18;0;10;10
+Jubilife City South House 1f;3;19;0;10;10
+Jubilife City South House 2f;3;20;0;10;10
+Unused Jubilife City South House 3f;3;21;0;10;10
+Unused Jubilife City South House 4f;3;22;0;10;10
+Unused Jubilife City House 2;3;23;0;10;10
+Jubilife City Condominiums 1f;3;24;0;10;10
+Jubilife City Condominiums 2f;3;25;0;10;10
+Unused Jubilife City Condominiums 3f;3;26;0;10;10
+Unused Jubilife City Condominiums 4f;3;27;0;10;10
+Global Terminal 1f;3;28;0;10;10
+Trainers School;3;29;0;10;10
+Jubilife City Southwest House 1f;3;30;0;10;10
+Unused Jubilife City House 3;3;31;0;10;10
+Unused Jubilife City House 4;3;32;0;10;10
+Canalave City;3;33;0;10;10
+Canalave City Mart;3;34;0;10;10
+Canalave City Gym;3;35;0;10;10
+Canalave City Pokecenter 1f;3;36;0;10;10
+Canalave City Pokecenter 2f;3;37;0;10;10
+Canalave Library 1f;3;38;0;10;10
+Canalave Library 2f;3;39;0;10;10
+Canalave Library 3f;3;40;0;10;10
+Canalave City Southeast House;3;41;0;10;10
+Canalave City East House;3;42;0;10;10
+Canalave City Harbor Inn;3;43;0;10;10
+Canalave City Sailor Eldritch House;3;44;0;10;10
+Oreburgh City;3;45;0;10;10
+Oreburgh City Mart;3;46;0;10;10
+Oreburgh City Gym;3;47;0;10;10
+Oreburgh City Pokecenter 1f;3;48;0;10;10
+Oreburgh City Pokecenter 2f;3;49;0;10;10
+Oreburgh City Northwest House 1f;3;50;0;10;10
+Oreburgh City Northwest House 2f;3;51;0;10;10
+Unused Oreburgh City Northwest House 3f;3;52;0;10;10
+Unused Oreburgh City Northwest House 4f;3;53;0;10;10
+Oreburgh City North House 1f;3;54;0;10;10
+Oreburgh City North House 2f;3;55;0;10;10
+Unused Oreburgh City North House 3f;3;56;0;10;10
+Unused Oreburgh City North House 4f;3;57;0;10;10
+Oreburgh City Middle House;3;58;0;10;10
+Mining Museum;3;59;0;10;10
+Oreburgh City West House;3;60;0;10;10
+Oreburgh City East House 1f;3;61;0;10;10
+Oreburgh City East House 2f;3;62;0;10;10
+Unused Oreburgh City East House 3f;3;63;0;10;10
+Oreburgh City South House;3;64;0;10;10
+Eterna City;3;65;0;10;10
+Eterna City Mart;3;66;0;10;10
+Eterna City Gym;3;67;0;10;10
+Eterna City Dp Gym;3;68;0;10;10
+Eterna City Pokecenter 1f;3;69;0;10;10
+Eterna City Pokecenter 2f;3;70;0;10;10
+Cycle Shop;3;71;0;10;10
+Team Galactic Eterna Building 1f;3;72;0;10;10
+Team Galactic Eterna Building 2f;3;73;0;10;10
+Team Galactic Eterna Building 3f;3;74;0;10;10
+Team Galactic Eterna Building 4f;3;75;0;10;10
+Eterna City Condominiums 1f;3;76;0;10;10
+Eterna City Condominiums 2f;3;77;0;10;10
+Eterna City Condominiums 3f;3;78;0;10;10
+Unused Eterna City Condominiums 4f;3;79;0;10;10
+Route 206 Cycling Road North Gate;3;80;0;10;10
+Eterna City Herb Shop;3;81;0;10;10
+Eterna City South House;3;82;0;10;10
+Eterna City East House;3;83;0;10;10
+Eterna City Underground Man House;3;84;0;10;10
+Unused Eterna City House;3;85;0;10;10
+Hearthome City;3;86;0;10;10
+Hearthome City Mart;3;87;0;10;10
+Hearthome City Gym Entrance Room;3;88;0;10;10
+Hearthome City Gym Trainer Room 1;3;89;0;10;10
+Hearthome City Gym Trainer Room 2;3;90;0;10;10
+Hearthome City Gym Leader Room;3;91;0;10;10
+Hearthome City Dp Gym Trainer Room 1;3;92;0;10;10
+Hearthome City Dp Gym Elevator Room 1;3;93;0;10;10
+Hearthome City Dp Gym Trainer Room 2;3;94;0;10;10
+Hearthome City Dp Gym Elevator Room 2;3;95;0;10;10
+Hearthome City Dp Gym Trainer Room 3;3;96;0;10;10
+Hearthome City Dp Gym Trainer Room 4;3;97;0;10;10
+Hearthome City Dp Gym Trainer Room 5;3;98;0;10;10
+Hearthome City Dp Gym Trainer Room 6;3;99;0;10;10
+Hearthome City Dp Gym Leader Room;3;100;0;10;10
+Hearthome City Pokecenter 1f;3;101;0;10;10
+Hearthome City Pokecenter 2f;3;102;0;10;10
+Hearthome City Southeast House 1f;3;103;0;10;10
+Hearthome City Southeast House 2f;3;104;0;10;10
+Hearthome City Southeast House Elevator;3;105;0;10;10
+Hearthome City Pokemon Fan Club;3;106;0;10;10
+Hearthome City West Gate To Amity Square;3;107;0;10;10
+Hearthome City East Gate To Amity Square;3;108;0;10;10
+Route 208 Gate To Hearthome City;3;109;0;10;10
+Route 209 Gate To Hearthome City;3;110;0;10;10
+Route 212 Gate To Hearthome City;3;111;0;10;10
+Hearthome City Northeast House 1f;3;112;0;10;10
+Hearthome City Northeast House 2f;3;113;0;10;10
+Hearthome City Northeast House Elevator;3;114;0;10;10
+Hearthome City Northwest House;3;115;0;10;10
+Poffin House;3;116;0;10;10
+Contest Hall Lobby;3;117;0;10;10
+Contest Hall Stage Ongoing Contest;3;118;0;10;10
+Foreign Building;3;119;0;10;10
+Pastoria City;3;120;0;10;10
+Pastoria City Mart;3;121;0;10;10
+Pastoria City Gym;3;122;0;10;10
+Pastoria City Pokecenter 1f;3;123;0;10;10
+Pastoria City Pokecenter 2f;3;124;0;10;10
+Pastoria City Observatory Gate 1f;3;125;0;10;10
+Pastoria City Observatory Gate 2f;3;126;0;10;10
+Pastoria City Southwest House;3;127;0;10;10
+Pastoria City Middle House;3;128;0;10;10
+Pastoria City East House;3;129;0;10;10
+Pastoria City North House;3;130;0;10;10
+Pastoria City Northeast House;3;131;0;10;10
+Veilstone City;3;132;0;10;10
+Veilstone City Gym;3;133;0;10;10
+Veilstone City Pokecenter 1f;3;134;0;10;10
+Veilstone City Pokecenter 2f;3;135;0;10;10
+Game Corner;3;136;0;10;10
+Veilstone Store 1f;3;137;0;10;10
+Veilstone Store 2f;3;138;0;10;10
+Veilstone Store 3f;3;139;0;10;10
+Veilstone Store 4f;3;140;0;10;10
+Veilstone Store 5f;3;141;0;10;10
+Veilstone Store Elevator;3;142;0;10;10
+Veilstone City Galactic Warehouse;3;143;0;10;10
+Veilstone City Prize Exchange;3;144;0;10;10
+Veilstone City Southeast House;3;145;0;10;10
+Veilstone City Northwest House;3;146;0;10;10
+Veilstone City Northeast House;3;147;0;10;10
+Veilstone City Southwest House;3;148;0;10;10
+Route 215 Gate To Veilstone City;3;149;0;10;10
+Sunyshore City;3;150;0;10;10
+Sunyshore City Pokecenter 1f;3;151;0;10;10
+Sunyshore City Pokecenter 2f;3;152;0;10;10
+Sunyshore City Mart;3;153;0;10;10
+Sunyshore City Gym Room 1;3;154;0;10;10
+Sunyshore City Gym Room 2;3;155;0;10;10
+Sunyshore City Gym Room 3;3;156;0;10;10
+Sunyshore Market;3;157;0;10;10
+Sunyshore City Northeast House;3;158;0;10;10
+Sunyshore City West House;3;159;0;10;10
+Sunyshore City Northwest House;3;160;0;10;10
+Unused Sunyshore City House 1;3;161;0;10;10
+Unused Sunyshore City House 2;3;162;0;10;10
+Sunyshore City East House;3;163;0;10;10
+Vista Lighthouse;3;164;0;10;10
+Snowpoint City;3;165;0;10;10
+Snowpoint City Mart;3;166;0;10;10
+Snowpoint City Gym;3;167;0;10;10
+Snowpoint City Pokecenter 1f;3;168;0;10;10
+Snowpoint City Pokecenter 2f;3;169;0;10;10
+Snowpoint City West House;3;170;0;10;10
+Snowpoint City East House;3;171;0;10;10
+Pokemon League;3;172;0;10;10
+Pokemon League South Pokecenter 1f;3;173;0;10;10
+Pokemon League South Pokecenter 2f;3;174;0;10;10
+Pokemon League North Pokecenter 1f;3;175;0;10;10
+Pokemon League Elevator To Aaron Room;3;176;0;10;10
+Pokemon League Aaron Room;3;177;0;10;10
+Pokemon League Elevator To Bertha Room;3;178;0;10;10
+Pokemon League Bertha Room;3;179;0;10;10
+Pokemon League Elevator To Flint Room;3;180;0;10;10
+Pokemon League Flint Room;3;181;0;10;10
+Pokemon League Elevator To Lucian Room;3;182;0;10;10
+Pokemon League Lucian Room;3;183;0;10;10
+Pokemon League Elevator To Champion Room;3;184;0;10;10
+Pokemon League Champion Room;3;185;0;10;10
+Pokemon League Hallway To Hall Of Fame;3;186;0;10;10
+Pokemon League Hall Of Fame;3;187;0;10;10
+Fight Area;3;188;0;10;10
+Fight Area Pokecenter 1f;3;189;0;10;10
+Fight Area Pokecenter 2f;3;190;0;10;10
+Fight Area Mart;3;191;0;10;10
+Unused Battle Park Gate To Fight Area;3;192;0;10;10
+Route 225 Gate To Fight Area;3;193;0;10;10
+Fight Area Middle House;3;194;0;10;10
+Fight Area South House;3;195;0;10;10
+Unused Fight Area House;3;196;0;10;10
+Unknown 197;3;197;0;10;10
+Oreburgh Mine B1f;3;198;0;10;10
+Oreburgh Mine B2f;3;199;0;10;10
+Valley Windworks Outside;3;200;0;10;10
+Valley Windworks Building;3;201;0;10;10
+Eterna Forest Outside;3;202;0;10;10
+Eterna Forest;3;203;0;10;10
+Fuego Ironworks Outside;3;204;0;10;10
+Fuego Ironworks Building;3;205;0;10;10
+Unknown 206;3;206;0;10;10
+Mt Coronet 1f South;3;207;0;10;10
+Mt Coronet 2f;3;208;0;10;10
+Mt Coronet 3f;3;209;0;10;10
+Mt Coronet Outside North;3;210;0;10;10
+Mt Coronet Outside South;3;211;0;10;10
+Mt Coronet 4f Rooms 1 And 2;3;212;0;10;10
+Mt Coronet 4f Room 3;3;213;0;10;10
+Mt Coronet 5f;3;214;0;10;10
+Mt Coronet 6f;3;215;0;10;10
+Mt Coronet 1f Tunnel Room;3;216;0;10;10
+Mt Coronet 1f North Room 2;3;217;0;10;10
+Mt Coronet 1f North Room 1;3;218;0;10;10
+Mt Coronet B1f;3;219;0;10;10
+Spear Pillar;3;220;0;10;10
+Spear Pillar Distorted;3;221;0;10;10
+Unknown 222;3;222;0;10;10
+Pastoria City Dp Great Marsh;3;223;0;10;10
+Unknown 224;3;224;0;10;10
+Solaceon Ruins Maniac Tunnel Room;3;225;0;10;10
+Solaceon Ruins Room 1;3;226;0;10;10
+Solaceon Ruins Room 2 Northeast Dead End;3;227;0;10;10
+Solaceon Ruins Room 1 Northwest Dead End;3;228;0;10;10
+Solaceon Ruins Room 2;3;229;0;10;10
+Solaceon Ruins Room 1 Southeast Dead End;3;230;0;10;10
+Solaceon Ruins Room 3;3;231;0;10;10
+Solaceon Ruins Room 2 Southeast Dead End;3;232;0;10;10
+Solaceon Ruins Room 6 Southeast Dead End;3;233;0;10;10
+Solaceon Ruins Room 5 Southwest Dead End;3;234;0;10;10
+Solaceon Ruins Room 3 Northwest Dead End;3;235;0;10;10
+Solaceon Ruins Room 3 Southwest Dead End;3;236;0;10;10
+Solaceon Ruins Room 4;3;237;0;10;10
+Solaceon Ruins Room 6;3;238;0;10;10
+Solaceon Ruins Room 5;3;239;0;10;10
+Solaceon Ruins Room 7;3;240;0;10;10
+Solaceon Ruins Room 4 Southeast Dead End;3;241;0;10;10
+Solaceon Ruins Room 6 Northwest Dead End;3;242;0;10;10
+Unknown 243;3;243;0;10;10
+Victory Road 1f;3;244;0;10;10
+Victory Road 2f;3;245;0;10;10
+Victory Road B1f;3;246;0;10;10
+Victory Road 1f Room 2;3;247;0;10;10
+Victory Road 1f Room 1;3;248;0;10;10
+Victory Road 1f Room 3;3;249;0;10;10
+Unknown 250;3;250;0;10;10
+Pal Park;3;251;0;10;10
+Unknown 252;3;252;0;10;10
+Amity Square;3;253;0;10;10
+Ravaged Path;3;254;0;10;10
+Unknown 255;3;255;0;10;10
+Floaroma Meadow;3;0;1;10;10
+Floaroma Meadow House;3;1;1;10;10
+Oreburgh Gate 1f;3;2;1;10;10
+Oreburgh Gate B1f;3;3;1;10;10
+Fullmoon Island;3;4;1;10;10
+Fullmoon Island Forest;3;5;1;10;10
+Stark Mountain Outside;3;6;1;10;10
+Stark Mountain Room 1;3;7;1;10;10
+Stark Mountain Room 2;3;8;1;10;10
+Stark Mountain Room 3;3;9;1;10;10
+Unknown 266;3;10;1;10;10
+Sendoff Spring;3;11;1;10;10
+Turnback Cave Entrance;3;12;1;10;10
+Turnback Cave Pillar Room;3;13;1;10;10
+Turnback Cave Giratina Room;3;14;1;10;10
+Turnback Cave Pillar 1 Room 1;3;15;1;10;10
+Turnback Cave Pillar 1 Room 2;3;16;1;10;10
+Turnback Cave Pillar 1 Room 3;3;17;1;10;10
+Flower Paradise;3;18;1;10;10
+Unknown 275;3;19;1;10;10
+Unknown 276;3;20;1;10;10
+Unknown 277;3;21;1;10;10
+Snowpoint Temple 1f;3;22;1;10;10
+Snowpoint Temple B1f;3;23;1;10;10
+Snowpoint Temple B2f;3;24;1;10;10
+Snowpoint Temple B3f;3;25;1;10;10
+Snowpoint Temple B4f;3;26;1;10;10
+Snowpoint Temple B5f;3;27;1;10;10
+Wayward Cave 1f;3;28;1;10;10
+Wayward Cave B1f;3;29;1;10;10
+Ruin Maniac Cave Short;3;30;1;10;10
+Trophy Garden;3;31;1;10;10
+Iron Island;3;32;1;10;10
+Iron Island 1f;3;33;1;10;10
+Iron Island B1f Left Room;3;34;1;10;10
+Iron Island B1f Right Room;3;35;1;10;10
+Iron Island B2f Right Room;3;36;1;10;10
+Iron Island B2f Left Room;3;37;1;10;10
+Iron Island B3f;3;38;1;10;10
+Old Chateau;3;39;1;10;10
+Old Chateau Dining Area;3;40;1;10;10
+Old Chateau Side Rooms;3;41;1;10;10
+Old Chateau Corridor;3;42;1;10;10
+Old Chateau Back West Room;3;43;1;10;10
+Old Chateau Back Middle West Room;3;44;1;10;10
+Old Chateau Back Middle Room;3;45;1;10;10
+Old Chateau Back Middle East Room;3;46;1;10;10
+Old Chateau Back East Room;3;47;1;10;10
+Unknown 304;3;48;1;10;10
+Galactic Hq 1f;3;49;1;10;10
+Galactic Hq 2f;3;50;1;10;10
+Galactic Hq 3f;3;51;1;10;10
+Galactic Hq 4f;3;52;1;10;10
+Galactic Hq B1f;3;53;1;10;10
+Galactic Hq B2f;3;54;1;10;10
+Lake Verity Low Water;3;55;1;10;10
+Lake Verity;3;56;1;10;10
+Verity Cavern;3;57;1;10;10
+Lake Valor Drained;3;58;1;10;10
+Lake Valor;3;59;1;10;10
+Valor Cavern;3;60;1;10;10
+Lake Acuity Low Water;3;61;1;10;10
+Lake Acuity;3;62;1;10;10
+Acuity Cavern;3;63;1;10;10
+Newmoon Island;3;64;1;10;10
+Newmoon Island Forest;3;65;1;10;10
+Unused Battle Park;3;66;1;10;10
+Unused Battle Park Exchange Service Corner;3;67;1;10;10
+Unknown 324;3;68;1;10;10
+Unknown 325;3;69;1;10;10
+Battle Tower;3;70;1;10;10
+Battle Tower Elevator;3;71;1;10;10
+Battle Tower Corridor;3;72;1;10;10
+Battle Tower Corridor Multi;3;73;1;10;10
+Battle Tower Battle Room;3;74;1;10;10
+Battle Tower Multi Battle Room;3;75;1;10;10
+Communication Club Colosseum 2p;3;76;1;10;10
+Communication Club Colosseum 4p;3;77;1;10;10
+Verity Lakefront;3;78;1;10;10
+Unused Verity Lakefront House;3;79;1;10;10
+Valor Lakefront;3;80;1;10;10
+Restaurant;3;81;1;10;10
+Grand Lake Valor Lakefront East House;3;82;1;10;10
+Grand Lake Valor Lakefront West House;3;83;1;10;10
+Acuity Lakefront;3;84;1;10;10
+Spring Path;3;85;1;10;10
+Route 201;3;86;1;10;10
+Route 202;3;87;1;10;10
+Route 203;3;88;1;10;10
+Route 204 South;3;89;1;10;10
+Route 204 North;3;90;1;10;10
+Route 205 South;3;91;1;10;10
+Route 205 House;3;92;1;10;10
+Route 205 North;3;93;1;10;10
+Route 206;3;94;1;10;10
+Route 206 Cycling Road South Gate;3;95;1;10;10
+Unused Gate Between Eterna City Route 206;3;96;1;10;10
+Route 207;3;97;1;10;10
+Route 208;3;98;1;10;10
+Route 208 House;3;99;1;10;10
+Route 209;3;100;1;10;10
+Route 209 Lost Tower 1f;3;101;1;10;10
+Route 209 Lost Tower 2f;3;102;1;10;10
+Route 209 Lost Tower 3f;3;103;1;10;10
+Route 209 Lost Tower 4f;3;104;1;10;10
+Route 209 Lost Tower 5f;3;105;1;10;10
+Route 210 South;3;106;1;10;10
+Route 210 North;3;107;1;10;10
+Route 210 Grandma Wilma House;3;108;1;10;10
+Route 211 West;3;109;1;10;10
+Route 211 East;3;110;1;10;10
+Route 212 North;3;111;1;10;10
+Pokemon Mansion;3;112;1;10;10
+Pokemon Mansion Maids Room;3;113;1;10;10
+Pokemon Mansion Office;3;114;1;10;10
+Route 212 South;3;115;1;10;10
+Route 212 House;3;116;1;10;10
+Route 213;3;117;1;10;10
+Route 213 Gate To Pastoria City;3;118;1;10;10
+Footstep House;3;119;1;10;10
+Grand Lake Route 213 Lobby;3;120;1;10;10
+Grand Lake Route 213 East House;3;121;1;10;10
+Grand Lake Route 213 Northwest House;3;122;1;10;10
+Grand Lake Route 213 Northeast House;3;123;1;10;10
+Route 214;3;124;1;10;10
+Route 214 Gate To Veilstone City;3;125;1;10;10
+Route 215;3;126;1;10;10
+Route 216;3;127;1;10;10
+Route 216 House;3;128;1;10;10
+Route 217;3;129;1;10;10
+Route 217 West House;3;130;1;10;10
+Route 217 Northeast House;3;131;1;10;10
+Route 218;3;132;1;10;10
+Route 218 Gate To Jubilife City;3;133;1;10;10
+Route 218 Gate To Canalave City;3;134;1;10;10
+Route 219;3;135;1;10;10
+Route 221;3;136;1;10;10
+Pal Park Lobby;3;137;1;10;10
+Route 221 House;3;138;1;10;10
+Route 222;3;139;1;10;10
+Route 222 West House;3;140;1;10;10
+Route 222 East House;3;141;1;10;10
+Route 222 Gate To Sunyshore City;3;142;1;10;10
+Route 224;3;143;1;10;10
+Route 225;3;144;1;10;10
+Unknown 401;3;145;1;10;10
+Unknown 402;3;146;1;10;10
+Route 227;3;147;1;10;10
+Unknown 404;3;148;1;10;10
+Unknown 405;3;149;1;10;10
+Route 228;3;150;1;10;10
+Route 229;3;151;1;10;10
+Unknown 408;3;152;1;10;10
+Unknown 409;3;153;1;10;10
+Record Mixing Room;3;154;1;10;10
+Twinleaf Town;3;155;1;10;10
+Twinleaf Town Rival House 1f;3;156;1;10;10
+Twinleaf Town Rival House 2f;3;157;1;10;10
+Twinleaf Town Player House 1f;3;158;1;10;10
+Twinleaf Town Player House 2f;3;159;1;10;10
+Twinleaf Town Northeast House;3;160;1;10;10
+Twinleaf Town Southwest House;3;161;1;10;10
+Sandgem Town;3;162;1;10;10
+Sandgem Town Mart;3;163;1;10;10
+Sandgem Town Pokecenter 1f;3;164;1;10;10
+Sandgem Town Pokecenter 2f;3;165;1;10;10
+Sandgem Town Pokemon Research Lab;3;166;1;10;10
+Sandgem Town Counterpart House 1f;3;167;1;10;10
+Sandgem Town Counterpart House 2f;3;168;1;10;10
+Sandgem Town House;3;169;1;10;10
+Floaroma Town;3;170;1;10;10
+Floaroma Town Mart;3;171;1;10;10
+Floaroma Town Pokecenter 1f;3;172;1;10;10
+Floaroma Town Pokecenter 2f;3;173;1;10;10
+Flower Shop;3;174;1;10;10
+Floaroma Town Southeast House;3;175;1;10;10
+Floaroma Town Middle House;3;176;1;10;10
+Solaceon Town;3;177;1;10;10
+Solaceon Town Mart;3;178;1;10;10
+Solaceon Town Pokecenter 1f;3;179;1;10;10
+Solaceon Town Pokecenter 2f;3;180;1;10;10
+Pokemon Day Care;3;181;1;10;10
+Solaceon Town Northeast House;3;182;1;10;10
+Solaceon Town Pokemon News Press;3;183;1;10;10
+Solaceon Town North House;3;184;1;10;10
+Solaceon Town East House;3;185;1;10;10
+Celestic Town;3;186;1;10;10
+Celestic Town Pokecenter 1f;3;187;1;10;10
+Celestic Town Pokecenter 2f;3;188;1;10;10
+Celestic Town North House;3;189;1;10;10
+Celestic Town Northwest House;3;190;1;10;10
+Celestic Town Northeast House;3;191;1;10;10
+Celestic Town Southwest House;3;192;1;10;10
+Celestic Town Cave;3;193;1;10;10
+Survival Area;3;194;1;10;10
+Survival Area Mart;3;195;1;10;10
+Survival Area Pokecenter 1f;3;196;1;10;10
+Survival Area Pokecenter 2f;3;197;1;10;10
+Battleground;3;198;1;10;10
+Survival Area South House;3;199;1;10;10
+Survival Area North House;3;200;1;10;10
+Resort Area;3;201;1;10;10
+Unused Resort Area Mart;3;202;1;10;10
+Resort Area Pokecenter 1f;3;203;1;10;10
+Resort Area Pokecenter 2f;3;204;1;10;10
+Resort Area Ribbon Syndicate 1f;3;205;1;10;10
+Resort Area Ribbon Syndicate 2f;3;206;1;10;10
+Resort Area Ribbon Syndicate Elevator;3;207;1;10;10
+Villa;3;208;1;10;10
+Resort Area House;3;209;1;10;10
+Union Room;3;210;1;10;10
+Route 220;3;211;1;10;10
+Route 223;3;212;1;10;10
+Route 226;3;213;1;10;10
+Unknown 470;3;214;1;10;10
+Route 230;3;215;1;10;10
+Seabreak Path;3;216;1;10;10
+Unknown 473;3;217;1;10;10
+Jubilife City Pokecenter B1f;3;218;1;10;10
+Canalave City Pokecenter B1f;3;219;1;10;10
+Oreburgh City Pokecenter B1f;3;220;1;10;10
+Eterna City Pokecenter B1f;3;221;1;10;10
+Hearthome City Pokecenter B1f;3;222;1;10;10
+Pastoria City Pokecenter B1f;3;223;1;10;10
+Veilstone City Pokecenter B1f;3;224;1;10;10
+Sunyshore City Pokecenter B1f;3;225;1;10;10
+Snowpoint City Pokecenter B1f;3;226;1;10;10
+Pokemon League South Pokecenter B1f;3;227;1;10;10
+Fight Area Pokecenter B1f;3;228;1;10;10
+Sandgem Town Pokecenter B1f;3;229;1;10;10
+Floaroma Town Pokecenter B1f;3;230;1;10;10
+Solaceon Town Pokecenter B1f;3;231;1;10;10
+Celestic Town Pokecenter B1f;3;232;1;10;10
+Survival Area Pokecenter B1f;3;233;1;10;10
+Resort Area Pokecenter B1f;3;234;1;10;10
+Canalave City West House;3;235;1;10;10
+Cafe;3;236;1;10;10
+Battle Tower Battle Salon;3;237;1;10;10
+Galactic Hq Control Room;3;238;1;10;10
+Pokemon League North Pokecenter 2f;3;239;1;10;10
+Pokemon League North Pokecenter B1f;3;240;1;10;10
+Galactic Hq Laboratory;3;241;1;10;10
+Route 225 House;3;242;1;10;10
+Route 226 House;3;243;1;10;10
+Route 227 House;3;244;1;10;10
+Route 228 Gate To Route 226;3;245;1;10;10
+Route 228 North House;3;246;1;10;10
+Route 228 South House;3;247;1;10;10
+Great Marsh 1;3;248;1;10;10
+Great Marsh 2;3;249;1;10;10
+Great Marsh 3;3;250;1;10;10
+Great Marsh 4;3;251;1;10;10
+Great Marsh 5;3;252;1;10;10
+Great Marsh 6;3;253;1;10;10
+Hall Of Origin;3;254;1;10;10
+Unknown 511;3;255;1;10;10
+Ruin Maniac Cave Long;3;0;2;10;10
+Maniac Tunnel;3;1;2;10;10
+Iron Island House;3;2;2;10;10
+Solaceon Ruins Room 5 Southeast Deadend;3;3;2;10;10
+Vista Lighthouse Elevator;3;4;2;10;10
+Jubilife City Southwest House 2f;3;5;2;10;10
+Turnback Cave Pillar 1 Room 4;3;6;2;10;10
+Turnback Cave Pillar 1 Room 5;3;7;2;10;10
+Turnback Cave Pillar 1 Room 6;3;8;2;10;10
+Turnback Cave Pillar 2 Room 1;3;9;2;10;10
+Turnback Cave Pillar 2 Room 2;3;10;2;10;10
+Turnback Cave Pillar 2 Room 3;3;11;2;10;10
+Turnback Cave Pillar 2 Room 4;3;12;2;10;10
+Turnback Cave Pillar 2 Room 5;3;13;2;10;10
+Turnback Cave Pillar 2 Room 6;3;14;2;10;10
+Turnback Cave Pillar 3 Room 1;3;15;2;10;10
+Turnback Cave Pillar 3 Room 2;3;16;2;10;10
+Turnback Cave Pillar 3 Room 3;3;17;2;10;10
+Turnback Cave Pillar 3 Room 4;3;18;2;10;10
+Turnback Cave Pillar 3 Room 5;3;19;2;10;10
+Turnback Cave Pillar 3 Room 6;3;20;2;10;10
+Unknown 533;3;21;2;10;10
+Unknown 534;3;22;2;10;10
+Unknown 535;3;23;2;10;10
+Unknown 536;3;24;2;10;10
+Unknown 537;3;25;2;10;10
+Unknown 538;3;26;2;10;10
+Unknown 539;3;27;2;10;10
+Unknown 540;3;28;2;10;10
+Unknown 541;3;29;2;10;10
+Unknown 542;3;30;2;10;10
+Unknown 543;3;31;2;10;10
+Unknown 544;3;32;2;10;10
+Unknown 545;3;33;2;10;10
+Unknown 546;3;34;2;10;10
+Unknown 547;3;35;2;10;10
+Unknown 548;3;36;2;10;10
+Unknown 549;3;37;2;10;10
+Unknown 550;3;38;2;10;10
+Unknown 551;3;39;2;10;10
+Unknown 552;3;40;2;10;10
+Unknown 553;3;41;2;10;10
+Unknown 554;3;42;2;10;10
+Unknown 555;3;43;2;10;10
+Unknown 556;3;44;2;10;10
+Unknown 557;3;45;2;10;10
+Contest Hall Stage No Contest;3;46;2;10;10
+Battle Frontier;3;47;2;10;10
+Battle Frontier Gate To Fight Area;3;48;2;10;10
+Unknown 561;3;49;2;10;10
+Battle Factory;3;50;2;10;10
+Battle Hall;3;51;2;10;10
+Battle Castle;3;52;2;10;10
+Battle Arcade;3;53;2;10;10
+Veilstone Store B1f;3;54;2;10;10
+Global Terminal 2f;3;55;2;10;10
+Global Terminal 3f;3;56;2;10;10
+Galactic Hq Hall;3;57;2;10;10
+Unknown 570;3;58;2;10;10
+Rotoms Room;3;59;2;10;10
+Unknown 572;3;60;2;10;10
+Distortion World 1f;3;61;2;10;10
+Distortion World B1f;3;62;2;10;10
+Distortion World B2f;3;63;2;10;10
+Distortion World B3f;3;64;2;10;10
+Distortion World B4f;3;65;2;10;10
+Unknown 578;3;66;2;10;10
+Distortion World B5f;3;67;2;10;10
+Distortion World B6f;3;68;2;10;10
+Distortion World B7f;3;69;2;10;10
+Distortion World Giratina Room;3;70;2;10;10
+Distortion World Turnback Cave Room;3;71;2;10;10
+Spear Pillar Dialga;3;72;2;10;10
+Spear Pillar Palkia;3;73;2;10;10
+Wifi Plaza Entrance;3;74;2;10;10
+Iron Island Iron Ruins;3;75;2;10;10
+Iron Ruins;3;76;2;10;10
+Mt Coronet Iceberg Ruins;3;77;2;10;10
+Iceberg Ruins;3;78;2;10;10
+Route 228 Rock Peak Ruins;3;79;2;10;10
+Rock Peak Ruins;3;80;2;10;10
+Everywhere;4;0;0;10;10
+Nothing;4;1;0;10;10
+Union;4;2;0;10;10
+Underground;4;3;0;10;10
+Wifi Single Battle Area;4;4;0;10;10
+Wifi Multi Battle Area;4;5;0;10;10
+Bellchime Tower;4;6;0;10;10
+Burned Tower 1f;4;7;0;10;10
+Ruins Of Alph Unused;4;8;0;10;10
+Route 1;4;9;0;10;10
+Route 2;4;10;0;10;10
+Route 3;4;11;0;10;10
+Route 4;4;12;0;10;10
+Route 5;4;13;0;10;10
+Route 6;4;14;0;10;10
+Route 7;4;15;0;10;10
+Route 8;4;16;0;10;10
+Route 9;4;17;0;10;10
+Route 10;4;18;0;10;10
+Route 11;4;19;0;10;10
+Route 12;4;20;0;10;10
+Route 13;4;21;0;10;10
+Route 14;4;22;0;10;10
+Route 15;4;23;0;10;10
+Route 16;4;24;0;10;10
+Route 17;4;25;0;10;10
+Route 18;4;26;0;10;10
+Route 22;4;27;0;10;10
+Route 24;4;28;0;10;10
+Route 25;4;29;0;10;10
+Route 26;4;30;0;10;10
+Route 27;4;31;0;10;10
+Route 28;4;32;0;10;10
+Route 29;4;33;0;10;10
+Route 30;4;34;0;10;10
+Route 31;4;35;0;10;10
+Route 32;4;36;0;10;10
+Route 33;4;37;0;10;10
+Route 34;4;38;0;10;10
+Route 35;4;39;0;10;10
+Route 36;4;40;0;10;10
+Route 37;4;41;0;10;10
+Route 38;4;42;0;10;10
+Route 39;4;43;0;10;10
+Route 42;4;44;0;10;10
+Route 43;4;45;0;10;10
+Route 44;4;46;0;10;10
+Route 45;4;47;0;10;10
+Route 46;4;48;0;10;10
+Pallet;4;49;0;10;10
+Viridian;4;50;0;10;10
+Pewter;4;51;0;10;10
+Cerulean;4;52;0;10;10
+Lavender;4;53;0;10;10
+Vermilion;4;54;0;10;10
+Celadon;4;55;0;10;10
+Fuchsia;4;56;0;10;10
+Cinnabar Island;4;57;0;10;10
+Indigo Plateau;4;58;0;10;10
+Saffron;4;59;0;10;10
+New Bark;4;60;0;10;10
+New Bark Elms Lab 1f;4;61;0;10;10
+New Bark Elms Lab 2f;4;62;0;10;10
+New Bark Player House 1f;4;63;0;10;10
+New Bark Player House 2f;4;64;0;10;10
+New Bark Southwest House;4;65;0;10;10
+New Bark Rival House 1f;4;66;0;10;10
+Cherrygrove;4;67;0;10;10
+Cherrygrove Pokemart;4;68;0;10;10
+Cherrygrove Pokecenter 1f;4;69;0;10;10
+Cherrygrove Southwest House;4;70;0;10;10
+Cherrygrove Guide Gent House;4;71;0;10;10
+Cherrygrove Southeast House;4;72;0;10;10
+Violet;4;73;0;10;10
+Azalea;4;74;0;10;10
+Cianwood;4;75;0;10;10
+Goldenrod;4;76;0;10;10
+Olivine;4;77;0;10;10
+Ecruteak;4;78;0;10;10
+Ecruteak Pokemart;4;79;0;10;10
+Ecruteak Gym;4;80;0;10;10
+Ecruteak Pokecenter 1f;4;81;0;10;10
+Ecruteak Unused House;4;82;0;10;10
+Ecruteak Bell Tower Barrier Station;4;83;0;10;10
+Ecruteak Dowsing Machine House;4;84;0;10;10
+Ecruteak Southwest House;4;85;0;10;10
+Ecruteak Dance Theater;4;86;0;10;10
+Mahogany;4;87;0;10;10
+Lake Of Rage;4;88;0;10;10
+Blackthorn;4;89;0;10;10
+Mount Silver;4;90;0;10;10
+Route 19;4;91;0;10;10
+Route 20;4;92;0;10;10
+Route 21;4;93;0;10;10
+Route 40;4;94;0;10;10
+Route 41;4;95;0;10;10
+National Park;4;96;0;10;10
+Route 31 Violet Gatehouse;4;97;0;10;10
+Route 32 Ruins Of Alph Gatehouse;4;98;0;10;10
+Union Cave 1f;4;99;0;10;10
+Azalea Ilex Forest Gatehouse;4;100;0;10;10
+Route 35 Goldenrod Gatehouse;4;101;0;10;10
+Route 35 National Park Pokeathalon Gatehouse;4;102;0;10;10
+Route 36 Ruins Of Alph Gatehouse;4;103;0;10;10
+Route 36 National Park Gatehouse;4;104;0;10;10
+Ecruteak Unused Gatehouse;4;105;0;10;10
+Diglett Cave;4;106;0;10;10
+Mount Moon;4;107;0;10;10
+Rock Tunnel 1f;4;108;0;10;10
+Pal Park;4;109;0;10;10
+Sprout Tower 1f;4;110;0;10;10
+Bell Tower 1f;4;111;0;10;10
+Goldenrod Radio Tower 1f;4;112;0;10;10
+Ruins Of Alph;4;113;0;10;10
+Slowpoke Well Entrance;4;114;0;10;10
+Olivine Lighthouse 1f;4;115;0;10;10
+Mahogany Souvenir Shop;4;116;0;10;10
+Ilex Forest;4;117;0;10;10
+Goldenrod Tunnel 1f;4;118;0;10;10
+Mount Mortar 1f Entrance;4;119;0;10;10
+Ice Path 1f;4;120;0;10;10
+Whirl Islands 1f;4;121;0;10;10
+Mount Silver Cave 1f;4;122;0;10;10
+Dark Cave Route 45 Side;4;123;0;10;10
+Victory Road 1f;4;124;0;10;10
+Dragons Den Entrance;4;125;0;10;10
+Tohjo Falls;4;126;0;10;10
+Route 30 Apricorn House;4;127;0;10;10
+Ecruteak Pokecenter Unused 1;4;128;0;10;10
+Ecruteak Pokecenter Unused 2;4;129;0;10;10
+Ecruteak Pokecenter Unused 3;4;130;0;10;10
+Ecruteak Pokecenter B1f;4;131;0;10;10
+Route 42 Ecruteak Gatehouse;4;132;0;10;10
+Mahogany East House;4;133;0;10;10
+Route 29 Route 46 Gatehouse;4;134;0;10;10
+Violet Gym;4;135;0;10;10
+Azalea Gym Entrance;4;136;0;10;10
+Goldenrod Gym;4;137;0;10;10
+Olivine Gym;4;138;0;10;10
+Cianwood Gym;4;139;0;10;10
+Mahogany Gym Leader Room;4;140;0;10;10
+Blackthorn Gym;4;141;0;10;10
+Route 43 Mahogany Gatehouse;4;142;0;10;10
+Route 30 Mr Pokemon House;4;143;0;10;10
+Cherrygrove Pokecenter B1f;4;144;0;10;10
+Cerulean Cave 1f;4;145;0;10;10
+Seafoam Islands 1f;4;146;0;10;10
+Viridian Forest;4;147;0;10;10
+Route 9 Unused;4;148;0;10;10
+Violet Route 36 Gatehouse;4;149;0;10;10
+National Park Unused Gatehouse;4;150;0;10;10
+Route 47;4;151;0;10;10
+Route 48;4;152;0;10;10
+Union Cave B1f;4;153;0;10;10
+Union Cave B2f;4;154;0;10;10
+Sprout Tower 2f;4;155;0;10;10
+Sprout Tower 3f;4;156;0;10;10
+Violet Pokemart;4;157;0;10;10
+Violet Pokecenter 1f;4;158;0;10;10
+Violet Pokemon School;4;159;0;10;10
+Violet Northwest House;4;160;0;10;10
+Violet Unused;4;161;0;10;10
+Violet Bellsprout Onyx Trade House;4;162;0;10;10
+Azalea Charcoal Kiln;4;163;0;10;10
+Azalea Kurt House;4;164;0;10;10
+Azalea Pokemart;4;165;0;10;10
+Azalea Pokecenter 1f;4;166;0;10;10
+Violet Pokecenter B1f;4;167;0;10;10
+Azalea Pokecenter B1f;4;168;0;10;10
+Route 32 Pokecenter 1f;4;169;0;10;10
+Route 32 Pokecenter B1f;4;170;0;10;10
+Route 34 Ilex Forest Gatehouse;4;171;0;10;10
+Route 38 Ecruteak Gatehouse;4;172;0;10;10
+Safari Zone Entrance Interior;4;173;0;10;10
+Safari Zone Gate;4;174;0;10;10
+Ecruteak Unused 1;4;175;0;10;10
+Dark Cave Route 31 Side;4;176;0;10;10
+Slowpoke Well B1f;4;177;0;10;10
+Victory Road 2f;4;178;0;10;10
+Victory Road 3f;4;179;0;10;10
+Azalea Gym;4;180;0;10;10
+Slowpoke Well B2f;4;181;0;10;10
+Goldenrod Bike Shop;4;182;0;10;10
+Goldenrod Game Corner Jp;4;183;0;10;10
+Goldenrod Flower Shop;4;184;0;10;10
+Goldenrod Pokecenter 1f;4;185;0;10;10
+Goldenrod Radio Tower 2f;4;186;0;10;10
+Goldenrod Radio Tower 3f;4;187;0;10;10
+Goldenrod Radio Tower 4f;4;188;0;10;10
+Goldenrod Radio Tower 5f;4;189;0;10;10
+Goldenrod Radio Tower Observation Deck;4;190;0;10;10
+Goldenrod Department Store 1f;4;191;0;10;10
+Goldenrod Department Store 2f;4;192;0;10;10
+Goldenrod Department Store 3f;4;193;0;10;10
+Goldenrod Department Store 4f;4;194;0;10;10
+Goldenrod Department Store 5f;4;195;0;10;10
+Goldenrod Department Store 6f;4;196;0;10;10
+Goldenrod Magnet Train Station 1f;4;197;0;10;10
+Goldenrod Magnet Train Station 2f;4;198;0;10;10
+Goldenrod Tunnel B1f;4;199;0;10;10
+Goldenrod Department Store Basement;4;200;0;10;10
+Goldenrod Tunnel B2f;4;201;0;10;10
+Goldenrod Tunnel Warehouse;4;202;0;10;10
+Goldenrod Bills House;4;203;0;10;10
+Goldenrod Friendship Checker House;4;204;0;10;10
+Goldenrod Northeast House;4;205;0;10;10
+Goldenrod Name Rater House;4;206;0;10;10
+Goldenrod Global Terminal 1f;4;207;0;10;10
+Goldenrod Unused 1;4;208;0;10;10
+Goldenrod Unused 2;4;209;0;10;10
+Goldenrod Unused 3;4;210;0;10;10
+Goldenrod Unused 4;4;211;0;10;10
+Goldenrod Unused 5;4;212;0;10;10
+Goldenrod Unused 6;4;213;0;10;10
+Route 39 Moomoo Farm House;4;214;0;10;10
+Route 39 Moomoo Farm Stable;4;215;0;10;10
+Ecruteak Bell Tower Barrier Station Corridor;4;216;0;10;10
+Burned Tower B1f;4;217;0;10;10
+Ruins Of Alph Unused 2;4;218;0;10;10
+Goldenrod Pokecenter B1f;4;219;0;10;10
+Olivine Lighthouse 2f;4;220;0;10;10
+Olivine Lighthouse Exterior;4;221;0;10;10
+Olivine Lighthouse 3f;4;222;0;10;10
+Olivine Lighthouse 4f;4;223;0;10;10
+Olivine Lighthouse 5f;4;224;0;10;10
+Olivine Lighthouse Light Room;4;225;0;10;10
+Olivine Pokecenter 1f;4;226;0;10;10
+Olivine Pokemart;4;227;0;10;10
+Olivine North House;4;228;0;10;10
+Olivine Northeast House;4;229;0;10;10
+Olivine Northwest House;4;230;0;10;10
+Olivine Cafe;4;231;0;10;10
+Cianwood Kirks House;4;232;0;10;10
+Cianwood Pharmacy;4;233;0;10;10
+Cianwood Camerons House;4;234;0;10;10
+Cianwood Central House;4;235;0;10;10
+Cianwood Pokecenter 1f;4;236;0;10;10
+Ice Path B1f;4;237;0;10;10
+Ice Path B2f;4;238;0;10;10
+Ice Path B3f;4;239;0;10;10
+Ss Aqua Olivine Port Interior;4;240;0;10;10
+Cianwood Pokecenter B1f;4;241;0;10;10
+Whirl Islands B1f;4;242;0;10;10
+Whirl Islands B2f;4;243;0;10;10
+Whirl Islands B3f Lugia Cave;4;244;0;10;10
+Route 43 Gatehouse;4;245;0;10;10
+Mahogany Pokecenter 1f;4;246;0;10;10
+Team Rocket Headquarters B1f;4;247;0;10;10
+Team Rocket Headquarters B2f;4;248;0;10;10
+Team Rocket Headquarters B3f;4;249;0;10;10
+Mount Mortar 1f Back;4;250;0;10;10
+Mount Mortar 2f;4;251;0;10;10
+Mount Mortar B1f;4;252;0;10;10
+Dragons Den;4;253;0;10;10
+Fight Area Unused 1;4;254;0;10;10
+Fight Area Unused 2;4;255;0;10;10
+Fight Area Unused 3;4;0;1;10;10
+Fight Area Unused 4;4;1;1;10;10
+Fight Area Unused 5;4;2;1;10;10
+Fight Area Unused 6;4;3;1;10;10
+Fight Area Unused 7;4;4;1;10;10
+Fight Area Unused 8;4;5;1;10;10
+Fight Area Unused 9;4;6;1;10;10
+Battle Park Unused 1;4;7;1;10;10
+Battle Park Unused 2;4;8;1;10;10
+Battle Tower;4;9;1;10;10
+Battle Tower Elevator;4;10;1;10;10
+Battle Tower Unused 1;4;11;1;10;10
+Battle Tower Unused 2;4;12;1;10;10
+Battle Tower Unused 3;4;13;1;10;10
+Battle Tower Unused 4;4;14;1;10;10
+Battle Tower Partner Room;4;15;1;10;10
+Battle Frontier;4;16;1;10;10
+Battle Frontier Frontier Access Gatehouse;4;17;1;10;10
+Battle Frontier Battle Tower Unused;4;18;1;10;10
+Battle Frontier Battle Factory;4;19;1;10;10
+Battle Frontier Battle Hall;4;20;1;10;10
+Battle Frontier Battle Castle;4;21;1;10;10
+Battle Frontier Battle Arcade;4;22;1;10;10
+Cliff Edge Gate;4;23;1;10;10
+Pokeathlon Dome;4;24;1;10;10
+Pokeathlon Dome Interior 1f;4;25;1;10;10
+Pokeathlon Dome Interior 2f;4;26;1;10;10
+Pokeathlon Dome Interior 2f Entrance;4;27;1;10;10
+Pokeathlon Dome Interior B1f Solidarity Room;4;28;1;10;10
+Pokeathlon Dome Interior B1f Trust Room;4;29;1;10;10
+Pokeathlon Dome Interior B1f Potential Room;4;30;1;10;10
+Pokeathlon Dome Interior B1f Friendship Room;4;31;1;10;10
+Dragons Den Shrine;4;32;1;10;10
+Blackthorn West House;4;33;1;10;10
+Blackthorn East House;4;34;1;10;10
+Blackthorn Move Tutor House;4;35;1;10;10
+Blackthorn Pokemart;4;36;1;10;10
+Blackthorn Pokecenter 1f;4;37;1;10;10
+Lake Of Rage Hidden Power House;4;38;1;10;10
+Lake Of Rage Fishing Guru House;4;39;1;10;10
+Route 26 North House;4;40;1;10;10
+Route 26 Week Siblings House;4;41;1;10;10
+Tohjo Falls Hidden Room;4;42;1;10;10
+Route 22 Pokemon League Reception Gate;4;43;1;10;10
+Pokemon League Entrance;4;44;1;10;10
+Pokemon League Will Room;4;45;1;10;10
+Pokemon League Koga Room;4;46;1;10;10
+Pokemon League Bruno Room;4;47;1;10;10
+Pokemon League Karen Room;4;48;1;10;10
+Pokemon League Lance Room;4;49;1;10;10
+Pokemon League Hall Of Fame;4;50;1;10;10
+Ss Aqua 1f;4;51;1;10;10
+Ss Aqua Captain Room;4;52;1;10;10
+Ss Aqua 1f Southeast Rooms;4;53;1;10;10
+Ss Aqua 1f Southwest Rooms;4;54;1;10;10
+Ss Aqua 1f Northeast Rooms;4;55;1;10;10
+Ruins Of Alph Northeast Entrance First Room;4;56;1;10;10
+Ruins Of Alph Northeast Hidden Room;4;57;1;10;10
+Ruins Of Alph Southeast Entrance First Room;4;58;1;10;10
+Ruins Of Alph Underground Hall;4;59;1;10;10
+Ruins Of Alph Southwest Entrance First Room;4;60;1;10;10
+Ruins Of Alph Southwest Hidden Room;4;61;1;10;10
+Ruins Of Alph Northwest Entrance First Room;4;62;1;10;10
+Ruins Of Alph Northwest Hidden Room;4;63;1;10;10
+Ruins Of Alph Southeast Hidden Room;4;64;1;10;10
+Ruins Of Alph Research Center;4;65;1;10;10
+Route 27 House;4;66;1;10;10
+Ruins Of Alph Hall Entrance;4;67;1;10;10
+Ruins Of Alph Northeast Entrance Second Room;4;68;1;10;10
+Ruins Of Alph Southeast Entrance Second Room;4;69;1;10;10
+Ruins Of Alph Northwest Entrance Second Room;4;70;1;10;10
+Ruins Of Alph Southwest Entrance Second Room;4;71;1;10;10
+Ss Aqua 1f Northwest Rooms;4;72;1;10;10
+Ss Aqua B1f;4;73;1;10;10
+Ss Aqua Olivine Port Exterior;4;74;1;10;10
+Route 34 Daycare;4;75;1;10;10
+Bell Tower 2f;4;76;1;10;10
+Bell Tower 3f;4;77;1;10;10
+Bell Tower 4f;4;78;1;10;10
+Bell Tower 5f;4;79;1;10;10
+Bell Tower 6f;4;80;1;10;10
+Bell Tower 7f;4;81;1;10;10
+Bell Tower 8f;4;82;1;10;10
+Bell Tower 9f;4;83;1;10;10
+Bell Tower Roof;4;84;1;10;10
+Bell Tower 10f;4;85;1;10;10
+Cliff Cave;4;86;1;10;10
+Safari Zone 01;4;87;1;10;10
+Safari Zone 02;4;88;1;10;10
+Safari Zone 03;4;89;1;10;10
+Safari Zone 04;4;90;1;10;10
+Safari Zone 05;4;91;1;10;10
+Safari Zone 06;4;92;1;10;10
+Safari Zone 07;4;93;1;10;10
+Safari Zone 08;4;94;1;10;10
+Safari Zone 09;4;95;1;10;10
+Safari Zone 10;4;96;1;10;10
+Safari Zone 11;4;97;1;10;10
+Safari Zone 12;4;98;1;10;10
+Safari Zone 13;4;99;1;10;10
+Safari Zone 14;4;100;1;10;10
+Safari Zone Entrance Exterior;4;101;1;10;10
+Vermilion Pokecenter 1f;4;102;1;10;10
+Vermilion Pokecenter B1f;4;103;1;10;10
+Vermilion Pokemart;4;104;1;10;10
+Vermilion Fishing Dude House;4;105;1;10;10
+Vermilion Pokemon Fan Club;4;106;1;10;10
+Vermilion Central House;4;107;1;10;10
+Vermilion South House;4;108;1;10;10
+Vermilion Gym;4;109;1;10;10
+Route 40 Battle Frontier Gatehouse;4;110;1;10;10
+Olivine Pokecenter B1f;4;111;1;10;10
+Mahogany Pokecenter B1f;4;112;1;10;10
+Blackthorn Pokecenter B1f;4;113;1;10;10
+Celadon Department Store 1f;4;114;1;10;10
+Celadon Department Store 2f;4;115;1;10;10
+Celadon Department Store 3f;4;116;1;10;10
+Celadon Department Store 4f;4;117;1;10;10
+Celadon Department Store 5f;4;118;1;10;10
+Celadon Department Store Roof;4;119;1;10;10
+Celadon Condominiums 1f;4;120;1;10;10
+Celadon Condominiums 2f;4;121;1;10;10
+Celadon Condominiums 3f;4;122;1;10;10
+Celadon Condominiums Roof;4;123;1;10;10
+Celadon Condominiums Roof Room;4;124;1;10;10
+Celadon Game Corner Jp;4;125;1;10;10
+Celadon Prize Corner;4;126;1;10;10
+Celadon Restaurant;4;127;1;10;10
+New Bark Rival House 2f;4;128;1;10;10
+Cianwood North House;4;129;1;10;10
+Ss Aqua Vermilion Port Interior;4;130;1;10;10
+Ss Aqua Vermilion Port Exterior;4;131;1;10;10
+Route 10 South;4;132;1;10;10
+Route 6 Saffron Gatehouse;4;133;1;10;10
+Route 8 Saffron Gatehouse;4;134;1;10;10
+Route 5 Saffron Gatehouse;4;135;1;10;10
+Route 15 Fuchsia Gatehouse;4;136;1;10;10
+Celadon Pokecenter 1f;4;137;1;10;10
+Celadon Pokecenter B1f;4;138;1;10;10
+Celadon Gym;4;139;1;10;10
+Mahogany Gym Room 2;4;140;1;10;10
+Mahogany Gym Room 1;4;141;1;10;10
+Saffron Fighting Dojo;4;142;1;10;10
+Saffron Mr Psychic House;4;143;1;10;10
+Saffron Magnet Train Station 1f;4;144;1;10;10
+Saffron Magnet Train Station 2f;4;145;1;10;10
+Saffron Silph Co Hq;4;146;1;10;10
+Saffron Silph Co Rotom Room;4;147;1;10;10
+Saffron Copycat House 1f;4;148;1;10;10
+Saffron Copycat House 2f;4;149;1;10;10
+Saffron Unused;4;150;1;10;10
+Saffron Pokecenter 1f;4;151;1;10;10
+Saffron Pokecenter 2f;4;152;1;10;10
+Saffron Pokemart;4;153;1;10;10
+Saffron Gym;4;154;1;10;10
+Battle Frontier Frontier Access;4;155;1;10;10
+Goldenrod Global Terminal 2f;4;156;1;10;10
+Goldenrod Global Terminal 3f;4;157;1;10;10
+Route 2 East;4;158;1;10;10
+Route 16 House;4;159;1;10;10
+Route 20 Unused;4;160;1;10;10
+Route 2 House;4;161;1;10;10
+Route 2 Southeast Gatehouse;4;162;1;10;10
+Route 2 Viridian Forest South Gatehouse;4;163;1;10;10
+Route 2 Viridian Forest North Gatehouse;4;164;1;10;10
+Route 16 Gatehouse;4;165;1;10;10
+Route 16 East;4;166;1;10;10
+Route 18 Gatehouse;4;167;1;10;10
+Route 19 Fuchsia Gatehouse;4;168;1;10;10
+Route 19 Route 12 Gatehouse;4;169;1;10;10
+Cerulean Pokemart;4;170;1;10;10
+Cerulean Gym;4;171;1;10;10
+Cerulean Pokecenter 1f;4;172;1;10;10
+Cerulean North House;4;173;1;10;10
+Cerulean East House;4;174;1;10;10
+Cerulean West House;4;175;1;10;10
+Cerulean Bike Maniac House;4;176;1;10;10
+Lavender Pokemart;4;177;1;10;10
+Lavender Pokecenter 1f;4;178;1;10;10
+Lavender Volunteer Pokemon House;4;179;1;10;10
+Lavender Southwest House;4;180;1;10;10
+Lavender Name Rater;4;181;1;10;10
+Lavender House Of Memories;4;182;1;10;10
+Lavender Radio Station;4;183;1;10;10
+Route 25 Sea Cottage;4;184;1;10;10
+Goldenrod Department Store Elevator;4;185;1;10;10
+Celadon Department Store Elevator;4;186;1;10;10
+Celadon Condominiums Left Elevator;4;187;1;10;10
+Celadon Condominiums Right Elevator;4;188;1;10;10
+Saffron Silph Co Elevator;4;189;1;10;10
+Olivine Lighthouse Elevator;4;190;1;10;10
+Goldenrod Radio Tower Elevator;4;191;1;10;10
+Mount Moon Square Entrance;4;192;1;10;10
+Mount Moon Square;4;193;1;10;10
+Cerulean Cave 2f;4;194;1;10;10
+Cerulean Cave B1f;4;195;1;10;10
+Rock Tunnel B1f;4;196;1;10;10
+Seafoam Islands B1f;4;197;1;10;10
+Seafoam Islands B2f;4;198;1;10;10
+Seafoam Islands B3f;4;199;1;10;10
+Seafoam Islands B4f;4;200;1;10;10
+Seafoam Islands Cinnabar Gym;4;201;1;10;10
+Seafoam Islands Unused;4;202;1;10;10
+Mount Silver Cave Upper Mountainside;4;203;1;10;10
+Mount Silver Cave Lower Mountainside;4;204;1;10;10
+Mount Silver Cave Expert Belt Chamber;4;205;1;10;10
+Mount Silver Cave Moltres Chamber;4;206;1;10;10
+Mount Silver Cave 2f;4;207;1;10;10
+Mount Silver Cave 3f;4;208;1;10;10
+Mount Silver Cave Summit;4;209;1;10;10
+Route 10 Pokecenter 1f;4;210;1;10;10
+Route 10 Power Plant Repaired;4;211;1;10;10
+Route 5 Unused;4;212;1;10;10
+Route 5 Underground Path Gate;4;213;1;10;10
+Route 6 Underground Path Gate;4;214;1;10;10
+Pewter Museum Of Science;4;215;1;10;10
+Pewter Northeast House;4;216;1;10;10
+Pewter Gym;4;217;1;10;10
+Pewter Pokemart;4;218;1;10;10
+Pewter Pokecenter 1f;4;219;1;10;10
+Pewter Pokecenter B1f;4;220;1;10;10
+Pewter Southwest House;4;221;1;10;10
+Fuchsia Pokemart;4;222;1;10;10
+Fuchsia Pal Park Entrance;4;223;1;10;10
+Fuchsia Gym;4;224;1;10;10
+Fuchsia Southwest House;4;225;1;10;10
+Fuchsia Pokecenter 1f;4;226;1;10;10
+Fuchsia Safari Zone Warden House;4;227;1;10;10
+Route 10 Pokecenter B1f;4;228;1;10;10
+Fuchsia Pokecenter B1f;4;229;1;10;10
+Whirl Islands B3f;4;230;1;10;10
+National Park Bug Catching Contest;4;231;1;10;10
+National Park Unused;4;232;1;10;10
+Route 10 Power Plant Broken;4;233;1;10;10
+Ruins Of Alph Underground Hall Sinjoh Event;4;234;1;10;10
+Ruins Of Alph Hall Entrance Sinjoh Event;4;235;1;10;10
+Ruins Of Alph Underground Hall Sinjoh Event 2;4;236;1;10;10
+Route 7 Saffron Gatehouse;4;237;1;10;10
+Lavender Pokecenter B1f;4;238;1;10;10
+Cerulean Pokecenter B1f;4;239;1;10;10
+Viridian Gym;4;240;1;10;10
+Viridian Northeast House;4;241;1;10;10
+Viridian Trainer House 1f;4;242;1;10;10
+Viridian Trainer House B1f;4;243;1;10;10
+Viridian Pokemart;4;244;1;10;10
+Viridian Pokecenter 1f;4;245;1;10;10
+Viridian Pokecenter B1f;4;246;1;10;10
+Pallet Town Reds House 1f;4;247;1;10;10
+Pallet Town Blues House 1f;4;248;1;10;10
+Pallet Town Oaks Lab;4;249;1;10;10
+Pallet Town Reds House 2f;4;250;1;10;10
+Pallet Town Blues House 2f;4;251;1;10;10
+Cinnabar Island Pokecenter 1f;4;252;1;10;10
+Cinnabar Island Pokecenter B1f;4;253;1;10;10
+Route 28 House;4;254;1;10;10
+Route 3 Pokecenter 1f;4;255;1;10;10
+Route 3 Pokecenter B1f;4;0;2;10;10
+Mount Moon Square Clefairy Event;4;1;2;10;10
+Mount Silver Pokecenter 1f;4;2;2;10;10
+Mount Silver Pokecenter B1f;4;3;2;10;10
+Wifi Plaza Warp Room;4;4;2;10;10
+Route 5 House;4;5;2;10;10
+Mount Moon Square Shop;4;6;2;10;10
+Goldenrod Magnet Train Station 2f Empty;4;7;2;10;10
+Saffron Magnet Train Station 2f Empty;4;8;2;10;10
+Sinjoh Ruins Exterior;4;9;2;10;10
+Sinjoh Ruins Mystri Stage;4;10;2;10;10
+Sinjoh Ruins Cabin;4;11;2;10;10
+Embedded Tower Groudon Room;4;12;2;10;10
+Embedded Tower Kyogre Room;4;13;2;10;10
+Embedded Tower Rayquaza Room;4;14;2;10;10
+Viridian Route 1 Gatehouse;4;15;2;10;10
+Frontier Access Pokecenter 1f;4;16;2;10;10
+Frontier Access Pokecenter B1f;4;17;2;10;10
+Frontier Access Pokemart;4;18;2;10;10
+Frontier Access Move Tutor House;4;19;2;10;10
+Route 5 Underground Path;4;20;2;10;10
+Route 12 Fishing Brother House;4;21;2;10;10
+Safari Zone Gate Pokecenter 1f;4;22;2;10;10
+Safari Zone Gate Pokecenter B1f;4;23;2;10;10
+Goldenrod Game Corner;4;24;2;10;10
+Celadon Game Corner;4;25;2;10;10
+Unused;4;26;2;10;10
+Pokemon League Entrance Wifi Room;4;27;2;10;10
 Black City;2;0;0;43;38
 Striaton City;2;6;0;781;589
 Nacrene City;2;16;0;637;599

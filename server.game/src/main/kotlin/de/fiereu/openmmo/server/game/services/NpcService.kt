@@ -24,6 +24,7 @@ class NpcService
 constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
+    private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
 
   private val npcEntityIdCounter = AtomicLong(0x1A69000000000000L)
@@ -55,7 +56,11 @@ constructor(
       log.info { "NPC spawns suppressed for $regionId:$bankId:$mapId (probe)" }
       return
     }
-    val map = mapManager.getMap(regionId, bankId, mapId) ?: return
+    val map = mapManager.getMap(regionId, bankId, mapId)
+    if (map == null) {
+      spawnNdsNpcs(ctx, regionId, bankId, mapId)
+      return
+    }
     val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
     val storyFlags = stored?.storyFlags.orEmpty()
     val storyVars = stored?.storyVars.orEmpty()
@@ -268,6 +273,47 @@ constructor(
 
   private fun key(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int) =
       "$regionId:$bankId:$mapId:$entityIdx"
+
+  /**
+   * A DS map's npcs straight from the ROM's zone events (NdsNpcs): the ROM sprite id resolves in
+   * the client's own table for that region, movement and ranges ride the same wire fields the
+   * GBA npcs use, and facing is the Gen 4 order (north, south, west, east) turned into ours.
+   * Story flags are not modelled for these yet, so every placed npc shows.
+   */
+  private fun spawnNdsNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    val npcs = ndsNpcs.of(regionId, bankId, mapId)
+    if (npcs.isEmpty()) return
+    for (npc in npcs) {
+      val movementId = npc.movement and 0xFF
+      val unk4 =
+          if (movementId in 1..6 || movementId in 25..52) ((npc.xRange and 0xFF) shl 8) or (npc.yRange and 0xFF)
+          else 0
+      val facing =
+          when (npc.facing) {
+            0 -> Direction.UP.ordinal
+            1 -> Direction.DOWN.ordinal
+            2 -> Direction.LEFT.ordinal
+            else -> Direction.RIGHT.ordinal
+          }
+      ctx.send(
+          NpcSpawnPacket(
+              entityId = entityIdFor(regionId, bankId, mapId, npc.index),
+              spriteRegionId = regionId,
+              graphicsId = npc.sprite,
+              unk3 = (movementId shl 8) or 0x02,
+              unk4 = unk4,
+              regionId = regionId,
+              bankId = bankId,
+              mapId = mapId,
+              x = npc.x,
+              y = npc.y,
+              facing = facing,
+              unk5 = 2,
+              unk6 = 8,
+          ))
+    }
+    log.info { "Spawned ${npcs.size} ROM npcs on DS map $regionId:$bankId:$mapId" }
+  }
 
   private fun buildSpawnPacket(
       npc: NpcDef,

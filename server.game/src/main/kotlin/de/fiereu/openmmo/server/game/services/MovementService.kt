@@ -288,6 +288,9 @@ constructor(
         state.pendingStepX = if (restOnTile) -1 else stepX
         state.pendingStepY = if (restOnTile) -1 else stepY
       }
+      // A plain step on a DS map: the ROM's land data says whether it was grass or cave floor,
+      // and the region's dex tables roll the encounter.
+      if (door == null) encounterService.onNdsStep(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)
       return
     }
     var fromX = stored.info.positionX.toInt()

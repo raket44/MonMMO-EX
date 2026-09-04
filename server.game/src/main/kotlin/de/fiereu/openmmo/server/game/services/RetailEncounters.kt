@@ -112,8 +112,10 @@ object RetailEncounters {
       types: Set<String>,
       season: Season,
       time: TimeOfDay,
-  ): List<Slot> =
-      entriesFor(sourceName, regionId)
+  ): List<Slot> = slotsOf(entriesFor(sourceName, regionId), types, season, time)
+
+  private fun slotsOf(entries: List<Entry>, types: Set<String>, season: Season, time: TimeOfDay): List<Slot> =
+      entries
           .asSequence()
           .filter { it.type in types }
           .filter { it.season == "Any" || it.season == season.label }
@@ -128,6 +130,29 @@ object RetailEncounters {
   /** "12.5%" becomes 1250; markers like Lure, Special, -- and ??? are not ordinary spawns. */
   private fun percentWeight(rarity: String): Int? =
       rarity.removeSuffix("%").toDoubleOrNull()?.let { (it * 100).toInt() }?.takeIf { it > 0 }
+
+  /**
+   * A DS map's directory name against the dex's locations of its region: exact first, then the
+   * unique dex location that starts with it ("Cianwood" -> "Cianwood City"), then the unique one
+   * that contains it. Null when nothing fits or several do.
+   */
+  fun entriesForNdsName(name: String, regionId: Int): List<Entry> {
+    val key = normalize(name)
+    if (key.isEmpty()) return emptyList()
+    byLocation[key]?.filter { it.regionId == regionId }?.takeIf { it.isNotEmpty() }?.let { return it }
+    val regional = locationNames().filter { it.first == regionId }.map { normalize(it.second) }.distinct()
+    val prefixed = regional.filter { it.startsWith(key) }
+    val chosen =
+        when {
+          prefixed.size == 1 -> prefixed[0]
+          else -> regional.filter { it.contains(key) }.singleOrNull()
+        } ?: return emptyList()
+    return byLocation[chosen].orEmpty().filter { it.regionId == regionId }
+  }
+
+  /** The wild pool for a DS map by directory name, see [wildPool]. */
+  fun wildPoolForNdsName(name: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay): List<Slot> =
+      slotsOf(entriesForNdsName(name, regionId), types, season, time)
 
   /** Every (region, location name) the retail dump knows, for coverage reports. */
   fun locationNames(): Set<Pair<Int, String>> =

@@ -257,6 +257,9 @@ class ScriptSupportAnalyzer(
           "call_if_set",
           "call_if_unset" -> args.size == 2
           "waitmovement" -> args.size <= 1
+          "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
+          "ds_flagtovar" -> args.size == 2
+          "ds_warp" -> args.size == 3
           "trainerbattle_single" -> args.size in setOf(3, 4, 5)
           "trainerbattle_rematch" -> args.size == 3
           "trainerbattle_double" -> args.size in setOf(4, 5, 6)
@@ -285,10 +288,11 @@ class ScriptSupportAnalyzer(
       return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
     }
     if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {
-      if (items.byScriptConstant(args[0].token) == null) {
+      // DS item balls pass the item and count in vars (VAR_0x8008/9); those resolve at run time.
+      if (args[0] !is VarArg && items.byScriptConstant(args[0].token) == null) {
         return sourceReason(instruction, "unresolved item ${args[0].token}")
       }
-      if (args.size == 2 && args[1] !is IntArg) {
+      if (args.size == 2 && args[1] !is IntArg && args[1] !is VarArg) {
         return sourceReason(instruction, "unsupported item count ${args[1].token}")
       }
     }
@@ -521,6 +525,10 @@ class ScriptSupportAnalyzer(
     val SUPPORTED_COMMANDS =
         setOf(
             "ds_yesno",
+            "ds_getplayerdir",
+            "ds_getweekday",
+            "ds_flagtovar",
+            "ds_warp",
             "msgbox",
             "message",
             "lock",

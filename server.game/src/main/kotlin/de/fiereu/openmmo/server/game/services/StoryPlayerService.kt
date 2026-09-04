@@ -154,6 +154,8 @@ constructor(
 
   fun itemByScriptConstant(token: String): ItemDef? = items.byScriptConstant(token)
 
+  fun itemByWireId(id: Int): ItemDef? = items.get(id)
+
   private fun paddedMoves(moveIds: List<Int>): List<PokemonMove> =
       moveIds.take(MAX_MOVES).map { id ->
         PokemonMove(id.toShort(), (moves.get(id)?.pp ?: DEFAULT_MOVE_PP).toByte())

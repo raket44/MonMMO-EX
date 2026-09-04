@@ -1,5 +1,7 @@
 package de.fiereu.openmmo.server.game.script.interpreter
 
+import de.fiereu.openmmo.common.enums.Direction
+
 import de.fiereu.openmmo.common.dialog.DialogLine
 import de.fiereu.openmmo.script.FlagArg
 import de.fiereu.openmmo.script.IntArg
@@ -120,6 +122,37 @@ class InterpretedScript(
         "ds_yesno" -> {
           val yes = ctx.getVar(namespaced("VAR_RESULT")) == 1
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
+          state.pc++
+        }
+        // Gen 4 facing codes: 0 up, 1 down, 2 left, 3 right.
+        "ds_getplayerdir" -> {
+          val code =
+              when (ctx.facingDirection) {
+                Direction.UP -> 0
+                Direction.DOWN -> 1
+                Direction.LEFT -> 2
+                else -> 3
+              }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), code)
+          state.pc++
+        }
+        // Gen 4 weekdays count from Sunday = 0.
+        "ds_getweekday" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), java.time.LocalDate.now().dayOfWeek.value % 7)
+          state.pc++
+        }
+        "ds_flagtovar" -> {
+          val set = ctx.isFlagSet(namespaced(flagArg(instruction, 0).token))
+          ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
+          state.pc++
+        }
+        // A DS map header id is the client's bank (low byte) and map (high byte).
+        "ds_warp" -> {
+          val header = (instruction.arg(0) as IntArg).value
+          val region = if (program.id.source == "heartgold") 4 else 3
+          tracedWait(ctx, "ds_warp") {
+            ctx.rawWarp(region, header and 0xFF, header shr 8, (instruction.arg(1) as IntArg).value, (instruction.arg(2) as IntArg).value)
+          }
           state.pc++
         }
         "textcolor" -> {
@@ -755,12 +788,26 @@ class InterpretedScript(
    */
   private suspend fun runItemCommand(ctx: ScriptContext, instruction: ScriptInstruction) {
     val token = instruction.arg(0).token
+    // DS item balls carry the item and count in vars; the value is the game's own item index,
+    // which the client knows as region * 1000 + index.
     val item =
-        ctx.resolveItem(token)
-            ?: error(
-                "Script ${program.id.stable} references unknown item $token from " +
-                    "`${instruction.sourceLine}`")
-    val quantity = (instruction.args.getOrNull(1) as? IntArg)?.value ?: 1
+        if (instruction.arg(0) is VarArg) {
+          val region = if (program.id.source == "heartgold") 4 else 3
+          val index = ctx.getVar(namespaced(token))
+          ctx.resolveItemWire(region * 1000 + index)
+              ?: error("Script ${program.id.stable} var $token holds unknown item $index (region $region)")
+        } else {
+          ctx.resolveItem(token)
+              ?: error(
+                  "Script ${program.id.stable} references unknown item $token from " +
+                      "`${instruction.sourceLine}`")
+        }
+    val quantity =
+        when (val q = instruction.args.getOrNull(1)) {
+          is IntArg -> q.value
+          is VarArg -> ctx.getVar(namespaced(q.token))
+          else -> 1
+        }
     val result =
         when (instruction.command) {
           "giveitem" ->

@@ -81,7 +81,7 @@ class WarpArrivalTest :
         val presence =
             PresenceService(InterestManager(), PassThroughInterestPolicy(), mapLoad, store)
         val warps = WarpService(mapLoad, mapManager, store, presence, WarpRules())
-        val scriptWarps = ScriptWarpService(mapManager, mapLoad, store, presence)
+        val scriptWarps = ScriptWarpService(mapManager, mapLoad, store, presence, javax.inject.Provider { warps })
       }
 
       /** The warp deadline runs on the session's scope, which a disconnect cancels. */

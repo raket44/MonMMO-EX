@@ -101,7 +101,7 @@ fun scriptRunner(
       dialog,
       story,
       ScriptMovementService(mapManager, npcs, store),
-      ScriptWarpService(mapManager, mapLoad, store, presence),
+      ScriptWarpService(mapManager, mapLoad, store, presence, javax.inject.Provider { WarpService(mapLoad, mapManager, store, presence, WarpRules()) }),
       StoryPlayerService(
           store,
           wildMons,

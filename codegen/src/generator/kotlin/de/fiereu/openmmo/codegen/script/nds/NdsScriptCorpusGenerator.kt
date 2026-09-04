@@ -51,10 +51,15 @@ class NdsScriptCorpusGenerator {
 
     /** Script id chunks that live outside map headers (Platinum's common scripts and friends). */
     fun chunkFiles(): Map<Int, String> = emptyMap()
+
+    /** Convenience macros the scripts use as commands, expanded to their plain-command bodies. */
+    fun macros(): Map<String, Macro> = emptyMap()
   }
 
+  class Macro(val params: List<String>, val body: List<String>)
+
   /** One ROM map header: its id as the client numbers it and the files it references. */
-  data class MapHeader(val id: Int, val name: String, val scriptFile: String?, val eventsFile: String?)
+  data class MapHeader(val id: Int, val name: String, val scriptFile: String?, val eventsFile: String?, val msgBank: Int? = null)
 
   fun build(spec: ScriptCorpusSpec): BuiltScriptCorpus {
     val dialect: Dialect =
@@ -106,22 +111,25 @@ class NdsScriptCorpusGenerator {
           }
           continue
         }
-        val commands = transpile(block.lines, dialect)
-        try {
-          val program =
-              PretScriptParser.parse(
-                  id = ScriptId("gba", spec.source, spec.gameCode, block.label),
-                  storyNamespace = spec.storyNamespace,
-                  sourceFile = sourceFile,
-                  lines = listOf("${block.label}::") + commands,
-                  objectIds = objectIds,
-                  constants = constants,
-              )
-          program.instructions.flatMap { it.args }.filterIsInstance<TextArg>().mapTo(referencedText) { it.token }
-          programs += ScriptCorpusProgramRecord(block.label, sourceFile, commands, objectIds)
-          commands.forEach { c -> tokenPattern.findAll(c).forEach { referencedTokens += it.value } }
-        } catch (cause: IllegalArgumentException) {
-          failure("script structure", "${block.label}: ${cause.message}")
+        val extra = mutableListOf<Pair<String, List<String>>>()
+        val commands = transpile(block.lines, dialect, block.label, extra, owners.firstOrNull()?.msgBank, constants)
+        for ((label, body) in listOf(block.label to commands) + extra) {
+          try {
+            val program =
+                PretScriptParser.parse(
+                    id = ScriptId("gba", spec.source, spec.gameCode, label),
+                    storyNamespace = spec.storyNamespace,
+                    sourceFile = sourceFile,
+                    lines = listOf("$label::") + body,
+                    objectIds = objectIds,
+                    constants = constants,
+                )
+            program.instructions.flatMap { it.args }.filterIsInstance<TextArg>().mapTo(referencedText) { it.token }
+            programs += ScriptCorpusProgramRecord(label, sourceFile, body, objectIds)
+            body.forEach { c -> tokenPattern.findAll(c).forEach { referencedTokens += it.value } }
+          } catch (cause: IllegalArgumentException) {
+            failure("script structure", "$label: ${cause.message}")
+          }
         }
       }
 
@@ -141,6 +149,11 @@ class NdsScriptCorpusGenerator {
           interactable += label
         }
       }
+    }
+
+    // Facing an npc a fixed way is a one-step movement; four shared programs cover it.
+    for ((name, step) in listOf("NDS_FACE_UP" to "face_up", "NDS_FACE_DOWN" to "face_down", "NDS_FACE_LEFT" to "face_left", "NDS_FACE_RIGHT" to "face_right")) {
+      movements += ScriptCorpusMovementRecord(name, "generated", listOf(step, "step_end"))
     }
 
     val textIds = referencedText.mapNotNull { token -> dialect.textId(token)?.let { token to it } }.toMap()
@@ -175,13 +188,35 @@ class NdsScriptCorpusGenerator {
    */
   private fun parseScriptFile(file: File, dialect: Dialect): ParsedFile {
     val stem = file.nameWithoutExtension
-    fun localize(token: String) = if (LOCAL_LABEL.matches(token)) "${stem}_$token" else token
+    // Local labels get the file as namespace; the Gen 4 result var takes the GBA name the
+    // interpreter's own commands write to (vars are keyed by token, not number).
+    fun localize(token: String) =
+        when {
+          LOCAL_LABEL.matches(token) -> "${stem}_$token"
+          token == "VAR_SPECIAL_RESULT" || token == "VAR_0x800C" -> "VAR_RESULT"
+          else -> token
+        }
     val entries = mutableListOf<String>()
     val blocks = mutableListOf<Block>()
     var current: Block? = null
-    for (raw in file.readLines()) {
+    val macros = dialect.macros()
+    val source = ArrayDeque(file.readLines())
+    while (source.isNotEmpty()) {
+      val raw = source.removeFirst()
       val line = raw.substringBefore("//").substringBefore(';').trim()
       if (line.isEmpty() || line.startsWith("#") || line.startsWith(".")) continue
+      val macroName = line.substringBefore(' ').substringBefore('\t')
+      val macro = macros[macroName]
+      if (macro != null) {
+        val actual = line.removePrefix(macroName).trim().let { if (it.isEmpty()) emptyList() else it.split(',').map(String::trim) }
+        val expanded = macro.body.map { body ->
+          var text = body
+          macro.params.forEachIndexed { i, p -> text = text.replace("\\$p", actual.getOrElse(i) { "0" }) }
+          text
+        }
+        source.addAll(0, expanded)
+        continue
+      }
       val labelMatch = LABEL_LINE.matchEntire(line)
       if (labelMatch != null) {
         current = Block(localize(labelMatch.groupValues[1]), false, mutableListOf()).also { blocks += it }
@@ -213,13 +248,24 @@ class NdsScriptCorpusGenerator {
 
   // ---------------------------------------------------------------- transpile
 
-  private fun transpile(lines: List<List<String>>, dialect: Dialect): List<String> {
+  private fun transpile(
+      lines: List<List<String>>,
+      dialect: Dialect,
+      label: String,
+      extra: MutableList<Pair<String, List<String>>>,
+      msgBank: Int?,
+      constants: Map<String, Int>,
+  ): List<String> {
     val out = mutableListOf<String>()
+    // HeartGold standard messages: GetStdMsgNaix puts a message file id in a var, MsgBoxExtern
+    // shows an entry of it; folded here into the same ROM text ids as every other message.
+    val stdMsg = HashMap<String, Int>()
     var i = 0
     while (i < lines.size) {
       val line = lines[i]
       val name = line[0]
-      val a = line.drop(1)
+      // A bare number in a message command indexes the owning map header's own text bank.
+      val a = line.drop(1).map { t -> if (msgBank != null && name in MESSAGE_COMMANDS && t.toIntOrNull() != null) "msg_%04d_MAP_%05d".format(msgBank, t.toInt()) else t }
       val next = lines.getOrNull(i + 1)
       when (name) {
         // -- flow
@@ -274,9 +320,115 @@ class NdsScriptCorpusGenerator {
         "NPCMsg", "NonNPCMsg", "MessageVar", "NPCMsgVar", "NonNPCMsgVar" -> {
           if (dialect.textId(a[0]) == null) out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
           else {
-            out += "message ${a[0]}"
-            out += "waitmessage"
+            // A yes/no prompt right after the text (Platinum ShowYesNoMenu, HeartGold's {YESNO}
+            // text + GetMenuChoice) is one GBA MSGBOX_YESNO; Gen 4 answers 0 = yes, 1 = no.
+            val prompt = (1..3).firstOrNull { k ->
+              val l = lines.getOrNull(i + k) ?: return@firstOrNull false
+              if (l[0] in YESNO_COMMANDS) true else if (l[0] in PROMPT_FILLER) false else return@firstOrNull false
+            }
+            if (prompt != null) {
+              out += "msgbox ${a[0]}, MSGBOX_YESNO"
+              out += "ds_yesno ${lines[i + prompt][1]}"
+              i += prompt
+            } else {
+              out += "message ${a[0]}"
+              out += "waitmessage"
+            }
           }
+        }
+        // Signposts: the client draws them as plain dialog over the same ROM text.
+        "ShowLandmarkSign", "ShowArrowSign", "ShowMapSign", "ShowScrollingSign", "TrainerTips", "TrainerTipsEx",
+        "DirectionSignpost", "DirectionSignpostEx", "PokemonCryAndMessage", "DrawSignpostInstantMessage" -> {
+          val text = a.lastOrNull { dialect.textId(it) != null }
+          if (text == null) out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
+          else {
+            out += "msgbox $text, MSGBOX_DEFAULT"
+          }
+        }
+        "GetMenuChoice" -> {
+          out += "yesnobox 0, 0"
+          out += "ds_yesno ${a[0]}"
+        }
+        "GetPlayerMapPos", "GetPlayerCoords" -> out += "getplayerxy ${a[0]}, ${a[1]}"
+        "SetObjectEventPos" -> out += "setobjectxy ${a[0]}, ${a[1]}, ${a[2]}"
+        "GoToIfCannotFitItem" -> {
+          out += "checkitemspace ${a[0]}, ${a[1]}"
+          out += "compare VAR_RESULT, 0"
+          out += "goto_if_eq ${a.last()}"
+        }
+        "GoToIfNoItemSpace" -> {
+          out += "checkitemspace ${a[0]}, ${a[1]}"
+          out += "compare VAR_RESULT, 0"
+          out += "goto_if_eq ${a[2]}"
+        }
+        // Badges are a save bitfield on the DS, not event flags: they live as synthetic story
+        // flags the gym scripts set the same way.
+        "GoToIfBadgeAcquired" -> out += "goto_if_set FLAG_DS_BADGE_${a[0]}, ${a[1]}"
+        "CheckBadge" -> out += "ds_flagtovar FLAG_DS_BADGE_${a[0]}, ${a[1]}"
+        "GetStdMsgNaix" -> STD_MSG_BANKS[a[0].toIntOrNull() ?: -1]?.let { stdMsg[a[1]] = it }
+        "MsgBoxExtern", "NonNPCMsgExtern" -> {
+          val bank = stdMsg[a[0]]
+          val idx = a.getOrNull(1)?.toIntOrNull()
+          if (bank != null && idx != null) {
+            out += "message msg_%04d_STD_%05d".format(bank, idx)
+            out += "waitmessage"
+          } else out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
+        }
+        "ReturnCommonScript" -> out += "return"
+        "GetRandom" -> {
+          out += "random ${a[1]}"
+          resultCopy(out, a[0])
+        }
+        "GetItemQuantity" -> {
+          out += "checkitem ${a[0]}, 1"
+          resultCopy(out, a[1])
+        }
+        "MakeObjectVisible" -> {
+          val target = OBJECT_ALIASES[a[0]] ?: a[0]
+          if (target != "LOCALID_PLAYER") out += "addobject $target"
+        }
+        "SetObjectEventDir" -> {
+          val face = FACE_MOVEMENTS[a[1]]
+          val target = OBJECT_ALIASES[a[0]] ?: a[0]
+          if (face != null) out += "applymovement $target, $face"
+        }
+        "MovePersonFacing" -> {
+          // person, x, z, y(height), facing: z is the map's vertical axis.
+          val target = OBJECT_ALIASES[a[0]] ?: a[0]
+          out += "setobjectxy $target, ${a[1]}, ${a[2]}"
+          FACE_MOVEMENTS[a[4]]?.let { out += "applymovement $target, $it" }
+        }
+        "GenderMsgBox" -> {
+          // Two texts, one per player gender; checkplayergender leaves MALE = 0 in VAR_RESULT.
+          val female = "${label}_female"
+          val done = "${label}_gender_done"
+          out += "checkplayergender"
+          out += "compare VAR_RESULT, 1"
+          out += "goto_if_eq $female"
+          out += "message ${a[0]}"
+          out += "waitmessage"
+          out += "goto $done"
+          extra += female to listOf("message ${a[1]}", "waitmessage", "goto $done")
+          extra += done to listOf("return")
+          out += "end"
+        }
+        in STUB_QUERIES.keys -> {
+          val target = a.lastOrNull { it.startsWith("VAR_") }
+          if (target != null) out += "setvar $target, ${STUB_QUERIES.getValue(name)}"
+        }
+        "GetPlayerDir", "GetPlayerFacing" -> out += "ds_getplayerdir ${a[0]}"
+        "GetWeekday" -> out += "ds_getweekday ${a[0]}"
+        "CallCommonScript" -> out += "call NDS_CHUNK_${a[0].removePrefix("0x").toIntOrNull(if (a[0].startsWith("0x")) 16 else 10) ?: a[0]}"
+        "CallStd" -> out += "call NDS_CHUNK_${constants[a[0]] ?: a[0]}"
+        "GiveItemNoCheck" -> {
+          out += "giveitem ${a[0]}, ${a.getOrElse(1) { "1" }}"
+          resultCopy(out, a.getOrNull(2))
+        }
+        "RestartCurrentScript" -> out += "end"
+        "Warp" -> {
+          // Platinum: header, x, z, dir. HeartGold: header, 0, x, y, dir. The header id is the
+          // client's bank/map pair; the interpreter raw-warps to it.
+          if (a.size >= 5) out += "ds_warp ${a[0]}, ${a[2]}, ${a[3]}" else out += "ds_warp ${a[0]}, ${a[1]}, ${a[2]}"
         }
         "SimpleNPCMsg" -> {
           out += "lockall"
@@ -344,7 +496,11 @@ class NdsScriptCorpusGenerator {
         }
         // -- presentation with no server counterpart: dropped, the client owns audio and fades
         in DROPPED -> {}
-        else -> out += "ds_${name.lowercase()}" + if (a.isEmpty()) "" else " " + a.joinToString(", ")
+        else -> {
+          // Unnamed engine commands: the ones that answer into a var get a zero, the rest vanish.
+          if (name.startsWith("ScrCmd_")) a.lastOrNull { it.startsWith("VAR_") }?.let { out += "setvar $it, 0" }
+          else out += "ds_${name.lowercase()}" + if (a.isEmpty()) "" else " " + a.joinToString(", ")
+        }
       }
       i++
     }
@@ -427,8 +583,33 @@ class NdsScriptCorpusGenerator {
 
     override fun constants(): Map<String, Int> {
       val out = HashMap(ConstantsIndex.build(root))
-      for (name in listOf("vars_flags", "species", "items", "moves", "trainers", "map_headers", "trainer_classes"))
-          out += enumFile(File(root, "generated/$name.txt"), out)
+      File(root, "generated").listFiles { f -> f.extension == "txt" }?.sortedBy { it.name }?.forEach { out += enumFile(it, out) }
+      return out
+    }
+
+    /** The `Common_*` helpers in scrcmd.inc: plain command bodies, no byte directives. */
+    override fun macros(): Map<String, Macro> {
+      val out = HashMap<String, Macro>()
+      var name: String? = null
+      var params = emptyList<String>()
+      val body = mutableListOf<String>()
+      for (raw in File(root, "asm/macros/scrcmd.inc").readLines()) {
+        val line = raw.trim()
+        when {
+          line.startsWith(".macro ") -> {
+            val parts = line.removePrefix(".macro").trim().split(Regex("[\\s,]+")).filter { it.isNotEmpty() }
+            name = parts.firstOrNull()
+            params = parts.drop(1).map { it.substringBefore('=') }
+            body.clear()
+          }
+          line == ".endm" -> {
+            val n = name
+            if (n != null && n.startsWith("Common_") && body.none { it.startsWith(".") }) out[n] = Macro(params, body.toList())
+            name = null
+          }
+          name != null && line.isNotEmpty() -> body += line
+        }
+      }
       return out
     }
 
@@ -479,16 +660,49 @@ class NdsScriptCorpusGenerator {
       return (region shl 28) or (m.groupValues[1].toInt() shl 16) or m.groupValues[2].toInt()
     }
 
+    /**
+     * Script ids from 2000 up live in shared chunks: `_std_*` thresholds (include/constants/
+     * std_script.h) name the base id and src/script_manager.c the scr_seq file; the entry index
+     * is id minus base, the same NDS_CHUNK_<id> scheme Platinum uses.
+     */
+    override fun chunkFiles(): Map<Int, String> {
+      val bases = Regex("#define\\s+(_std_\\w+)\\s+(\\d+)").findAll(File(root, "include/constants/std_script.h").readText())
+          .associate { it.groupValues[1] to it.groupValues[2].toInt() }
+      val table = File(root, "src/script_manager.c").readText()
+      val row = Regex("\\{\\s*(\\w+),\\s*NARC_scr_seq_(scr_seq_\\d+)_bin")
+      val files = scriptDir.listFiles()?.map { it.name }.orEmpty()
+      return row.findAll(table).mapNotNull { m ->
+        val base = bases[m.groupValues[1]] ?: m.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+        val prefix = m.groupValues[2]
+        val file = files.firstOrNull { it == "$prefix.s" || (it.startsWith(prefix + "_") && it.endsWith(".s") && !it.endsWith("_hdr.s")) } ?: return@mapNotNull null
+        base to file
+      }.toMap()
+    }
+
     override fun constants(): Map<String, Int> = constants
   }
 
   private companion object {
     val LABEL_LINE = Regex("^(\\w+):\\s*$")
     val LOCAL_LABEL = Regex("^_[0-9A-Fa-f]{3,5}$")
-    val MSG_TOKEN = Regex("^msg_(\\d+)_\\w+?_(\\d{5})$")
+    val MSG_TOKEN = Regex("^msg_(\\d+)(?:_\\w+?)?_(\\d{5})$")
+    val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
     val TERMINAL = setOf("End", "Return", "GoTo", "EndMovement")
+    /** ov01_022067C8 in pokeheartgold src/field/scrcmd_message.c. */
+    val STD_MSG_BANKS = mapOf(0 to 752, 1 to 211, 2 to 30, 3 to 435)
+    val YESNO_COMMANDS = setOf("ShowYesNoMenu", "YesNo", "GetMenuChoice")
+    val PROMPT_FILLER = setOf("WaitButton", "WaitABPress", "TouchscreenMenuHide", "TouchscreenMenuShow", "PlaySE")
     val COND_CODES = mapOf("0" to "lt", "1" to "eq", "2" to "gt", "3" to "le", "4" to "ge", "5" to "ne", "TRUE" to "eq", "FALSE" to "ne")
-    val OBJECT_ALIASES = mapOf("obj_player" to "OBJ_EVENT_ID_PLAYER", "LOCALID_PLAYER" to "OBJ_EVENT_ID_PLAYER", "OBJ_PLAYER" to "OBJ_EVENT_ID_PLAYER")
+    val OBJECT_ALIASES = mapOf("obj_player" to "LOCALID_PLAYER", "OBJ_PLAYER" to "LOCALID_PLAYER", "OBJ_EVENT_ID_PLAYER" to "LOCALID_PLAYER")
+    val FACE_MOVEMENTS = mapOf("DIR_NORTH" to "NDS_FACE_UP", "DIR_SOUTH" to "NDS_FACE_DOWN", "DIR_WEST" to "NDS_FACE_LEFT", "DIR_EAST" to "NDS_FACE_RIGHT",
+        "0" to "NDS_FACE_UP", "1" to "NDS_FACE_DOWN", "2" to "NDS_FACE_LEFT", "3" to "NDS_FACE_RIGHT")
+    /** Queries with a fixed answer on this server: the var they fill and the value. */
+    val STUB_QUERIES = mapOf(
+        "GetNationalDexEnabled" to 1, "GetGameVersion" to 0, "GetPartyLeadAlive" to 1, "DressUpPhotoHasData" to 0,
+        "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
+        "CheckPlayerOnBike" to 0, "PlayerOnBikeCheck" to 0, "CheckRegisteredPhoneNumber" to 0, "GetPhoneBookRematch" to 0,
+        "GetRematchTrainerID" to 0, "IsItemTMHM" to 0, "ItemIsTMOrHM" to 0, "GetCoinsAmount" to 0, "GetCoinAmount" to 0,
+    )
     val IGNORED_OBJECTS = setOf("obj_partner_poke", "LOCALID_FOLLOWER", "obj_follower", "OBJ_FOLLOWER")
     val DROPPED =
         setOf(
@@ -501,6 +715,12 @@ class NdsScriptCorpusGenerator {
             "BufferTMHMMoveName", "BufferTrainerClassName", "BufferPoketchAppName", "TouchscreenMenuHide",
             "TouchscreenMenuShow", "ToggleFollowingPokemonMovement", "WaitFollowingPokemonMovement",
             "FollowingPokemonMovement", "ReturnToField", "RestoreOverworld", "Noop", "Dummy", "SetObjectFlagIsPersistent",
+            // HeartGold opens most npc scripts with this argument-less command; nothing observable follows it.
+            "ScrCmd_609", "CameronPhoto", "RecordHeapMemory", "CreateJournalEvent", "ActivateRegiRuinsDot", "LoadDoorAnimation",
+            "InitTurnbackCave", "InitPersistedMapFeaturesForDistortionWorld", "ShowDressUpPhoto", "SetWarpEventPos",
+            "CallBattleTowerFunction", "ClearHasPartner", "LoadTVInterviewMessage", "SetObjectEventMovementType", "SetMovementType",
+            "ScriptOverlayCmd", "ShowMoney", "HideMoney", "ShowMoneyBox", "HideMoneyBox", "UpdateMoneyDisplay", "UpdateMoneyBox",
+            "ShowCoins", "HideCoins", "UpdateCoinDisplay",
         )
     val MOVEMENT_STEPS: Map<String, String> = buildMap {
       val dirs = mapOf("North" to "up", "South" to "down", "West" to "left", "East" to "right")

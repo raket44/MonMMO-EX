@@ -274,6 +274,9 @@ internal constructor(
   fun resolveItem(constant: String): ItemDef? =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(constant)
 
+  /** An item by client wire id (region * 1000 + the game's own index), for DS var-valued items. */
+  fun resolveItemWire(id: Int): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByWireId(id)
+
   fun itemCount(item: ItemDef): Int =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemCount(state, item)
 
@@ -511,6 +514,13 @@ internal constructor(
    * Warps the player without door movement, then runs the destination map's entry scripts on this
    * same coroutine, the way the decomp's warp continues into the new map's scripts.
    */
+  /** A DS map by ROM header (bank = low byte, map = high byte), through the raw warp path. */
+  fun rawWarp(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int) {
+    val warpService = checkNotNull(warp) { "Script warp service is unavailable" }
+    val charId = checkNotNull(state.characterId) { "Scene has no selected character" }
+    warpService.rawWarp(session, charId, regionId, bankId, mapId, x, y)
+  }
+
   suspend fun warp(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, facing: Direction) {
     val warpService = checkNotNull(warp) { "Script warp service is unavailable" }
     state.scriptOwnsMapEntry = true

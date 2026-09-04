@@ -31,7 +31,13 @@ constructor(
     private val mapLoadService: MapLoadService,
     private val characterStore: CharacterStore,
     private val presenceService: PresenceService,
+    private val warpService: javax.inject.Provider<WarpService>,
 ) {
+  /** A DS destination: the client loads the ROM map itself, the server only names it. */
+  fun rawWarp(session: SessionContext, charId: Long, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int) {
+    warpService.get().executeRawWarp(session, charId, regionId, bankId, mapId, x, y)
+  }
+
   /** Warps and waits until the client has loaded the destination, so the script can go on. */
   suspend fun warp(
       session: SessionContext,

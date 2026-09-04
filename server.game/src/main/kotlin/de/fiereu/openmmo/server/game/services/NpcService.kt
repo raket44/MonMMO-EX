@@ -308,7 +308,10 @@ constructor(
               x = npc.x,
               y = npc.y,
               facing = facing,
-              unk5 = 2,
+              // The client reads this byte as the terrain layer (low two bits, f/p01: `& 3` into
+              // Wi1.RW1) plus a flag bit 8. Layer 2 is the GBA default; DS ground is layer 0,
+              // and anything else sinks the sprite into the terrain.
+              unk5 = 0,
               unk6 = 8,
           ))
     }

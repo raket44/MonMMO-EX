@@ -1087,6 +1087,130 @@ public final class DexPatch {
     return t.toString();
   }
 
+  /**
+   * The DS map hook proper: a concrete f/X3 map built as (reader, index, byte, short, wj1).
+   * The region is the reader's own (`ye1.me1()`). Chunks load lazily, so every matrix cell is
+   * asked for through the map's own AS(x, y) before the tiles are read. The first real map of a
+   * region rebuilds every index of that region with the same reader on a background thread.
+   */
+  public static void dumpNdsMap2(Object map, Object reader, short index, byte b3, short s4, Object wj1) {
+    byte region;
+    try {
+      region = (Byte) reader.getClass().getMethod("me1").invoke(reader);
+    } catch (Throwable error) {
+      log("[monmmo] dumpNdsMap2: no region from " + reader.getClass().getName() + ": " + error);
+      return;
+    }
+    String key = region + "-" + index;
+    try {
+      loadAllChunks(map);
+      if (!hasTiles(map)) return;
+      synchronized (ndsMapsDumped) {
+        if (!ndsMapsDumped.add(key)) return;
+      }
+      java.io.File dir = new java.io.File("nds-dump");
+      dir.mkdirs();
+      java.io.File tiles = new java.io.File(dir, "tiles-" + key + ".tsv");
+      if (!tiles.exists()) dumpNdsTiles(map, region, index, tiles);
+      java.io.File events = new java.io.File(dir, "events-" + key + ".tsv");
+      if (!events.exists()) dumpNdsEvents(map, region, index, events);
+      synchronized (ndsMapsDumped) {
+        if (ndsMapsDumped.add("region-" + region)) dumpNdsRegion2(map.getClass(), reader, region, b3, s4, wj1);
+      }
+    } catch (Throwable error) {
+      log("[monmmo] dumpNdsMap2 " + key + " failed: " + error);
+    }
+  }
+
+  /** Calls the map's chunk loader for every matrix cell and waits for the loaded flags. */
+  private static void loadAllChunks(Object map) {
+    try {
+      java.lang.reflect.Method as = null;
+      for (Class<?> c = map.getClass(); c != null && as == null; c = c.getSuperclass()) {
+        try {
+          as = c.getDeclaredMethod("AS", short.class, short.class);
+        } catch (NoSuchMethodException ignored) {
+        }
+      }
+      Object matrix = fieldObject(map, "x41");
+      Object cells = matrix == null ? null : fieldObject(matrix, "eT0");
+      if (as == null || !(cells instanceof int[][])) return;
+      as.setAccessible(true);
+      int[][] grid = (int[][]) cells;
+      for (int y = 0; y < grid.length; y++) {
+        for (int x = 0; x < grid[y].length; x++) {
+          try {
+            as.invoke(map, (short) x, (short) y);
+          } catch (Throwable ignored) {
+          }
+        }
+      }
+      Object loaded = fieldObject(map, "lU");
+      for (int wait = 0; wait < 100 && loaded instanceof boolean[][]; wait++) {
+        boolean all = true;
+        for (boolean[] row : (boolean[][]) loaded) for (boolean b : row) all &= b;
+        if (all) break;
+        Thread.sleep(100);
+      }
+    } catch (Throwable error) {
+      log("[monmmo] loadAllChunks: " + error);
+    }
+  }
+
+  private static Object fieldObject(Object target, String name) {
+    for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
+      try {
+        java.lang.reflect.Field f = c.getDeclaredField(name);
+        f.setAccessible(true);
+        return f.get(target);
+      } catch (NoSuchFieldException ignored) {
+      } catch (Throwable error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  private static void dumpNdsRegion2(Class<?> mapClass, Object reader, byte region, byte b3, short s4, Object wj1) {
+    Thread worker =
+        new Thread(
+            () -> {
+              try {
+                Thread.sleep(3_000);
+                java.io.File dir = new java.io.File("nds-dump");
+                dir.mkdirs();
+                java.io.File marker = new java.io.File(dir, "done-" + region);
+                if (marker.exists()) return;
+                java.lang.reflect.Constructor<?> ctor = null;
+                for (java.lang.reflect.Constructor<?> c : mapClass.getConstructors()) {
+                  if (c.getParameterCount() == 5) ctor = c;
+                }
+                if (ctor == null) throw new IllegalStateException("no 5-arg map constructor on " + mapClass);
+                int built = 0;
+                int misses = 0;
+                for (int index = 0; index < 2048 && misses < 96; index++) {
+                  try {
+                    ctor.newInstance(reader, (short) index, b3, s4, wj1);
+                    built++;
+                    misses = 0;
+                  } catch (Throwable error) {
+                    misses++;
+                    if (misses <= 3 || index % 256 == 0) {
+                      log("[monmmo] nds map " + region + "-" + index + " did not build: " + rootCause(error));
+                    }
+                  }
+                }
+                log("[monmmo] nds region " + region + ": built " + built + " maps (" + mapClass.getName() + ")");
+                if (built > 0) marker.createNewFile();
+              } catch (Throwable error) {
+                log("[monmmo] dumpNdsRegion2 failed: " + error);
+              }
+            },
+            "monmmo-nds-dump");
+    worker.setDaemon(true);
+    worker.start();
+  }
+
   private static boolean hasTiles(Object map) {
     try {
       java.lang.reflect.Method tileAt = null;

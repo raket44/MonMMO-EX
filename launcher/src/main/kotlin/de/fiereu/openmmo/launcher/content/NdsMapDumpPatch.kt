@@ -7,36 +7,23 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
 /**
- * Hooks the client's NDS map constructor (`f/Fk1(byte region, short mapIndex)`) so every DS map
- * the client builds from its own ROM readers is written out by `monmmo.DexPatch.dumpNdsMap`:
- * the tile grid with the client's own walkability and terrain answers, and the map's event
- * records (npcs, warps, triggers). The server imports those files for Johto, Sinnoh and Unova,
- * which it otherwise has no map data for.
+ * Hooks the constructors of the client's DS map classes - the concrete subclasses of `f/X3`
+ * (one per ROM reader: HeartGold, Platinum, Black/White), each built as
+ * `(reader, short mapIndex, byte, short, f/wj1)` - so every DS map the client builds from its
+ * own ROM readers is handed to `monmmo.DexPatch.dumpNdsMap2`: the tile grid with the client's
+ * own walkability and terrain answers, and the map's event records (npcs, warps, triggers). The
+ * dumper also rebuilds the whole region behind the first real map, using the same reader.
  */
 object NdsMapDumpPatch {
-  private const val OWNER = "f/Fk1"
-  private const val CTOR = "<init>"
-  private const val DESC = "(BS)V"
+  private const val SUPER = "f/X3"
+  private val ctorDesc = Regex("[(]Lf/[A-Za-z0-9]+;SBSLf/wj1;[)]V")
 
-  fun isNdsMap(classBytes: ByteArray): Boolean {
-    val reader = ClassReader(classBytes)
-    if (reader.className != OWNER) return false
-    var found = false
-    reader.accept(
-        object : ClassVisitor(Opcodes.ASM9) {
-          override fun visitMethod(
-              access: Int,
-              name: String,
-              descriptor: String,
-              signature: String?,
-              exceptions: Array<out String>?,
-          ): MethodVisitor? {
-            if (name == CTOR && descriptor == DESC) found = true
-            return null
-          }
-        },
-        0)
-    return found
+  fun isNdsMap(classBytes: ByteArray): Boolean = ClassReader(classBytes).superName == SUPER
+
+  /** One matcher per concrete map class: the patch driver applies a matcher to one class only. */
+  fun named(owner: String): (ByteArray) -> Boolean = { bytes ->
+    val reader = ClassReader(bytes)
+    reader.className == owner && reader.superName == SUPER
   }
 
   fun patch(classBytes: ByteArray): ByteArray {
@@ -52,41 +39,22 @@ object NdsMapDumpPatch {
               exceptions: Array<out String>?,
           ): MethodVisitor {
             val base = super.visitMethod(access, name, descriptor, signature, exceptions)
-            if (name != CTOR || descriptor != DESC) return base
+            if (name != "<init>" || !ctorDesc.matches(descriptor)) return base
             return object : MethodVisitor(Opcodes.ASM9, base) {
-              override fun visitMethodInsn(
-                  opcode: Int,
-                  owner: String,
-                  name: String,
-                  descriptor: String,
-                  isInterface: Boolean,
-              ) {
-                // The map-environment lookup (f/SQ0.ZM0) is null for any map outside the region
-                // the client currently shows; its only use here is a class comparison, so the
-                // call is routed through a helper that hands back a placeholder instead of null.
-                if (owner == "f/SQ0" && name == "ZM0") {
-                  super.visitMethodInsn(
-                      Opcodes.INVOKESTATIC,
-                      "monmmo/DexPatch",
-                      "mapEnvironment",
-                      "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-                      false)
-                  return
-                }
-                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface)
-              }
-
               override fun visitInsn(opcode: Int) {
                 if (opcode == Opcodes.RETURN) {
-                  // The map is fully built here: this, region, index -> the dumper.
+                  // The map is fully built here: this, reader, index, byte, short, wj1.
                   visitVarInsn(Opcodes.ALOAD, 0)
-                  visitVarInsn(Opcodes.ILOAD, 1)
+                  visitVarInsn(Opcodes.ALOAD, 1)
                   visitVarInsn(Opcodes.ILOAD, 2)
+                  visitVarInsn(Opcodes.ILOAD, 3)
+                  visitVarInsn(Opcodes.ILOAD, 4)
+                  visitVarInsn(Opcodes.ALOAD, 5)
                   visitMethodInsn(
                       Opcodes.INVOKESTATIC,
                       "monmmo/DexPatch",
-                      "dumpNdsMap",
-                      "(Ljava/lang/Object;BS)V",
+                      "dumpNdsMap2",
+                      "(Ljava/lang/Object;Ljava/lang/Object;SBSLjava/lang/Object;)V",
                       false)
                 }
                 super.visitInsn(opcode)

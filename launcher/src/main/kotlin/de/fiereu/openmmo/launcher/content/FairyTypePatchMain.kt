@@ -285,11 +285,13 @@ fun main(args: Array<String>) {
 
     // Every DS map the client builds is written out with its own tile and event answers, for
     // the server's Johto/Sinnoh/Unova importer.
-    applyOne(
-        "NDS map dump",
-        NdsMapDumpPatch::isNdsMap,
-        NdsMapDumpPatch::patch,
-    )
+    for (mapClass in listOf("f/Hv0", "f/k90", "f/QK")) {
+      applyOne(
+          "NDS map dump $mapClass",
+          NdsMapDumpPatch.named(mapClass),
+          NdsMapDumpPatch::patch,
+      )
+    }
 
     applyOne(
         "silent packet-drop diagnostic",

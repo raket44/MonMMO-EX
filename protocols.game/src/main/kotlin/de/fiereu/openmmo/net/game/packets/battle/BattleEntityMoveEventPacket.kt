@@ -104,6 +104,7 @@ enum class LineShape {
   BYTE,
   SHORT,
   BYTE_SHORT,
+  SHORT_SHORT,
   SHORT_BYTE_SHORT,
   BYTE_SHORT_SHORT,
 }
@@ -135,7 +136,7 @@ enum class BattleLine(val id: Int, val shape: LineShape) {
   CURSE_DAMAGE(18, LineShape.BYTE_SHORT),
   /** 19 f/LPt4: new hp: "{00} is locked in a nightmare!" */
   NIGHTMARE_DAMAGE(19, LineShape.SHORT),
-  /** 22 f/AN: 0 "{00} endured the hit!" */
+  /** 22 f/AN: kind 0 "endured the hit", 1 Focus Band, 2 the ability (Sturdy), 3 Focus Sash "hung on using its {01}". */
   ENDURED(22, LineShape.BYTE),
   /** 24 f/N00: 1 hurt by the trapping move (hp, move id), 2 freed from it. */
   TRAP(24, LineShape.BYTE_SHORT_SHORT),
@@ -152,7 +153,33 @@ enum class BattleLine(val id: Int, val shape: LineShape) {
   /** 73 f/eh1: move id: "{00} was identified!" */
   IDENTIFIED(73, LineShape.SHORT),
   /** 126 f/wT0: "{00}'s stat changes were removed!" */
-  STATS_CLEARED(126, LineShape.EMPTY);
+  STATS_CLEARED(126, LineShape.EMPTY),
+  /** 52 f/I51: item id; clears the status itself and prints "{00}'s {01} cured its poison!" etc. */
+  ITEM_CURED_STATUS(52, LineShape.SHORT),
+  /** 82 f/mO1: item id: "{00} restored its status using its {01}!" */
+  ITEM_RESTORED_STATUS(82, LineShape.SHORT),
+  /** 55 f/wp1: new hp, item id: "{00} restored its health using its {01}!" */
+  ITEM_HEAL(55, LineShape.SHORT_SHORT),
+  /** 83 f/Ph1: new hp, item id: "{00} restored a little HP using its {01}!" */
+  ITEM_HEAL_SMALL(83, LineShape.SHORT_SHORT),
+  /** 114 f/we0: kind (0 own item, 1 the other's), item id: "{00} is hurt by its {01}!" */
+  ITEM_HURT(114, LineShape.BYTE_SHORT),
+  /** 88 f/Bq: "{00} is hurt by its Life Orb!" (the item is fixed in the client). */
+  LIFE_ORB_HURT(88, LineShape.EMPTY),
+  /** 116 f/VQ0: item id: "{00}'s {01} let it move first!" */
+  ITEM_MOVED_FIRST(116, LineShape.SHORT),
+  /** 70 f/Bc: item id: "{00} found one {01}!" */
+  ITEM_FOUND(70, LineShape.SHORT),
+  /** 90 f/Pt0: item id: "{00} stole and ate its target's {01}!" */
+  ITEM_STOLE_ATE(90, LineShape.SHORT),
+  /** 96 f/Xn1: item id: "{00}'s {01} was burnt up!" */
+  ITEM_BURNT(96, LineShape.SHORT),
+  /** 71 f/vg0: item id: "{00} knocked off {01}'s {02}!" (attacker and target from the packet). */
+  ITEM_KNOCKED_OFF(71, LineShape.SHORT),
+  /** 99 f/sN0: item id: "{00} received {02} from {01}!" */
+  ITEM_RECEIVED(99, LineShape.SHORT),
+  /** 68 f/lM0: two shorts: "{00} switched items with its target!" / "obtained one {01}". */
+  ITEM_SWAPPED(68, LineShape.SHORT_SHORT);
 
   companion object {
     fun ofId(id: Int): BattleLine? = entries.firstOrNull { it.id == id }
@@ -170,6 +197,10 @@ private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEv
           LineShape.BYTE_SHORT ->
               listOf(
                   field(S8) { value(0)(it).toByte() }.toInt(),
+                  field(S16LE) { value(1)(it).toShort() }.toInt())
+          LineShape.SHORT_SHORT ->
+              listOf(
+                  field(S16LE) { value(0)(it).toShort() }.toInt(),
                   field(S16LE) { value(1)(it).toShort() }.toInt())
           LineShape.SHORT_BYTE_SHORT ->
               listOf(
@@ -312,10 +343,24 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
 private fun bodyId(body: BattleEventBody): Int =
     if (body is BattleEventBody.Line) body.line.id else BattleEventType.ofBody(body).id
 
-private fun bodyCodec(id: Int): Codec<BattleEventBody> {
-  BattleLine.ofId(id)?.let { return LineBodyCodec(it) }
-  return BattleEventType.ofId(id).codec
+/**
+ * A line writes with its own line codec and a typed body with its type's; reading prefers the
+ * typed table (the client's dedicated bodies) and falls back to the line table. Ids may appear in
+ * both when a line and a typed body share a client event.
+ */
+private class BodyCodec(private val id: Int) : Codec<BattleEventBody> {
+  override fun read(buf: de.fiereu.bytecodec.ReadBuffer): BattleEventBody {
+    BattleEventType.entries.firstOrNull { it.id == id }?.let { return it.codec.read(buf) }
+    return LineBodyCodec(BattleLine.ofId(id) ?: error("unknown battle event $id")).read(buf)
+  }
+
+  override fun write(buf: de.fiereu.bytecodec.WriteBuffer, value: BattleEventBody) {
+    if (value is BattleEventBody.Line) LineBodyCodec(value.line).write(buf, value)
+    else BattleEventType.ofBody(value).codec.write(buf, value)
+  }
 }
+
+private fun bodyCodec(id: Int): Codec<BattleEventBody> = BodyCodec(id)
 
 private const val FLAG_ENTITY_A = 0x01
 private const val FLAG_ENTITY_B = 0x02

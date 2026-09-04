@@ -14,13 +14,17 @@ import java.util.EnumMap
  */
 class BattleMonState(
     val entityId: Long,
-    val species: SpeciesDef,
+    /** The species in effect; form changes swap it for the battle. */
+    var species: SpeciesDef,
     val partyIndex: Int?,
     // Both move on when a reward lands, so a second reward in the same battle builds on the first.
     var source: Pokemon,
     var stats: ComputedStats,
     val gender: Byte = 0,
 ) {
+  /** The species the battle started with; forms revert to it on faint and at the end. */
+  val originalSpecies: SpeciesDef = species
+
   var currentHp: Int = source.hp.toInt().coerceIn(0, stats.hp)
 
   /** Non-volatile status in the record's bit layout; carried in and out of the battle. */
@@ -33,6 +37,23 @@ class BattleMonState(
   var truantLoafs: Boolean = false
   var slowStartTurns: Int = 0
   var flashFire: Boolean = false
+
+  /** Client item id of the held item; consumed, stolen and swapped in battle, written back after. */
+  var heldItem: Int = source.heldItem
+  /** The last item this monster used up, for Harvest, Recycle and Unburden. */
+  var consumedItem: Int = 0
+  var unburdened: Boolean = false
+  var airBalloonPopped: Boolean = false
+  /** The move a Choice item locked this monster into (0 = free). */
+  var choiceLockedMove: Int = 0
+  var custapReady: Boolean = false
+  var micleBoost: Boolean = false
+  /** Item id that let it move first this turn (Quick Claw, Custap Berry), for the line. */
+  var movedFirstByItem: Int = 0
+  /** Trapping move bookkeeping set by the trapper's item. */
+  var trapDamageDivisor: Int = 8
+  /** Illusion: the party member this monster is showing itself as, until it takes a hit. */
+  var illusionOf: BattleMonState? = null
 
   /** Turns of Toxic so far, which scales its damage; resets when the monster leaves the field. */
   var toxicCounter: Int = 0
@@ -81,6 +102,11 @@ class BattleMonState(
     truantLoafs = false
     slowStartTurns = 0
     flashFire = false
+    unburdened = false
+    choiceLockedMove = 0
+    custapReady = false
+    micleBoost = false
+    illusionOf = null
     confusionTurns = 0
     flinched = false
     protectedThisTurn = false
@@ -113,6 +139,8 @@ class BattleMonState(
     enduring = false
     lastDamageTaken = 0
     movedThisTurn = false
+    movedFirstByItem = 0
+    custapReady = false
   }
 
   val level: Int
@@ -152,9 +180,9 @@ class BattleMonState(
           slot = slot,
           revealed = true,
           entityId = entityId,
-          species = wireSpeciesId(),
+          species = shownSpeciesId(),
           level = source.level,
-          gender = gender,
+          gender = illusionOf?.gender ?: gender,
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
       )
@@ -163,16 +191,19 @@ class BattleMonState(
       BattleMonBlock(
           slot = slot,
           entityId = entityId,
-          species = wireSpeciesId(),
+          species = shownSpeciesId(),
           level = source.level,
-          gender = gender,
+          gender = illusionOf?.gender ?: gender,
           abilityId = ability.ordinal.toShort(),
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,
           moveIds = List(BattleMonBlock.MOVE_SLOTS) { moves.getOrNull(it)?.id ?: 0 },
-          shiny = source.isShiny,
+          shiny = illusionOf?.source?.isShiny ?: source.isShiny,
       )
 
-  private fun wireSpeciesId(): Short = clientSpeciesId(species.id).toShort()
+  /** The species the client is shown: the Illusion disguise while it holds, else the real one. */
+  fun shownSpeciesId(): Short = clientSpeciesId((illusionOf ?: this).species.id).toShort()
+
+  fun wireSpeciesId(): Short = clientSpeciesId(species.id).toShort()
 }

@@ -77,12 +77,19 @@ sealed interface BattleEvent {
   /** The move's type cannot touch the target: "It doesn't affect {00}...". */
   data class Immune(val targetId: Long) : BattleEvent
 
+  /** The monster's held item is now [itemId] (0 = none); the client's live record is updated. */
+  data class ItemChanged(val targetId: Long, val itemId: Int) : BattleEvent
+
+  /** The monster now shows as [wireSpecies]: an Illusion dropping or a form change. */
+  data class SpeciesShown(val targetId: Long, val wireSpecies: Int) : BattleEvent
+
   /** An ability activated: the client shows its banner and any line it knows for it. */
   data class AbilityShown(
       val targetId: Long,
       val ability: de.fiereu.openmmo.common.enums.Ability,
       val otherId: Long = 0,
       val moveId: Int = 0,
+      val itemId: Int = 0,
   ) : BattleEvent
 }
 

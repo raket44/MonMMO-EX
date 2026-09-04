@@ -29,6 +29,8 @@ constructor(
     private val moves: MoveRegistry,
     private val learnsets: LearnsetRegistry,
     private val entityIds: EntityIdService,
+    private val heldItems: de.fiereu.openmmo.server.game.services.RetailHeldItems =
+        de.fiereu.openmmo.server.game.services.RetailHeldItems(),
 ) {
 
   fun create(requestedDexId: Int, level: Int, rng: BattleRng): Pokemon? {
@@ -90,6 +92,8 @@ constructor(
             isFatefulEncounter = false,
             isRaidEncounter = false,
             caughtAt = LocalDateTime.now(),
+            // The dex's wild held items: 50% the common one, 5% the rare one.
+            heldItem = heldItems.roll(dexId, rng.pick(100)),
         )
     return mon.copy(hp = StatCalculator.computeAll(def, mon).hp.toShort())
   }

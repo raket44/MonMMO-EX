@@ -452,6 +452,9 @@ object EvolutionTable {
 
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
 
+  /** True when [wire] has any evolution left, which is what Eviolite asks. */
+  fun canEvolve(wire: Int): Boolean = entries.any { it.from == wire }
+
   /**
    * Walks the evolution chain DOWN to the family's youngest form (wire ids) - breeding offspring
    * always hatch as the base stage (Pichu from a Pikachu line, operator-specified).

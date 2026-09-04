@@ -365,6 +365,8 @@ constructor(
     battle.activeSlot = firstAlive
     battle.seenActive.clear()
     battle.seenActive.add(firstAlive)
+    engine.prepareIllusion(battle, battle.activeMon())
+    engine.prepareIllusion(battle, battle.opponentMon())
     interestManager.join(session, battle.key)
     emitter.sendStart(battle, stored.info.name)
     // Both leads' switch-in abilities fire as the battle opens, the faster one first.
@@ -449,9 +451,11 @@ constructor(
     if (next < 0) return
     val fullBlock = next !in battle.opponentSeen
     val oldSlot = battle.opponentSlot
+    engine.switchOut(battle, battle.opponent[battle.opponentSlot])
     battle.opponent[battle.opponentSlot].resetVolatile()
     battle.opponentSlot = next
     battle.opponentSeen.add(next)
+    engine.prepareIllusion(battle, battle.opponentMon())
     log.info { "Opponent sends out slot $next for char=${battle.charId}" }
     emitter.sendOpponentSwitchIn(battle, oldSlot, fullBlock)
     val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
@@ -469,9 +473,11 @@ constructor(
       if (outgoing.ability == de.fiereu.openmmo.common.enums.Ability.REGENERATOR)
           outgoing.currentHp = (outgoing.currentHp + outgoing.maxHp / 3).coerceAtMost(outgoing.maxHp)
     }
+    engine.switchOut(battle, outgoing)
     outgoing.resetVolatile()
     battle.activeSlot = target
     battle.seenActive.add(target)
+    engine.prepareIllusion(battle, battle.activeMon())
     log.info { "Switch char=${battle.charId} slot $oldSlot -> $target (fullBlock=$fullBlock)" }
     emitter.sendSwitchIn(battle, oldSlot, fullBlock)
     val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
@@ -484,6 +490,10 @@ constructor(
       emitter.sendNotice(battle, "You can't run from this battle.")
       emitter.sendPrompt(battle)
       return
+    }
+    log.info {
+      "Flee attempt char=${battle.charId}: ${battle.activeMon().species.name}/${battle.activeMon().ability} vs " +
+          "${battle.opponentMon().species.name}/${battle.opponentMon().ability} -> canFlee=${engine.canFlee(battle)}"
     }
     if (!engine.canFlee(battle)) {
       // Shadow Tag, Arena Trap or Magnet Pull on the wild side: the turn is lost, the wild attacks.
@@ -555,7 +565,11 @@ constructor(
   private suspend fun endVictory(battle: BattleInstance) {
     awardXp(battle, battle.opponentMon())
     evolveEligible(battle)
-    val prize = battle.trainer?.let { rewards.trainerPrize(it, battle.opponent.last().level) } ?: 0
+    pickup(battle)
+    var prize = battle.trainer?.let { rewards.trainerPrize(it, battle.opponent.last().level) } ?: 0
+    // An Amulet Coin anywhere in the party doubles the prize money.
+    if (prize > 0 && battle.party.any { items.get(it.heldItem) == de.fiereu.openmmo.items.generated.Items.AMULET_COIN })
+        prize *= 2
     val paid = prize > 0 && characterStore.addMoney(battle.charId, prize)
     if (prize > 0 && !paid) {
       log.error { "Could not pay char=${battle.charId} the $prize prize" }
@@ -622,6 +636,7 @@ constructor(
       skip: Long? = null,
       prizeMoney: Int = 0,
   ) {
+    emitter.sendEvents(battle, engine.endBattle(battle))
     persistParty(battle, skip)
     val party = characterStore.getCharacter(battle.charId)?.pokemon ?: emptyList()
     emitter.sendBattleEnd(battle, party, prizeMoney)
@@ -676,6 +691,41 @@ constructor(
     }
   }
 
+  /**
+   * Pickup after a won wild battle: every party monster with the ability and empty hands has a
+   * one-in-ten chance to come out of the fight holding something from the level-banded table.
+   */
+  private fun pickup(battle: BattleInstance) {
+    if (battle.trainer != null) return
+    val rng = battle.rng
+    for (state in battle.party) {
+      if (state.fainted || state.ability != de.fiereu.openmmo.common.enums.Ability.PICKUP || state.heldItem != 0) continue
+      if (rng.pick(10) != 0) continue
+      val band = ((state.level - 1) / 10).coerceIn(0, 9)
+      val roll = rng.pick(100)
+      // 30/10/10/10/10/10/10/4/4/1/1 over a window that slides one slot per ten levels.
+      val slot =
+          when {
+            roll < 30 -> 0
+            roll < 40 -> 1
+            roll < 50 -> 2
+            roll < 60 -> 3
+            roll < 70 -> 4
+            roll < 80 -> 5
+            roll < 90 -> 6
+            roll < 94 -> 7
+            roll < 98 -> 8
+            roll < 99 -> 9
+            else -> 10
+          }
+      val item = PICKUP_TABLE.getOrNull(band + slot) ?: continue
+      val itemId = items.idsOf(item).firstOrNull() ?: continue
+      state.heldItem = itemId
+      emitter.sendNotice(battle, "${state.species.name} picked up one ${item.name}!")
+      log.info { "char=${battle.charId} Pickup: ${state.species.name} found ${item.name}" }
+    }
+  }
+
   /** Write the battle's live hp and pp back into the party and flush the character. */
   private fun persistParty(battle: BattleInstance, skip: Long? = null) {
     for (state in battle.party) {
@@ -690,6 +740,7 @@ constructor(
           state.source.copy(
               hp = state.currentHp.toShort(),
               status = if (state.currentHp <= 0) 0 else status,
+              heldItem = state.heldItem,
               moves = state.moves.map { PokemonMove(it.id, it.pp) },
           )
       characterStore.updatePokemon(battle.charId, updated)
@@ -699,6 +750,16 @@ constructor(
 
   /** Soothe Bell in both held-item catalogs - doubles happiness gains while held. */
   private val SOOTHE_BELLS = setOf(5218, 6218)
+
+  /** The Pickup ladder, cheapest first; a monster's level band picks the window into it. */
+  private val PICKUP_TABLE =
+      de.fiereu.openmmo.items.generated.Items.let { I ->
+        listOf(
+            I.POTION, I.ANTIDOTE, I.SUPER_POTION, I.GREAT_BALL, I.REPEL, I.ESCAPE_ROPE, I.FULL_HEAL,
+            I.HYPER_POTION, I.ULTRA_BALL, I.RARE_CANDY, I.SUN_STONE, I.MOON_STONE, I.HEART_SCALE,
+            I.FULL_RESTORE, I.MAX_REVIVE, I.PP_UP, I.MAX_ELIXIR, I.NUGGET, I.KING_S_ROCK, I.ETHER, I.WHITE_HERB,
+            I.ELIXIR, I.LEFTOVERS)
+      }
 
   private fun finishBattle(battle: BattleInstance, result: BattleResult) {
     interestManager.leave(battle.session, battle.key)

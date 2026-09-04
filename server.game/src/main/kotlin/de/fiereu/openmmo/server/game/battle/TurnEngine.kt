@@ -49,7 +49,228 @@ class TurnEngine
 constructor(
     private val moves: MoveRegistry,
     private val typeChart: TypeChart,
+    itemRegistry: de.fiereu.openmmo.items.ItemRegistry = de.fiereu.openmmo.items.ItemRegistry(),
+    private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry = de.fiereu.openmmo.pokemon.SpeciesRegistry(),
+    private val formChanges: de.fiereu.openmmo.pokemon.expansion.FormChangeRegistry =
+        de.fiereu.openmmo.pokemon.expansion.FormChangeRegistry(),
 ) {
+  private val items = HeldItems(itemRegistry)
+
+  // ---------------------------------------------------------------------------------------------
+  // Form changes: the Expansion tables drive Zen Mode, Stance Change, Disguise and the rest
+
+  private fun abilityMatches(mon: BattleMonState, symbol: String?): Boolean =
+      symbol == null || !symbol.startsWith("ABILITY_") || mon.ability.name == symbol.removePrefix("ABILITY_")
+
+  private fun moveMatches(move: MoveDef, symbol: String?): Boolean =
+      symbol != null && symbol.startsWith("MOVE_") &&
+          symbol.removePrefix("MOVE_").filter { it.isLetterOrDigit() } == move.name.uppercase().filter { it.isLetterOrDigit() }
+
+  private fun categoryMatches(move: MoveDef, symbol: String?): Boolean =
+      when (symbol) {
+        "DAMAGE_CATEGORY_PHYSICAL" -> move.power > 0 && MoveCategory.isPhysical(move.type)
+        "DAMAGE_CATEGORY_SPECIAL" -> move.power > 0 && !MoveCategory.isPhysical(move.type)
+        "DAMAGE_CATEGORY_STATUS" -> move.power == 0
+        else -> false
+      }
+
+  private fun weatherMatches(weather: Weather?, symbol: String?): Boolean {
+    if (symbol == null) return false
+    val negated = symbol.startsWith("~")
+    val wanted =
+        when (symbol.removePrefix("~")) {
+          "B_WEATHER_SUN", "B_WEATHER_SUN_PRIMAL", "B_WEATHER_SUN_ANY" -> Weather.SUN
+          "B_WEATHER_RAIN", "B_WEATHER_RAIN_PRIMAL", "B_WEATHER_RAIN_ANY" -> Weather.RAIN
+          "B_WEATHER_SANDSTORM" -> Weather.SANDSTORM
+          "B_WEATHER_HAIL", "B_WEATHER_SNOW", "B_WEATHER_ICY_ANY" -> Weather.HAIL
+          "B_WEATHER_NONE" -> null
+          else -> return false
+        }
+    return if (negated) weather != wanted else weather == wanted
+  }
+
+  /** Params: ability, HP_HIGHER_THAN / HP_LOWER_EQ_THAN, threshold percent, then a level or move. */
+  private fun hpPercentMatches(mon: BattleMonState, change: de.fiereu.openmmo.pokemon.expansion.FormChange): Boolean {
+    val p = change.params
+    if (p.size < 3 || !abilityMatches(mon, p[0])) return false
+    val threshold = p[2].toIntOrNull() ?: return false
+    val pct = mon.currentHp * 100 / mon.maxHp.coerceAtLeast(1)
+    return when (p[1]) {
+      "HP_HIGHER_THAN" -> pct > threshold
+      "HP_LOWER_EQ_THAN" -> pct <= threshold
+      else -> false
+    }
+  }
+
+  /** Swaps [mon] into the form [change] names; stats follow the new species, hp stays. */
+  private fun changeForm(
+      mon: BattleMonState,
+      change: de.fiereu.openmmo.pokemon.expansion.FormChange,
+      events: MutableList<BattleEvent>?,
+  ): Boolean {
+    val target = formChanges.targetServerId(change) ?: return false
+    // A row pointing back at the species it came in as restores the very definition it started with.
+    val def =
+        if (de.fiereu.openmmo.common.clientSpeciesId(target) == de.fiereu.openmmo.common.clientSpeciesId(mon.originalSpecies.id)) mon.originalSpecies
+        else speciesRegistry.get(target) ?: return false
+    if (def.id == mon.species.id) return false
+    mon.species = def
+    mon.stats = StatCalculator.computeAll(def, mon.source).copy(hp = mon.stats.hp)
+    if (events != null) {
+      if (change.params.any { it.startsWith("ABILITY_") }) events += BattleEvent.AbilityShown(mon.entityId, mon.ability)
+      events += BattleEvent.SpeciesShown(mon.entityId, mon.wireSpeciesId().toInt())
+    }
+    return true
+  }
+
+  /** Applies the first row of [kind] whose params pass [filter]; false when nothing changed. */
+  private fun formChange(
+      mon: BattleMonState,
+      kind: String,
+      events: MutableList<BattleEvent>?,
+      filter: (de.fiereu.openmmo.pokemon.expansion.FormChange) -> Boolean = { true },
+  ): Boolean {
+    if (mon.fainted && kind != "FORM_CHANGE_FAINT") return false
+    for (change in formChanges.of(mon.species.id)) {
+      if (change.kind != kind || !filter(change)) continue
+      if (changeForm(mon, change, events)) return true
+    }
+    return false
+  }
+
+  private fun weatherForms(battle: BattleInstance, events: MutableList<BattleEvent>) {
+    val weather = weather(battle)
+    for (mon in listOf(battle.activeMon(), battle.opponentMon())) {
+      formChange(mon, "FORM_CHANGE_BATTLE_WEATHER", events) {
+        weatherMatches(weather, it.params.getOrNull(0)) && abilityMatches(mon, it.params.getOrNull(1))
+      }
+    }
+  }
+
+  /** A monster leaving the field: its switch-out form, else the one it came in with. Silent. */
+  fun switchOut(battle: BattleInstance, mon: BattleMonState) {
+    if (formChange(mon, "FORM_CHANGE_BATTLE_SWITCH_OUT", null) { abilityMatches(mon, it.params.getOrNull(0)) }) return
+    restoreForm(mon)
+  }
+
+  private fun restoreForm(mon: BattleMonState) {
+    if (mon.species.id == mon.originalSpecies.id) return
+    mon.species = mon.originalSpecies
+    mon.stats = StatCalculator.computeAll(mon.originalSpecies, mon.source).copy(hp = mon.stats.hp)
+  }
+
+  /** Every party member goes back to its real species; the client's records are put right. */
+  fun endBattle(battle: BattleInstance): List<BattleEvent> {
+    val events = mutableListOf<BattleEvent>()
+    for (mon in battle.party + battle.opponent) {
+      if (mon.species.id == mon.originalSpecies.id) continue
+      restoreForm(mon)
+      events += BattleEvent.SpeciesShown(mon.entityId, mon.wireSpeciesId().toInt())
+    }
+    return events
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Held items: consumption and the lines that go with it
+
+  /** The monster eats or uses up its item; Unburden and Cheek Pouch react. */
+  private fun consumeItem(mon: BattleMonState, events: MutableList<BattleEvent>) {
+    val item = items.get(mon.heldItem)
+    mon.consumedItem = mon.heldItem
+    mon.heldItem = 0
+    if (mon.ability == Ability.UNBURDEN) mon.unburdened = true
+    events += BattleEvent.ItemChanged(mon.entityId, 0)
+    if (items.isBerry(item) && mon.ability == Ability.CHEEK_POUCH && mon.currentHp < mon.maxHp) {
+      events += BattleEvent.AbilityShown(mon.entityId, Ability.CHEEK_POUCH)
+      healHp(mon, (mon.maxHp / 3).coerceAtLeast(1), events)
+    }
+  }
+
+  private fun canEatBerry(battle: BattleInstance, mon: BattleMonState): Boolean =
+      battle.opponentOf(mon).ability != Ability.UNNERVE
+
+  private fun ripen(mon: BattleMonState, amount: Int): Int = if (mon.ability == Ability.RIPEN) amount * 2 else amount
+
+  /** Healing and pinch berries fire the moment hp crosses their threshold. */
+  private fun checkBerries(battle: BattleInstance, mon: BattleMonState, events: MutableList<BattleEvent>) {
+    if (mon.fainted || mon.heldItem == 0) return
+    val item = items.of(mon) ?: return
+    if (!items.isBerry(item) && item != de.fiereu.openmmo.items.generated.Items.BERRY_JUICE) return
+    if (items.isBerry(item) && !canEatBerry(battle, mon)) return
+    val pinch = mon.ability == Ability.GLUTTONY && mon.currentHp * 2 <= mon.maxHp || mon.currentHp * 4 <= mon.maxHp
+    val half = mon.currentHp * 2 <= mon.maxHp
+    val itemId = mon.heldItem
+    val halfHeal = items.halfHpHeal(item, mon.maxHp)
+    if (halfHeal > 0 && half) {
+      consumeItem(mon, events)
+      mon.currentHp = (mon.currentHp + ripen(mon, halfHeal)).coerceAtMost(mon.maxHp)
+      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(mon.currentHp, itemId))
+      return
+    }
+    val quarterHeal = items.quarterHpHeal(item, mon.maxHp)
+    if (quarterHeal > 0 && pinch) {
+      consumeItem(mon, events)
+      mon.currentHp = (mon.currentHp + ripen(mon, quarterHeal)).coerceAtMost(mon.maxHp)
+      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(mon.currentHp, itemId))
+      return
+    }
+    if (!pinch) return
+    items.pinchStat(item)?.let { stat ->
+      consumeItem(mon, events)
+      ownStage(mon, stat, if (mon.ability == Ability.RIPEN) 2 else 1, events)
+      return
+    }
+    when (item) {
+      de.fiereu.openmmo.items.generated.Items.LANSAT_BERRY -> { consumeItem(mon, events); mon.focusEnergy = true }
+      de.fiereu.openmmo.items.generated.Items.STARF_BERRY -> {
+        consumeItem(mon, events)
+        val stats = listOf(BattleStat.ATTACK, BattleStat.DEFENSE, BattleStat.SP_ATTACK, BattleStat.SP_DEFENSE, BattleStat.SPEED)
+        ownStage(mon, stats[battle.rng.pick(stats.size)], 2, events)
+      }
+      de.fiereu.openmmo.items.generated.Items.CUSTAP_BERRY -> { consumeItem(mon, events); mon.custapReady = true }
+      de.fiereu.openmmo.items.generated.Items.MICLE_BERRY -> { consumeItem(mon, events); mon.micleBoost = true }
+      else -> Unit
+    }
+  }
+
+  /** Status berries and Lum fire as soon as the status lands. */
+  private fun checkStatusBerry(battle: BattleInstance, mon: BattleMonState, events: MutableList<BattleEvent>) {
+    if (mon.fainted || !StatusCondition.hasAny(mon.status)) return
+    val item = items.of(mon) ?: return
+    if (!canEatBerry(battle, mon)) return
+    val cures = items.curedStatus(item)
+    if (mon.status and cures == 0) return
+    val itemId = mon.heldItem
+    consumeItem(mon, events)
+    mon.status = StatusCondition.NONE
+    mon.toxicCounter = 0
+    mon.nightmare = false
+    // The client clears the status and prints "cured its ..." from this line on its own.
+    events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_CURED_STATUS, listOf(itemId))
+  }
+
+  private fun checkConfusionBerry(battle: BattleInstance, mon: BattleMonState, events: MutableList<BattleEvent>) {
+    if (mon.fainted || mon.confusionTurns == 0) return
+    val item = items.of(mon) ?: return
+    if (!items.curesConfusion(item) || !canEatBerry(battle, mon)) return
+    val itemId = mon.heldItem
+    consumeItem(mon, events)
+    mon.confusionTurns = 0
+    events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_RESTORED_STATUS, listOf(itemId))
+    events += BattleEvent.Line(mon.entityId, BattleLine.CONFUSION, listOf(1))
+  }
+
+  /** Thief, Covet, Pickpocket, Magician: [thief] takes [victim]'s item when it holds none. */
+  private fun stealItem(thief: BattleMonState, victim: BattleMonState, events: MutableList<BattleEvent>): Boolean {
+    if (thief.heldItem != 0 || !items.canBeTaken(victim)) return false
+    val taken = victim.heldItem
+    victim.heldItem = 0
+    thief.heldItem = taken
+    events += BattleEvent.ItemChanged(victim.entityId, 0)
+    events += BattleEvent.ItemChanged(thief.entityId, taken)
+    events += BattleEvent.Line(thief.entityId, BattleLine.ITEM_RECEIVED, listOf(taken))
+    return true
+  }
 
   fun resolveTurn(battle: BattleInstance, playerMoveId: Short): List<BattleEvent> {
     val events = mutableListOf<BattleEvent>()
@@ -96,6 +317,14 @@ constructor(
   /** A two-turn move in progress overrides the choice; an empty move slot means Struggle. */
   private fun chooseMove(battle: BattleInstance, mon: BattleMonState, chosen: MoveDef?): MoveDef? {
     if (mon.chargingMoveId != 0) return moves.get(mon.chargingMoveId) ?: chosen
+    // A Choice item holds the monster to the first move it picked.
+    if (items.isChoice(items.of(mon)) && mon.choiceLockedMove != 0) {
+      moves.get(mon.choiceLockedMove)?.let { locked ->
+        if (mon.moves.any { it.id.toInt() == locked.id && it.pp > 0 }) return locked
+      }
+    } else if (!items.isChoice(items.of(mon))) {
+      mon.choiceLockedMove = 0
+    }
     if (chosen == null) return null
     val slot = mon.moves.indexOfFirst { it.id.toInt() == chosen.id }
     if (slot >= 0 && mon.moves[slot].pp <= 0) return moves.get(STRUGGLE_ID) ?: chosen
@@ -107,8 +336,20 @@ constructor(
       val move = action.move ?: return 0
       return move.priority + Abilities.priorityBonus(action.attacker, move)
     }
-    val pa = priority(a)
-    val pb = priority(b)
+    // Within a priority bracket Quick Claw (20%) and a ready Custap Berry go first, Lagging Tail
+    // and Iron Ball last.
+    fun bracket(action: TurnAction): Int {
+      val mon = action.attacker
+      val item = items.of(mon)
+      val first =
+          mon.custapReady ||
+              (item == de.fiereu.openmmo.items.generated.Items.QUICK_CLAW && battle.rng.accuracyRoll() <= 20)
+      if (first) mon.movedFirstByItem = mon.heldItem.takeIf { item == de.fiereu.openmmo.items.generated.Items.QUICK_CLAW } ?: mon.consumedItem
+      val last = item == de.fiereu.openmmo.items.generated.Items.LAGGING_TAIL || item == de.fiereu.openmmo.items.generated.Items.IRON_BALL
+      return priority(action) * 10 + (if (first) 1 else 0) - (if (last) 1 else 0)
+    }
+    val pa = bracket(a)
+    val pb = bracket(b)
     if (pa != pb) return if (pa > pb) listOf(a, b) else listOf(b, a)
     val sa = speedOf(battle, a.attacker)
     val sb = speedOf(battle, b.attacker)
@@ -118,6 +359,7 @@ constructor(
 
   private fun speedOf(battle: BattleInstance, mon: BattleMonState): Int {
     var speed = mon.effective(BattleStat.SPEED) * Abilities.speedMultiplierPercent(mon, weather(battle)) / 100
+    speed = speed * items.speedPercent(mon) / 100
     if (StatusCondition.isParalyzed(mon.status) && Abilities.paralysisSlows(mon)) speed /= 4
     return speed
   }
@@ -138,6 +380,19 @@ constructor(
   // ---------------------------------------------------------------------------------------------
   // Abilities that fire on entering the field
 
+  /**
+   * Illusion: a Zoroark entering behind a teammate takes that teammate's look until it is hit.
+   * Decided before the block is sent, so the client draws the disguise from the start.
+   */
+  fun prepareIllusion(battle: BattleInstance, mon: BattleMonState) {
+    mon.illusionOf = null
+    if (mon.ability != Ability.ILLUSION) return
+    val team = if (battle.isPlayerSide(mon.entityId)) battle.party else battle.opponent
+    val last = team.lastOrNull { !it.fainted && it !== mon } ?: return
+    if (last.species.id == mon.species.id) return
+    mon.illusionOf = last
+  }
+
   /** Runs the switch-in abilities of [mon] against the monster facing it. */
   fun switchIn(battle: BattleInstance, mon: BattleMonState, events: MutableList<BattleEvent>) {
     if (mon.fainted) return
@@ -145,6 +400,17 @@ constructor(
     fun shown(other: Long = 0, moveId: Int = 0) {
       events += BattleEvent.TurnEffect(mon.entityId)
       events += BattleEvent.AbilityShown(mon.entityId, mon.ability, other, moveId)
+    }
+    formChange(mon, "FORM_CHANGE_BATTLE_SWITCH_IN", events) { abilityMatches(mon, it.params.getOrNull(0)) }
+    formChange(mon, "FORM_CHANGE_BATTLE_HP_PERCENT_SEND_OUT", events) {
+      hpPercentMatches(mon, it) && (it.params.getOrNull(3)?.toIntOrNull()?.let { min -> mon.level >= min } ?: true)
+    }
+    formChange(mon, "FORM_CHANGE_BATTLE_WEATHER", events) {
+      weatherMatches(weather(battle), it.params.getOrNull(0)) && abilityMatches(mon, it.params.getOrNull(1))
+    }
+    if (mon.ability == Ability.FRISK && foe.heldItem != 0) {
+      events += BattleEvent.TurnEffect(mon.entityId)
+      events += BattleEvent.AbilityShown(mon.entityId, Ability.FRISK, foe.entityId, 0, foe.heldItem)
     }
     when (mon.ability) {
       Ability.INTIMIDATE -> {
@@ -241,12 +507,28 @@ constructor(
     }
     if (!canMove(battle, attacker, move, events)) return
 
+    if (attacker.movedFirstByItem != 0) {
+      events += BattleEvent.TurnEffect(attacker.entityId)
+      events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_MOVED_FIRST, listOf(attacker.movedFirstByItem))
+      attacker.movedFirstByItem = 0
+    }
     val continuing = attacker.chargingMoveId == move.id
+    // Stance Change and the like: the form shifts before the move goes out.
+    formChange(attacker, "FORM_CHANGE_BATTLE_BEFORE_MOVE", events) {
+      moveMatches(move, it.params.getOrNull(0)) && abilityMatches(attacker, it.params.getOrNull(1))
+    } ||
+        formChange(attacker, "FORM_CHANGE_BATTLE_BEFORE_MOVE_CATEGORY", events) {
+          categoryMatches(move, it.params.getOrNull(0)) && abilityMatches(attacker, it.params.getOrNull(1))
+        }
     if (!continuing) spendPp(attacker, action.defender, move, events)
+    if (items.isChoice(items.of(attacker)) && attacker.choiceLockedMove == 0) attacker.choiceLockedMove = move.id
     else events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slotOf(attacker, move), ppOf(attacker, move))
 
-    // Two-turn moves: the first use charges (or hides), the second one strikes.
-    if (isTwoTurn(battle, move) && !continuing) {
+    // Two-turn moves: the first use charges (or hides), the second one strikes. A Power Herb
+    // skips the charge.
+    val powerHerb = isTwoTurn(battle, move) && !continuing && items.of(attacker) == de.fiereu.openmmo.items.generated.Items.POWER_HERB
+    if (powerHerb) consumeItem(attacker, events)
+    if (isTwoTurn(battle, move) && !continuing && !powerHerb) {
       attacker.chargingMoveId = move.id
       attacker.semiInvulnerable = move.effect == MoveEffect.SEMI_INVULNERABLE
       if (move.effect == MoveEffect.SKULL_BASH) applyStage(action, StageEffect(BattleStat.DEFENSE, 1, true), events)
@@ -273,6 +555,13 @@ constructor(
       // Pressure makes every move aimed at its holder cost one more.
       val cost = if (defender.ability == Ability.PRESSURE && move.target != MoveTarget.USER && move.target != MoveTarget.FIELD) 2 else 1
       attacker.moves[slot].pp = (attacker.moves[slot].pp - cost).coerceAtLeast(0).toByte()
+      // A Leppa Berry refills the first move that runs dry.
+      if (attacker.moves[slot].pp.toInt() == 0 && items.of(attacker) == de.fiereu.openmmo.items.generated.Items.LEPPA_BERRY) {
+        val itemId = attacker.heldItem
+        consumeItem(attacker, events)
+        attacker.moves[slot].pp = ripen(attacker, 10).coerceAtMost(move.pp).toByte()
+        events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_RESTORED_STATUS, listOf(itemId))
+      }
     }
     events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slot.coerceAtLeast(0), ppOf(attacker, move))
   }
@@ -475,6 +764,11 @@ constructor(
       if (explodes) explode(attacker, events)
       return
     }
+    if (effectiveType == PokemonType.GROUND && items.of(defender) == de.fiereu.openmmo.items.generated.Items.AIR_BALLOON &&
+        !defender.airBalloonPopped) {
+      events += BattleEvent.Immune(defender.entityId)
+      return
+    }
     if (Abilities.wonderGuard(defender, attacker, effectiveness, move.power) ||
         (move.effect == MoveEffect.OHKO && Abilities.sturdy(defender, attacker))) {
       events += BattleEvent.AbilityShown(defender.entityId, defender.ability)
@@ -532,13 +826,38 @@ constructor(
         healHp(defender, defender.maxHp / 4, events)
         return
       }
+      // Disguise and Ice Face: the form takes the hit instead of the monster.
+      if (formChange(defender, "FORM_CHANGE_BATTLE_HIT_BY_MOVE_CATEGORY", events) {
+        abilityMatches(defender, it.params.getOrNull(0)) && categoryMatches(move, it.params.getOrNull(1))
+      }) {
+        events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
+        break
+      }
       val result = hit(battle, action, move, effectiveType, effectiveness, power, movesLast)
       var damage = result.damage
+      // A resist berry halves the one super-effective hit of its type, then is gone.
+      val resistBerry = items.of(defender)
+      if (items.resistBerryType(resistBerry) == effectiveType &&
+          (effectiveness > 10 || resistBerry == de.fiereu.openmmo.items.generated.Items.CHILAN_BERRY) &&
+          canEatBerry(battle, defender)) {
+        damage = if (defender.ability == Ability.RIPEN) damage / 4 else damage / 2
+        consumeItem(defender, events)
+      }
       var endured = false
       var sturdy = false
+      var sashKind = 0
       if (damage >= defender.currentHp) {
         sturdy = defender.currentHp == defender.maxHp && Abilities.sturdy(defender, attacker)
-        val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring || sturdy
+        val item = items.of(defender)
+        if (!sturdy && !defender.enduring && move.effect != MoveEffect.FALSE_SWIPE) {
+          if (item == de.fiereu.openmmo.items.generated.Items.FOCUS_SASH && defender.currentHp == defender.maxHp) {
+            sashKind = 3
+            consumeItem(defender, events)
+          } else if (item == de.fiereu.openmmo.items.generated.Items.FOCUS_BAND && battle.rng.accuracyRoll() <= 10) {
+            sashKind = 1
+          }
+        }
+        val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring || sturdy || sashKind != 0
         endured = survive && defender.enduring
         damage = if (survive) (defender.currentHp - 1).coerceAtLeast(0) else defender.currentHp
       }
@@ -553,9 +872,16 @@ constructor(
       if (endured) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
       if (sturdy) {
         events += BattleEvent.AbilityShown(defender.entityId, Ability.STURDY)
-        events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
+        events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(2))
+      }
+      if (sashKind != 0) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(sashKind))
+      if (defender.illusionOf != null) {
+        defender.illusionOf = null
+        events += BattleEvent.SpeciesShown(defender.entityId, defender.wireSpeciesId().toInt())
       }
       hitReactions(battle, action, move, effectiveType, result.crit, hpBefore, events)
+      itemHitReactions(battle, action, move, effectiveType, effectiveness, damage, events)
+      checkBerries(battle, defender, events)
     }
     if (struck > 1) events += BattleEvent.MultiHit(attacker.entityId, struck)
     if (struck == 0) return
@@ -585,7 +911,42 @@ constructor(
       MoveEffect.MAX_HP_50_RECOIL -> if (recoils) loseHp(attacker, (attacker.maxHp / 2).coerceAtLeast(1), events)
       MoveEffect.STRUGGLE -> if (attacker.ability != Ability.MAGIC_GUARD) loseHp(attacker, (attacker.maxHp / 4).coerceAtLeast(1), events)
       MoveEffect.ABSORB, MoveEffect.DREAM_EATER ->
-          healHp(attacker, (totalDamage * (move.argumentValue ?: 50) / 100).coerceAtLeast(1), events)
+          healHp(attacker, (totalDamage * (move.argumentValue ?: 50) / 100 * items.drainPercent(attacker) / 100).coerceAtLeast(1), events)
+      MoveEffect.STEAL_ITEM -> if (!defender.fainted || defender.heldItem != 0) stealItem(attacker, defender, events)
+      MoveEffect.KNOCK_OFF ->
+          if (items.canBeTaken(defender)) {
+            val taken = defender.heldItem
+            defender.heldItem = 0
+            events += BattleEvent.ItemChanged(defender.entityId, 0)
+            events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_KNOCKED_OFF, listOf(taken))
+          }
+      else -> Unit
+    }
+    // Bug Bite and Incinerate work on the target's berry; Recycle-style item moves are below.
+    for (extra in move.additionalEffects) {
+      when (extra.effect) {
+        MoveAdditionalEffect.BUG_BITE ->
+            if (items.isBerry(items.get(defender.heldItem)) && items.canBeTaken(defender) && !attacker.fainted) {
+              val id = defender.heldItem
+              defender.heldItem = 0
+              events += BattleEvent.ItemChanged(defender.entityId, 0)
+              events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_STOLE_ATE, listOf(id))
+              val eaten = items.get(id)
+              val heal = items.halfHpHeal(eaten, attacker.maxHp) + items.quarterHpHeal(eaten, attacker.maxHp)
+              if (heal > 0) healHp(attacker, heal, events)
+              items.pinchStat(eaten)?.let { ownStage(attacker, it, 1, events) }
+            }
+        MoveAdditionalEffect.INCINERATE ->
+            if (items.isBerry(items.get(defender.heldItem)) && items.canBeTaken(defender)) {
+              val id = defender.heldItem
+              defender.heldItem = 0
+              events += BattleEvent.ItemChanged(defender.entityId, 0)
+              events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_BURNT, listOf(id))
+            }
+        else -> Unit
+      }
+    }
+    when (move.effect) {
       else -> Unit
     }
     if (explodes) explode(attacker, events)
@@ -662,6 +1023,91 @@ constructor(
       Ability.COTTON_DOWN -> { shown(defender); ownStage(attacker, BattleStat.SPEED, -1, events) }
       Ability.SAND_SPIT -> if (battle.weather != Weather.SANDSTORM) { shown(defender); setWeather(battle, Weather.SANDSTORM, events) }
       Ability.THERMAL_EXCHANGE -> if (type == PokemonType.FIRE) { shown(defender); ownStage(defender, BattleStat.ATTACK, 1, events) }
+      else -> Unit
+    }
+  }
+
+  /** Held items on both sides once a hit has landed. */
+  private fun itemHitReactions(
+      battle: BattleInstance,
+      action: TurnAction,
+      move: MoveDef,
+      type: PokemonType,
+      effectiveness: Int,
+      damage: Int,
+      events: MutableList<BattleEvent>,
+  ) {
+    val attacker = action.attacker
+    val defender = action.defender
+    val contact = items.moveIsContact(move, attacker)
+    val I = de.fiereu.openmmo.items.generated.Items
+    // The defender's item.
+    when (val item = items.of(defender)) {
+      I.ROCKY_HELMET ->
+          if (contact && attacker.ability != Ability.MAGIC_GUARD && !attacker.fainted) {
+            events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_HURT, listOf(1, defender.heldItem))
+            loseHp(attacker, (attacker.maxHp / 6).coerceAtLeast(1), events)
+          }
+      I.STICKY_BARB ->
+          if (contact && attacker.heldItem == 0 && !attacker.fainted) {
+            attacker.heldItem = defender.heldItem
+            defender.heldItem = 0
+            events += BattleEvent.ItemChanged(defender.entityId, 0)
+            events += BattleEvent.ItemChanged(attacker.entityId, attacker.heldItem)
+          }
+      I.JABOCA_BERRY ->
+          if (MoveCategory.isPhysical(type) && attacker.ability != Ability.MAGIC_GUARD && canEatBerry(battle, defender)) {
+            val id = defender.heldItem
+            consumeItem(defender, events)
+            events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_HURT, listOf(1, id))
+            loseHp(attacker, ripen(defender, attacker.maxHp / 8).coerceAtLeast(1), events)
+          }
+      I.ROWAP_BERRY ->
+          if (!MoveCategory.isPhysical(type) && attacker.ability != Ability.MAGIC_GUARD && canEatBerry(battle, defender)) {
+            val id = defender.heldItem
+            consumeItem(defender, events)
+            events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_HURT, listOf(1, id))
+            loseHp(attacker, ripen(defender, attacker.maxHp / 8).coerceAtLeast(1), events)
+          }
+      I.ENIGMA_BERRY ->
+          if (effectiveness > 10 && !defender.fainted && canEatBerry(battle, defender)) {
+            val id = defender.heldItem
+            consumeItem(defender, events)
+            defender.currentHp = (defender.currentHp + ripen(defender, defender.maxHp / 4)).coerceAtMost(defender.maxHp)
+            events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_HEAL, listOf(defender.currentHp, id))
+          }
+      I.ABSORB_BULB -> if (type == PokemonType.WATER && !defender.fainted) { consumeItem(defender, events); ownStage(defender, BattleStat.SP_ATTACK, 1, events) }
+      I.CELL_BATTERY -> if (type == PokemonType.ELECTRIC && !defender.fainted) { consumeItem(defender, events); ownStage(defender, BattleStat.ATTACK, 1, events) }
+      I.AIR_BALLOON -> { consumeItem(defender, events); defender.airBalloonPopped = true }
+      else -> Unit
+    }
+    if (defender.ability == Ability.PICKPOCKET && contact && !defender.fainted) {
+      if (stealItem(defender, attacker, events)) events += BattleEvent.AbilityShown(defender.entityId, Ability.PICKPOCKET)
+    }
+    // The attacker's item and item abilities.
+    if (attacker.fainted) return
+    formChange(attacker, "FORM_CHANGE_BATTLE_HP_PERCENT_DURING_MOVE", events) {
+      hpPercentMatches(attacker, it) && moveMatches(move, it.params.getOrNull(3))
+    }
+    if (attacker.ability == Ability.MAGICIAN && !defender.fainted) {
+      if (stealItem(attacker, defender, events)) events += BattleEvent.AbilityShown(attacker.entityId, Ability.MAGICIAN)
+    }
+    when (items.of(attacker)) {
+      I.LIFE_ORB ->
+          if (attacker.ability != Ability.MAGIC_GUARD &&
+              !(attacker.ability == Ability.SHEER_FORCE && move.additionalEffects.any { !it.self })) {
+            events += BattleEvent.Line(attacker.entityId, BattleLine.LIFE_ORB_HURT)
+            loseHp(attacker, (attacker.maxHp / 10).coerceAtLeast(1), events)
+          }
+      I.SHELL_BELL ->
+          if (attacker.currentHp < attacker.maxHp && damage > 0) {
+            attacker.currentHp = (attacker.currentHp + (damage / 8).coerceAtLeast(1)).coerceAtMost(attacker.maxHp)
+            events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_HEAL_SMALL, listOf(attacker.currentHp, attacker.heldItem))
+          }
+      I.KING_S_ROCK, I.RAZOR_FANG ->
+          if (!defender.movedThisTurn && !defender.fainted && !Abilities.blocksFlinch(defender) &&
+              battle.rng.accuracyRoll() <= items.flinchChance(attacker))
+              defender.flinched = true
       else -> Unit
     }
   }
@@ -874,7 +1320,8 @@ constructor(
         (if (attacker.focusEnergy) 2 else 0) +
             (if (move.effect == MoveEffect.HIGH_CRITICAL) 1 else 0) +
             move.criticalHitStage +
-            Abilities.critStages(attacker)
+            Abilities.critStages(attacker) +
+            items.critStages(attacker)
     val critBlocked = Abilities.noCrits(defender) && !Abilities.ignoresTargetAbilities(attacker)
     val crit =
         !critBlocked &&
@@ -901,6 +1348,13 @@ constructor(
     dmg = dmg * effectiveness / TypeChart.NEUTRAL
     dmg = dmg * Abilities.offensePercent(attacker, move, type, power, physical, weather, effectiveness, movesLast, defender) / 100
     dmg = dmg * Abilities.defensePercent(defender, attacker, move, type, physical, effectiveness) / 100
+    dmg = dmg * items.offensePercent(attacker, move, type, physical, effectiveness) / 100
+    dmg =
+        dmg *
+            items.defensePercent(
+                defender,
+                physical,
+                de.fiereu.openmmo.server.game.services.EvolutionTable.canEvolve(defender.wireSpeciesId().toInt())) / 100
     dmg = dmg * battle.rng.damageRoll() / 100
     return HitResult(dmg.coerceAtLeast(1), crit)
   }
@@ -976,6 +1430,7 @@ constructor(
     val stage = accuracyStage - evasionStage
     var threshold = StatStages.scaleAccuracy(accuracy, stage)
     threshold = threshold * Abilities.accuracyPercent(attacker, move, MoveCategory.isPhysical(move.type)) / 100
+    threshold = threshold * items.accuracyPercent(attacker, defender, speedOf(battle, attacker) < speedOf(battle, defender)) / 100
     if (!Abilities.ignoresTargetAbilities(attacker)) threshold = threshold * Abilities.evasionPercent(defender, move, weather) / 100
     return battle.rng.accuracyRoll() <= threshold
   }
@@ -1048,8 +1503,9 @@ constructor(
       }
       MoveAdditionalEffect.WRAP ->
           if (target.trappedTurns == 0) {
-            target.trappedTurns = 2 + battle.rng.pick(4)
+            target.trappedTurns = items.trapTurns(attacker, 2 + battle.rng.pick(4))
             target.trappingMoveId = move.id
+            target.trapDamageDivisor = items.trapDamageDivisor(attacker)
           }
       MoveAdditionalEffect.PREVENT_ESCAPE, MoveAdditionalEffect.TRAP_BOTH ->
           if (target.trappedTurns == 0) {
@@ -1235,7 +1691,33 @@ constructor(
                   }
             }
         if (weather == null || battle.weather == weather) return fail()
-        setWeather(battle, weather, events)
+        setWeather(battle, weather, events, attacker)
+      }
+      MoveEffect.RECYCLE -> {
+        if (attacker.heldItem != 0 || attacker.consumedItem == 0) return fail()
+        attacker.heldItem = attacker.consumedItem
+        attacker.consumedItem = 0
+        events += BattleEvent.ItemChanged(attacker.entityId, attacker.heldItem)
+        events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_FOUND, listOf(attacker.heldItem))
+      }
+      MoveEffect.TRICK -> {
+        if (!accurate()) return
+        if (attacker.heldItem == 0 && defender.heldItem == 0) return fail()
+        if (defender.ability == Ability.STICKY_HOLD && defender.heldItem != 0) return fail()
+        val mine = attacker.heldItem
+        attacker.heldItem = defender.heldItem
+        defender.heldItem = mine
+        events += BattleEvent.ItemChanged(attacker.entityId, attacker.heldItem)
+        events += BattleEvent.ItemChanged(defender.entityId, defender.heldItem)
+        events += BattleEvent.Line(attacker.entityId, BattleLine.ITEM_SWAPPED, listOf(attacker.heldItem, defender.heldItem))
+      }
+      MoveEffect.BESTOW -> {
+        if (attacker.heldItem == 0 || defender.heldItem != 0) return fail()
+        defender.heldItem = attacker.heldItem
+        attacker.heldItem = 0
+        events += BattleEvent.ItemChanged(attacker.entityId, 0)
+        events += BattleEvent.ItemChanged(defender.entityId, defender.heldItem)
+        events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_RECEIVED, listOf(defender.heldItem))
       }
       MoveEffect.LEECH_SEED -> {
         if (defender.leechSeeded || defender.species.hasType(PokemonType.GRASS)) return fail()
@@ -1245,12 +1727,12 @@ constructor(
       MoveEffect.LIGHT_SCREEN -> {
         val side = battle.sideOf(attacker)
         if (side.lightScreenTurns > 0) return fail()
-        side.lightScreenTurns = SCREEN_TURNS
+        side.lightScreenTurns = items.screenTurns(attacker)
       }
       MoveEffect.REFLECT -> {
         val side = battle.sideOf(attacker)
         if (side.reflectTurns > 0) return fail()
-        side.reflectTurns = SCREEN_TURNS
+        side.reflectTurns = items.screenTurns(attacker)
       }
       MoveEffect.SAFEGUARD -> {
         val side = battle.sideOf(attacker)
@@ -1405,6 +1887,7 @@ constructor(
     target.status = status
     if (status and StatusCondition.TOXIC != 0) target.toxicCounter = 0
     events += BattleEvent.StatusChanged(target.entityId, target.status)
+    checkStatusBerry(battle, target, events)
     // Synchronize hands poison, burn and paralysis back to whoever caused them.
     if (target.ability == Ability.SYNCHRONIZE && source !== target &&
         status and (StatusCondition.POISON or StatusCondition.TOXIC or StatusCondition.BURN or StatusCondition.PARALYSIS) != 0 &&
@@ -1426,6 +1909,7 @@ constructor(
     }
     target.confusionTurns = 2 + battle.rng.pick(4)
     events += BattleEvent.Line(target.entityId, BattleLine.CONFUSION, listOf(0))
+    checkConfusionBerry(battle, target, events)
   }
 
   private fun seed(source: BattleMonState, target: BattleMonState, events: MutableList<BattleEvent>) {
@@ -1442,10 +1926,11 @@ constructor(
     events += BattleEvent.StatusChanged(mon.entityId, mon.status)
   }
 
-  private fun setWeather(battle: BattleInstance, weather: Weather, events: MutableList<BattleEvent>) {
+  private fun setWeather(battle: BattleInstance, weather: Weather, events: MutableList<BattleEvent>, user: BattleMonState? = null) {
     if (battle.weather == weather) return
     battle.weather = weather
-    battle.weatherTurns = WEATHER_TURNS
+    battle.weatherTurns = user?.let { items.weatherTurns(it, weather) } ?: WEATHER_TURNS
+    weatherForms(battle, events)
     events += BattleEvent.WeatherChanged(weather)
   }
 
@@ -1486,6 +1971,13 @@ constructor(
       if (target.ability == Ability.DEFIANT) ownStage(target, BattleStat.ATTACK, 2, events)
       if (target.ability == Ability.COMPETITIVE) ownStage(target, BattleStat.SP_ATTACK, 2, events)
     }
+    // A White Herb undoes the drop on the spot.
+    if (applied < 0 && items.of(target) == de.fiereu.openmmo.items.generated.Items.WHITE_HERB) {
+      val id = target.heldItem
+      consumeItem(target, events)
+      for (stat in BattleStat.entries) if (target.stage(stat) < 0) target.changeStage(stat, -target.stage(stat))
+      events += BattleEvent.Line(target.entityId, BattleLine.ITEM_RESTORED_STATUS, listOf(id))
+    }
     val value =
         when (effect.stat) {
           BattleStat.ACCURACY,
@@ -1511,6 +2003,7 @@ constructor(
       battle.weatherTurns--
       if (battle.weatherTurns <= 0) {
         battle.weather = null
+        weatherForms(battle, events)
         events += BattleEvent.WeatherChanged(null)
       } else if (weather(battle) != null) {
         for (mon in order) {
@@ -1586,7 +2079,64 @@ constructor(
         Ability.SLOW_START -> if (mon.slowStartTurns > 0) { mon.slowStartTurns--; if (mon.slowStartTurns == 0) { events += BattleEvent.TurnEffect(mon.entityId); events += BattleEvent.AbilityShown(mon.entityId, mon.ability) } }
         else -> Unit
       }
+      if (mon.fainted) {
+        if (!formChange(mon, "FORM_CHANGE_FAINT", null)) restoreForm(mon)
+        continue
+      }
+      // Held items with an end-of-turn effect.
+      val I = de.fiereu.openmmo.items.generated.Items
+      when (items.of(mon)) {
+        I.LEFTOVERS ->
+            if (mon.currentHp < mon.maxHp) {
+              mon.currentHp = (mon.currentHp + (mon.maxHp / 16).coerceAtLeast(1)).coerceAtMost(mon.maxHp)
+              events += BattleEvent.TurnEffect(mon.entityId)
+              events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL_SMALL, listOf(mon.currentHp, mon.heldItem))
+            }
+        I.BLACK_SLUDGE ->
+            if (mon.species.hasType(PokemonType.POISON)) {
+              if (mon.currentHp < mon.maxHp) {
+                mon.currentHp = (mon.currentHp + (mon.maxHp / 16).coerceAtLeast(1)).coerceAtMost(mon.maxHp)
+                events += BattleEvent.TurnEffect(mon.entityId)
+                events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL_SMALL, listOf(mon.currentHp, mon.heldItem))
+              }
+            } else if (!Abilities.noIndirectDamage(mon)) {
+              events += BattleEvent.TurnEffect(mon.entityId)
+              events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HURT, listOf(0, mon.heldItem))
+              loseHp(mon, (mon.maxHp / 8).coerceAtLeast(1), events)
+            }
+        I.STICKY_BARB ->
+            if (!Abilities.noIndirectDamage(mon)) {
+              events += BattleEvent.TurnEffect(mon.entityId)
+              events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HURT, listOf(0, mon.heldItem))
+              loseHp(mon, (mon.maxHp / 8).coerceAtLeast(1), events)
+            }
+        I.TOXIC_ORB ->
+            if (canReceiveStatus(battle, mon, mon, StatusCondition.TOXIC)) {
+              events += BattleEvent.TurnEffect(mon.entityId)
+              inflictStatus(battle, mon, mon, StatusCondition.TOXIC, events)
+            }
+        I.FLAME_ORB ->
+            if (canReceiveStatus(battle, mon, mon, StatusCondition.BURN)) {
+              events += BattleEvent.TurnEffect(mon.entityId)
+              inflictStatus(battle, mon, mon, StatusCondition.BURN, events)
+            }
+        else -> Unit
+      }
+      if (mon.ability == Ability.HARVEST && mon.heldItem == 0 && items.isBerry(items.get(mon.consumedItem)) &&
+          (weather == Weather.SUN || battle.rng.coinFlip())) {
+        mon.heldItem = mon.consumedItem
+        mon.consumedItem = 0
+        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.AbilityShown(mon.entityId, Ability.HARVEST)
+        events += BattleEvent.ItemChanged(mon.entityId, mon.heldItem)
+        events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_FOUND, listOf(mon.heldItem))
+      }
       if (mon.fainted) continue
+      // Zen Mode, Schooling, Hunger Switch: the turn-end form checks.
+      formChange(mon, "FORM_CHANGE_BATTLE_HP_PERCENT_TURN_END", events) {
+        hpPercentMatches(mon, it) && (it.params.getOrNull(3)?.toIntOrNull()?.let { min -> mon.level >= min } ?: true)
+      }
+      formChange(mon, "FORM_CHANGE_BATTLE_TURN_END", events) { abilityMatches(mon, it.params.getOrNull(0)) }
       if (mon.ingrained && mon.currentHp < mon.maxHp) {
         mon.currentHp = (mon.currentHp + (mon.maxHp / 16).coerceAtLeast(1)).coerceAtMost(mon.maxHp)
         events += BattleEvent.TurnEffect(mon.entityId)
@@ -1629,7 +2179,7 @@ constructor(
           events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.currentHp, mon.trappingMoveId))
           mon.trappingMoveId = 0
         } else {
-          hurt(mon.maxHp / 16, BattleLine.TRAP, prefix = listOf(1), suffix = listOf(mon.trappingMoveId))
+          hurt(mon.maxHp / (mon.trapDamageDivisor * 2), BattleLine.TRAP, prefix = listOf(1), suffix = listOf(mon.trappingMoveId))
         }
       }
       if (mon.fainted) continue

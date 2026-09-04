@@ -87,6 +87,8 @@ data class ExpansionSpeciesDef(
     val weight: Int,
     val assets: ExpansionSpeciesAssets,
     val clientWireId: Int?,
+    /** The `sXFormChangeTable` symbol the species data names, "" when it has no forms. */
+    val formChangeTableSymbol: String = "",
 ) {
   val usesClientUnsupportedType: Boolean
     // Fairy is patched into the client's type enum at ordinal 19; Stellar still has no slot.
@@ -272,7 +274,7 @@ object GeneratedExpansionSpeciesCatalog {
 }
 
 private object ExpansionSpeciesDecoder {
-  private const val FORMAT_VERSION = 5
+  private const val FORMAT_VERSION = 6
 
   fun decode(encoded: String): List<ExpansionSpeciesDef> {
     val bytes = Base64.getDecoder().decode(encoded)
@@ -343,6 +345,7 @@ private object ExpansionSpeciesDecoder {
                     iconPalIndex = input.readInt(),
                 ),
             clientWireId = input.readNullableInt(),
+            formChangeTableSymbol = input.readUTF(),
         )
       }
     }

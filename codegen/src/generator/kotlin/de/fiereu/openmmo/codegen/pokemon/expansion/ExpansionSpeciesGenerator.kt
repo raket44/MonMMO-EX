@@ -518,7 +518,7 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
 object ExpansionSpeciesBinary {
   /** Set before encoding: stats can be generation-gated expressions rather than plain numbers. */
   private lateinit var config: ExpansionConfig
-  private const val FORMAT_VERSION = 5
+  private const val FORMAT_VERSION = 6
 
   fun encode(species: List<ParsedExpansionSpecies>, settings: ExpansionConfig): String {
     config = settings
@@ -585,6 +585,7 @@ object ExpansionSpeciesBinary {
         output.writeUTF(entry.assets.cryPath)
         output.writeInt(entry.assets.iconPalIndex)
         output.writeNullableInt(entry.clientWireId)
+        output.writeUTF(entry.fields["formChangeTable"]?.trim().orEmpty())
       }
     }
     return Base64.getEncoder().encodeToString(bytes.toByteArray())

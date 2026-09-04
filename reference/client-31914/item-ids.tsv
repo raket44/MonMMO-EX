@@ -1,0 +1,451 @@
+Master Ball	   5001 
+Ultra Ball	   5002 
+Great Ball	   5003 
+Poké Ball	   5004 
+Safari Ball	   5005 
+Net Ball	   5006 
+Dive Ball	   5007 
+Nest Ball	   5008 
+Repeat Ball	   5009 
+Timer Ball	   5010 
+Luxury Ball	   5011 
+Premier Ball	   5012 
+Dusk Ball	   5013 
+Heal Ball	   5014 
+Quick Ball	   5015 
+Cherish Ball	   5016 
+Potion	   5017 
+Antidote	   5018 
+Burn Heal	   5019 
+Ice Heal	   5020 
+Awakening	   5021 
+Parlyz Heal	   5022 
+Full Restore	   5023 
+Max Potion	   5024 
+Hyper Potion	   5025 
+Super Potion	   5026 
+Full Heal	   5027 
+Revive	   5028 
+Max Revive	   5029 
+Fresh Water	   5030 
+Soda Pop	   5031 
+Lemonade	   5032 
+Moomoo Milk	   5033 
+EnergyPowder	   5034 
+Energy Root	   5035 
+Heal Powder	   5036 
+Revival Herb	   5037 
+Ether	   5038 
+Max Ether	   5039 
+Elixir	   5040 
+Max Elixir	   5041 
+Lava Cookie	   5042 
+Berry Juice	   5043 
+Sacred Ash	   5044 
+HP Up	   5045 
+Protein	   5046 
+Iron	   5047 
+Carbos	   5048 
+Calcium	   5049 
+Rare Candy	   5050 
+PP Up	   5051 
+Zinc	   5052 
+PP Max	   5053 
+Old Gateau	   5054 
+Guard Spec.	   5055 
+Dire Hit	   5056 
+X Attack	   5057 
+X Defend	   5058 
+X Speed	   5059 
+X Accuracy	   5060 
+X Special	   5061 
+X Sp. Def	   5062 
+Poké Doll	   5063 
+Fluffy Tail	   5064 
+Blue Flute	   5065 
+Yellow Flute	   5066 
+Red Flute	   5067 
+Black Flute	   5068 
+White Flute	   5069 
+Shoal Salt	   5070 
+Shoal Shell	   5071 
+Red Shard	   5072 
+Blue Shard	   5073 
+Yellow Shard	   5074 
+Green Shard	   5075 
+Super Repel	   5076 
+Max Repel	   5077 
+Escape Rope	   5078 
+Repel	   5079 
+Sun Stone	   5080 
+Moon Stone	   5081 
+Fire Stone	   5082 
+Thunderstone	   5083 
+Water Stone	   5084 
+Leaf Stone	   5085 
+TinyMushroom	   5086 
+Big Mushroom	   5087 
+Pearl	   5088 
+Big Pearl	   5089 
+Stardust	   5090 
+Star Piece	   5091 
+Nugget	   5092 
+Heart Scale	   5093 
+Honey	   5094 
+Growth Mulch	   5095 
+Damp Mulch	   5096 
+Stable Mulch	   5097 
+Gooey Mulch	   5098 
+Root Fossil	   5099 
+Claw Fossil	   5100 
+Helix Fossil	   5101 
+Dome Fossil	   5102 
+Old Amber	   5103 
+Armor Fossil	   5104 
+Skull Fossil	   5105 
+Rare Bone	   5106 
+Shiny Stone	   5107 
+Dusk Stone	   5108 
+Dawn Stone	   5109 
+Oval Stone	   5110 
+Odd Keystone	   5111 
+Griseous Orb	   5112 
+Douse Drive	   5116 
+Shock Drive	   5117 
+Burn Drive	   5118 
+Chill Drive	   5119 
+Sweet Heart	   5134 
+Adamant Orb	   5135 
+Lustrous Orb	   5136 
+Greet Mail	   5137 
+Favored Mail	   5138 
+RSVP Mail	   5139 
+Thanks Mail	   5140 
+Inquiry Mail	   5141 
+Like Mail	   5142 
+Reply Mail	   5143 
+BridgeMail S	   5144 
+BridgeMail D	   5145 
+BridgeMail T	   5146 
+BridgeMail V	   5147 
+BridgeMail M	   5148 
+Cheri Berry	   5149 
+Chesto Berry	   5150 
+Pecha Berry	   5151 
+Rawst Berry	   5152 
+Aspear Berry	   5153 
+Leppa Berry	   5154 
+Oran Berry	   5155 
+Persim Berry	   5156 
+Lum Berry	   5157 
+Sitrus Berry	   5158 
+Figy Berry	   5159 
+Wiki Berry	   5160 
+Mago Berry	   5161 
+Aguav Berry	   5162 
+Iapapa Berry	   5163 
+Razz Berry	   5164 
+Bluk Berry	   5165 
+Nanab Berry	   5166 
+Wepear Berry	   5167 
+Pinap Berry	   5168 
+Pomeg Berry	   5169 
+Kelpsy Berry	   5170 
+Qualot Berry	   5171 
+Hondew Berry	   5172 
+Grepa Berry	   5173 
+Tamato Berry	   5174 
+Cornn Berry	   5175 
+Magost Berry	   5176 
+Rabuta Berry	   5177 
+Nomel Berry	   5178 
+Spelon Berry	   5179 
+Pamtre Berry	   5180 
+Watmel Berry	   5181 
+Durin Berry	   5182 
+Belue Berry	   5183 
+Occa Berry	   5184 
+Passho Berry	   5185 
+Wacan Berry	   5186 
+Rindo Berry	   5187 
+Yache Berry	   5188 
+Chople Berry	   5189 
+Kebia Berry	   5190 
+Shuca Berry	   5191 
+Coba Berry	   5192 
+Payapa Berry	   5193 
+Tanga Berry	   5194 
+Charti Berry	   5195 
+Kasib Berry	   5196 
+Haban Berry	   5197 
+Colbur Berry	   5198 
+Babiri Berry	   5199 
+Chilan Berry	   5200 
+Liechi Berry	   5201 
+Ganlon Berry	   5202 
+Salac Berry	   5203 
+Petaya Berry	   5204 
+Apicot Berry	   5205 
+Lansat Berry	   5206 
+Starf Berry	   5207 
+Enigma Berry	   5208 
+Micle Berry	   5209 
+Custap Berry	   5210 
+Jaboca Berry	   5211 
+Rowap Berry	   5212 
+BrightPowder	   5213 
+White Herb	   5214 
+Macho Brace	   5215 
+Exp. Share	   5216 
+Quick Claw	   5217 
+Soothe Bell	   5218 
+Mental Herb	   5219 
+Choice Band	   5220 
+King's Rock	   5221 
+SilverPowder	   5222 
+Amulet Coin	   5223 
+Cleanse Tag	   5224 
+Soul Dew	   5225 
+DeepSeaTooth	   5226 
+DeepSeaScale	   5227 
+Smoke Ball	   5228 
+Everstone	   5229 
+Focus Band	   5230 
+Lucky Egg	   5231 
+Scope Lens	   5232 
+Metal Coat	   5233 
+Leftovers	   5234 
+Dragon Scale	   5235 
+Light Ball	   5236 
+Soft Sand	   5237 
+Hard Stone	   5238 
+Miracle Seed	   5239 
+BlackGlasses	   5240 
+Black Belt	   5241 
+Magnet	   5242 
+Mystic Water	   5243 
+Sharp Beak	   5244 
+Poison Barb	   5245 
+NeverMeltIce	   5246 
+Spell Tag	   5247 
+TwistedSpoon	   5248 
+Charcoal	   5249 
+Dragon Fang	   5250 
+Silk Scarf	   5251 
+Up-Grade	   5252 
+Shell Bell	   5253 
+Sea Incense	   5254 
+Lax Incense	   5255 
+Lucky Punch	   5256 
+Metal Powder	   5257 
+Thick Club	   5258 
+Stick	   5259 
+Red Scarf	   5260 
+Blue Scarf	   5261 
+Pink Scarf	   5262 
+Green Scarf	   5263 
+Yellow Scarf	   5264 
+Wide Lens	   5265 
+Muscle Band	   5266 
+Wise Glasses	   5267 
+Expert Belt	   5268 
+Light Clay	   5269 
+Life Orb	   5270 
+Power Herb	   5271 
+Toxic Orb	   5272 
+Flame Orb	   5273 
+Quick Powder	   5274 
+Focus Sash	   5275 
+Zoom Lens	   5276 
+Metronome	   5277 
+Iron Ball	   5278 
+Lagging Tail	   5279 
+Destiny Knot	   5280 
+Black Sludge	   5281 
+Icy Rock	   5282 
+Smooth Rock	   5283 
+Heat Rock	   5284 
+Damp Rock	   5285 
+Grip Claw	   5286 
+Choice Scarf	   5287 
+Sticky Barb	   5288 
+Power Bracer	   5289 
+Power Belt	   5290 
+Power Lens	   5291 
+Power Band	   5292 
+Power Anklet	   5293 
+Power Weight	   5294 
+Shed Shell	   5295 
+Big Root	   5296 
+Choice Specs	   5297 
+Flame Plate	   5298 
+Splash Plate	   5299 
+Zap Plate	   5300 
+Meadow Plate	   5301 
+Icicle Plate	   5302 
+Fist Plate	   5303 
+Toxic Plate	   5304 
+Earth Plate	   5305 
+Sky Plate	   5306 
+Mind Plate	   5307 
+Insect Plate	   5308 
+Stone Plate	   5309 
+Spooky Plate	   5310 
+Draco Plate	   5311 
+Dread Plate	   5312 
+Iron Plate	   5313 
+Odd Incense	   5314 
+Rock Incense	   5315 
+Full Incense	   5316 
+Wave Incense	   5317 
+Rose Incense	   5318 
+Luck Incense	   5319 
+Pure Incense	   5320 
+Protector	   5321 
+Electirizer	   5322 
+Magmarizer	   5323 
+Dubious Disc	   5324 
+Reaper Cloth	   5325 
+Razor Claw	   5326 
+Razor Fang	   5327 
+Explorer Kit	   5428 
+Loot Sack	   5429 
+Rule Book	   5430 
+Poké Radar	   5431 
+Point Card	   5432 
+Journal	   5433 
+Seal Case	   5434 
+Fashion Case	   5435 
+Seal Bag	   5436 
+Pal Pad	   5437 
+Works Key	   5438 
+Old Charm	   5439 
+Galactic Key	   5440 
+Red Chain	   5441 
+Town Map	   5442 
+Vs. Seeker	   5443 
+Coin Case	   5444 
+Old Rod	   5445 
+Good Rod	   5446 
+Super Rod	   5447 
+Sprayduck	   5448 
+Poffin Case	   5449 
+Bicycle	   5450 
+Suite Key	   5451 
+Oak's Letter	   5452 
+Lunar Wing	   5453 
+Member Card	   5454 
+Azure Flute	   5455 
+S.S. Ticket	   5456 
+Contest Pass	   5457 
+Magma Stone	   5458 
+Parcel	   5459 
+Storage Key	   5463 
+SecretPotion	   5464 
+Vs. Recorder	   5465 
+Gracidea	   5466 
+Secret Key	   5467 
+Apricorn Box	   5468 
+Unown Report	   5469 
+Berry Pots	   5470 
+Dowsing MCHN	   5471 
+Blue Card	   5472 
+SlowpokeTail	   5473 
+Clear Bell	   5474 
+Card Key	   5475 
+Basement Key	   5476 
+SquirtBottle	   5477 
+Red Scale	   5478 
+Lost Item	   5479 
+Pass	   5480 
+Machine Part	   5481 
+Silver Wing	   5482 
+Rainbow Wing	   5483 
+Mystery Egg	   5484 
+Red Apricorn	   5485 
+Blu Apricorn	   5486 
+Ylw Apricorn	   5487 
+Grn Apricorn	   5488 
+Pnk Apricorn	   5489 
+Wht Apricorn	   5490 
+Blk Apricorn	   5491 
+Fast Ball	   5492 
+Level Ball	   5493 
+Lure Ball	   5494 
+Heavy Ball	   5495 
+Love Ball	   5496 
+Friend Ball	   5497 
+Moon Ball	   5498 
+Sport Ball	   5499 
+Park Ball	   5500 
+Photo Album	   5501 
+GB Sounds	   5502 
+Tidal Bell	   5503 
+RageCandyBar	   5504 
+Jade Orb	   5532 
+Lock Capsule	   5533 
+Red Orb	   5534 
+Blue Orb	   5535 
+Enigma Stone	   5536 
+Prism Scale	   5537 
+Eviolite	   5538 
+Float Stone	   5539 
+Rocky Helmet	   5540 
+Air Balloon	   5541 
+Red Card	   5542 
+Ring Target	   5543 
+Binding Band	   5544 
+Absorb Bulb	   5545 
+Cell Battery	   5546 
+Eject Button	   5547 
+Fire Gem	   5548 
+Water Gem	   5549 
+Electric Gem	   5550 
+Grass Gem	   5551 
+Ice Gem	   5552 
+Fighting Gem	   5553 
+Poison Gem	   5554 
+Ground Gem	   5555 
+Flying Gem	   5556 
+Psychic Gem	   5557 
+Bug Gem	   5558 
+Rock Gem	   5559 
+Ghost Gem	   5560 
+Dragon Gem	   5561 
+Dark Gem	   5562 
+Steel Gem	   5563 
+Normal Gem	   5564 
+Health Wing	   5565 
+Muscle Wing	   5566 
+Resist Wing	   5567 
+Genius Wing	   5568 
+Clever Wing	   5569 
+Swift Wing	   5570 
+Pretty Wing	   5571 
+Cover Fossil	   5572 
+Plume Fossil	   5573 
+Liberty Pass	   5574 
+Pass Orb	   5575 
+Dream Ball	   5576 
+Poké Toy	   5577 
+Prop Case	   5578 
+Dragon Skull	   5579 
+BalmMushroom	   5580 
+Big Nugget	   5581 
+Pearl String	   5582 
+Comet Shard	   5583 
+Relic Copper	   5584 
+Relic Silver	   5585 
+Relic Gold	   5586 
+Relic Vase	   5587 
+Relic Band	   5588 
+Relic Statue	   5589 
+Relic Crown	   5590 
+Casteliacone	   5591 
+Ability Urge	   5611 
+Item Drop	   5612 
+Item Urge	   5613 
+Reset Urge	   5614 
+Light Stone	   5616 
+Dark Stone	   5617 
+Xtransceiver	   5621, 5626 

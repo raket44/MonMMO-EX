@@ -31,11 +31,21 @@ fun main(args: Array<String>) {
   val root = Json.parseToJsonElement(Files.readString(source)).jsonArray
   var locationCount = 0
   var abilityCount = 0
+  var heldItemCount = 0
   Files.newBufferedWriter(outputDir.resolve("retail-locations.csv")).use { locations ->
     Files.newBufferedWriter(outputDir.resolve("retail-abilities.csv")).use { abilities ->
+     Files.newBufferedWriter(outputDir.resolve("retail-held-items.csv")).use { heldItems ->
       root.forEach { element ->
         val mon = element.jsonObject
         val dexId = mon.getValue("id").jsonPrimitive.content
+        // The wild held items the dex lists, in its order: species;slot;client item id;name.
+        mon["held_items"]?.jsonArray?.forEachIndexed { slot, item ->
+          val body = item.jsonObject
+          heldItems.appendLine(
+              "$dexId;$slot;${body.getValue("id").jsonPrimitive.content};" +
+                  body.getValue("name").jsonPrimitive.content.replace(';', ','))
+          heldItemCount++
+        }
         mon["abilities"]?.jsonArray?.forEachIndexed { slot, ability ->
           val body = ability.jsonObject
           abilities.appendLine(
@@ -69,7 +79,10 @@ fun main(args: Array<String>) {
           locationCount++
         }
       }
+     }
     }
   }
-  println("[retail-monsters] species=${root.size} locations=$locationCount abilities=$abilityCount")
+  println(
+      "[retail-monsters] species=${root.size} locations=$locationCount abilities=$abilityCount " +
+          "heldItems=$heldItemCount")
 }

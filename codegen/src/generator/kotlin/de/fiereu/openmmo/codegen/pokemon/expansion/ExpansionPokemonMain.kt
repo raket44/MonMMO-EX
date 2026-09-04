@@ -45,6 +45,23 @@ fun main(args: Array<String>) {
           "cries=${species.count { !it.assets.cry }}, " +
           "followers=${species.count { !it.assets.follower }}")
 
+  val formRows = FormChangeTableParser.parse(expansionRoot)
+  println("[expansion-pokemon] formChangeRows=${formRows.size}, tables=${formRows.map { it.table }.distinct().size}")
+  File(outputDir, "de/fiereu/openmmo/pokemon/expansion/GeneratedFormChanges.kt").also { it.parentFile.mkdirs() }.writeText(
+      buildString {
+        appendLine("package de.fiereu.openmmo.pokemon.expansion")
+        appendLine()
+        appendLine("internal object GeneratedFormChanges {")
+        appendLine("  val rows: Array<String> =")
+        appendLine("      arrayOf(")
+        formRows.forEach { row ->
+          val cells = listOf(row.table, row.kind, row.target) + row.params
+          appendLine("          \"" + cells.joinToString("\t") + "\",")
+        }
+        appendLine("      )")
+        appendLine("}")
+      })
+
   val encoded = ExpansionSpeciesBinary.encode(species, ExpansionConfig.read(expansionRoot))
   val target =
       File(

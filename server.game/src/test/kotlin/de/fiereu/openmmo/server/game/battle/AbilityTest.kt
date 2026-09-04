@@ -156,6 +156,16 @@ class AbilityTest :
         paralyzed shouldBeGreaterThan 3
       }
 
+      test("Arena Trap keeps a grounded monster from running, not a Flying one") {
+        val diglett = state(50, 20, listOf(SPLASH), WILD_ID, Ability.ARENA_TRAP)
+        val snorlax = state(SNORLAX, 30, listOf(SPLASH), PLAYER_ID, Ability.THICK_FAT)
+        engine.canFlee(battle(snorlax, diglett, 1)) shouldBe false
+        val pidgeot = state(PIDGEOT, 30, listOf(SPLASH), PLAYER_ID, Ability.KEEN_EYE)
+        engine.canFlee(battle(pidgeot, diglett, 1)) shouldBe true
+        val sandVeil = state(50, 20, listOf(SPLASH), WILD_ID, Ability.SAND_VEIL)
+        engine.canFlee(battle(snorlax, sandVeil, 1)) shouldBe true
+      }
+
       test("Huge Power doubles physical damage") {
         fun dealt(ability: Ability): Int {
           val player = state(SNORLAX, 60, listOf(TACKLE), PLAYER_ID, ability)

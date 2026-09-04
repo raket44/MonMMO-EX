@@ -168,10 +168,22 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                     null,
                     BattleEventBody.AbilityPopup(
                         abilityId = event.ability.ordinal,
-                        kind = (if (event.otherId != 0L) 1 else 0) or (if (event.moveId != 0) 2 else 0),
+                        kind =
+                            (if (event.otherId != 0L) 1 else 0) or
+                                (if (event.moveId != 0) 2 else 0) or
+                                (if (event.itemId != 0) 8 else 0),
                         self = event.targetId,
                         other = event.otherId,
-                        moveId = event.moveId))
+                        moveId = event.moveId,
+                        itemId = event.itemId))
+        is BattleEvent.ItemChanged ->
+            broadcast(battle, BattleEntityDeltaPacket(entityId = event.targetId, heldItem = event.itemId.toShort()))
+        is BattleEvent.SpeciesShown ->
+            broadcast(
+                battle,
+                BattleEntityDeltaPacket(
+                    entityId = event.targetId,
+                    species = de.fiereu.openmmo.net.game.packets.battle.Species(event.wireSpecies.toShort(), 0)))
         is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
         is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
         is BattleEvent.Line ->

@@ -28,6 +28,8 @@ interface GameServerComponent {
 
   fun devCharacterSeeder(): DevCharacterSeeder
 
+  fun testBoxSeeder(): de.fiereu.openmmo.server.game.storage.TestBoxSeeder
+
   @Component.Factory
   fun interface Factory {
     fun create(@BindsInstance config: GameServerConfig): GameServerComponent

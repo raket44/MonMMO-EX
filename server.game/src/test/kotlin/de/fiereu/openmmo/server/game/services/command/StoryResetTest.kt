@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.services.command
 
+import de.fiereu.openmmo.server.game.testsupport.testOcarinas
 import de.fiereu.openmmo.common.CharacterPermissions
 import de.fiereu.openmmo.common.enums.CharacterGender
 import de.fiereu.openmmo.common.enums.PokemonContainer
@@ -68,7 +69,7 @@ class StoryResetTest :
         val items = ItemRegistry()
         return StoryCommand(
             characterStore = store,
-            worldStateService = WorldStateService(DexProgressService(store)),
+            worldStateService = WorldStateService(DexProgressService(store), testOcarinas(store)),
             storyPlayerService =
                 StoryPlayerService(
                     store,
@@ -77,7 +78,8 @@ class StoryResetTest :
                     moves,
                     items,
                     DexProgressService(store),
-                    WorldStateService(DexProgressService(store)),
+                    WorldStateService(DexProgressService(store), testOcarinas(store)),
+                    testOcarinas(store),
                 ),
             warpService =
                 WarpService(

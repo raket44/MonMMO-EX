@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.developer
 
+import de.fiereu.openmmo.server.game.testsupport.testOcarinas
 import de.fiereu.openmmo.common.CharacterPermissions
 import de.fiereu.openmmo.common.enums.CharacterGender
 import de.fiereu.openmmo.common.enums.Region
@@ -151,7 +152,7 @@ class DeveloperToolsTest :
           val story = StoryService(store)
           val command =
               DeveloperStoryCommand(
-                  tools, story, store, WorldStateService(DexProgressService(store)))
+                  tools, story, store, WorldStateService(DexProgressService(store), testOcarinas(store)))
 
           command.run(ctx.copyArgs("flag", "set", "FLAG_DEV_TEST"))
           command.run(ctx.copyArgs("var", "set", "VAR_DEV_TEST", "37"))
@@ -171,7 +172,7 @@ class DeveloperToolsTest :
           val story = StoryService(store)
           val command =
               DeveloperStoryCommand(
-                  tools, story, store, WorldStateService(DexProgressService(store)))
+                  tools, story, store, WorldStateService(DexProgressService(store), testOcarinas(store)))
 
           tools.enableOverride(TEST_LABEL) shouldBe false
           registry(tools).forLabel(TEST_LABEL).shouldBeSameInstanceAs(kotlinA)

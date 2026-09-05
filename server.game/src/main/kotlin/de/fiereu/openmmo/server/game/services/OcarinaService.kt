@@ -36,7 +36,7 @@ class OcarinaService
 constructor(
     private val characters: CharacterStore,
     private val wildMons: WildMonFactory,
-    private val encounters: EncounterService,
+    private val encounters: javax.inject.Provider<EncounterService>,
     private val maps: MapManager,
     private val ids: EntityIdService,
     private val emitter: BattlePacketEmitter,
@@ -81,7 +81,7 @@ constructor(
     }
     val problem =
         when (moveId) {
-          SWEET_SCENT -> encounters.startHorde(ctx, charId, state, maps.getMap(state.regionId, state.bankId, state.mapId), HORDE_SIZE)
+          SWEET_SCENT -> encounters.get().startHorde(ctx, charId, state, maps.getMap(state.regionId, state.bankId, state.mapId), HORDE_SIZE)
           else -> "${name(itemId)} is not wired up yet."
         }
     if (problem != null) {

@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.developer
 
+import de.fiereu.openmmo.server.game.testsupport.testOcarinas
 import de.fiereu.openmmo.common.CharacterPermissions
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.enums.CharacterGender
@@ -55,7 +56,8 @@ class DeveloperGiveExpansionCommandTest :
                 moves,
                 ItemRegistry(),
                 DexProgressService(store),
-                WorldStateService(DexProgressService(store)))
+                WorldStateService(DexProgressService(store), testOcarinas(store)),
+                testOcarinas(store))
         val tools =
             DeveloperTools(
                 GameServerConfig(

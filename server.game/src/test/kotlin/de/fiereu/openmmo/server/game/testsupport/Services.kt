@@ -31,6 +31,7 @@ import de.fiereu.openmmo.server.game.services.StoryPlayerService
 import de.fiereu.openmmo.server.game.services.StoryService
 import de.fiereu.openmmo.server.game.services.WarpRules
 import de.fiereu.openmmo.server.game.services.WarpService
+import de.fiereu.openmmo.server.game.services.OcarinaService
 import de.fiereu.openmmo.server.game.services.WorldStateService
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.EntityIdService
@@ -109,7 +110,8 @@ fun scriptRunner(
           moves,
           items,
           DexProgressService(store),
-          WorldStateService(DexProgressService(store))),
+          WorldStateService(DexProgressService(store), testOcarinas(store)),
+          testOcarinas(store)),
       battles,
       store,
       mapManager,
@@ -138,3 +140,14 @@ fun battleService(store: CharacterStore, interest: InterestManager): BattleServi
       classicMode = ClassicModeService(store),
   )
 }
+
+/** An ocarina service with no encounter path: tests never spawn a horde through it. */
+fun testOcarinas(store: CharacterStore): OcarinaService =
+    OcarinaService(
+        store,
+        WildMonFactory(SpeciesRegistry(), MoveRegistry(), LearnsetRegistry(), EntityIdService()),
+        javax.inject.Provider { throw IllegalStateException("no encounters in tests") },
+        MapManager(),
+        EntityIdService(),
+        BattlePacketEmitter(InterestManager()),
+    )

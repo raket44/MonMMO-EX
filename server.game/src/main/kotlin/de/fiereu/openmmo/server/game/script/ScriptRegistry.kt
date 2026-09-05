@@ -16,6 +16,7 @@ internal fun gbaScriptSource(regionId: Int): String? =
       Region.HOENN -> "emerald"
       Region.SINNOH -> "platinum"
       Region.JOHTO -> "heartgold"
+      Region.UNOVA -> "white"
       else -> null
     }
 

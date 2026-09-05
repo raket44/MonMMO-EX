@@ -10,6 +10,7 @@ import de.fiereu.openmmo.script.PretScriptParser
 import de.fiereu.openmmo.script.ScriptId
 import de.fiereu.openmmo.script.TextArg
 import java.io.File
+import java.util.TreeMap
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -60,6 +61,9 @@ class NdsScriptCorpusGenerator {
 
     /** Specialty mart shelves by the game's mart index: ITEM_ tokens. */
     fun martTables(): Map<Int, List<String>> = emptyMap()
+
+    /** Dialects without source files (Unova, from the ROM disassembly): name -> parsed file. */
+    fun preparsed(): Map<String, ParsedFile>? = null
   }
 
   class Macro(val params: List<String>, val body: List<String>)
@@ -72,6 +76,7 @@ class NdsScriptCorpusGenerator {
         when (spec.source) {
           "platinum" -> Platinum(spec.decompDir)
           "heartgold" -> HeartGold(spec.decompDir)
+          "white" -> Unova(spec.decompDir)
           else -> error("Unknown DS script source ${spec.source}")
         }
     val constants = HashMap(dialect.constants())
@@ -99,12 +104,15 @@ class NdsScriptCorpusGenerator {
     var indexedLabels = 0
 
     val parsedByFile = HashMap<String, ParsedFile>()
-    for (file in dialect.scriptFiles) {
-      val parsed = parseScriptFile(file, dialect)
-      parsedByFile[file.name] = parsed
-      val owners = headersByScript[file.name].orEmpty()
+    val sources: List<Triple<String, ParsedFile, String>> =
+        dialect.preparsed()?.map { (name, parsed) -> Triple(name, parsed, "rom/${spec.source}/$name") }
+            ?: dialect.scriptFiles.map { file ->
+              Triple(file.name, parseScriptFile(file, dialect), "decomp/${spec.decompDir.name}/${file.relativeTo(spec.decompDir).invariantSeparatorsPath}")
+            }
+    for ((fileName, parsed, sourceFile) in sources) {
+      parsedByFile[fileName] = parsed
+      val owners = headersByScript[fileName].orEmpty()
       val objectIds = owners.firstOrNull()?.let(dialect::objectIdsFor).orEmpty()
-      val sourceFile = "decomp/${spec.decompDir.name}/${file.relativeTo(spec.decompDir).invariantSeparatorsPath}"
       indexedLabels += parsed.blocks.size
 
       for (block in parsed.blocks) {
@@ -150,7 +158,7 @@ class NdsScriptCorpusGenerator {
         }
       }
       // Chunk bindings (Platinum common scripts etc.): global ids -> entry label.
-      dialect.chunkFiles().filterValues { it == file.name }.keys.forEach { base ->
+      dialect.chunkFiles().filterValues { it == fileName }.keys.forEach { base ->
         val trainerChunk = dialect.trainerChunkSize(base)
         val trainerEntry = parsed.entries.firstOrNull() ?: parsed.blocks.firstOrNull { !it.movement }?.label
         if (trainerChunk != null && trainerEntry != null) {
@@ -226,9 +234,9 @@ class NdsScriptCorpusGenerator {
 
   // ---------------------------------------------------------------- source parsing
 
-  private class Block(val label: String, var movement: Boolean, val lines: MutableList<List<String>>)
+  class Block(val label: String, var movement: Boolean, val lines: MutableList<List<String>>)
 
-  private class ParsedFile(val entries: List<String>, val blocks: List<Block>)
+  class ParsedFile(val entries: List<String>, val blocks: List<Block>)
 
   /**
    * Splits a script file into labelled blocks of `Command arg, arg` lines. Local labels (`_0033`)
@@ -430,6 +438,7 @@ class NdsScriptCorpusGenerator {
         // flags the gym scripts set the same way.
         "GoToIfBadgeAcquired" -> out += "goto_if_set FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
         "CheckBadge", "CheckBadgeAcquired" -> out += "ds_flagtovar FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
+        "CheckFlagVar" -> out += "ds_flagtovar ${a[0]}, ${a[1]}"
         "GiveBadge" -> out += "setflag FLAG_DS_BADGE_${badge(a[0], constants)}"
         "CountBadgesAcquired" -> out += "ds_countbadges ${a[0]}"
         "HealParty" -> out += "special HealPlayerParty"
@@ -834,6 +843,249 @@ class NdsScriptCorpusGenerator {
     override fun constants(): Map<String, Int> = constants
   }
 
+  /**
+   * Unova has no decomp; the ROM's script archive (/a/0/5/7) is disassembled by tools/nds/Dis5
+   * into `nds-scripts-2.txt` (`file;entry;offset;Name args`, `mv;file;offset;type,len ...`) and
+   * the map headers into `nds-headers-2.txt`. The Gen 5 engine is a small stack machine
+   * (SetStackVar / SetStackDerefVar / StoreFlag push, Condition op, When skips unless true) which
+   * this folds into the Gen 4 Compare/GoToIf vocabulary the transpiler already handles. Map text
+   * is the header's bank in the second text archive, which the client's game bit selects.
+   */
+  private class Unova(private val root: File) : Dialect {
+    override val region = 2
+    override val scriptFiles: List<File> = emptyList()
+    private val headerRows: List<IntArray> by lazy {
+      File(root, "nds-headers-2.txt").readLines().filter { it.startsWith("hdr;") }.map { l -> l.split(';').drop(1).map { it.toInt() }.toIntArray() }
+    }
+    /** script file -> text bank of the first header using it. */
+    private val bankByFile: Map<Int, Int> by lazy {
+      val out = HashMap<Int, Int>()
+      for (h in headerRows) out.putIfAbsent(h[4], h[6])
+      out
+    }
+
+    override fun mapHeaders(): List<MapHeader> =
+        headerRows.map { h -> MapHeader(h[3], "unova_${h[3]}", "U${h[4]}", null, h[6]) }
+
+    override fun objectIdsFor(header: MapHeader): Map<String, Int> {
+      val out = HashMap<String, Int>()
+      val prefix = "obj;2;${header.id and 0xFF};${header.id shr 8};"
+      File(root, "nds-npcs-2.txt").forEachLine { l ->
+        if (l.startsWith(prefix)) {
+          val p = l.split(';')
+          out["OBJ_${p[5]}"] = p[4].toInt()
+        }
+      }
+      return out
+    }
+
+    override fun textId(token: String): Int? {
+      val m = Regex("^T(\\d+)_(\\d+)$").matchEntire(token) ?: return null
+      return (region shl 28) or (1 shl 27) or (m.groupValues[1].toInt() shl 16) or m.groupValues[2].toInt()
+    }
+
+    override fun constants(): Map<String, Int> = emptyMap()
+
+    /**
+     * Script ids outside map files: 2000+ item balls (file 864, one entry per ball), 2800+ the
+     * standard routines CallStd names (file 862: 2805 bag-space check, 2811 obtain item),
+     * 10000+ hidden items (file 865).
+     */
+    override fun chunkFiles(): Map<Int, String> = mapOf(2000 to "U864", 2800 to "U862", 10000 to "U865")
+
+    private class Cmd(val entry: Int, val offset: Int, val name: String, val args: List<String>)
+
+    override fun preparsed(): Map<String, ParsedFile> {
+      val lines = File(root, "nds-scripts-2.txt").readLines()
+      val cmdsByFile = HashMap<Int, TreeMap<Int, Cmd>>()
+      val entriesByFile = HashMap<Int, HashMap<Int, Int>>()
+      val movesByFile = HashMap<Int, HashMap<Int, List<String>>>()
+      for (l in lines) {
+        val p = l.split(';')
+        if (p[0] == "mv") {
+          val steps = p[3].trim().split(' ').filter { it.isNotEmpty() }
+          movesByFile.getOrPut(p[1].toInt()) { HashMap() }[p[2].toInt()] = steps
+          continue
+        }
+        if (p.size < 4) continue
+        val file = p[0].toInt()
+        val entry = p[1].toInt()
+        val off = p[2].toInt()
+        val parts = p[3].trim().split(' ')
+        cmdsByFile.getOrPut(file) { TreeMap() }[off] = Cmd(entry, off, parts[0], parts.drop(1))
+      }
+      // Entry offsets: the lowest offset seen per entry index (entries decode from their start).
+      for ((file, cmds) in cmdsByFile) for (c in cmds.values) {
+        val e = entriesByFile.getOrPut(file) { HashMap() }
+        e[c.entry] = minOf(e[c.entry] ?: Int.MAX_VALUE, c.offset)
+      }
+      val out = LinkedHashMap<String, ParsedFile>()
+      for ((file, cmds) in cmdsByFile) {
+        val bank = bankByFile[file] ?: 0
+        fun lab(off: Int) = "U${file}_$off"
+        val targets = HashSet<Int>()
+        entriesByFile[file]?.values?.forEach { targets += it }
+        for (c in cmds.values) for (a in c.args) if (a.startsWith("@")) targets += a.drop(1).toInt()
+        val blocks = mutableListOf<Block>()
+        var current: Block? = null
+        val stack = ArrayDeque<String>()
+        var lastOp = 1
+        for (c in cmds.values) {
+          if (c.offset in targets || current == null) {
+            current = Block(lab(c.offset), false, mutableListOf()).also { blocks += it }
+            stack.clear()
+          }
+          val b = current
+          val a = c.args
+          fun t(i: Int) = a.getOrElse(i) { "0" }
+          fun v(i: Int) = "VAR_0x" + t(i).toInt().toString(16).uppercase()
+          fun fl(i: Int) = "FLAG_" + t(i)
+          /** A value-or-var argument: Gen 5 passes vars (0x4000+) where a value is expected. */
+          fun tv(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else t(i)
+          fun jump(i: Int) = lab(t(i).drop(1).toInt())
+          fun text(i: Int) = "T%04d_%05d".format(bank, t(i).toInt())
+          fun cond(code: Int, negate: Boolean): String {
+            val names = listOf("Lt", "Eq", "Gt", "Le", "Ge", "Ne")
+            val neg = listOf(4, 5, 3, 2, 0, 1)
+            val k = code.coerceIn(0, 5)
+            return names[if (negate) neg[k] else k]
+          }
+          when (c.name) {
+            "SetStackVar" -> stack.addLast(t(0))
+            "SetStackDerefVar" -> stack.addLast(v(0))
+            "StoreFlag" -> stack.addLast(fl(0))
+            "Condition" -> {
+              lastOp = t(0).toInt()
+              val rhs = stack.removeLastOrNull() ?: "0"
+              val lhs = stack.removeLastOrNull() ?: "0"
+              when {
+                lhs.startsWith("FLAG_") -> {
+                  b.lines += listOf("CheckFlagVar", lhs, "VAR_RESULT")
+                  b.lines += listOf("Compare", "VAR_RESULT", rhs)
+                }
+                lhs.startsWith("VAR_") -> b.lines += listOf("Compare", lhs, rhs)
+                rhs.startsWith("VAR_") -> {
+                  b.lines += listOf("Compare", rhs, lhs)
+                  lastOp = listOf(2, 1, 0, 4, 3, 5).getOrElse(lastOp) { lastOp }
+                }
+                else -> {
+                  b.lines += listOf("SetVar", "VAR_RESULT", lhs)
+                  b.lines += listOf("Compare", "VAR_RESULT", rhs)
+                }
+              }
+              // 7 negates the condition just computed; 6 combines with the previous one (kept as is).
+              if (t(0).toInt() == 7) lastOp = listOf(4, 5, 3, 2, 0, 1).getOrElse(lastOp) { lastOp }
+              else if (t(0).toInt() > 7) b.lines += listOf("Ds5Condition", t(0))
+            }
+            "Compare" -> {
+              b.lines += listOf("Compare", v(0), tv(1))
+              lastOp = -1
+            }
+            "When", "If" -> {
+              val verb = if (c.name == "When") "GoToIf" else "CallIf"
+              val k = t(0).toInt()
+              val name = if (lastOp >= 0) cond(lastOp, negate = k == 255) else cond(k, negate = false)
+              b.lines += listOf(verb + name, jump(1))
+            }
+            "GetStackVar" -> b.lines += listOf("SetVar", v(0), stack.removeLastOrNull() ?: "0")
+            "PopStack", "AddStackVar" -> {}
+            "End" -> b.lines += listOf("End")
+            "EndRoutine", "ReturnStd" -> b.lines += listOf("Return")
+            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", tv(0), v(1))
+            "Screen_B5", "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
+            "CMD_1F0", "CMD_24C", "CMD_4E", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
+            "SetVarItem", "SetVarItem2", "SetVarItem3" -> b.lines += listOf("BufferItemName", t(0), tv(1))
+            "CloseShowMessageAt" -> b.lines += listOf("CloseMessage")
+            "SetVarBag", "CMD_6A", "CMD_19F" -> {}
+            "CMD_BB" -> b.lines += listOf("GetItemPocket", v(0), v(1))
+            "CMD_BA" -> b.lines += listOf("CheckItem", v(0), v(1), v(3))
+            "ShowMessageAt" -> b.lines += listOf("Message", text(0))
+            "SetBadge" -> b.lines += listOf("GiveBadge", t(0))
+            "CMD_128", "CMD_11E", "CMD_107", "Xtransciever4", "Xtransciever5", "Xtransciever7" -> {}
+            "SetVarStoreValue5C" -> b.lines += listOf("BufferNumber", t(0), v(1))
+            "CallRoutine" -> b.lines += listOf("Call", jump(0))
+            "Jump" -> b.lines += listOf("GoTo", jump(0))
+            "ReturnAfterDelay" -> b.lines += listOf("WaitTime", t(0))
+            "SetFlag" -> b.lines += listOf("SetFlag", fl(0))
+            "ClearFlag" -> b.lines += listOf("ClearFlag", fl(0))
+            "StoreValueInVar" -> b.lines += listOf("SetVar", v(0), t(1))
+            "StoreVarInVar", "StoreDerefVarInVar" -> b.lines += listOf("CopyVar", v(0), v(1))
+            "AddVars" -> b.lines += listOf("AddVar", v(0), t(1))
+            "SubVars" -> b.lines += listOf("SubVar", v(0), t(1))
+            "LockAll" -> b.lines += listOf("LockAll")
+            "ReleaseAll" -> b.lines += listOf("ReleaseAll")
+            "WaitButton" -> b.lines += listOf("WaitButton")
+            "FacePlayer" -> b.lines += listOf("FacePlayer")
+            "Message2", "Message", "Message3" -> b.lines += listOf("Message", text(2))
+            "BubbleMessage", "EventGreyMessage", "BorderedMessage", "AngryMessage" -> b.lines += listOf("Message", text(0))
+            "CloseMessageKP", "CloseMessageKP2", "CloseEventGreyMessage", "CloseBorderedMessage", "CloseAngryMessage", "CloseMusicalMessage" -> b.lines += listOf("CloseMessage")
+            "YesNoBox" -> b.lines += listOf("YesNo", v(0))
+            "StoreBadge" -> b.lines += listOf("CheckBadge", t(0), v(1))
+            "StoreVersion" -> b.lines += listOf("GetGameVersion", v(0))
+            "Store_D2" -> b.lines += listOf("SetVar", v(0), "0")
+            "DoubleMessage" -> b.lines += listOf("Message", text(3))
+            "CloseBubbleMessage" -> b.lines += listOf("CloseMessage")
+            "StoreVarItem", "SetVarPoke", "SetVarPartyPokemonNick", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
+            // 255 = player; 250-254 = camera/follower slots the server does not animate.
+            "ApplyMovement" -> if (t(0).toInt() in 250..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
+            "WaitMovement" -> b.lines += listOf("WaitMovement")
+            "SingleTrainerBattle", "TrainerBattle" -> b.lines += listOf("TrainerBattle", tv(0), "0", "0", "0")
+            "StoreBattleResult" -> b.lines += listOf("CheckBattleWon", v(0))
+            "SetVarHero" -> b.lines += listOf("BufferPlayerName", t(0))
+            "SetVarColoredItem" -> b.lines += listOf("BufferItemName", t(0), v(1))
+            "SetVarNumberBound" -> b.lines += listOf("BufferNumber", t(0), v(1))
+            "StoreHeroPosition", "StoreHeroPosition_66" -> b.lines += listOf("GetPlayerMapPos", v(0), v(1))
+            "StoreHeroOrientation" -> b.lines += listOf("GetPlayerDir", v(0))
+            "StoreRandomNumber" -> b.lines += listOf("GetRandom", v(0), t(1))
+            "StoreGender" -> b.lines += listOf("GetPlayerGender", v(0))
+            "StoreDay" -> b.lines += listOf("GetWeekday", v(0))
+            "HealPokemon" -> b.lines += listOf("HealParty")
+            "GivePokemon" -> b.lines += listOf("GivePokemon", tv(0), tv(1), tv(2), v(3))
+            "TakeMoney" -> b.lines += listOf("RemoveMoney", tv(0))
+            "CheckMoney" -> b.lines += listOf("CheckMoney", tv(0), v(1))
+            "CheckItemBagSpace" -> b.lines += listOf("CanFitItem", tv(0), tv(1), v(2))
+            "StoreHeroGender" -> b.lines += listOf("GetPlayerGender", v(0))
+            "FallWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            "MakeNPC", "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
+            "RemoveNPC" -> if (t(0).toInt() < 250) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
+            "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))
+            "SetOWPosition" -> if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(2))
+            "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            "CallStd" -> b.lines += listOf("CallStd", t(0))
+            "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
+            else -> b.lines += listOf(c.name) + a.map { it.removePrefix("@") }
+          }
+        }
+        // Movement tables: Gen 5 (type, count) pairs into the Gen 4 macro names the transpiler maps.
+        movesByFile[file]?.forEach { (off, steps) ->
+          val block = Block("M${file}_$off", true, mutableListOf())
+          for (s in steps) {
+            val pair = s.split(',').map { it.toInt() }
+            val type = pair[0]
+            val n = pair.getOrElse(1) { 1 }
+            val dir = listOf("North", "South", "West", "East")[type and 3]
+            val name =
+                when (type) {
+                  in 0..3 -> "Face$dir"
+                  in 4..7 -> "WalkSlow$dir"
+                  in 8..15 -> "WalkNormal$dir"
+                  in 16..23 -> "WalkFast$dir"
+                  in 24..43 -> "Delay8"
+                  in 44..59 -> "WalkNormal$dir"
+                  else -> continue
+                }
+            block.lines += listOf(name, n.toString())
+          }
+          block.lines += listOf("EndMovement")
+          blocks += block
+        }
+        val entries = (entriesByFile[file] ?: HashMap()).toSortedMap().values.map { lab(it) }
+        out["U$file"] = ParsedFile(entries, blocks)
+      }
+      return out
+    }
+  }
+
   private companion object {
     val LABEL_LINE = Regex("^(\\w+):\\s*$")
     val LOCAL_LABEL = Regex("^_[0-9A-Fa-f]{3,5}$")
@@ -867,6 +1119,10 @@ class NdsScriptCorpusGenerator {
             "BufferTMHMMoveName", "BufferTrainerClassName", "BufferPoketchAppName", "TouchscreenMenuHide",
             "TouchscreenMenuShow", "ToggleFollowingPokemonMovement", "WaitFollowingPokemonMovement",
             "FollowingPokemonMovement", "ReturnToField", "RestoreOverworld", "Noop", "Dummy", "SetObjectFlagIsPersistent",
+            // Gen 5 (disassembly names): sound, camera, waits with no server counterpart.
+            "WaitMoment", "Nop", "Nop2", "PlaySound", "WaitSound", "WaitSoundA7", "Cry", "ChangeMusic", "FadeToDefaultMusic",
+            "StartCameraEvent", "StopCameraEvent", "LockCamera", "ReleaseCamera", "MoveCamera", "EndCameraEvent", "ResetCamera",
+            "CallStart", "CallEnd", "ResetScreen", "EndBattle", "DisableTrainer", "ChangeMusicVolume", "SetTextScriptMessage", "CloseMulti",
             // HeartGold opens most npc scripts with this argument-less command; nothing observable follows it.
             "ScrCmd_609", "CameronPhoto", "RecordHeapMemory", "CreateJournalEvent", "ActivateRegiRuinsDot", "LoadDoorAnimation",
             "InitTurnbackCave", "InitPersistedMapFeaturesForDistortionWorld", "ShowDressUpPhoto", "SetWarpEventPos",

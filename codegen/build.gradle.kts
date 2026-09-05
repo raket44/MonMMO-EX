@@ -129,6 +129,8 @@ jteCodegen {
                 // DS regions: the decomps' disassembled ROM scripts, bound by ROM map header id.
                 "sinnoh|platinum|CPUE|${rootProject.layout.projectDirectory.dir("decomp/pokeplatinum").asFile.absolutePath}",
                 "johto|heartgold|IPKE|${rootProject.layout.projectDirectory.dir("decomp/pokeheartgold").asFile.absolutePath}",
+                // Unova: no decomp, the ROM script archive disassembled by tools/nds/Dis5 into server.game.
+                "unova|white|IRAO|${rootProject.layout.projectDirectory.dir("server.game").asFile.absolutePath}",
             ))
   }
 }

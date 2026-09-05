@@ -64,5 +64,5 @@ fun main(args: Array<String>) {
 }
 
 private fun buildCorpus(generator: ScriptCorpusGenerator, spec: ScriptCorpusSpec): BuiltScriptCorpus =
-    if (spec.source in setOf("platinum", "heartgold")) NdsScriptCorpusGenerator().build(spec)
+    if (spec.source in setOf("platinum", "heartgold", "white")) NdsScriptCorpusGenerator().build(spec)
     else generator.build(spec)

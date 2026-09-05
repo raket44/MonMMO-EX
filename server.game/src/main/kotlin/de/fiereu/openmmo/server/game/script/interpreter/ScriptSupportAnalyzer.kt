@@ -261,7 +261,8 @@ class ScriptSupportAnalyzer(
           "ds_flagtovar" -> args.size == 2
           "ds_warp" -> args.size == 3
           "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
-          "ds_checktrainerflag" -> args.size == 2
+          "ds_checktrainerflag", "ds_trainermsg" -> args.size == 2
+          "ds_trainermsgtypes", "ds_trainermsgtypes_rematch" -> args.size == 3
           "ds_martcommon" -> args.isEmpty()
           "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
@@ -536,6 +537,9 @@ class ScriptSupportAnalyzer(
             "ds_flagtovar",
             "ds_warp",
             "ds_trainerbattle",
+            "ds_trainermsg",
+            "ds_trainermsgtypes",
+            "ds_trainermsgtypes_rematch",
             "ds_martcommon",
             "ds_buffer",
             "ds_pokemart",

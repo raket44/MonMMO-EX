@@ -31,6 +31,12 @@ data class TrainerDef(
     val constant: String = "",
     /** Base trainer plus rematch stages. Null entries preserve FireRed's SKIP slots. */
     val rematchIds: List<Int?> = emptyList(),
+    /**
+     * DS trainer speech from the ROM trainer message table, by message kind: 0 intro, 1 the
+     * in-battle defeat line, 2 post-battle, 3-10 the double-battle variants, 17-19 rematch intros.
+     * Values are client text ids. Empty for the GBA regions, whose scripts carry the text.
+     */
+    val messages: Map<Int, Int> = emptyMap(),
 )
 
 private data class TrainerKey(val region: Region, val id: Int)

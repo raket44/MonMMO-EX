@@ -154,10 +154,36 @@ class InterpretedScript(
         "ds_trainerbattle" -> {
           val arg = instruction.arg(0)
           val id = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as IntArg).value
-          val result = tracedWait(ctx, "ds_trainerbattle $id") { ctx.trainerBattle(id) }
+          val trainer = ctx.resolveTrainerById(id)
+          // The in-battle defeat line (kind 1) rides the battle end packet like the GBA macro's.
+          val result = tracedWait(ctx, "ds_trainerbattle $id") { ctx.trainerBattle(trainer, trainerMessage(trainer, 1)) }
           val won = result == BattleResult.VICTORY
           if (won) ctx.setFlag(namespaced("FLAG_DS_TRAINER_$id"))
           ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
+          state.pc++
+        }
+        // DS trainer speech: the ROM trainer message table, (trainer, kind) to a client text id.
+        "ds_trainermsg" -> {
+          val trainer = ctx.resolveTrainerById(value(ctx, instruction.arg(0)))
+          val kind = value(ctx, instruction.arg(1))
+          val textId = trainerMessage(trainer, kind)
+          if (textId == null) log.warn { "Script ${program.id.stable}: trainer ${trainer.id} has no speech of kind $kind" }
+          else tracedWait(ctx, "trainer dialog") { ctx.say(TrainerLine(textId)) }
+          state.pc++
+        }
+        // The shared battle script asks which kinds apply (pre, post, not-enough-mons): singles
+        // 0/2/0, the first double partner 3/5/6; rematch intros 17 and 18. The trainer is the
+        // chunk binding's VAR_0x8004.
+        "ds_trainermsgtypes",
+        "ds_trainermsgtypes_rematch" -> {
+          val trainer = ctx.resolveTrainerById(ctx.getVar(namespaced("VAR_0x8004")))
+          val rematch = instruction.command.endsWith("_rematch")
+          val kinds =
+              if (!trainer.doubleBattle) Triple(if (rematch) 17 else 0, if (rematch) 0 else 2, 0)
+              else Triple(if (rematch) 18 else 3, if (rematch) 0 else 5, 6)
+          ctx.setVar(namespaced(varArg(instruction, 0).token), kinds.first)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), kinds.second)
+          ctx.setVar(namespaced(varArg(instruction, 2).token), kinds.third)
           state.pc++
         }
         "ds_checktrainerflag" -> {
@@ -1510,7 +1536,18 @@ class InterpretedScript(
       instruction.arg(index) as? LabelArg
           ?: error("Script ${program.id.stable} expected label in `${instruction.sourceLine}`")
 
+  /** A trainer speech line: only its client text id matters to the dialog service. */
+  private class TrainerLine(override val textId: Int) : DialogLine
+
+  /**
+   * The trainer message of [kind], or the double-battle / rematch twin of it when the trainer only
+   * carries those (Gen 4 partner trainers have no single-battle lines).
+   */
+  private fun trainerMessage(trainer: TrainerDef, kind: Int): Int? =
+      trainer.messages[kind] ?: TRAINER_MESSAGE_FALLBACKS[kind]?.firstNotNullOfOrNull { trainer.messages[it] }
+
   private companion object {
+    val TRAINER_MESSAGE_FALLBACKS = mapOf(0 to listOf(3, 7, 17), 1 to listOf(4, 8), 2 to listOf(5, 9), 17 to listOf(0, 18, 19), 3 to listOf(0), 5 to listOf(2), 4 to listOf(1))
     const val MAX_STEPS = 10_000
     const val GBA_VALUE_MASK = 0xFFFF
     const val FRAME_MILLIS = 17L

@@ -4,11 +4,12 @@ object RenderUtil {
 
   fun trainer(region: String, t: ParsedTrainer): String {
     val party = t.party.joinToString(", ", "listOf(", ")") { mon(it) }
+    val messages = if (t.messages.isEmpty()) "emptyMap()" else t.messages.entries.joinToString(", ", "mapOf(", ")") { (k, v) -> "$k to $v" }
     val rematches =
         t.rematchIds.joinToString(", ", "listOf(", ")") { id -> id?.toString() ?: "null" }
     return "reg.register(Region.${region.uppercase()}, TrainerDef(${t.id}, \"${escape(t.name)}\", " +
         "${t.trainerClass}, ${t.doubleBattle}, ${t.prizeRate}, $party, " +
-        "\"${t.constant}\", $rematches))"
+        "\"${t.constant}\", $rematches, $messages))"
   }
 
   private fun mon(m: ParsedTrainerMon): String {

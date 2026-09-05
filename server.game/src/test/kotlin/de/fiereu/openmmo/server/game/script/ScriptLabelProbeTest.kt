@@ -22,6 +22,10 @@ class ScriptLabelProbeTest :
                 "CeruleanCity_Gym_EventScript_Misty",
                 "VermilionCity_Gym_EventScript_LtSurge",
                 "PewterCity_Gym_EventScript_JrTrainer",
+                "UTR_0",
+                "NDS_CHUNK_3001",
+                "NDS_CHUNK_3002",
+                "NDS_CHUNK_3043",
             )
         val analyzer = ScriptSupportAnalyzer()
         InterpretedScripts.sources.forEach { registration ->
@@ -31,6 +35,8 @@ class ScriptLabelProbeTest :
             println(
                 "[probe] ${registration.corpus.source} $label complete=${support.complete} " +
                     "reason=${support.reason}")
+            if (label.startsWith("UTR_") || label.startsWith("NDS_CHUNK_30"))
+                script.program.instructions.forEach { println("[probe]     ${it.sourceLine}") }
           }
         }
       }

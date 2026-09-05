@@ -462,6 +462,11 @@ class NdsScriptCorpusGenerator {
         // Trainers by ROM id: HeartGold names the constant, Platinum's shared battle script reads
         // VAR_0x8004 (set by the chunk binding from the script id).
         "TrainerBattle", "StartTrainerBattle" -> out += "ds_trainerbattle ${a[0]}"
+        // Trainer speech by ROM table: (trainer, message kind). The kind vars come from the
+        // types query the shared battle script runs first (single 0/2, doubles 3-10, rematch 17-19).
+        "PrintTrainerDialogue", "TrainerMessage" -> out += "ds_trainermsg ${a[0]}, ${a[1]}"
+        "GetTrainerMessageTypes", "GetTrainerMsgParams" -> out += "ds_trainermsgtypes ${a[0]}, ${a[1]}, ${a[2]}"
+        "GetTrainerRematchMessageTypes", "GetRematchMsgParams" -> out += "ds_trainermsgtypes_rematch ${a[0]}, ${a[1]}, ${a[2]}"
         "CheckTrainerFlag" -> {
           // HeartGold checks into the compare result; Platinum names a var.
           out += "ds_checktrainerflag ${a[0]}, ${a.getOrElse(1) { "VAR_RESULT" }}"
@@ -1107,8 +1112,22 @@ class NdsScriptCorpusGenerator {
       for ((h, targets) in init) initBlocks += Block("NDS_INIT_${h}_TRANSITION", false, targets.map { listOf("Call", it) }.toMutableList<List<String>>().also { it += listOf("End") })
       for ((h, lines) in frame) initBlocks += Block("NDS_INIT_${h}_FRAME", false, lines.toMutableList().also { it += listOf("End") })
       out["UINIT"] = ParsedFile(emptyList(), initBlocks)
-      val trainer = Block("UTR_0", false, mutableListOf(listOf("LockAll"), listOf("FacePlayer"), listOf("TrainerBattle", "VAR_0x8004", "0", "0", "0"), listOf("ReleaseAll"), listOf("End")))
-      out["UTR"] = ParsedFile(listOf("UTR_0"), listOf(trainer))
+      // Gen 5 runs trainer npcs (script 3000 + id) inside the engine: intro speech from the ROM
+      // trainer message table, the battle, the defeated flag; a beaten trainer repeats their
+      // post-battle line. Written here in the Gen 4 command names the transpiler already maps.
+      val trainer =
+          Block(
+              "UTR_0", false,
+              mutableListOf(
+                  listOf("LockAll"), listOf("FacePlayer"),
+                  listOf("GoToIfDefeated", "VAR_0x8004", "UTR_0_AGAIN"),
+                  listOf("PrintTrainerDialogue", "VAR_0x8004", "0"), listOf("CloseMessage"),
+                  listOf("TrainerBattle", "VAR_0x8004", "0", "0", "0"),
+                  listOf("CheckWonBattle", "VAR_RESULT"), listOf("Compare", "VAR_RESULT", "0"), listOf("GoToIfEq", "UTR_0_LOST"),
+                  listOf("SetTrainerFlag", "VAR_0x8004"), listOf("ReleaseAll"), listOf("End")))
+      val again = Block("UTR_0_AGAIN", false, mutableListOf(listOf("PrintTrainerDialogue", "VAR_0x8004", "2"), listOf("WaitButton"), listOf("CloseMessage"), listOf("ReleaseAll"), listOf("End")))
+      val lost = Block("UTR_0_LOST", false, mutableListOf(listOf("ReleaseAll"), listOf("End")))
+      out["UTR"] = ParsedFile(listOf("UTR_0"), listOf(trainer, again, lost))
       return out
     }
   }
@@ -1159,8 +1178,7 @@ class NdsScriptCorpusGenerator {
             "RegisterGearNumber", "ScreenShake", "SetBikeStateLock", "MoveGreatMarshTram", "SetSubScene63",
             // A lost battle already whited the player out server-side; trainer intro text and music
             // come from ROM tables not bound yet.
-            "BlackOutFromBattle", "Whiteout", "WhiteOut", "PlayTrainerEncounterBGM", "GetTrainerMessageTypes", "GetTrainerRematchMessageTypes",
-            "PrintTrainerDialogue", "SetMoveCodeForFacingDirection",
+            "BlackOutFromBattle", "Whiteout", "WhiteOut", "PlayTrainerEncounterBGM", "SetMoveCodeForFacingDirection",
             // A lost battle already whited the player out server-side.
             "BlackoutFromBattle", "Whiteout",
         )

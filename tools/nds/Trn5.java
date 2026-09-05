@@ -12,7 +12,8 @@ public class Trn5{
    for(int k=0;k<n&&k*sz+8<=p.length;k++){int o=k*sz;int iv=p[o]&0xFF,lvl=u16(p,o+2),sp=u16(p,o+4);int q=o+8;int item=0;if((type&2)!=0){item=u16(p,q);q+=2;}
     int[] mv=new int[4];if((type&1)!=0)for(int m=0;m<4;m++)mv[m]=u16(p,q+m*2);
     sb.append("mon;2;").append(i).append(';').append(k).append(';').append(sp).append(';').append(lvl).append(';').append(iv).append(';').append(item).append(';').append(mv[0]).append(';').append(mv[1]).append(';').append(mv[2]).append(';').append(mv[3]).append((char)10);}}
-  Files.write(Paths.get(a[1]),sb.toString().getBytes("UTF-8"));System.out.println("trainers "+(td.length-1));}
+  int[][] tb=narcIndex("/a/0/9/0");byte[] t=Arrays.copyOfRange(rom,tb[0][0],tb[0][1]);for(int i=0;i+4<=t.length;i+=4)sb.append("msg;2;").append(u16(t,i)).append(';').append(u16(t,i+2)).append(';').append(i/4).append((char)10);
+  Files.write(Paths.get(a[1]),sb.toString().getBytes("UTF-8"));System.out.println("trainers "+(td.length-1)+" messages "+(t.length/4));}
  static int[][] narcIndex(String path){
   int fat=u32(rom,0x48);int s=u32(rom,fat+paths.get(path)*8);int p=s+0x10;int[] st=null,en=null;int img=0;int count=0;
   while(true){String m=new String(rom,p,4,java.nio.charset.StandardCharsets.US_ASCII);int cs=u32(rom,p+4);

@@ -1,17 +1,12 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
-import de.fiereu.openmmo.common.dialog.DialogLine
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
 import de.fiereu.openmmo.net.game.packets.ServerMessageArg
 import de.fiereu.openmmo.net.game.packets.ServerMessagePacket
-import de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg
 import de.fiereu.openmmo.pokemon.SpeciesRegistry
-import de.fiereu.openmmo.server.game.script.Script
-import de.fiereu.openmmo.server.game.script.ScriptRunner
-import de.fiereu.openmmo.server.game.session.DialogMessageMode
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
@@ -30,8 +25,7 @@ private val log = KotlinLogging.logger {}
  * otherwise offers Leppa Berries for the 32 minus it that is missing. When it does use it, it
  * sends the ordinary use-item packet (0x26) with the item id.
  *
- * Here a use announces the stand-in in the message box (a script, like a sign: the box only
- * renders inside the script lock), then spends 5 pp (six uses per 32) and starts a horde on the
+ * Here a use announces the stand-in in the grey notice box, spends 5 pp (six uses per 32) and starts a horde on the
  * tile; a Pokemon Center heal or an opened PC refills with the grey notice box. The pp spent
  * lives in a story var.
  */
@@ -41,7 +35,6 @@ class OcarinaService
 constructor(
     private val characters: CharacterStore,
     private val encounters: Provider<EncounterService>,
-    private val scripts: Provider<ScriptRunner>,
     private val maps: MapManager,
     private val species: SpeciesRegistry,
 ) {
@@ -69,30 +62,20 @@ constructor(
       ctx.send(notice(problem))
       return
     }
-    // Mid-script there is no room for another box: the scent works straight away.
-    if (state.scriptRunning) {
-      summon(ctx, state, charId, map, spent)
-      return
-    }
-    // The ROM's "{STR_VAR_1} used {STR_VAR_2}!" (Emerald Text_MonUsedFieldMove, region-tagged so
-    // it resolves anywhere) with the stand-in the client itself shows for this region; the horde
-    // follows the box the moment it closes.
+    // "{00} used its {01}!" (client string 6068) in the grey notice box, with the stand-in the
+    // client itself shows for this region. A message box before the horde is what retail does,
+    // but a GBA dialog carrying text arguments does not render on this client yet (no script has
+    // ever needed one), and a box that never opens freezes the player - so the notice for now.
     val standIn = species.get(STAND_INS[state.regionId] ?: STAND_INS.getValue(0))?.name ?: "Pokemon"
-    scripts
-        .get()
-        .run(
-            ctx,
-            state,
-            Script { script ->
-              script.setMessageArg(0, RawMessageArg(0, RAW_STRING, text = "${stored.info.name}'s summoned $standIn"))
-              script.setMessageArg(1, RawMessageArg(1, RAW_STRING, text = "Sweet Scent"))
-              script.setDialogMessageMode(DialogMessageMode.SIGN)
-              script.showMessage(USED_FIELD_MOVE)
-              script.waitMessage()
-              summon(ctx, state, charId, map, spent)
-            },
-            entityId = -1,
-        )
+    ctx.send(
+        ServerMessagePacket(
+            USED_MOVE_STRING,
+            listOf(
+                ServerMessageArg(0, RAW_STRING.toInt(), false, 0, null, null, "${stored.info.name}'s summoned $standIn", null),
+                ServerMessageArg(1, RAW_STRING.toInt(), false, 0, null, null, "Sweet Scent", null)),
+            showOnMap = true,
+            mode = null))
+    summon(ctx, state, charId, map, spent)
   }
 
   private fun summon(ctx: SessionContext, state: PlayerState, charId: Long, map: MapDef?, spent: Int) {
@@ -128,11 +111,8 @@ constructor(
     const val MAX_PP = 32
     const val USE_COST = 5
     const val HORDE_SIZE = 5
-    /** Emerald Text_MonUsedFieldMove "{STR_VAR_1} used {STR_VAR_2}!" (ROM dialog id). */
-    val USED_FIELD_MOVE =
-        object : DialogLine {
-          override val textId = 271124337
-        }
+    /** Client string "{00} used its {01}!". */
+    const val USED_MOVE_STRING = 6068
     /** Client string "{00} has been refreshed!". */
     const val REFRESHED_STRING = 16777290
     /** Message argument kind for a raw string (client f/RO0 kind 5). */

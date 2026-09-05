@@ -143,4 +143,4 @@ fun battleService(store: CharacterStore, interest: InterestManager): BattleServi
 
 /** An ocarina service with no encounter path: tests never spawn a horde through it. */
 fun testOcarinas(store: CharacterStore): OcarinaService =
-    OcarinaService(store, javax.inject.Provider { throw IllegalStateException("no encounters in tests") }, javax.inject.Provider { throw IllegalStateException("no scripts in tests") }, MapManager(), SpeciesRegistry())
+    OcarinaService(store, javax.inject.Provider { throw IllegalStateException("no encounters in tests") }, MapManager(), SpeciesRegistry())

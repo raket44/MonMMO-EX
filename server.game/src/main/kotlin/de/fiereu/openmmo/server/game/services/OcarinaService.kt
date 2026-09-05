@@ -143,8 +143,11 @@ constructor(
     const val PP_UPS: Byte = 3
     const val SUMMON_LEVEL = 50
     const val HORDE_SIZE = 5
-    /** Wire container 8: the client's summon shelf (f/Cy.gw1), which the store never persists. */
-    val SUMMON_CONTAINER = PokemonContainer.entries[8]
+    /**
+     * Wire container 11: the client's summon shelf (f/Cy.gw1, 60 cells). The container packet's
+     * handler (f/yT0.X91) only takes the ordinals in its switch, and 8 is not one of them.
+     */
+    val SUMMON_CONTAINER = PokemonContainer.entries[11]
     /** Sweet Scent is the one confirmed in game; the rest of the block awaits its own move ids. */
     val OCARINA_MOVES = mapOf(1179 to SWEET_SCENT)
     val OCARINA_NAMES = mapOf(1179 to "Sweet Scent Ocarina")

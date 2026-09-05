@@ -40,6 +40,18 @@ constructor(
   }
 
   /** The conditional coordinate trigger on one tile, the decomp coord_events table. */
+  /**
+   * A DS map: the corpus binds the ROM header's init script as NDS_INIT_<header>_TRANSITION and
+   * its frame table (var == value -> script) as NDS_INIT_<header>_FRAME. Most headers have neither.
+   */
+  fun onNdsEntry(regionId: Int, bankId: Int, mapId: Int): List<Script> {
+    val header = (mapId shl 8) or bankId
+    val source = gbaScriptSource(regionId) ?: return emptyList()
+    return listOf("NDS_INIT_${header}_TRANSITION", "NDS_INIT_${header}_FRAME").mapNotNull { label ->
+      runCatching { scriptRegistry.forLabel(label, source) }.getOrNull()
+    }
+  }
+
   fun atCoordinate(charId: Long, map: MapDef, x: Int, y: Int): Script? {
     val trigger =
         map.coordScripts.firstOrNull {

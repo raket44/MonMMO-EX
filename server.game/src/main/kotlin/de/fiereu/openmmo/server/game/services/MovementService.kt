@@ -290,6 +290,7 @@ constructor(
       }
       // A plain step on a DS map: the ROM's land data says whether it was grass or cave floor,
       // and the region's dex tables roll the encounter.
+      if (door == null && trainerSight.onNdsStep(ctx, state, state.regionId, state.bankId, state.mapId, toX, toY)) return
       if (door == null) encounterService.onNdsStep(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)
       return
     }

@@ -33,7 +33,22 @@ constructor(
     private val mapManager: MapManager,
     private val npcService: NpcService,
     private val characterStore: CharacterStore,
+    private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
+  /** DS maps have no MapDef; the ROM npc table gives an npc's resting pose. */
+  private fun ndsNpcPose(regionId: Int, bankId: Int, mapId: Int, localId: Int): Pose? {
+    if (regionId !in 2..4) return null
+    val npc = ndsNpcs.of(regionId, bankId, mapId).firstOrNull { it.index == localId } ?: return null
+    val facing =
+        when (npc.facing) {
+          0 -> Direction.UP
+          1 -> Direction.DOWN
+          2 -> Direction.LEFT
+          else -> Direction.RIGHT
+        }
+    return Pose(npc.x, npc.y, facing)
+  }
+
   data class Pose(val x: Int, val y: Int, val facing: Direction)
 
   /** The hide flag of a map npc on the player's current map (already namespaced), if set. */
@@ -89,9 +104,11 @@ constructor(
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map =
-        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
-    val npc = map.npcs.firstOrNull { it.entityIdx == localId } ?: return
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    val npc =
+        map?.npcs?.firstOrNull { it.entityIdx == localId }?.let { Pose(it.x, it.y, it.facing) }
+            ?: ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+            ?: return
     val entityId =
         npcService.entityIdFor(
             info.positionRegionId.toInt(),
@@ -117,7 +134,7 @@ constructor(
         sendActions(session, info.id, listOf(glance))
       }
     }
-    drive(session, entityId, Pose(npc.x, npc.y, npc.facing), steps)
+    drive(session, entityId, npc, steps)
   }
 
   /** Starts concurrent NPC movement paths. */
@@ -128,11 +145,13 @@ constructor(
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map =
-        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     val resolved =
         paths.mapNotNull { (localId, steps) ->
-          if (map.npcs.none { it.entityIdx == localId }) return@mapNotNull null
+          val known =
+              map?.npcs?.any { it.entityIdx == localId }
+                  ?: (ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId) != null)
+          if (!known) return@mapNotNull null
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
               info.positionBankId.toInt(),
@@ -153,11 +172,13 @@ constructor(
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map =
-        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     val resolved =
         paths.mapNotNull { (localId, steps) ->
-          if (map.npcs.none { it.entityIdx == localId }) return@mapNotNull null
+          val known =
+              map?.npcs?.any { it.entityIdx == localId }
+                  ?: (ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId) != null)
+          if (!known) return@mapNotNull null
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
               info.positionBankId.toInt(),
@@ -181,8 +202,15 @@ constructor(
         ))
 
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
-    check(commitPose(charId, state, map, applySteps(start, selfSteps))) {
-      "Scripted player movement ended off the map"
+    val end = applySteps(start, selfSteps)
+    if (map != null) {
+      check(commitPose(charId, state, map, end)) { "Scripted player movement ended off the map" }
+    } else {
+      // DS maps: no tile table to validate against, the ROM script is trusted.
+      state.x = end.x.toShort()
+      state.y = end.y.toShort()
+      state.facingDirection = end.facing
+      characterStore.updatePosition(charId, end.x.toShort(), end.y.toShort(), facing = end.facing)
     }
   }
 

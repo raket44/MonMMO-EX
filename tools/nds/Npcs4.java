@@ -95,7 +95,7 @@ public class Npcs4 {
     // (height), s32 y. Coordinates are made matrix-global like Warps4 (cell origin * 32 + local)
     // so they sit in the same frame as nds-land and nds-warps.
     java.io.PrintWriter out = new java.io.PrintWriter(a[2], "UTF-8");
-    out.println("# kind;region;bank;map;idx;fields... obj: id;sprite;movement;type;flag;script;facing;xRange;yRange;x;y;height | bg: script;type;x;y;height;dir | coord: script;x;y;w;h;height;val;var");
+    out.println("# kind;region;bank;map;idx;fields... obj: id;sprite;movement;type;flag;script;facing;xRange;yRange;x;y;height;param0;param1;param2 | bg: script;type;x;y;height;dir | coord: script;x;y;w;h;height;val;var");
     int objs = 0, bgs = 0, coords = 0;
     for (int i = 0; i < maps; i++) {
       int evId = hdr[i].events();
@@ -128,7 +128,7 @@ public class Npcs4 {
       if (p + 4 > ev.length) continue;
       int nObj = u32(ev, p); p += 4;
       for (int k = 0; k < nObj && p + 32 <= ev.length; k++, p += 32) {
-        out.println("obj;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + u16(ev, p + 4) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + u16(ev, p + 10) + ";" + s16(ev, p + 12) + ";" + s16(ev, p + 20) + ";" + s16(ev, p + 22) + ";" + u16(ev, p + 24) + ";" + u16(ev, p + 26) + ";" + s32(ev, p + 28));
+        out.println("obj;" + region + ";" + (i & 0xFF) + ";" + (i >> 8) + ";" + k + ";" + u16(ev, p) + ";" + u16(ev, p + 2) + ";" + u16(ev, p + 4) + ";" + u16(ev, p + 6) + ";" + u16(ev, p + 8) + ";" + u16(ev, p + 10) + ";" + s16(ev, p + 12) + ";" + s16(ev, p + 20) + ";" + s16(ev, p + 22) + ";" + u16(ev, p + 24) + ";" + u16(ev, p + 26) + ";" + s32(ev, p + 28) + ";" + u16(ev, p + 14) + ";" + u16(ev, p + 16) + ";" + u16(ev, p + 18));
         objs++;
       }
       if (p + 4 > ev.length) continue;

@@ -56,6 +56,17 @@ constructor(
     scriptRunner.run(session, state, entrySequence, entityId = -1)
   }
 
+  /** A DS map arrival: the header's init and frame-table scripts, once per logical arrival. */
+  fun onNdsEnter(session: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int) {
+    if (state.scriptOwnsMapEntry || state.blocksNewScript) return
+    val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
+    if (state.entryScriptsMapKey == arrivalKey) return
+    state.entryScriptsMapKey = arrivalKey
+    val entry = entryScripts.onNdsEntry(regionId, bankId, mapId)
+    if (entry.isEmpty()) return
+    scriptRunner.run(session, state, Script { ctx -> entry.forEach { it.run(ctx) } }, entityId = -1)
+  }
+
   /** Clears this map's object placements and every temporary flag; true when anything was set. */
   private fun resetMapLocalState(charId: Long, map: MapDef): Boolean {
     val stored = characterStore.getCharacter(charId) ?: return false

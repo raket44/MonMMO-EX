@@ -28,6 +28,10 @@ class NdsNpcs @Inject constructor() {
       val yRange: Int,
       val x: Int,
       val y: Int,
+      /** Gen 4 trainer type: 0 none, 1 normal (faces one way), 2 sees all directions. */
+      val type: Int = 0,
+      /** param0: a trainer's sight range in tiles. */
+      val sight: Int = 0,
   )
 
   private val byMap: Map<Triple<Int, Int, Int>, List<Npc>> by lazy { load() }
@@ -60,6 +64,8 @@ class NdsNpcs @Inject constructor() {
                   yRange = p[13].toInt(),
                   x = p[14].toInt(),
                   y = p[15].toInt(),
+                  type = p[8].toInt(),
+                  sight = p.getOrNull(17)?.toIntOrNull() ?: 0,
               )
           count++
         }

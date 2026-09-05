@@ -62,7 +62,7 @@ class NdsScriptCorpusGenerator {
   class Macro(val params: List<String>, val body: List<String>)
 
   /** One ROM map header: its id as the client numbers it and the files it references. */
-  data class MapHeader(val id: Int, val name: String, val scriptFile: String?, val eventsFile: String?, val msgBank: Int? = null)
+  data class MapHeader(val id: Int, val name: String, val scriptFile: String?, val eventsFile: String?, val msgBank: Int? = null, val initFile: File? = null)
 
   fun build(spec: ScriptCorpusSpec): BuiltScriptCorpus {
     val dialect: Dialect =
@@ -95,8 +95,10 @@ class NdsScriptCorpusGenerator {
     val tokenPattern = Regex("[A-Za-z_]\\w*")
     var indexedLabels = 0
 
+    val parsedByFile = HashMap<String, ParsedFile>()
     for (file in dialect.scriptFiles) {
       val parsed = parseScriptFile(file, dialect)
+      parsedByFile[file.name] = parsed
       val owners = headersByScript[file.name].orEmpty()
       val objectIds = owners.firstOrNull()?.let(dialect::objectIdsFor).orEmpty()
       val sourceFile = "decomp/${spec.decompDir.name}/${file.relativeTo(spec.decompDir).invariantSeparatorsPath}"
@@ -164,6 +166,35 @@ class NdsScriptCorpusGenerator {
           interactable += label
         }
       }
+    }
+
+    // Map init scripts: the header's OnTransition entry and its frame table (var == value ->
+    // entry), bound as NDS_INIT_<header>_TRANSITION / _FRAME for the arrival hook.
+    for (header in headers) {
+      val init = header.initFile?.takeIf { it.isFile } ?: continue
+      val entries = header.scriptFile?.let { parsedByFile[it] }?.entries ?: continue
+      fun entryLabel(token: String): String? {
+        val t = token.trim()
+        val n = Regex("_(\\d+)\\s*\\+\\s*1$").find(t)?.groupValues?.get(1)?.toInt()?.plus(1) ?: t.toIntOrNull() ?: return null
+        return entries.getOrNull(n - 1)
+      }
+      val frame = mutableListOf<String>()
+      var transition: String? = null
+      for (raw in init.readLines()) {
+        val line = raw.substringBefore("//").substringBefore(";").trim()
+        val name = line.substringBefore(" ").substringBefore("	")
+        val args = line.removePrefix(name).trim().split(",").map { it.trim() }
+        when (name) {
+          "InitScriptEntry_OnTransition" -> transition = entryLabel(args[0])
+          "InitScriptGoToIfEqual" -> if (args.size >= 3) entryLabel(args[2])?.let { target ->
+            frame += "compare ${args[0]}, ${args[1]}"
+            frame += "goto_if_eq $target"
+          }
+        }
+      }
+      val sourceFile = "decomp/${spec.decompDir.name}/${init.relativeTo(spec.decompDir).invariantSeparatorsPath}"
+      transition?.let { programs += ScriptCorpusProgramRecord("NDS_INIT_${header.id}_TRANSITION", sourceFile, listOf("goto $it", "end"), emptyMap()) }
+      if (frame.isNotEmpty()) programs += ScriptCorpusProgramRecord("NDS_INIT_${header.id}_FRAME", sourceFile, frame + "end", emptyMap())
     }
 
     // Facing an npc a fixed way is a one-step movement; four shared programs cover it.
@@ -603,7 +634,8 @@ class NdsScriptCorpusGenerator {
         val body = m.groupValues[2]
         val scripts = Regex("\\.scriptsArchiveID\\s*=\\s*(\\w+)").find(body)?.groupValues?.get(1)
         val events = Regex("\\.eventsArchiveID\\s*=\\s*(\\w+)").find(body)?.groupValues?.get(1)
-        MapHeader(id, name, scripts?.let { "$it.s" }, events?.let { "$it.json" })
+        val init = Regex("\\.initScriptsArchiveID\\s*=\\s*(\\w+)").find(body)?.groupValues?.get(1)
+        MapHeader(id, name, scripts?.let { "$it.s" }, events?.let { "$it.json" }, initFile = init?.let { File(root, "res/field/scripts/$it.s") })
       }.toList()
     }
 
@@ -696,7 +728,9 @@ class NdsScriptCorpusGenerator {
         val body = m.groupValues[2]
         val scripts = Regex("\\.scriptsBank\\s*=\\s*NARC_scr_seq_(\\w+)_bin").find(body)?.groupValues?.get(1)
         val events = Regex("\\.eventsBank\\s*=\\s*NARC_zone_event_(\\w+)_bin").find(body)?.groupValues?.get(1)
-        MapHeader(id, name, scripts?.let { "$it.s" }, events?.let { "$it.json" })
+        val msg = Regex("\\.msgBank\\s*=\\s*NARC_msg_msg_(\\d+)").find(body)?.groupValues?.get(1)?.toInt()
+        val hdr = Regex("\\.scriptHeaderBank\\s*=\\s*NARC_scr_seq_(\\w+)_bin").find(body)?.groupValues?.get(1)
+        MapHeader(id, name, scripts?.let { "$it.s" }, events?.let { "$it.json" }, msg, hdr?.let { File(scriptDir, "$it.s") })
       }.toList()
     }
 
@@ -780,7 +814,7 @@ class NdsScriptCorpusGenerator {
             "RegisterGearNumber", "ScreenShake", "SetBikeStateLock", "MoveGreatMarshTram", "SetSubScene63",
             // A lost battle already whited the player out server-side; trainer intro text and music
             // come from ROM tables not bound yet.
-            "BlackOutFromBattle", "Whiteout", "PlayTrainerEncounterBGM", "GetTrainerMessageTypes", "GetTrainerRematchMessageTypes",
+            "BlackOutFromBattle", "Whiteout", "WhiteOut", "PlayTrainerEncounterBGM", "GetTrainerMessageTypes", "GetTrainerRematchMessageTypes",
             "PrintTrainerDialogue", "SetMoveCodeForFacingDirection",
             // A lost battle already whited the player out server-side.
             "BlackoutFromBattle", "Whiteout",

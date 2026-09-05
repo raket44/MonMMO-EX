@@ -613,6 +613,9 @@ constructor(
         info.positionMapId.toInt() and 0xFF,
         info.positionRegionId.toInt() and 0xFF,
     )
+    if (info.positionRegionId.toInt() in 2..4) {
+      mapScriptService.onNdsEnter(ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
+    }
 
     // Unsigned on purpose: NDS banks run past 127 (see preloadMapAndJoin).
     val bankId = info.positionBankId.toInt() and 0xFF

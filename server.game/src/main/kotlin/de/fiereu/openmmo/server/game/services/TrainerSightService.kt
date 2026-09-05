@@ -39,6 +39,8 @@ constructor(
     private val scriptRegistry: ScriptRegistry,
     private val scriptRunner: ScriptRunner,
     private val battleService: BattleService,
+    private val ndsNpcs: NdsNpcs = NdsNpcs(),
+    private val ndsLand: NdsLand = NdsLand(),
 ) {
 
   /** True when a trainer spotted the player and the approach script was launched. */
@@ -91,6 +93,65 @@ constructor(
       }
     }
     return false
+  }
+
+  /**
+   * DS routes: the ROM npc table carries the trainer type and sight range (param0); the trainer
+   * id is folded into the script id (3000 + id, HeartGold from 1) and the defeated state is the
+   * synthetic FLAG_DS_TRAINER flag ds_trainerbattle sets.
+   */
+  fun onNdsStep(ctx: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int, playerX: Int, playerY: Int): Boolean {
+    val region = Region.byId(regionId) ?: return false
+    val source = gbaScriptSource(regionId) ?: return false
+    val charId = state.characterId ?: return false
+    val namespace = region.name.lowercase()
+    for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
+      if (npc.sight <= 0) continue
+      val directions =
+          when (npc.type) {
+            1 -> listOf(ndsFacing(npc.facing))
+            2 -> CARDINALS
+            else -> continue
+          }
+      val trainerId = ndsTrainerId(regionId, npc.script) ?: continue
+      if (storyService.isFlagSet(charId, "$namespace/FLAG_DS_TRAINER_$trainerId")) continue
+      for (dir in directions) {
+        val distance = ndsApproachDistance(regionId, bankId, mapId, npc.x, npc.y, dir, npc.sight, playerX, playerY) ?: continue
+        val label = if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"
+        val script = runCatching { scriptRegistry.forLabel(label, source) }.getOrNull() ?: continue
+        val walk = walkStep(dir) ?: return false
+        val face = faceStep(dir) ?: return false
+        val playerFace = faceStep(dir.opposite()) ?: return false
+        val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
+        val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.index)
+        val approach = Script { scriptCtx ->
+          scriptCtx.lockAll()
+          scriptCtx.moveSelfAndNpcs(listOf(playerFace), npc.index to steps)
+          script.run(scriptCtx)
+        }
+        scriptRunner.run(ctx, state, approach, entityId)
+        log.info { "Trainer sight (DS): trainer $trainerId at (${npc.x},${npc.y}) spotted player at ($playerX,$playerY) dir=$dir distance=$distance" }
+        return true
+      }
+    }
+    return false
+  }
+
+  private fun ndsTrainerId(regionId: Int, script: Int): Int? {
+    val base = when (script) { in 3000..4999 -> 3000; in 5000..6999 -> 5000; else -> return null }
+    return script - base + if (regionId == 4) 1 else 0
+  }
+
+  private fun ndsApproachDistance(regionId: Int, bankId: Int, mapId: Int, fromX: Int, fromY: Int, dir: Direction, range: Int, playerX: Int, playerY: Int): Int? {
+    var x = fromX
+    var y = fromY
+    for (d in 1..range) {
+      x += dir.dx
+      y += dir.dy
+      if (x == playerX && y == playerY) return d
+      if (ndsLand.blocked(regionId, bankId, mapId, x, y) == true) return null
+    }
+    return null
   }
 
   /**
@@ -203,3 +264,12 @@ constructor(
     val CARDINALS = listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)
   }
 }
+
+/** The Gen 4 object facing codes. */
+internal fun ndsFacing(code: Int): Direction =
+    when (code) {
+      0 -> Direction.UP
+      1 -> Direction.DOWN
+      2 -> Direction.LEFT
+      else -> Direction.RIGHT
+    }

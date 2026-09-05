@@ -119,8 +119,6 @@ data class PlayerState(
     /** Explicit emergence-step target; -1 = derive from [pendingStepDir] instead. */
     @field:Volatile var pendingStepX: Int = -1,
     @field:Volatile var pendingStepY: Int = -1,
-    /** Ocarina item id -> the summon stand-in's monster id sent to this client this session. */
-    val ocarinaSummons: MutableMap<Int, Long> = java.util.concurrent.ConcurrentHashMap(),
     /**
      * Movement reports are DROPPED until this clock time (epoch ms): the arrival-step choreography
      * window. Stale client moves that raced the input-lock packet used to land here and fire fresh

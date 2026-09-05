@@ -69,7 +69,7 @@ class StoryResetTest :
         val items = ItemRegistry()
         return StoryCommand(
             characterStore = store,
-            worldStateService = WorldStateService(DexProgressService(store), testOcarinas(store)),
+            worldStateService = WorldStateService(DexProgressService(store)),
             storyPlayerService =
                 StoryPlayerService(
                     store,
@@ -78,7 +78,7 @@ class StoryResetTest :
                     moves,
                     items,
                     DexProgressService(store),
-                    WorldStateService(DexProgressService(store), testOcarinas(store)),
+                    WorldStateService(DexProgressService(store)),
                     testOcarinas(store),
                 ),
             warpService =

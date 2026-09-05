@@ -15,7 +15,7 @@ import javax.inject.Singleton
  * anything that rewrites them has to send this whole block again.
  */
 @Singleton
-class WorldStateService @Inject constructor(private val dexProgress: DexProgressService, private val ocarinas: OcarinaService) {
+class WorldStateService @Inject constructor(private val dexProgress: DexProgressService) {
 
   /**
    * Set [fullVars] when this is a resync rather than a login, so vars that dropped back to 0 are
@@ -67,7 +67,6 @@ class WorldStateService @Inject constructor(private val dexProgress: DexProgress
     // The real server sends the bag stacks interleaved with the containers, so the client has the
     // items before entering the world.
     ctx.send(storyItemStacksPacket(stored.items))
-    ocarinas.sendSummons(ctx, stored)
   }
 
   /**

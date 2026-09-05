@@ -110,7 +110,7 @@ fun scriptRunner(
           moves,
           items,
           DexProgressService(store),
-          WorldStateService(DexProgressService(store), testOcarinas(store)),
+          WorldStateService(DexProgressService(store)),
           testOcarinas(store)),
       battles,
       store,
@@ -143,11 +143,4 @@ fun battleService(store: CharacterStore, interest: InterestManager): BattleServi
 
 /** An ocarina service with no encounter path: tests never spawn a horde through it. */
 fun testOcarinas(store: CharacterStore): OcarinaService =
-    OcarinaService(
-        store,
-        WildMonFactory(SpeciesRegistry(), MoveRegistry(), LearnsetRegistry(), EntityIdService()),
-        javax.inject.Provider { throw IllegalStateException("no encounters in tests") },
-        MapManager(),
-        EntityIdService(),
-        BattlePacketEmitter(InterestManager()),
-    )
+    OcarinaService(store, javax.inject.Provider { throw IllegalStateException("no encounters in tests") }, MapManager())

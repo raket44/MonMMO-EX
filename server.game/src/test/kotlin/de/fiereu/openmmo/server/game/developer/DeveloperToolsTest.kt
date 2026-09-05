@@ -152,7 +152,7 @@ class DeveloperToolsTest :
           val story = StoryService(store)
           val command =
               DeveloperStoryCommand(
-                  tools, story, store, WorldStateService(DexProgressService(store), testOcarinas(store)))
+                  tools, story, store, WorldStateService(DexProgressService(store)))
 
           command.run(ctx.copyArgs("flag", "set", "FLAG_DEV_TEST"))
           command.run(ctx.copyArgs("var", "set", "VAR_DEV_TEST", "37"))
@@ -172,7 +172,7 @@ class DeveloperToolsTest :
           val story = StoryService(store)
           val command =
               DeveloperStoryCommand(
-                  tools, story, store, WorldStateService(DexProgressService(store), testOcarinas(store)))
+                  tools, story, store, WorldStateService(DexProgressService(store)))
 
           tools.enableOverride(TEST_LABEL) shouldBe false
           registry(tools).forLabel(TEST_LABEL).shouldBeSameInstanceAs(kotlinA)

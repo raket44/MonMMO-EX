@@ -129,3 +129,18 @@ class PokemonContainerPacketTest :
     })
 
 private fun bytes(): ByteArray = fixture("game/s2c/13/party_scrubbed.bin")
+
+/** Writes a summon-shelf container under build/samples for the client's own reader (scratch Oracle5). */
+class PokemonContainerSamplesTest :
+    FunSpec({
+      test("a summon container round-trips and is written as a sample") {
+        val summon =
+            testMon(0x1234C000L, 357, 0)
+                .copy(container = PokemonContainer.entries[11], moves = listOf(PokemonMove(230, 32), PokemonMove(0, 0), PokemonMove(0, 0), PokemonMove(0, 0)))
+        val packet = PokemonContainerPacket(PokemonContainer.entries[11], hasChange = true, delete = false, pokemon = listOf(summon))
+        val bytes = PokemonContainerPacketCodec.encodeToBytes(packet)
+        PokemonContainerPacketCodec.decodeBytes(bytes).pokemon.single().moves[0].pp shouldBe 32.toByte()
+        java.io.File("build/samples").apply { mkdirs() }
+        java.io.File("build/samples/container-summon.bin").writeBytes(bytes)
+      }
+    })

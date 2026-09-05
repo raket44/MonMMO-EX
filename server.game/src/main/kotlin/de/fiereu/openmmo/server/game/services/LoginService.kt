@@ -108,6 +108,7 @@ constructor(
     private val tokenVerifier: SessionTokenVerifier,
     private val worldStateService: WorldStateService,
     private val ndsWarps: NdsWarps,
+    private val ocarinas: OcarinaService,
 ) {
 
   fun onJoinGame(event: PacketEvent<JoinPacket>) {
@@ -311,7 +312,7 @@ constructor(
     val updatedInfo = info.copy(lastLogin = now)
     characterStore.updateCharacter(updatedInfo)
 
-    ctx.send(SelectedCharacterPacket(info))
+    ctx.send(SelectedCharacterPacket(info.copy(fieldMovePpSpent = ocarinas.ppSpent(stored))))
     // Re-read after the bicycle grant so the join payload carries the current bag, and push the
     // stack explicitly - belt and braces against whichever packet the client trusts for the bag.
     val current = characterStore.getCharacter(charId) ?: stored

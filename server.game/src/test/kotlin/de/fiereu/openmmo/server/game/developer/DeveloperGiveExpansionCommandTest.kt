@@ -56,7 +56,7 @@ class DeveloperGiveExpansionCommandTest :
                 moves,
                 ItemRegistry(),
                 DexProgressService(store),
-                WorldStateService(DexProgressService(store), testOcarinas(store)),
+                WorldStateService(DexProgressService(store)),
                 testOcarinas(store))
         val tools =
             DeveloperTools(

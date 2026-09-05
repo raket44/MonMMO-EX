@@ -28,6 +28,10 @@ private data class TurnAction(
     val attacker: BattleMonState,
     val defender: BattleMonState,
     val move: MoveDef?,
+    /** One of several targets of a spread move: damage is three quarters. */
+    val spread: Boolean = false,
+    /** A later target of the same use: the pp is spent and the move announced on the first. */
+    val followUp: Boolean = false,
 )
 
 private data class StageEffect(val stat: BattleStat, val delta: Int, val onSelf: Boolean)
@@ -140,7 +144,7 @@ constructor(
 
   private fun weatherForms(battle: BattleInstance, events: MutableList<BattleEvent>) {
     val weather = weather(battle)
-    for (mon in listOf(battle.activeMon(), battle.opponentMon())) {
+    for (mon in battle.actives()) {
       formChange(mon, "FORM_CHANGE_BATTLE_WEATHER", events) {
         weatherMatches(weather, it.params.getOrNull(0)) && abilityMatches(mon, it.params.getOrNull(1))
       }
@@ -187,7 +191,7 @@ constructor(
   }
 
   private fun canEatBerry(battle: BattleInstance, mon: BattleMonState): Boolean =
-      battle.opponentOf(mon).ability != Ability.UNNERVE
+      battle.foesOf(mon).none { it.ability == Ability.UNNERVE }
 
   private fun ripen(mon: BattleMonState, amount: Int): Int = if (mon.ability == Ability.RIPEN) amount * 2 else amount
 
@@ -272,39 +276,85 @@ constructor(
     return true
   }
 
-  fun resolveTurn(battle: BattleInstance, playerMoveId: Short): List<BattleEvent> {
+  /** Singles: the player's one monster uses [playerMoveId] on the one foe. */
+  fun resolveTurn(battle: BattleInstance, playerMoveId: Short): List<BattleEvent> =
+      resolveTurn(battle, listOf(ChosenAction(0, ChosenAction.Kind.MOVE, playerMoveId, 1, 0)))
+
+  /**
+   * One turn over the whole field: every move the player chose for their positions plus one move
+   * per opposing monster, ordered by priority and speed together. A spread move becomes one action
+   * per target, the follow-ups riding under the first one's announcement. A single-target move
+   * whose target fell before it goes out is redirected to another foe on that side.
+   */
+  fun resolveTurn(battle: BattleInstance, chosen: List<ChosenAction>): List<BattleEvent> {
     val events = mutableListOf<BattleEvent>()
-    val player = battle.activeMon()
-    val enemy = battle.opponentMon()
-
-    val playerAction = TurnAction(player, enemy, chooseMove(battle, player, moves.get(playerMoveId.toInt())))
-    val enemyAction = TurnAction(enemy, player, chooseMove(battle, enemy, pickEnemyMove(battle, enemy)))
-
-    val ordered = order(battle, playerAction, enemyAction)
-    for ((index, action) in ordered.withIndex()) {
-      if (action.attacker.fainted) continue
-      val movesLast = index == ordered.lastIndex
-      execute(battle, action, movesLast, events)
-      if (player.fainted || enemy.fainted) break
+    val actions = mutableListOf<TurnAction>()
+    for (choice in chosen) {
+      if (choice.kind != ChosenAction.Kind.MOVE) continue
+      val mon = battle.monAt(0, choice.position) ?: continue
+      if (mon.fainted) continue
+      val move = chooseMove(battle, mon, moves.get(choice.moveId.toInt()))
+      // A target on the player's own side only counts for moves that can aim there; an attack
+      // packed as position 0 of side 0 (nothing chosen) goes at the foe in front.
+      val chosen =
+          battle.monAt(choice.targetSide, choice.targetPosition)?.takeIf {
+            choice.targetSide != 0 || move?.target in OWN_SIDE_TARGETS
+          }
+      actions += targetsFor(battle, mon, move, chosen)
     }
-    if (!player.fainted && !enemy.fainted) endOfTurn(battle, events)
-    player.endTurn()
-    enemy.endTurn()
+    for (enemy in battle.opponentActives()) {
+      if (enemy.fainted) continue
+      val move = chooseMove(battle, enemy, pickEnemyMove(battle, enemy))
+      val victims = battle.foesOf(enemy)
+      val target = if (victims.isEmpty()) null else victims[battle.rng.pick(victims.size)]
+      actions += targetsFor(battle, enemy, move, target)
+    }
+
+    val ordered = order(battle, actions)
+    val charging = mutableSetOf<BattleMonState>()
+    for ((index, planned) in ordered.withIndex()) {
+      if (planned.attacker.fainted) continue
+      // A spread move that only charged this turn has no further targets to hit.
+      if (planned.followUp && planned.attacker in charging) continue
+      val action = redirect(battle, planned) ?: continue
+      val wasCharging = action.attacker.chargingMoveId != 0
+      execute(battle, action, movesLast = index == ordered.lastIndex, events)
+      if (!wasCharging && action.attacker.chargingMoveId != 0) charging += action.attacker
+      if (battle.opponentActives().all { it.fainted } || battle.playerActives().all { it.fainted }) break
+    }
+    if (battle.playerActives().any { !it.fainted } && battle.opponentActives().any { !it.fainted }) endOfTurn(battle, events)
+    for (mon in battle.actives()) mon.endTurn()
     return events
   }
 
   /** A voluntary switch spends the player's turn, so the enemy attacks the incoming monster. */
-  fun resolveSwitchTurn(battle: BattleInstance): List<BattleEvent> {
-    val events = mutableListOf<BattleEvent>()
-    val enemy = battle.opponentMon()
-    val player = battle.activeMon()
-    if (enemy.fainted) return events
-    val move = chooseMove(battle, enemy, pickEnemyMove(battle, enemy))
-    execute(battle, TurnAction(enemy, player, move), movesLast = true, events)
-    if (!player.fainted && !enemy.fainted) endOfTurn(battle, events)
-    player.endTurn()
-    enemy.endTurn()
-    return events
+  fun resolveSwitchTurn(battle: BattleInstance): List<BattleEvent> = resolveTurn(battle, emptyList())
+
+  /**
+   * The actions one use of [move] by [mon] turns into: several for a spread move (every standing
+   * foe, plus the partner for the moves that hit it too), one otherwise. [chosen] is the target the
+   * player pointed at; a self or field move keeps a foe as its nominal defender, as the effect
+   * handlers already read the user off the action.
+   */
+  private fun targetsFor(battle: BattleInstance, mon: BattleMonState, move: MoveDef?, chosen: BattleMonState?): List<TurnAction> {
+    val fallback = chosen?.takeIf { !it.fainted } ?: battle.opponentOf(mon)
+    if (move == null) return listOf(TurnAction(mon, fallback, null))
+    val targets =
+        when (move.target) {
+          MoveTarget.BOTH, MoveTarget.OPPONENTS_FIELD -> battle.foesOf(mon)
+          MoveTarget.FOES_AND_ALLY, MoveTarget.ALL_BATTLERS -> battle.foesOf(mon) + battle.alliesOf(mon)
+          else -> return listOf(TurnAction(mon, fallback, move))
+        }
+    if (targets.size <= 1) return listOf(TurnAction(mon, targets.firstOrNull() ?: fallback, move))
+    return targets.mapIndexed { i, target -> TurnAction(mon, target, move, spread = true, followUp = i > 0) }
+  }
+
+  /** A single-target action whose target already fell goes to another foe on that side, or nowhere. */
+  private fun redirect(battle: BattleInstance, action: TurnAction): TurnAction? {
+    if (!action.defender.fainted || action.defender === action.attacker) return action
+    if (action.spread) return null
+    val replacement = battle.foesOf(action.attacker).firstOrNull() ?: return null
+    return action.copy(defender = replacement)
   }
 
   /** The enemy AI picks a random usable move, falling back to Struggle with no pp left. */
@@ -331,14 +381,28 @@ constructor(
     return chosen
   }
 
-  private fun order(battle: BattleInstance, a: TurnAction, b: TurnAction): List<TurnAction> {
+  /** Every action of the turn, fastest first; a spread move's follow-ups stay behind their opener. */
+  private fun order(battle: BattleInstance, actions: List<TurnAction>): List<TurnAction> {
+    val groups = mutableListOf<MutableList<TurnAction>>()
+    for (action in actions) {
+      val group = groups.lastOrNull()?.takeIf { it.first().attacker === action.attacker && action.followUp }
+      if (group != null) group += action else groups += mutableListOf(action)
+    }
+    val keyed = groups.map { group -> Triple(group, bracket(battle, group.first()), speedOf(battle, group.first().attacker)) }
+    val tieBreak = keyed.associate { it.first to battle.rng.pick(1 shl 16) }
+    return keyed
+        .sortedWith(compareByDescending<Triple<List<TurnAction>, Int, Int>> { it.second }.thenByDescending { it.third }.thenByDescending { tieBreak[it.first] })
+        .flatMap { it.first }
+  }
+
+  private fun bracket(battle: BattleInstance, action: TurnAction): Int {
     fun priority(action: TurnAction): Int {
       val move = action.move ?: return 0
       return move.priority + Abilities.priorityBonus(action.attacker, move)
     }
     // Within a priority bracket Quick Claw (20%) and a ready Custap Berry go first, Lagging Tail
     // and Iron Ball last.
-    fun bracket(action: TurnAction): Int {
+    run {
       val mon = action.attacker
       val item = items.of(mon)
       val first =
@@ -348,13 +412,6 @@ constructor(
       val last = item == de.fiereu.openmmo.items.generated.Items.LAGGING_TAIL || item == de.fiereu.openmmo.items.generated.Items.IRON_BALL
       return priority(action) * 10 + (if (first) 1 else 0) - (if (last) 1 else 0)
     }
-    val pa = bracket(a)
-    val pb = bracket(b)
-    if (pa != pb) return if (pa > pb) listOf(a, b) else listOf(b, a)
-    val sa = speedOf(battle, a.attacker)
-    val sb = speedOf(battle, b.attacker)
-    if (sa != sb) return if (sa > sb) listOf(a, b) else listOf(b, a)
-    return if (battle.rng.coinFlip()) listOf(a, b) else listOf(b, a)
   }
 
   private fun speedOf(battle: BattleInstance, mon: BattleMonState): Int {
@@ -366,7 +423,7 @@ constructor(
 
   /** The weather as it acts on the field: Air Lock and Cloud Nine switch its effects off. */
   private fun weather(battle: BattleInstance): Weather? =
-      if (Abilities.weatherNegated(battle.activeMon(), battle.opponentMon())) null else battle.weather
+      if (battle.actives().any { Abilities.weatherNegated(it, it) }) null else battle.weather
 
   /** A monster's own stat stage change (an ability's doing), reported like any other. */
   private fun ownStage(mon: BattleMonState, stat: BattleStat, delta: Int, events: MutableList<BattleEvent>): Boolean {
@@ -413,7 +470,7 @@ constructor(
       events += BattleEvent.AbilityShown(mon.entityId, Ability.FRISK, foe.entityId, 0, foe.heldItem)
     }
     when (mon.ability) {
-      Ability.INTIMIDATE -> {
+      Ability.INTIMIDATE -> for (foe in battle.foesOf(mon).ifEmpty { listOf(foe) }) {
         shown(foe.entityId)
         if (!foe.fainted) {
           when {
@@ -479,13 +536,14 @@ constructor(
   /** Whether the player's active monster may run from the wild monster in front of it. */
   fun canFlee(battle: BattleInstance): Boolean {
     val runner = battle.activeMon()
-    val blocker = battle.opponentMon()
-    if (runner.ability == Ability.RUN_AWAY || blocker.fainted) return true
-    return when (blocker.ability) {
-      Ability.SHADOW_TAG -> runner.ability == Ability.SHADOW_TAG
-      Ability.ARENA_TRAP -> runner.species.hasType(PokemonType.FLYING) || runner.ability == Ability.LEVITATE
-      Ability.MAGNET_PULL -> !runner.species.hasType(PokemonType.STEEL)
-      else -> true
+    if (runner.ability == Ability.RUN_AWAY) return true
+    return battle.foesOf(runner).all { blocker ->
+      when (blocker.ability) {
+        Ability.SHADOW_TAG -> runner.ability == Ability.SHADOW_TAG
+        Ability.ARENA_TRAP -> runner.species.hasType(PokemonType.FLYING) || runner.ability == Ability.LEVITATE
+        Ability.MAGNET_PULL -> !runner.species.hasType(PokemonType.STEEL)
+        else -> true
+      }
     }
   }
 
@@ -520,7 +578,8 @@ constructor(
         formChange(attacker, "FORM_CHANGE_BATTLE_BEFORE_MOVE_CATEGORY", events) {
           categoryMatches(move, it.params.getOrNull(0)) && abilityMatches(attacker, it.params.getOrNull(1))
         }
-    if (!continuing) spendPp(attacker, action.defender, move, events)
+    if (action.followUp) Unit
+    else if (!continuing) spendPp(attacker, action.defender, move, events)
     else events += BattleEvent.MoveUsed(attacker.entityId, move.id.toShort(), slotOf(attacker, move), ppOf(attacker, move))
     if (items.isChoice(items.of(attacker)) && attacker.choiceLockedMove == 0) attacker.choiceLockedMove = move.id
 
@@ -1356,6 +1415,7 @@ constructor(
                 physical,
                 de.fiereu.openmmo.server.game.services.EvolutionTable.canEvolve(defender.wireSpeciesId().toInt())) / 100
     dmg = dmg * battle.rng.damageRoll() / 100
+    if (action.spread) dmg = dmg * 3 / 4
     return HitResult(dmg.coerceAtLeast(1), crit)
   }
 
@@ -1994,9 +2054,7 @@ constructor(
   // End of turn
 
   private fun endOfTurn(battle: BattleInstance, events: MutableList<BattleEvent>) {
-    val player = battle.activeMon()
-    val enemy = battle.opponentMon()
-    val order = if (speedOf(battle, player) >= speedOf(battle, enemy)) listOf(player, enemy) else listOf(enemy, player)
+    val order = battle.actives().filter { !it.fainted }.sortedByDescending { speedOf(battle, it) }
 
     // Weather: counts down, then hurts whoever it hurts.
     if (battle.weather != null) {
@@ -2275,6 +2333,8 @@ constructor(
       }
 
   private companion object {
+    /** Targets a move may aim at its own side with. */
+    val OWN_SIDE_TARGETS = setOf(MoveTarget.USER, MoveTarget.ALLY, MoveTarget.USER_OR_ALLY, MoveTarget.USER_AND_ALLY, MoveTarget.USER_OR_SELECTED)
     val UNTRACEABLE =
         setOf(
             Ability.TRACE, Ability.MULTITYPE, Ability.ILLUSION, Ability.IMPOSTER, Ability.STANCE_CHANGE,

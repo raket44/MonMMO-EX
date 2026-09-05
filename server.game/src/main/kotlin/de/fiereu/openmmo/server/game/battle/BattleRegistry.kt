@@ -20,6 +20,7 @@ class BattleRegistry @Inject constructor() {
       opponent: List<BattleMonState>,
       rng: BattleRng,
       rules: BattleRules = BattleRules(),
+      format: de.fiereu.openmmo.net.game.packets.battle.BattleFormat = de.fiereu.openmmo.net.game.packets.battle.BattleFormat.SINGLES,
   ): BattleInstance {
     val battle =
         BattleInstance(
@@ -35,6 +36,7 @@ class BattleRegistry @Inject constructor() {
             rules.defeatTextId,
             rules.whiteoutOnDefeat,
             rules.trainerRegion,
+            format,
         )
     byChar[charId] = battle
     return battle

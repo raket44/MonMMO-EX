@@ -14,9 +14,25 @@ enum class OpposingSide(val wireValue: Byte) {
 }
 
 /**
- * The field state that opens a battle (opcode 0x30). Each side sends a monster count that sizes the
- * client's slot array followed by that many blocks. The player side closes with its active
- * monster's detail, the opposing side closes with one shared detail for whichever monster is out.
+ * The battle format, the fourth header byte (client `f/oD1.zS`). It sizes each side's array of
+ * field positions: the player's side gets [playerSlots] cells, the opposing side [opponentSlots]
+ * (client `f/TB0.qP1`: `Ak[side] = new QL1[side > 0 ? CN0 : uK1]`). A horde always has five
+ * cells; a three-horde leaves two of them empty.
+ */
+enum class BattleFormat(val wireValue: Byte, val playerSlots: Int, val opponentSlots: Int) {
+  SINGLES(0, 1, 1),
+  DOUBLES(1, 2, 2),
+  HORDE(6, 1, 5);
+
+  companion object {
+    fun byWireValue(value: Byte): BattleFormat? = entries.find { it.wireValue == value }
+  }
+}
+
+/**
+ * The field state that opens a battle (opcode 0x30). Each side sends its monsters as a group of
+ * records (client `f/kw0.ns0`), then one entry per field position: a filled position carries the
+ * monster's active detail (client `f/kw0.NQ1`), an empty one a single zero byte.
  *
  * A trainer battle differs from a wild one in more than values: [opposing] flips two bytes, and the
  * opposing side carries [trainerId] plus two extra halfwords that a wild battle leaves out.
@@ -34,15 +50,32 @@ data class BattleFieldStatePacket(
     /** The ROM region the trainer id indexes: 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4 Johto. */
     val trainerRegion: Byte = 0,
     val playerParty: List<BattleMonBlock>,
-    val activeSlot: Int,
+    /** The player's field positions: the party slot standing on each, null for an empty one. */
+    val playerActive: List<Int?>,
     val opponentParty: List<BattleOpponentBlock>,
-    val opponentActiveSlot: Int,
+    /** The opposing field positions: the opponent list index on each, null for an empty one. */
+    val opponentActive: List<Int?>,
+    val format: BattleFormat = BattleFormat.SINGLES,
 ) {
   init {
     require(playerAppearance.size == APPEARANCE_SIZE) {
       "A field state carries exactly $APPEARANCE_SIZE appearance bytes"
     }
+    require(playerActive.size == format.playerSlots) {
+      "$format has ${format.playerSlots} player positions, got ${playerActive.size}"
+    }
+    require(opponentActive.size == format.opponentSlots) {
+      "$format has ${format.opponentSlots} opposing positions, got ${opponentActive.size}"
+    }
   }
+
+  /** The party slot on the player's first filled position (the only one in singles). */
+  val activeSlot: Int
+    get() = playerActive.firstNotNullOf { it }
+
+  /** The opponent index on the first filled opposing position. */
+  val opponentActiveSlot: Int
+    get() = opponentActive.firstNotNullOf { it }
 
   // ByteArray breaks the generated equals, and the fixtures compare whole packets.
   override fun equals(other: Any?): Boolean =
@@ -54,10 +87,12 @@ data class BattleFieldStatePacket(
               background == other.background &&
               opposing == other.opposing &&
               trainerId == other.trainerId &&
+              trainerRegion == other.trainerRegion &&
               playerParty == other.playerParty &&
-              activeSlot == other.activeSlot &&
+              playerActive == other.playerActive &&
               opponentParty == other.opponentParty &&
-              opponentActiveSlot == other.opponentActiveSlot)
+              opponentActive == other.opponentActive &&
+              format == other.format)
 
   override fun hashCode(): Int =
       listOf<Any>(
@@ -67,11 +102,12 @@ data class BattleFieldStatePacket(
               background,
               opposing,
               trainerId,
-        trainerRegion,
+              trainerRegion,
               playerParty,
-              activeSlot,
+              playerActive,
               opponentParty,
-              opponentActiveSlot)
+              opponentActive,
+              format)
           .hashCode()
 
   companion object {
@@ -79,13 +115,20 @@ data class BattleFieldStatePacket(
   }
 }
 
-private val HEAD = "0200000000".hexToBytes()
+// Two sides, then two bytes the client skips; the format byte follows, then the client's `my`
+// enum byte (0).
+private val HEAD_SIDES = "020000".hexToBytes()
 private val AFTER_BACKGROUND = "00000000000000ff000000000016000000".hexToBytes()
 private val AFTER_OPPOSING = "00200006".hexToBytes()
 
 object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
   override fun CodecScope<BattleFieldStatePacket>.body(): BattleFieldStatePacket {
-    constant(HEAD)
+    constant(HEAD_SIDES)
+    val formatByte = field(S8) { it.format.wireValue }
+    val format =
+        BattleFormat.byWireValue(formatByte)
+            ?: throw MalformedPacketException("Unknown battle format $formatByte")
+    constant(0)
     val background = field(S8) { it.background }
     constant(AFTER_BACKGROUND)
     val opposingByte = field(S8) { it.opposing.wireValue }
@@ -101,19 +144,25 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         field(fixedBytes(BattleFieldStatePacket.APPEARANCE_SIZE)) { it.playerAppearance }
     padding(5)
 
+    // One group of monster records, then the field positions.
     constant(1)
     val partyCount = field(U8) { it.playerParty.size }
-    reserved(0)
     val party =
         List(partyCount) { i ->
-          val block = field(BattleFullBlockCodec) { it.playerParty[i] }
-          // The trailing byte flags the last party block; 0 says another block follows.
-          field(S8) { if (i == it.playerParty.lastIndex) 1.toByte() else 0.toByte() }
-          block
+          // Each record opens with a zero byte before the party slot.
+          constant(0)
+          field(BattleFullBlockCodec) { it.playerParty[i] }
         }
-    val active =
-        field(BattleActiveDetailCodec) {
-          BattleActiveDetail.of(it.activeSlot, it.playerParty[it.activeSlot])
+    val playerActive =
+        List(format.playerSlots) { position ->
+          val kind = field(S8) { if (it.playerActive[position] != null) 1.toByte() else 0.toByte() }
+          if (kind.toInt() == 1) {
+            field(BattleActiveDetailCodec) {
+                  val slot = it.playerActive[position]!!
+                  BattleActiveDetail.of(position, slot, it.playerParty[slot])
+                }
+                .slot
+          } else null
         }
 
     // Opens the opposing side. A trainer adds its id and two more halfwords here.
@@ -128,17 +177,22 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
 
     constant(1)
     val opponentCount = field(U8) { it.opponentParty.size }
-    reserved(0)
     val opponents =
         List(opponentCount) { i ->
-          val block = field(BattleOpponentBlockCodec) { it.opponentParty[i] }
-          field(S8) { if (i == it.opponentParty.lastIndex) 1.toByte() else 0.toByte() }
-          block
+          constant(0)
+          field(BattleOpponentBlockCodec) { it.opponentParty[i] }
         }
     val opponentActive =
-        field(BattleActiveDetailCodec) {
-          val mon = it.opponentParty[it.opponentActiveSlot]
-          BattleActiveDetail(mon.slot, mon.species, mon.level, mon.gender)
+        List(format.opponentSlots) { position ->
+          val kind = field(S8) { if (it.opponentActive[position] != null) 1.toByte() else 0.toByte() }
+          if (kind.toInt() == 1) {
+            field(BattleActiveDetailCodec) {
+                  val index = it.opponentActive[position]!!
+                  val mon = it.opponentParty[index]
+                  BattleActiveDetail(position, index, mon.species, mon.level, mon.gender)
+                }
+                .slot
+          } else null
         }
     padding(4)
 
@@ -151,9 +205,10 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         trainerId,
         trainerRegion,
         party,
-        active.slot,
+        playerActive,
         opponents,
-        opponentActive.slot,
+        opponentActive,
+        format,
     )
   }
 }

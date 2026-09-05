@@ -99,16 +99,16 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             trainerId = (battle.trainer?.id ?: 0).toShort(),
             trainerRegion = battle.trainerRegion.toByte(),
             playerParty = battle.party.mapIndexed { slot, mon -> mon.toBlock(slot, true) },
-            activeSlot = battle.activeSlot,
+            playerActive = battle.playerPositions.map { it.takeIf { slot -> slot >= 0 } },
             opponentParty =
                 battle.opponent.mapIndexed { slot, mon ->
                   if (slot in battle.opponentSeen) mon.toOpponentBlock(slot)
                   else BattleOpponentBlock(slot = slot, revealed = false)
                 },
-            opponentActiveSlot = battle.opponentSlot,
+            opponentActive = battle.opponentPositions.map { it.takeIf { slot -> slot >= 0 } },
+            format = battle.format,
         ),
     )
-    sendPrompt(battle)
   }
 
   /**
@@ -239,7 +239,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     fun build(): BattleEffectTarget = BattleEffectTarget(entityId, outcome, subEvents.toList())
   }
 
-  fun sendSwitchIn(battle: BattleInstance, oldSlot: Int, fullBlock: Boolean) {
+  fun sendSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean) {
+    val slot = battle.playerPositions[position]
     broadcast(
         battle,
         BattleSwitchInPacket(
@@ -247,22 +248,23 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // indexes its per-side active array with it, which in singles has exactly one cell.
             // Party slot 4 in that nibble was the ArrayIndexOutOfBounds crash on send-out. The
             // party slot rides inside the monster block instead.
-            newSlot = 0,
+            newSlot = position,
             oldSlot = oldSlot,
-            mon = battle.activeMon().toBlock(slot = battle.activeSlot, movesPresent = true),
+            mon = battle.party[slot].toBlock(slot = slot, movesPresent = true),
             fullBlock = fullBlock,
         ),
     )
   }
 
   /** The opposing side sends out its next monster. Its moves stay hidden from the player. */
-  fun sendOpponentSwitchIn(battle: BattleInstance, oldSlot: Int, fullBlock: Boolean) {
+  fun sendOpponentSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean) {
+    val index = battle.opponentPositions[position]
     broadcast(
         battle,
         BattleSwitchInPacket(
-            newSlot = 0,
+            newSlot = position,
             oldSlot = oldSlot,
-            mon = battle.opponentMon().toBlock(battle.opponentSlot, movesPresent = false),
+            mon = battle.opponent[index].toBlock(index, movesPresent = false),
             fullBlock = fullBlock,
             side = OPPONENT_SIDE,
         ),
@@ -309,19 +311,20 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     )
   }
 
-  fun sendPrompt(battle: BattleInstance) {
+  /** Asks for an action on each of [positions]: the client collects one per prompted position and sends them together. */
+  fun sendPrompt(battle: BattleInstance, positions: Collection<Int> = listOf(0)) {
     broadcast(battle, BattleTileMapPacket(groupId = battle.turn.toShort(), slotTiles = null))
-    broadcast(battle, BattleQueuedEventPacket(packed = ACTION_PROMPT))
+    for (position in positions) broadcast(battle, BattleQueuedEventPacket(packed = (ACTION_PROMPT.toInt() or position).toByte()))
   }
 
   /** Opens the party switch screen after the active mon faints, in place of the action prompt. */
-  fun sendSwitchPrompt(battle: BattleInstance) {
-    broadcast(battle, BattleSlotFlagEventPacket(slot = 0, flag = false, immediate = false))
+  fun sendSwitchPrompt(battle: BattleInstance, position: Int = 0) {
+    broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = false))
   }
 
   /** Confirms the forced replacement choice just before its switch-in. */
-  fun sendSwitchConfirm(battle: BattleInstance) {
-    broadcast(battle, BattleSlotFlagEventPacket(slot = 0, flag = false, immediate = true))
+  fun sendSwitchConfirm(battle: BattleInstance, position: Int = 0) {
+    broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = true))
   }
 
   fun sendFled(battle: BattleInstance) {

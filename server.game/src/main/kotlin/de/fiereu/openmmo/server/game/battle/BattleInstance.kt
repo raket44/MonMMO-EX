@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.network.SessionContext
+import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.server.game.world.interest.BattleInterestKey
 import de.fiereu.openmmo.trainer.TrainerDef
 import kotlinx.coroutines.CompletableDeferred
@@ -27,7 +28,34 @@ data class BattleRules(
     val trainerRegion: Int = 0,
 )
 
-/** One running battle. A wild encounter is the case where [opponent] holds a single monster. */
+/**
+ * What the player asked one of their field positions to do this turn. The client packs the acting
+ * position and, for a move, the target position into its action packet (`f/fd1`: side in the high
+ * nibble, position in the low one).
+ */
+data class ChosenAction(
+    val position: Int,
+    val kind: Kind,
+    val moveId: Short = 0,
+    /** The side the chosen target stands on: 0 the player's, 1 the opposing side. */
+    val targetSide: Int = 1,
+    val targetPosition: Int = 0,
+    /** SWITCH: the party slot coming in. */
+    val partyIndex: Int = -1,
+) {
+  enum class Kind {
+    MOVE,
+    SWITCH,
+    ITEM,
+    RUN,
+  }
+}
+
+/**
+ * One running battle. Each side has [BattleFormat.playerSlots] / [BattleFormat.opponentSlots] field
+ * positions holding an index into [party] / [opponent], or -1 while empty. A wild encounter is the
+ * singles case where [opponent] holds one monster; a horde fills up to five opposing positions.
+ */
 class BattleInstance(
     val battleId: Long,
     val charId: Long,
@@ -45,16 +73,43 @@ class BattleInstance(
     val whiteoutOnDefeat: Boolean = true,
     /** Region whose ROM trainer table names the opponent; the client shows class + name from it. */
     val trainerRegion: Int = 0,
+    val format: BattleFormat = BattleFormat.SINGLES,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1
-  var activeSlot: Int = 0
-  var opponentSlot: Int = 0
+
+  /** The party index standing on each of the player's field positions, -1 for an empty one. Position 0 opens on slot 0, as a bare instance always did. */
+  val playerPositions: IntArray = IntArray(format.playerSlots) { if (it == 0) 0 else -1 }
+  /** The opponent index standing on each opposing field position, -1 for an empty one. */
+  val opponentPositions: IntArray = IntArray(format.opponentSlots) { if (it == 0) 0 else -1 }
+
+  /** Position 0 on the player's side: the whole field in singles. */
+  var activeSlot: Int
+    get() = playerPositions[0]
+    set(value) {
+      playerPositions[0] = value
+    }
+
+  var opponentSlot: Int
+    get() = opponentPositions[0]
+    set(value) {
+      opponentPositions[0] = value
+    }
 
   // Which slots have been sent out as active. A monster's first appearance carries its full block,
   // a return only its active detail.
   val seenActive: MutableSet<Int> = mutableSetOf(0)
   val opponentSeen: MutableSet<Int> = mutableSetOf(0)
+
+  /** The player's positions still owed an action this turn, and the actions received so far. */
+  val awaitingPositions: MutableSet<Int> = linkedSetOf()
+  val pendingActions: MutableMap<Int, ChosenAction> = linkedMapOf()
+  /** Player positions whose monster fainted and that owe a replacement before the next turn. */
+  val forcedSwitchPositions: MutableSet<Int> = linkedSetOf()
+  /** Opponents already paid out for, so a faint rewards exactly once. */
+  val rewardedFaints: MutableSet<Long> = mutableSetOf()
+  /** Party monsters the rewards already wrote to the store; the final persist must not undo that. */
+  val rewardedWinners: MutableSet<Long> = mutableSetOf()
 
   /** Completes when the battle leaves the registry. */
   val completion = CompletableDeferred<BattleResult>()
@@ -67,15 +122,57 @@ class BattleInstance(
   val playerSide = SideState()
   val opponentSide = SideState()
 
-  fun activeMon(): BattleMonState = party[activeSlot]
+  /** The monster on the player's first filled position (the only one in singles). */
+  fun activeMon(): BattleMonState = party[playerPositions.firstOrNull { it >= 0 } ?: 0]
 
-  fun opponentMon(): BattleMonState = opponent[opponentSlot]
+  /** The monster on the first filled opposing position; the first alive one when several are out. */
+  fun opponentMon(): BattleMonState =
+      opponentActives().firstOrNull { !it.fainted } ?: opponent[opponentPositions.firstOrNull { it >= 0 } ?: 0]
+
+  fun playerActives(): List<BattleMonState> = playerPositions.filter { it >= 0 }.map { party[it] }
+
+  fun opponentActives(): List<BattleMonState> = opponentPositions.filter { it >= 0 }.map { opponent[it] }
+
+  /** Every monster on the field, the player's side first. */
+  fun actives(): List<BattleMonState> = playerActives() + opponentActives()
+
+  fun monAt(side: Int, position: Int): BattleMonState? {
+    val positions = if (side == 0) playerPositions else opponentPositions
+    val list = if (side == 0) party else opponent
+    val index = positions.getOrNull(position) ?: return null
+    return if (index < 0) null else list[index]
+  }
+
+  /** The field position [mon] stands on, or -1 when it is benched. */
+  fun positionOf(mon: BattleMonState): Int {
+    val onPlayerSide = isPlayerSide(mon.entityId)
+    val positions = if (onPlayerSide) playerPositions else opponentPositions
+    val list = if (onPlayerSide) party else opponent
+    return positions.indexOfFirst { it >= 0 && list[it] === mon }
+  }
 
   fun isPlayerSide(entityId: Long): Boolean = party.any { it.entityId == entityId }
 
   fun sideOf(mon: BattleMonState): SideState =
       if (isPlayerSide(mon.entityId)) playerSide else opponentSide
 
-  fun opponentOf(mon: BattleMonState): BattleMonState =
-      if (isPlayerSide(mon.entityId)) opponentMon() else activeMon()
+  /** The monsters facing [mon] that are still standing. */
+  fun foesOf(mon: BattleMonState): List<BattleMonState> =
+      (if (isPlayerSide(mon.entityId)) opponentActives() else playerActives()).filter { !it.fainted }
+
+  /** [mon]'s partners on the field, itself excluded. */
+  fun alliesOf(mon: BattleMonState): List<BattleMonState> =
+      (if (isPlayerSide(mon.entityId)) playerActives() else opponentActives()).filter { it !== mon && !it.fainted }
+
+  /**
+   * The foe in front of [mon]: the one on the facing position while it stands, else the first foe
+   * still up, else whatever is on the facing side (a fainted one, so callers can still name it).
+   */
+  fun opponentOf(mon: BattleMonState): BattleMonState {
+    val onPlayerSide = isPlayerSide(mon.entityId)
+    val facing = if (onPlayerSide) 1 else 0
+    monAt(facing, positionOf(mon))?.takeIf { !it.fainted }?.let { return it }
+    foesOf(mon).firstOrNull()?.let { return it }
+    return if (onPlayerSide) opponent[opponentPositions.firstOrNull { it >= 0 } ?: 0] else party[playerPositions.firstOrNull { it >= 0 } ?: 0]
+  }
 }

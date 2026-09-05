@@ -127,6 +127,30 @@ object RetailEncounters {
           }
           .toList()
 
+  /**
+   * The horde pool of a map: the entries flagged for three- or five-strong hordes under the given
+   * terrain types (Sweet Scent brings the horde out of the ground the player stands on). [size]
+   * picks the 3x or 5x flag.
+   */
+  fun hordePool(sourceName: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
+      hordeSlotsOf(entriesFor(sourceName, regionId), types, season, time, size)
+
+  fun hordePoolForNdsName(name: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
+      hordeSlotsOf(entriesForNdsName(name, regionId), types, season, time, size)
+
+  private fun hordeSlotsOf(entries: List<Entry>, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
+      entries
+          .asSequence()
+          .filter { it.type in types }
+          .filter { it.season == "Any" || it.season == season.label }
+          .filter { it.form < 0 }
+          .filter { if (size >= 5) it.horde5x else it.horde3x }
+          .mapNotNull { entry ->
+            val weight = percentWeight(entry.rarity(time)) ?: return@mapNotNull null
+            Slot(entry.dexId, entry.minLevel, entry.maxLevel, weight)
+          }
+          .toList()
+
   /** "12.5%" becomes 1250; markers like Lure, Special, -- and ??? are not ordinary spawns. */
   private fun percentWeight(rarity: String): Int? =
       rarity.removeSuffix("%").toDoubleOrNull()?.let { (it * 100).toInt() }?.takeIf { it > 0 }

@@ -3,7 +3,9 @@ package de.fiereu.openmmo.net.game
 import de.fiereu.openmmo.common.test.decodeBytes
 import de.fiereu.openmmo.common.test.encodeToBytes
 import de.fiereu.openmmo.common.test.fixture
+import de.fiereu.openmmo.common.utils.hexToBytes
 import de.fiereu.openmmo.net.game.packets.battle.BattleFieldStatePacket
+import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.net.game.packets.battle.BattleFieldStatePacketCodec
 import de.fiereu.openmmo.net.game.packets.battle.BattleMonBlock
 import de.fiereu.openmmo.net.game.packets.battle.BattleOpponentBlock
@@ -13,6 +15,10 @@ import io.kotest.matchers.shouldBe
 
 private const val WILD = "game/s2c/30/wild_two_party_scrubbed.bin"
 private const val TRAINER = "game/s2c/30/trainer_one_opponent_scrubbed.bin"
+
+// The appearance is a bitmask-driven variable block on the client (f/tK0.yF0); the captured bytes
+// are the only shape verified to parse.
+private val CAPTURED_APPEARANCE = "00024c031aac0f00038001a40004".hexToBytes()
 
 class BattleFieldStatePacketTest :
     FunSpec({
@@ -119,13 +125,63 @@ class BattleFieldStatePacketTest :
                 opposing = OpposingSide.WILD,
                 trainerId = 0,
                 playerParty = listOf(rattata),
-                activeSlot = 0,
+                playerActive = listOf(0),
                 opponentParty = listOf(geodude),
-                opponentActiveSlot = 0,
+                opponentActive = listOf(0),
             )
         val decoded =
             BattleFieldStatePacketCodec.decodeBytes(
                 BattleFieldStatePacketCodec.encodeToBytes(packet))
         decoded shouldBe packet
+      }
+    })
+
+/**
+ * Not an assertion beyond the round trip: writes a doubles and a horde field state under
+ * build/samples so the client's own reader (scratch Oracle2 over f/TB0.qP1) can be run on them.
+ */
+class BattleFieldStateSamplesTest :
+    FunSpec({
+      fun mon(slot: Int, species: Short, level: Byte) =
+          BattleMonBlock(slot, 0x1000L + slot, species, level, 0, 0, 30, 30, false, listOf(0, 0, 0, 0))
+      fun foe(slot: Int, species: Short, level: Byte) =
+          BattleOpponentBlock(slot, true, 0x2000L + slot, species, level, 0, 20, 20)
+      fun write(name: String, packet: BattleFieldStatePacket) {
+        val bytes = BattleFieldStatePacketCodec.encodeToBytes(packet)
+        BattleFieldStatePacketCodec.decodeBytes(bytes) shouldBe packet
+        val dir = java.io.File("build/samples").apply { mkdirs() }
+        java.io.File(dir, name).writeBytes(bytes)
+      }
+      test("doubles and horde field states round-trip and are written as samples") {
+        write(
+            "field-doubles.bin",
+            BattleFieldStatePacket(
+                playerName = "Test",
+                playerId = 0x19000L,
+                playerAppearance = CAPTURED_APPEARANCE,
+                background = 0,
+                opposing = OpposingSide.TRAINER,
+                trainerId = 0x68,
+                playerParty = listOf(mon(0, 495, 12), mon(1, 504, 11), mon(2, 19, 9)),
+                playerActive = listOf(0, 1),
+                opponentParty = listOf(foe(0, 13, 9), foe(1, 10, 9), BattleOpponentBlock(2, false)),
+                opponentActive = listOf(0, 1),
+                format = BattleFormat.DOUBLES,
+            ))
+        write(
+            "field-horde.bin",
+            BattleFieldStatePacket(
+                playerName = "Test",
+                playerId = 0x19000L,
+                playerAppearance = CAPTURED_APPEARANCE,
+                background = 0,
+                opposing = OpposingSide.WILD,
+                trainerId = 0,
+                playerParty = listOf(mon(0, 495, 12), mon(1, 504, 11)),
+                playerActive = listOf(0),
+                opponentParty = listOf(foe(0, 504, 3), foe(1, 504, 4), foe(2, 506, 5)),
+                opponentActive = listOf(0, 1, 2, null, null),
+                format = BattleFormat.HORDE,
+            ))
       }
     })

@@ -15,6 +15,7 @@ import de.fiereu.openmmo.moves.MoveRegistry
 import de.fiereu.openmmo.net.game.packets.MapLoadedAckPacket
 import de.fiereu.openmmo.net.game.packets.SocialListEntryAddPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
+import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.net.game.packets.battle.BattleListEventDetail
 import de.fiereu.openmmo.net.game.packets.battle.BattleListEventPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket
@@ -28,6 +29,7 @@ import de.fiereu.openmmo.server.game.battle.BattleResult
 import de.fiereu.openmmo.server.game.battle.BattleRewards
 import de.fiereu.openmmo.server.game.battle.BattleRng
 import de.fiereu.openmmo.server.game.battle.BattleRules
+import de.fiereu.openmmo.server.game.battle.ChosenAction
 import de.fiereu.openmmo.server.game.battle.Gen1StatCalculator
 import de.fiereu.openmmo.server.game.battle.MoveLearner
 import de.fiereu.openmmo.server.game.battle.StatCalculator
@@ -113,15 +115,89 @@ constructor(
     val battle = battles.byChar(charId) ?: return
     if (battle.pendingResult != null) return
     val action = event.packet
-    log.info { "Battle action char=$charId: $action" }
-    // While the active mon is fainted the player owes a replacement and may only switch.
-    if (battle.activeMon().fainted && action.action != BattleAction.SWITCH) return
-    when (action.action) {
-      BattleAction.MOVE -> resolveTurn(battle, action.moveOrItemId)
-      BattleAction.ITEM -> catchWild(battle)
-      BattleAction.SWITCH -> switchMon(battle, action.moveOrItemId)
-      BattleAction.RUN -> flee(battle)
+    // The client packs the acting position the way f/fd1 does: side in the high nibble, position
+    // in the low one; a move's extra byte is the chosen target packed the same way.
+    val position = action.slotRefPacked.toInt() and 0x0F
+    log.info { "Battle action char=$charId position=$position: $action" }
+    // A position whose monster fainted owes a replacement and may only switch.
+    if (position in battle.forcedSwitchPositions) {
+      if (action.action == BattleAction.SWITCH) forcedSwitch(battle, position, action.moveOrItemId.toInt())
+      return
     }
+    if (battle.forcedSwitchPositions.isNotEmpty() || position !in battle.awaitingPositions) return
+    val chosen =
+        when (action.action) {
+          BattleAction.MOVE ->
+              ChosenAction(
+                  position,
+                  ChosenAction.Kind.MOVE,
+                  action.moveOrItemId,
+                  targetSide = (action.extraFlag.toInt() ushr 4) and 0x0F,
+                  targetPosition = action.extraFlag.toInt() and 0x0F)
+          BattleAction.ITEM -> ChosenAction(position, ChosenAction.Kind.ITEM)
+          BattleAction.SWITCH -> ChosenAction(position, ChosenAction.Kind.SWITCH, partyIndex = action.moveOrItemId.toInt())
+          BattleAction.RUN -> ChosenAction(position, ChosenAction.Kind.RUN)
+        }
+    battle.pendingActions[position] = chosen
+    battle.awaitingPositions -= position
+    if (battle.awaitingPositions.isEmpty()) resolvePending(battle)
+  }
+
+  /**
+   * Every prompted position has answered. Running and a ball throw settle the turn on their own,
+   * as they do in singles; voluntary switches go first, then the moves of the whole field.
+   */
+  private suspend fun resolvePending(battle: BattleInstance) {
+    val actions = battle.pendingActions.values.toList()
+    battle.pendingActions.clear()
+    if (actions.any { it.kind == ChosenAction.Kind.RUN }) {
+      flee(battle)
+      return
+    }
+    if (actions.any { it.kind == ChosenAction.Kind.ITEM }) {
+      catchWild(battle)
+      return
+    }
+    for (switch in actions.filter { it.kind == ChosenAction.Kind.SWITCH }) {
+      val target = switch.partyIndex
+      val mon = battle.party.getOrNull(target)
+      if (mon == null || mon.fainted || target in battle.playerPositions) continue
+      performSwitch(battle, switch.position, target)
+    }
+    val events = engine.resolveTurn(battle, actions.filter { it.kind == ChosenAction.Kind.MOVE })
+    emitter.sendEvents(battle, events)
+    afterTurn(battle)
+  }
+
+  /**
+   * Opens the next turn: every standing position gets a prompt, except one locked into a two-turn
+   * move or a recharge, which acts on its own the way the cartridges keep the player out of the
+   * menu. With nothing to ask, the turn runs straight away.
+   */
+  private suspend fun prompt(battle: BattleInstance) {
+    if (!openTurn(battle)) resolvePending(battle)
+  }
+
+  /** Fills the locked actions and prompts the rest; false when nothing is left to ask. */
+  private fun openTurn(battle: BattleInstance): Boolean {
+    battle.pendingActions.clear()
+    battle.awaitingPositions.clear()
+    for ((position, slot) in battle.playerPositions.withIndex()) {
+      if (slot < 0) continue
+      val mon = battle.party[slot]
+      if (mon.fainted) continue
+      val locked =
+          when {
+            mon.chargingMoveId != 0 -> mon.chargingMoveId
+            mon.mustRecharge -> mon.moves.firstOrNull { it.id.toInt() != 0 }?.id?.toInt() ?: 0
+            else -> 0
+          }
+      if (locked != 0) battle.pendingActions[position] = ChosenAction(position, ChosenAction.Kind.MOVE, locked.toShort(), 1, position)
+      else battle.awaitingPositions += position
+    }
+    if (battle.awaitingPositions.isEmpty()) return false
+    emitter.sendPrompt(battle, battle.awaitingPositions)
+    return true
   }
 
   /** Applies the moveset the player picked after a level up. */
@@ -255,6 +331,10 @@ constructor(
     return battle.completion.await()
   }
 
+  /** A horde: several wild monsters on the opposing field at once (Sweet Scent). */
+  fun startHordeBattle(session: SessionContext, specs: List<OpponentSpec>): BattleInstance? =
+      createBattle(session, specs, catchable = true, escapable = true)
+
   /** A scripted wild battle (setwildbattle/dowildbattle: legendaries, Snorlax) awaited by the script. */
   suspend fun startScriptedWildBattle(session: SessionContext, dexId: Int, level: Int): BattleResult {
     val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true) ?: return BattleResult.FAILED
@@ -267,7 +347,7 @@ constructor(
   fun resolveTrainer(region: Region, id: Int): TrainerDef? = trainers.get(region, id)
 
   /** Empty [moveIds] keeps the level up moveset, a null [iv] rolls one like a wild encounter. */
-  private data class OpponentSpec(
+  data class OpponentSpec(
       val dexId: Int,
       val level: Int,
       val moveIds: List<Int>,
@@ -370,6 +450,15 @@ constructor(
       "Starting battle for char=$charId (${stored.info.name}) against " +
           enemies.joinToString { "${it.species.name} level ${it.level}" }
     }
+    // A trainer flagged for doubles fields two when the player can match it; several wild monsters
+    // are a horde (up to five cells, the rest empty).
+    val alive = party.indices.filter { !party[it].fainted }
+    val format =
+        when {
+          trainer?.doubleBattle == true && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
+          trainer == null && enemies.size >= 2 -> BattleFormat.HORDE
+          else -> BattleFormat.SINGLES
+        }
     val battle =
         battles.create(
             charId,
@@ -377,19 +466,21 @@ constructor(
             party,
             enemies,
             rng,
-            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0))
-    val firstAlive = party.indexOfFirst { !it.fainted }
-    battle.activeSlot = firstAlive
+            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0),
+            format)
+    for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
+    for (position in 0 until format.opponentSlots) battle.opponentPositions[position] = if (position < enemies.size) position else -1
     battle.seenActive.clear()
-    battle.seenActive.add(firstAlive)
-    engine.prepareIllusion(battle, battle.activeMon())
-    engine.prepareIllusion(battle, battle.opponentMon())
+    battle.seenActive.addAll(battle.playerPositions.filter { it >= 0 })
+    battle.opponentSeen.clear()
+    battle.opponentSeen.addAll(battle.opponentPositions.filter { it >= 0 })
+    for (mon in battle.actives()) engine.prepareIllusion(battle, mon)
     interestManager.join(session, battle.key)
     emitter.sendStart(battle, stored.info.name)
-    // Both leads' switch-in abilities fire as the battle opens, the faster one first.
+    openTurn(battle)
+    // Every lead's switch-in ability fires as the battle opens, the faster ones first.
     val opening = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
-    val leads = listOf(battle.activeMon(), battle.opponentMon())
-    for (mon in leads.sortedByDescending { it.effective(de.fiereu.openmmo.server.game.battle.BattleStat.SPEED) }) {
+    for (mon in battle.actives().sortedByDescending { it.effective(de.fiereu.openmmo.server.game.battle.BattleStat.SPEED) }) {
       engine.switchIn(battle, mon, opening)
     }
     emitter.sendEvents(battle, opening)
@@ -398,90 +489,80 @@ constructor(
     return battle
   }
 
-  private suspend fun resolveTurn(battle: BattleInstance, moveId: Short) {
-    val events = engine.resolveTurn(battle, moveId)
-    emitter.sendEvents(battle, events)
-    afterTurn(battle)
-  }
-
   private suspend fun afterTurn(battle: BattleInstance) {
+    // Every opponent that fell this turn pays out once, before the field is tidied.
+    for (foe in battle.opponentActives()) {
+      if (foe.fainted && battle.rewardedFaints.add(foe.entityId)) awardXp(battle, foe)
+    }
     when {
       battle.opponent.all { it.fainted } -> endVictory(battle)
       battle.party.all { it.fainted } -> endDefeat(battle)
       else -> {
-        if (battle.opponentMon().fainted) {
-          awardXp(battle, battle.opponentMon())
-          sendOutNextOpponent(battle)
+        // A trainer refills an emptied position from the bench; a wild horde just thins out.
+        for ((position, index) in battle.opponentPositions.withIndex()) {
+          if (index < 0 || !battle.opponent[index].fainted) continue
+          if (battle.trainer != null) sendOutNextOpponent(battle, position) else battle.opponentPositions[position] = -1
         }
-        // The active mon fainted with a live backup. Open the switch screen instead of the action
-        // prompt. The replacement arrives as a normal SWITCH action.
-        if (battle.activeMon().fainted) {
-          emitter.sendSwitchPrompt(battle)
+        // Fainted positions owe a replacement while the bench has one; the switch screen opens
+        // for each instead of the action prompt, and the replacements arrive as SWITCH actions.
+        val owed = battle.playerPositions.indices.filter { battle.playerPositions[it] >= 0 && battle.party[battle.playerPositions[it]].fainted }
+        val benched = battle.party.indices.count { it !in battle.playerPositions && !battle.party[it].fainted }
+        battle.forcedSwitchPositions.clear()
+        for ((i, position) in owed.withIndex()) {
+          if (i < benched) battle.forcedSwitchPositions += position else battle.playerPositions[position] = -1
+        }
+        if (battle.forcedSwitchPositions.isNotEmpty()) {
+          for (position in battle.forcedSwitchPositions) emitter.sendSwitchPrompt(battle, position)
         } else {
           battle.turn += 1
-          // A two-turn move or a recharge turn owns the next action: no prompt, the turn runs
-          // straight on with the locked move, the way the cartridges keep the player out of the menu.
-          val active = battle.activeMon()
-          val locked =
-              when {
-                active.chargingMoveId != 0 -> active.chargingMoveId
-                active.mustRecharge -> active.moves.firstOrNull { it.id.toInt() != 0 }?.id?.toInt() ?: 0
-                else -> 0
-              }
-          if (locked != 0) resolveTurn(battle, locked.toShort()) else emitter.sendPrompt(battle)
+          prompt(battle)
         }
       }
     }
   }
 
-  private suspend fun switchMon(battle: BattleInstance, partyIndex: Short) {
-    val target = partyIndex.toInt()
+  /** The replacement for a fainted position. Replacing does not spend a turn. */
+  private suspend fun forcedSwitch(battle: BattleInstance, position: Int, target: Int) {
     val mon = battle.party.getOrNull(target)
-    val forced = battle.activeMon().fainted
-    if (mon == null || mon.fainted || target == battle.activeSlot) {
-      // Reopen the switch screen on an invalid forced choice, otherwise re-prompt for an action.
-      if (forced) {
-        emitter.sendSwitchPrompt(battle)
-      } else {
-        battle.turn += 1
-        emitter.sendPrompt(battle)
-      }
+    if (mon == null || mon.fainted || target in battle.playerPositions) {
+      // Reopen the switch screen on an invalid choice.
+      emitter.sendSwitchPrompt(battle, position)
       return
     }
     // A forced switch confirms the choice before the switch-in. The captures pair the confirm with
     // a full block for a new mon and with a return block for a mon that was already active.
-    if (forced) emitter.sendSwitchConfirm(battle)
-    performSwitch(battle, target)
-    if (forced) {
-      // Replacing a fainted mon does not spend a turn, the new mon acts next.
+    emitter.sendSwitchConfirm(battle, position)
+    performSwitch(battle, position, target)
+    battle.forcedSwitchPositions -= position
+    if (battle.forcedSwitchPositions.isEmpty()) {
       battle.turn += 1
-      emitter.sendPrompt(battle)
-    } else {
-      // A voluntary switch spends the turn, so the wild attacks the incoming mon.
-      emitter.sendEvents(battle, engine.resolveSwitchTurn(battle))
-      afterTurn(battle)
+      prompt(battle)
     }
   }
 
-  private fun sendOutNextOpponent(battle: BattleInstance) {
-    val next = battle.opponent.indexOfFirst { !it.fainted }
-    if (next < 0) return
+  /** A benched opponent takes over [position]; an empty bench leaves the cell empty. */
+  private fun sendOutNextOpponent(battle: BattleInstance, position: Int) {
+    val next = battle.opponent.indices.firstOrNull { !battle.opponent[it].fainted && it !in battle.opponentPositions }
+    val oldIndex = battle.opponentPositions[position]
+    engine.switchOut(battle, battle.opponent[oldIndex])
+    battle.opponent[oldIndex].resetVolatile()
+    if (next == null) {
+      battle.opponentPositions[position] = -1
+      return
+    }
     val fullBlock = next !in battle.opponentSeen
-    val oldSlot = battle.opponentSlot
-    engine.switchOut(battle, battle.opponent[battle.opponentSlot])
-    battle.opponent[battle.opponentSlot].resetVolatile()
-    battle.opponentSlot = next
+    battle.opponentPositions[position] = next
     battle.opponentSeen.add(next)
-    engine.prepareIllusion(battle, battle.opponentMon())
-    log.info { "Opponent sends out slot $next for char=${battle.charId}" }
-    emitter.sendOpponentSwitchIn(battle, oldSlot, fullBlock)
+    engine.prepareIllusion(battle, battle.opponent[next])
+    log.info { "Opponent sends out slot $next on position $position for char=${battle.charId}" }
+    emitter.sendOpponentSwitchIn(battle, position, oldIndex, fullBlock)
     val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
-    engine.switchIn(battle, battle.opponentMon(), entering)
+    engine.switchIn(battle, battle.opponent[next], entering)
     emitter.sendEvents(battle, entering)
   }
 
-  private fun performSwitch(battle: BattleInstance, target: Int) {
-    val oldSlot = battle.activeSlot
+  private fun performSwitch(battle: BattleInstance, position: Int, target: Int) {
+    val oldSlot = battle.playerPositions[position]
     val fullBlock = target !in battle.seenActive
     // Stages, confusion, Leech Seed and the rest stay on the field, not on the monster.
     val outgoing = battle.party[oldSlot]
@@ -492,20 +573,20 @@ constructor(
     }
     engine.switchOut(battle, outgoing)
     outgoing.resetVolatile()
-    battle.activeSlot = target
+    battle.playerPositions[position] = target
     battle.seenActive.add(target)
-    engine.prepareIllusion(battle, battle.activeMon())
-    log.info { "Switch char=${battle.charId} slot $oldSlot -> $target (fullBlock=$fullBlock)" }
-    emitter.sendSwitchIn(battle, oldSlot, fullBlock)
+    engine.prepareIllusion(battle, battle.party[target])
+    log.info { "Switch char=${battle.charId} position $position slot $oldSlot -> $target (fullBlock=$fullBlock)" }
+    emitter.sendSwitchIn(battle, position, oldSlot, fullBlock)
     val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
-    engine.switchIn(battle, battle.activeMon(), entering)
+    engine.switchIn(battle, battle.party[target], entering)
     emitter.sendEvents(battle, entering)
   }
 
   private suspend fun flee(battle: BattleInstance) {
     if (!battle.escapable) {
       emitter.sendNotice(battle, "You can't run from this battle.")
-      emitter.sendPrompt(battle)
+      prompt(battle)
       return
     }
     log.info {
@@ -533,7 +614,13 @@ constructor(
   private suspend fun catchWild(battle: BattleInstance) {
     if (!battle.catchable) {
       emitter.sendNotice(battle, "You can't catch this monster.")
-      emitter.sendPrompt(battle)
+      prompt(battle)
+      return
+    }
+    // A ball only flies at a lone monster: a horde has to be thinned to one first.
+    if (battle.opponentActives().count { !it.fainted } > 1) {
+      emitter.sendNotice(battle, "You can't throw a ball while more than one wild monster is out.")
+      prompt(battle)
       return
     }
     val stored = characterStore.getCharacter(battle.charId) ?: return
@@ -580,7 +667,6 @@ constructor(
   }
 
   private suspend fun endVictory(battle: BattleInstance) {
-    awardXp(battle, battle.opponentMon())
     evolveEligible(battle)
     pickup(battle)
     var prize = battle.trainer?.let { rewards.trainerPrize(it, battle.opponent.last().level) } ?: 0
@@ -591,7 +677,7 @@ constructor(
     if (prize > 0 && !paid) {
       log.error { "Could not pay char=${battle.charId} the $prize prize" }
     }
-    endBattle(battle, BattleResult.VICTORY, battle.activeMon().entityId, if (paid) prize else 0)
+    endBattle(battle, BattleResult.VICTORY, battle.rewardedWinners, if (paid) prize else 0)
   }
 
   /**
@@ -599,7 +685,14 @@ constructor(
    * time, as each faints, which is when the captures show the delta going out.
    */
   private fun awardXp(battle: BattleInstance, defeated: BattleMonState) {
-    val winner = battle.activeMon()
+    // Everyone standing on the player's side took part; a field with nobody standing (a
+    // mutual knockout) still pays the lead.
+    val winners = battle.playerActives().filter { !it.fainted }.ifEmpty { listOf(battle.activeMon()) }
+    for (winner in winners) awardXpTo(battle, winner, defeated)
+  }
+
+  private fun awardXpTo(battle: BattleInstance, winner: BattleMonState, defeated: BattleMonState) {
+    battle.rewardedWinners += winner.entityId
     val reward = rewards.apply(winner, defeated.species, defeated.level, battle.trainer != null)
     log.info {
       "char=${battle.charId} won: +${reward.xpGained} xp, level ${winner.level} -> ${reward.newLevel}"
@@ -650,7 +743,7 @@ constructor(
   private fun endBattle(
       battle: BattleInstance,
       result: BattleResult,
-      skip: Long? = null,
+      skip: Set<Long> = emptySet(),
       prizeMoney: Int = 0,
   ) {
     emitter.sendEvents(battle, engine.endBattle(battle))
@@ -744,9 +837,9 @@ constructor(
   }
 
   /** Write the battle's live hp and pp back into the party and flush the character. */
-  private fun persistParty(battle: BattleInstance, skip: Long? = null) {
+  private fun persistParty(battle: BattleInstance, skip: Set<Long> = emptySet()) {
     for (state in battle.party) {
-      if (state.entityId == skip) continue
+      if (state.entityId in skip) continue
       // Toxic poison leaves the battle as ordinary poison, as the cartridges do.
       val status =
           if (state.status and de.fiereu.openmmo.common.StatusCondition.TOXIC != 0)

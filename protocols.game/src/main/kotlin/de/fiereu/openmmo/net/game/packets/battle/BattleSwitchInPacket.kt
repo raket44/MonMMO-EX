@@ -52,7 +52,7 @@ object BattleSwitchInPacketCodec : PacketCodec<BattleSwitchInPacket>() {
           field(BattleFullBlockCodec) { it.mon }
         } else null
     field(S8) { 1 } // NQ1 presence: the monster is on the field
-    val active = field(BattleActiveDetailCodec) { BattleActiveDetail.of(it.mon.slot, it.mon) }
+    val active = field(BattleActiveDetailCodec) { BattleActiveDetail.of(it.newSlot, it.mon.slot, it.mon) }
     val mon =
         block
             ?: BattleMonBlock(

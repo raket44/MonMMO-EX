@@ -41,6 +41,8 @@ constructor(
 
   fun isOcarina(itemId: Int): Boolean = itemId == SWEET_SCENT_OCARINA
 
+  private val inUse: MutableSet<Long> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
   private fun ppSpent(stored: StoredCharacter): Int = (stored.storyVars[SPENT_KEY] ?: 0).coerceIn(0, MAX_PP)
 
   /** The pp the ocarina has left, for the character record's byte. */
@@ -62,20 +64,29 @@ constructor(
       ctx.send(notice(problem))
       return
     }
-    // "{00} used its {01}!" (client string 6068) in the ordinary message box, with the stand-in
-    // the client itself shows for this region.
-    val standIn = species.get(STAND_INS[state.regionId] ?: STAND_INS.getValue(0))?.name ?: "Pokemon"
-    dialog.showAndWait(
-        ctx,
-        state,
-        USED_MOVE_STRING,
-        MESSAGE_BOX,
-        -1,
-        DialogPresentation(
-            messageArgs =
-                listOf(
-                    RawMessageArg(0, RAW_STRING, text = "${stored.info.name}'s summoned $standIn"),
-                    RawMessageArg(1, RAW_STRING, text = "Sweet Scent"))))
+    // The ROM's "{STR_VAR_1} used {STR_VAR_2}!" (Emerald Text_MonUsedFieldMove, region-tagged so it
+    // resolves anywhere) in the ordinary message box, with the stand-in the client itself shows
+    // for this region. A second press while the box is up is ignored; a box that never comes
+    // back does not hold the ocarina hostage.
+    if (!inUse.add(charId)) return
+    try {
+      val standIn = species.get(STAND_INS[state.regionId] ?: STAND_INS.getValue(0))?.name ?: "Pokemon"
+      kotlinx.coroutines.withTimeoutOrNull(DIALOG_TIMEOUT_MS) {
+        dialog.showAndWait(
+            ctx,
+            state,
+            USED_FIELD_MOVE_TEXT,
+            MESSAGE_BOX,
+            -1,
+            DialogPresentation(
+                messageArgs =
+                    listOf(
+                        RawMessageArg(0, RAW_STRING, text = "${stored.info.name}'s summoned $standIn"),
+                        RawMessageArg(1, RAW_STRING, text = "Sweet Scent"))))
+      }
+    } finally {
+      inUse.remove(charId)
+    }
     val started = encounters.get().startHorde(ctx, charId, state, map, HORDE_SIZE)
     if (started != null) {
       ctx.send(notice(started))
@@ -108,8 +119,9 @@ constructor(
     const val MAX_PP = 32
     const val USE_COST = 5
     const val HORDE_SIZE = 5
-    /** Client string "{00} used its {01}!". */
-    const val USED_MOVE_STRING = 6068
+    /** Emerald Text_MonUsedFieldMove "{STR_VAR_1} used {STR_VAR_2}!" (ROM dialog id). */
+    const val USED_FIELD_MOVE_TEXT = 271124337
+    const val DIALOG_TIMEOUT_MS = 20_000L
     /** Client string "{00} has been refreshed!". */
     const val REFRESHED_STRING = 16777290
     /** Dialog action type of a plain message box (the sign kind, no speaker entity). */

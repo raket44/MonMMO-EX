@@ -45,7 +45,14 @@ public class Dis5{
   for(int i=0;i<Math.min(40,u.size());i++)System.out.println(String.format("unknown 0x%03X x%d  %s",u.get(i).getKey(),u.get(i).getValue(),ctx.get(u.get(i).getKey())));
   if(a[0].equals("dump"))Files.write(Paths.get(a[3]),out.toString().getBytes("UTF-8"));
   if(a[0].equals("infer"))infer(idx,a[3]);
-  if(a[0].equals("headers")){byte[] hdr=narcFile("/a/0/1/2",0);StringBuilder sb=new StringBuilder("# hdr;region;bank;map;header;scriptFile;levelScript;textBank;events\n");for(int i=0;i<hdr.length/48;i++){int o=i*48;sb.append("hdr;2;").append(i&0xFF).append(';').append(i>>8).append(';').append(i).append(';').append(u16(hdr,o+6)).append(';').append(u16(hdr,o+8)).append(';').append(u16(hdr,o+10)).append(';').append(u16(hdr,o+22)).append((char)10);}Files.write(Paths.get(a[3]),sb.toString().getBytes("UTF-8"));}
+  if(a[0].equals("headers")){byte[] hdr=narcFile("/a/0/1/2",0);StringBuilder sb=new StringBuilder("# hdr;region;bank;map;header;scriptFile;levelScript;textBank;events\n");for(int i=0;i<hdr.length/48;i++){int o=i*48;sb.append("hdr;2;").append(i&0xFF).append(';').append(i>>8).append(';').append(i).append(';').append(u16(hdr,o+6)).append(';').append(u16(hdr,o+8)).append(';').append(u16(hdr,o+10)).append(';').append(u16(hdr,o+22)).append((char)10);}
+   // Level scripts (+8): 6-byte typed entries (u16 type, u16 script, u16 0) until a 0 type, then
+   // 8-byte var entries (u16 var, u16 value, u16 script, u16 0) until the file ends.
+   int[][] sidx=narcIndex("/a/0/5/7");
+   for(int i=0;i<hdr.length/48;i++){int lv=u16(hdr,i*48+8);if(lv>=sidx.length)continue;byte[] f=Arrays.copyOfRange(rom,sidx[lv][0],sidx[lv][1]);int p=0;
+    while(p+6<=f.length){int type=u16(f,p);if(type==0){p+=2;break;}sb.append("lvl;2;").append(i).append(';').append(type).append(';').append(u16(f,p+2)).append((char)10);p+=6;}
+    while(p+8<=f.length){int var=u16(f,p);if(var==0)break;sb.append("lvlvar;2;").append(i).append(';').append(var).append(';').append(u16(f,p+2)).append(';').append(u16(f,p+4)).append((char)10);p+=8;}}
+   Files.write(Paths.get(a[3]),sb.toString().getBytes("UTF-8"));}
  }
  /** Linear decode from pc with known commands only: true when a terminal or jump is reached within 64 steps. */
  static boolean reaches(byte[] f,int pc){for(int step=0;step<64;step++){if(pc<0||pc+2>f.length)return false;int op=u16(f,pc);String[] c=cmds.get(op);if(c==null)return step>=4;if((op&0xC000)!=0)return false;if(TERMINAL.contains(op)||op==0x1E)return true;int q=pc+2;for(char s:c[1].toCharArray())q+=s=='B'?1:s=='H'?2:4;pc=q;}return false;}

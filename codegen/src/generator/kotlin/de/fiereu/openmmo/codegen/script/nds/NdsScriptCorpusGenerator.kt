@@ -1085,6 +1085,28 @@ class NdsScriptCorpusGenerator {
         val entries = (entriesByFile[file] ?: HashMap()).toSortedMap().values.map { lab(it) }
         out["U$file"] = ParsedFile(entries, blocks)
       }
+      // Level scripts: type 2 (enter) and 4 (load) run on arrival; the var table is the frame table.
+      val hdrLines = File(root, "nds-headers-2.txt").readLines()
+      val init = LinkedHashMap<Int, MutableList<String>>()
+      val frame = LinkedHashMap<Int, MutableList<List<String>>>()
+      fun entryLabel(header: Int, idx: Int): String? {
+        val row = headerRows.firstOrNull { it[3] == header } ?: return null
+        val entries = (entriesByFile[row[4]] ?: HashMap()).toSortedMap().values.toList()
+        return entries.getOrNull(idx - 1)?.let { "U${row[4]}_$it" }
+      }
+      for (l in hdrLines) {
+        val p = l.split(';')
+        if (p[0] == "lvl" && (p[3] == "2" || p[3] == "4")) entryLabel(p[2].toInt(), p[4].toInt())?.let { init.getOrPut(p[2].toInt()) { mutableListOf() } += it }
+        if (p[0] == "lvlvar") entryLabel(p[2].toInt(), p[5].toInt())?.let { target ->
+          val f = frame.getOrPut(p[2].toInt()) { mutableListOf() }
+          f += listOf("Compare", "VAR_0x" + p[3].toInt().toString(16).uppercase(), p[4])
+          f += listOf("GoToIfEq", target)
+        }
+      }
+      val initBlocks = mutableListOf<Block>()
+      for ((h, targets) in init) initBlocks += Block("NDS_INIT_${h}_TRANSITION", false, targets.map { listOf("Call", it) }.toMutableList<List<String>>().also { it += listOf("End") })
+      for ((h, lines) in frame) initBlocks += Block("NDS_INIT_${h}_FRAME", false, lines.toMutableList().also { it += listOf("End") })
+      out["UINIT"] = ParsedFile(emptyList(), initBlocks)
       val trainer = Block("UTR_0", false, mutableListOf(listOf("LockAll"), listOf("FacePlayer"), listOf("TrainerBattle", "VAR_0x8004", "0", "0", "0"), listOf("ReleaseAll"), listOf("End")))
       out["UTR"] = ParsedFile(listOf("UTR_0"), listOf(trainer))
       return out

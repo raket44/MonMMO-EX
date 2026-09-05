@@ -31,6 +31,8 @@ data class BattleFieldStatePacket(
     val opposing: OpposingSide,
     /** The decomp trainer id, which the client draws the name and sprite from. Zero on a wild. */
     val trainerId: Short,
+    /** The ROM region the trainer id indexes: 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4 Johto. */
+    val trainerRegion: Byte = 0,
     val playerParty: List<BattleMonBlock>,
     val activeSlot: Int,
     val opponentParty: List<BattleOpponentBlock>,
@@ -65,6 +67,7 @@ data class BattleFieldStatePacket(
               background,
               opposing,
               trainerId,
+        trainerRegion,
               playerParty,
               activeSlot,
               opponentParty,
@@ -116,7 +119,8 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     // Opens the opposing side. A trainer adds its id and two more halfwords here.
     field(S8) { if (it.opposing == OpposingSide.TRAINER) 2.toByte() else 1.toByte() }
     constant(6)
-    reserved(0)
+    // Descriptor sub-type 6, then the region byte the client keys its trainer table with.
+    val trainerRegion = field(S8) { it.trainerRegion }
     val trainerId =
         if (opposing == OpposingSide.TRAINER) field(S16LE) { it.trainerId } else 0.toShort()
     padding(4)
@@ -145,6 +149,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         background,
         opposing,
         trainerId,
+        trainerRegion,
         party,
         active.slot,
         opponents,

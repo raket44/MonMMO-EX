@@ -94,8 +94,10 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             playerAppearance = CAPTURED_APPEARANCE,
             background = 0,
             opposing = if (battle.trainer == null) OpposingSide.WILD else OpposingSide.TRAINER,
-            // TODO Check whether Hoenn needs a region tag, both decomps number trainers from 1
+            // The client resolves class and name through its per-region ROM trainer table
+            // (f/W9.io(region, id)); the id alone lands in the Kanto table.
             trainerId = (battle.trainer?.id ?: 0).toShort(),
+            trainerRegion = battle.trainerRegion.toByte(),
             playerParty = battle.party.mapIndexed { slot, mon -> mon.toBlock(slot, true) },
             activeSlot = battle.activeSlot,
             opponentParty =

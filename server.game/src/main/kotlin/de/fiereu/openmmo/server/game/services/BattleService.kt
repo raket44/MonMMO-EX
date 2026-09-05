@@ -377,7 +377,7 @@ constructor(
             party,
             enemies,
             rng,
-            BattleRules(catchable, escapable, trainer, defeatTextId))
+            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0))
     val firstAlive = party.indexOfFirst { !it.fainted }
     battle.activeSlot = firstAlive
     battle.seenActive.clear()

@@ -23,6 +23,8 @@ data class BattleRules(
     val defeatTextId: Int? = null,
     /** False for the early rival: a loss hands the outcome to the script instead of a whiteout. */
     val whiteoutOnDefeat: Boolean = true,
+    /** Region whose ROM trainer table names the opponent (client W9.io(region, id)). */
+    val trainerRegion: Int = 0,
 )
 
 /** One running battle. A wild encounter is the case where [opponent] holds a single monster. */
@@ -41,6 +43,8 @@ class BattleInstance(
     val defeatTextId: Int? = null,
     /** False for the early rival: a loss hands the outcome to the script instead of a whiteout. */
     val whiteoutOnDefeat: Boolean = true,
+    /** Region whose ROM trainer table names the opponent; the client shows class + name from it. */
+    val trainerRegion: Int = 0,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1

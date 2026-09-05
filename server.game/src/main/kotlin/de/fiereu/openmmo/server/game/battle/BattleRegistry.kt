@@ -33,6 +33,8 @@ class BattleRegistry @Inject constructor() {
             rules.escapable,
             rules.trainer,
             rules.defeatTextId,
+            rules.whiteoutOnDefeat,
+            rules.trainerRegion,
         )
     byChar[charId] = battle
     return battle

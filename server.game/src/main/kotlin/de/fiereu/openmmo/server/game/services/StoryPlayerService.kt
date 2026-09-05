@@ -37,6 +37,7 @@ constructor(
     private val items: ItemRegistry,
     private val dexProgress: DexProgressService,
     private val worldState: WorldStateService,
+    private val ocarinas: OcarinaService,
 ) {
 
   /** Gives a story Pokemon and syncs it. */
@@ -96,6 +97,7 @@ constructor(
           )
         }
     healed.forEach { characters.updatePokemon(characterId, it) }
+    ocarinas.refill(session, characterId)
     // The spot that healed last is where a whiteout returns the player.
     val info = stored.info
     characters.setStoryVar(

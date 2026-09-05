@@ -54,6 +54,7 @@ constructor(
     private val dexProgress: DexProgressService,
     private val breedingService: BreedingService,
     private val presenceService: PresenceService,
+    private val ocarinas: OcarinaService,
 ) {
 
   suspend fun onContainerAction(event: PacketEvent<ContainerActionPacket>) {
@@ -95,6 +96,10 @@ constructor(
     // the first decoded one: riding is the BIKE skin slot (SkinSlot.BIKE), so using the Bicycle
     // toggles that slot and re-announces the appearance via EntitySpriteChange (0x90).
     if (monsterId == 0L) {
+      if (ocarinas.isOcarina(itemId)) {
+        ocarinas.use(ctx, state, charId, itemId)
+        return
+      }
       if (itemId == BICYCLE_ITEM_ID) {
         // THE BIKE, decoded end to end from the client: the drawn bike is the BIKE skin slot
         // (type 0 = Red Bicycle, per the 31000+ string block), and whether the player renders

@@ -31,6 +31,7 @@ constructor(
     private val scriptRegistry: ScriptRegistry,
     private val scriptRunner: ScriptRunner,
     private val scriptMovement: ScriptMovementService,
+    private val ocarinas: OcarinaService,
 ) {
 
   /**
@@ -216,6 +217,7 @@ constructor(
                       pokemon = stored.pcStorage,
                   ))
               session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
+              stored.info.id.let { ocarinas.refill(session, it) }
             }
             2 ->
                 session.send(notice("The Global Trade Link is opened from the Trade menu for now."))

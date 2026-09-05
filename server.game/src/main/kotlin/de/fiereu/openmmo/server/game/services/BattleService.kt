@@ -50,6 +50,13 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /**
+ * The wild shiny odds, 1 in this many per wild monster (retail's base rate is 1 in 30000).
+ * Override with -Dmonmmo.wildShinyRate=<n>; 0 turns wild shinies off.
+ */
+private val wildShinyDenominator: Int =
+    System.getProperty("monmmo.wildShinyRate")?.toIntOrNull()?.coerceAtLeast(0) ?: 30_000
+
+/**
  * A prompt waiting for its answer, kept after the battle ends. A trainer battle can raise one
  * monster past a level more than once, so these are held per monster rather than per player.
  */
@@ -404,12 +411,15 @@ constructor(
     }
     val rng = BattleRng()
     val enemies = mutableListOf<BattleMonState>()
+    // Only the wild roll for shiny; a trainer's monsters never do.
+    val shinyDenominator = if (trainer == null) wildShinyDenominator else 0
     for (spec in opponents) {
-      var rolled = wildMons.create(spec.dexId, spec.level, rng)
+      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator)
       if (rolled == null) {
         session.send(notice("Unknown species ${spec.dexId}."))
         return null
       }
+      if (rolled.isShiny) log.info { "Shiny wild ${spec.dexId} L${spec.level} rolled for char=$charId (1 in $shinyDenominator)" }
       if (spec.moveIds.isNotEmpty()) {
         rolled =
             rolled.copy(

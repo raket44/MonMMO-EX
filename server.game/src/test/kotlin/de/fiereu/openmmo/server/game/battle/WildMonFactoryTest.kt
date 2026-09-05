@@ -23,6 +23,14 @@ class WildMonFactoryTest :
         a.nature shouldBe b.nature
       }
 
+      test("no shiny denominator never rolls a shiny, 1 always does, and 30000 is rare") {
+        repeat(200) { i -> factory.create(19, 5, BattleRng(seed = i.toLong()))!!.isShiny shouldBe false }
+        repeat(20) { i -> factory.create(19, 5, BattleRng(seed = i.toLong()), shinyDenominator = 1)!!.isShiny shouldBe true }
+        val shinies = (0 until 2_000).count { i -> factory.create(19, 5, BattleRng(seed = i.toLong()), shinyDenominator = 30_000)!!.isShiny }
+        // 2000 rolls at 1 in 30000: more than one would be a broken roll, not luck.
+        (shinies <= 1) shouldBe true
+      }
+
       test("IVs stay in the legal range and hp equals the computed maximum") {
         val species = SpeciesRegistry()
         repeat(50) { i ->

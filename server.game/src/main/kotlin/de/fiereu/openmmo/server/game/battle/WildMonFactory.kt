@@ -20,7 +20,12 @@ private const val TACKLE_ID = 33
 
 private const val LAST_RETAIL_DEX = 649
 
-/** Rolls a wild monster: random nature seed, random IVs, computed stats, full hp. */
+/**
+ * Rolls a wild monster: random nature seed, random IVs, computed stats, full hp, and with a
+ * [shinyDenominator] above zero a 1 in that many chance of being shiny (every monster rolls on
+ * its own, so each horde member has the full chance). Zero, the default, never rolls one: a
+ * trainer's monsters, starters and give commands stay plain.
+ */
 @Singleton
 class WildMonFactory
 @Inject
@@ -33,7 +38,7 @@ constructor(
         de.fiereu.openmmo.server.game.services.RetailHeldItems(),
 ) {
 
-  fun create(requestedDexId: Int, level: Int, rng: BattleRng): Pokemon? {
+  fun create(requestedDexId: Int, level: Int, rng: BattleRng, shinyDenominator: Int = 0): Pokemon? {
     // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
     // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
     // are the same monster server-side. Ids for genuinely new species (650+) keep the offset.
@@ -85,7 +90,7 @@ constructor(
             eVs = EVs(),
             iVs = ivs,
             moves = moveset,
-            isShiny = false,
+            isShiny = shinyDenominator > 0 && rng.pick(shinyDenominator) == 0,
             hasHiddenAbility = false,
             isAlpha = false,
             isSecret = false,

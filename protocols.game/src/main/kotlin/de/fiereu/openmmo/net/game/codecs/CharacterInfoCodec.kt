@@ -31,9 +31,10 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
     val money = field(S32LE, CharacterInfo::money)
     field(S16LE) { 0 }
     field(S32LE) { 0 }
-    // The client reads this byte as the Sweet Scent Ocarina's spent pp (f/ZZ.Og1, f/ZB1.mf1: uses left =
-    // 32 minus it); no permission bit reaches the client here.
-    val fieldMovePpSpent = field(U8) { it.fieldMovePpSpent and 0xFF }
+    // The client reads this byte as the Sweet Scent Ocarina's pp LEFT (f/ZZ.Og1: the hotbar uses the
+    // ocarina while it covers the move's cost, f/ZB1.mf1 replenishes 32 minus it); no permission
+    // bit reaches the client here.
+    val sweetScentPp = field(U8) { it.sweetScentPp and 0xFF }
     // The client reads this byte as its staff level (f.ZZ.tI): 1 opens the built-in GM Menu.
     val staffLevel = field(U8) { it.clientStaffLevel }
     field(S8) { 0 }
@@ -78,7 +79,7 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
         createdAt = createdAt,
         money = money,
         permissions = withClientStaffLevel(0, staffLevel),
-        fieldMovePpSpent = fieldMovePpSpent,
+        sweetScentPp = sweetScentPp,
         remainingSafariSteps = remainingSafariSteps,
         remainingSafariBalls = remainingSafariBalls,
         pcExtraSlots = pcExtraSlots,

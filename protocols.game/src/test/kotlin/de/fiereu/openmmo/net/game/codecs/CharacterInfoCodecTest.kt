@@ -22,7 +22,7 @@ class CharacterInfoCodecTest :
                 createdAt = timestamp,
                 money = 30000,
                 permissions = 0,
-                fieldMovePpSpent = 8,
+                sweetScentPp = 8,
                 remainingSafariSteps = 0,
                 remainingSafariBalls = 0,
                 pcExtraSlots = 0,
@@ -71,7 +71,7 @@ class CharacterInfoCodecTest :
                 createdAt = timestamp,
                 money = 30000,
                 permissions = CharacterPermissions.DEVELOPER or 8,
-                fieldMovePpSpent = 8,
+                sweetScentPp = 8,
                 remainingSafariSteps = 0,
                 remainingSafariBalls = 0,
                 pcExtraSlots = 0,
@@ -92,6 +92,6 @@ class CharacterInfoCodecTest :
             CharacterInfoCodecShort.decodeBytes(CharacterInfoCodecShort.encodeToBytes(info))
 
         decoded.permissions shouldBe 0
-        decoded.fieldMovePpSpent shouldBe 8
+        decoded.sweetScentPp shouldBe 8
       }
     })

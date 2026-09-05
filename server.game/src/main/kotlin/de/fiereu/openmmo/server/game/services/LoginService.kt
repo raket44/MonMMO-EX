@@ -312,7 +312,7 @@ constructor(
     val updatedInfo = info.copy(lastLogin = now)
     characterStore.updateCharacter(updatedInfo)
 
-    ctx.send(SelectedCharacterPacket(info.copy(fieldMovePpSpent = ocarinas.ppSpent(stored))))
+    ctx.send(SelectedCharacterPacket(info.copy(sweetScentPp = ocarinas.ppLeft(stored))))
     // Re-read after the bicycle grant so the join payload carries the current bag, and push the
     // stack explicitly - belt and braces against whichever packet the client trusts for the bag.
     val current = characterStore.getCharacter(charId) ?: stored

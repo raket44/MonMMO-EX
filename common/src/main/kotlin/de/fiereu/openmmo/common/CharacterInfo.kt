@@ -15,8 +15,8 @@ data class CharacterInfo(
     val createdAt: LocalDateTime,
     val money: Int,
     val permissions: Int,
-    /** Sweet Scent pp the Ocarina has spent, out of 32; the client (f/ZZ.Og1) shows 32 minus this. */
-    val fieldMovePpSpent: Int = 0,
+    /** The Sweet Scent Ocarina's pp left, out of 32 (client f/ZZ.Og1; f/ZO1.k70 uses it once it covers the move's cost). */
+    val sweetScentPp: Int = 32,
     val remainingSafariSteps: Short,
     val remainingSafariBalls: Byte,
     val pcExtraSlots: Byte,

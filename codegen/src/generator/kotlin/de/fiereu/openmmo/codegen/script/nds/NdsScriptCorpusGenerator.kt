@@ -54,6 +54,9 @@ class NdsScriptCorpusGenerator {
 
     /** Convenience macros the scripts use as commands, expanded to their plain-command bodies. */
     fun macros(): Map<String, Macro> = emptyMap()
+
+    /** For a chunk whose ids are base + trainer id: the number of trainer ids, else null. */
+    fun trainerChunkSize(base: Int): Int? = null
   }
 
   class Macro(val params: List<String>, val body: List<String>)
@@ -143,6 +146,18 @@ class NdsScriptCorpusGenerator {
       }
       // Chunk bindings (Platinum common scripts etc.): global ids -> entry label.
       dialect.chunkFiles().filterValues { it == file.name }.keys.forEach { base ->
+        val trainerChunk = dialect.trainerChunkSize(base)
+        val trainerEntry = parsed.entries.firstOrNull() ?: parsed.blocks.firstOrNull { !it.movement }?.label
+        if (trainerChunk != null && trainerEntry != null) {
+          // Platinum: script id = base + trainer id, all through one shared script that reads the
+          // trainer from VAR_0x8004 (the engine sets it from the script id; the binding does here).
+          for (k in 1 until trainerChunk) {
+            val label = "NDS_CHUNK_${base + k}"
+            programs += ScriptCorpusProgramRecord(label, sourceFile, listOf("setvar VAR_0x8004, $k", "goto $trainerEntry", "end"), emptyMap())
+            interactable += label
+          }
+          return@forEach
+        }
         parsed.entries.forEachIndexed { i, target ->
           val label = "NDS_CHUNK_${base + i}"
           programs += ScriptCorpusProgramRecord(label, sourceFile, listOf("goto $target", "end"), emptyMap())
@@ -377,6 +392,28 @@ class NdsScriptCorpusGenerator {
           } else out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
         }
         "ReturnCommonScript" -> out += "return"
+        // Trainers by ROM id: HeartGold names the constant, Platinum's shared battle script reads
+        // VAR_0x8004 (set by the chunk binding from the script id).
+        "TrainerBattle", "StartTrainerBattle" -> out += "ds_trainerbattle ${a[0]}"
+        "CheckTrainerFlag" -> {
+          // HeartGold checks into the compare result; Platinum names a var.
+          out += "ds_checktrainerflag ${a[0]}, ${a.getOrElse(1) { "VAR_RESULT" }}"
+          if (a.size < 2) out += "compare VAR_RESULT, 1"
+        }
+        "SetTrainerFlag" -> out += "ds_settrainerflag ${a[0]}"
+        // The approaching trainer's id: the chunk binding already put it in VAR_0x8004.
+        "GetTrainerID" -> if (a[0] != "VAR_0x8004") out += "copyvar ${a[0]}, VAR_0x8004"
+        "CheckWonBattle", "CheckBattleWon" -> resultCopy(out, a.getOrNull(0))
+        "GoToIfDefeated" -> {
+          out += "ds_checktrainerflag ${a[0]}, VAR_RESULT"
+          out += "compare VAR_RESULT, 1"
+          out += "goto_if_eq ${a[1]}"
+        }
+        "WildBattle", "RocketTrapBattle" -> {
+          out += "setwildbattle ${a[0]}, ${a.getOrElse(1) { "5" }}, ITEM_NONE"
+          out += "dowildbattle"
+        }
+        "ClearTrainerFlag" -> out += "ds_cleartrainerflag ${a[0]}"
         "Switch" -> out += "switch ${a[0]}"
         "Case" -> out += "case ${a[0]}, ${a[1]}"
         "SetPosition" -> {
@@ -600,6 +637,12 @@ class NdsScriptCorpusGenerator {
       return out
     }
 
+    /** SINGLE_BATTLES (3000) and DOUBLE_BATTLES (5000) carry the trainer id in the script id. */
+    override fun trainerChunkSize(base: Int): Int? =
+        if (base == chunkOffsets["SINGLE_BATTLES"] || base == chunkOffsets["DOUBLE_BATTLES"])
+            File(root, "generated/trainers.txt").readLines().count { it.isNotBlank() }
+        else null
+
     /** The `Common_*` helpers in scrcmd.inc: plain command bodies, no byte directives. */
     override fun macros(): Map<String, Macro> {
       val out = HashMap<String, Macro>()
@@ -712,7 +755,7 @@ class NdsScriptCorpusGenerator {
     /** Queries with a fixed answer on this server: the var they fill and the value. */
     val STUB_QUERIES = mapOf(
         "GetNationalDexEnabled" to 1, "GetGameVersion" to 0, "GetPartyLeadAlive" to 1, "DressUpPhotoHasData" to 0,
-        "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "CheckItemIsPlate" to 0, "GetTimeOfDay" to 1, "CheckPartyHasSpecies" to 0, "CheckPoketchAppRegistered" to 0, "GetTrCardStars" to 0, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
+        "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "CheckItemIsPlate" to 0, "GetTimeOfDay" to 1, "CheckPartyHasSpecies" to 0, "CheckPoketchAppRegistered" to 0, "GetTrCardStars" to 0, "CountAliveMonsExcept" to 1, "GetMovementType" to 0, "CheckIsTrainerDoubleBattle" to 0, "CheckHasTwoAliveMons" to 1, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
         "CheckPlayerOnBike" to 0, "PlayerOnBikeCheck" to 0, "CheckRegisteredPhoneNumber" to 0, "GetPhoneBookRematch" to 0,
         "GetRematchTrainerID" to 0, "IsItemTMHM" to 0, "ItemIsTMOrHM" to 0, "GetCoinsAmount" to 0, "GetCoinAmount" to 0,
     )
@@ -735,6 +778,12 @@ class NdsScriptCorpusGenerator {
             "ScriptOverlayCmd", "ShowMoney", "HideMoney", "ShowMoneyBox", "HideMoneyBox", "UpdateMoneyDisplay", "UpdateMoneyBox",
             "ShowCoins", "HideCoins", "UpdateCoinDisplay", "TrySetUnusedCollectedOrbFlag", "PlayDoorOpenAnimation", "PlayDoorCloseAnimation",
             "RegisterGearNumber", "ScreenShake", "SetBikeStateLock", "MoveGreatMarshTram", "SetSubScene63",
+            // A lost battle already whited the player out server-side; trainer intro text and music
+            // come from ROM tables not bound yet.
+            "BlackOutFromBattle", "Whiteout", "PlayTrainerEncounterBGM", "GetTrainerMessageTypes", "GetTrainerRematchMessageTypes",
+            "PrintTrainerDialogue", "SetMoveCodeForFacingDirection",
+            // A lost battle already whited the player out server-side.
+            "BlackoutFromBattle", "Whiteout",
         )
     val MOVEMENT_STEPS: Map<String, String> = buildMap {
       val dirs = mapOf("North" to "up", "South" to "down", "West" to "left", "East" to "right")

@@ -83,10 +83,11 @@ jteCodegen {
   // Trainers differ per game, so this is by region like maps rather than from the canonical decomp.
   register("trainer") {
     mainClass.set("de.fiereu.openmmo.codegen.trainer.Main")
+    val trainerSources = regionSources + mapOf("sinnoh" to "pokeplatinum", "johto" to "pokeheartgold")
     inputDirs.from(
-        regionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
+        trainerSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
     extraArgs.set(
-        regionSources.map { (region, decomp) ->
+        trainerSources.map { (region, decomp) ->
           "$region|${rootProject.layout.projectDirectory.dir("decomp/$decomp").asFile.absolutePath}"
         })
   }

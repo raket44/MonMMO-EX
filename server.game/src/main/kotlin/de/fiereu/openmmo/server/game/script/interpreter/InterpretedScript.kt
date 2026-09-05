@@ -146,6 +146,33 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
           state.pc++
         }
+        // Gen 4 trainer battles name the trainer by ROM id (a constant or, for Platinum's shared
+        // battle script, VAR_0x8004). The region's trainer table resolves it; a win sets the
+        // synthetic defeated flag and VAR_RESULT = 1, anything else 0.
+        "ds_trainerbattle" -> {
+          val arg = instruction.arg(0)
+          val id = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as IntArg).value
+          val result = tracedWait(ctx, "ds_trainerbattle $id") { ctx.trainerBattle(id) }
+          val won = result == BattleResult.VICTORY
+          if (won) ctx.setFlag(namespaced("FLAG_DS_TRAINER_$id"))
+          ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
+          state.pc++
+        }
+        "ds_checktrainerflag" -> {
+          val arg = instruction.arg(0)
+          val id = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as IntArg).value
+          val set = ctx.isFlagSet(namespaced("FLAG_DS_TRAINER_$id"))
+          ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
+          state.pc++
+        }
+        "ds_settrainerflag",
+        "ds_cleartrainerflag" -> {
+          val arg = instruction.arg(0)
+          val id = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as IntArg).value
+          if (instruction.command == "ds_settrainerflag") ctx.setFlag(namespaced("FLAG_DS_TRAINER_$id"))
+          else ctx.clearFlag(namespaced("FLAG_DS_TRAINER_$id"))
+          state.pc++
+        }
         // A DS map header id is the client's bank (low byte) and map (high byte).
         "ds_warp" -> {
           val header = (instruction.arg(0) as IntArg).value

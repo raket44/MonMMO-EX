@@ -260,6 +260,8 @@ class ScriptSupportAnalyzer(
           "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
           "ds_flagtovar" -> args.size == 2
           "ds_warp" -> args.size == 3
+          "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
+          "ds_checktrainerflag" -> args.size == 2
           "trainerbattle_single" -> args.size in setOf(3, 4, 5)
           "trainerbattle_rematch" -> args.size == 3
           "trainerbattle_double" -> args.size in setOf(4, 5, 6)
@@ -529,6 +531,10 @@ class ScriptSupportAnalyzer(
             "ds_getweekday",
             "ds_flagtovar",
             "ds_warp",
+            "ds_trainerbattle",
+            "ds_checktrainerflag",
+            "ds_settrainerflag",
+            "ds_cleartrainerflag",
             "msgbox",
             "message",
             "lock",

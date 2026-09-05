@@ -2,7 +2,9 @@ package de.fiereu.openmmo.trainer
 
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.trainer.generated.GeneratedHoennTrainers
+import de.fiereu.openmmo.trainer.generated.GeneratedJohtoTrainers
 import de.fiereu.openmmo.trainer.generated.GeneratedKantoTrainers
+import de.fiereu.openmmo.trainer.generated.GeneratedSinnohTrainers
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,6 +49,8 @@ class TrainerRegistry @Inject constructor() {
   init {
     GeneratedHoennTrainers.loadInto(this)
     GeneratedKantoTrainers.loadInto(this)
+    GeneratedSinnohTrainers.loadInto(this)
+    GeneratedJohtoTrainers.loadInto(this)
   }
 
   fun register(region: Region, def: TrainerDef) {

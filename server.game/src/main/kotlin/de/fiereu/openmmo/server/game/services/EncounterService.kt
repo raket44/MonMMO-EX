@@ -126,8 +126,16 @@ constructor(
   }
 
   /**
+   * Sweet Scent: what stops a horde on the tile the player stands on, null when one can start.
+   */
+  fun hordeAvailable(charId: Long, state: de.fiereu.openmmo.server.game.session.PlayerState, map: MapDef?): String? =
+      hordePlan(charId, state, map, 3).let { if (it is HordePlan.Blocked) it.reason else null }
+
+  /**
    * Sweet Scent: a horde of [size] from the terrain the player stands on, sized down to three when
-   * the map has no five-strong entries. Returns what stopped it, null when the battle started.
+   * the map has no five-strong entries. A horde is ONE species: the table's rarities are the
+   * chance of that species' horde showing up, not a mix. Returns what stopped it, null when the
+   * battle started.
    */
   fun startHorde(
       session: SessionContext,
@@ -136,8 +144,28 @@ constructor(
       map: MapDef?,
       size: Int,
   ): String? {
-    if (battleService.inBattle(charId)) return "Already in a battle."
-    if (!hasUsablePartyMon(charId)) return "No usable party monster."
+    val plan = hordePlan(charId, state, map, size)
+    if (plan is HordePlan.Blocked) return plan.reason
+    val ready = plan as HordePlan.Ready
+    val slot = pickRetailSlot(ready.pool) ?: return "Nothing here answers the scent."
+    val specs =
+        List(ready.count) {
+          BattleService.OpponentSpec(slot.dexId, random.nextInt(slot.minLevel, slot.maxLevel + 1), emptyList())
+        }
+    log.info { "Horde of ${ready.count} x ${slot.dexId} for char=$charId: levels ${specs.joinToString { it.level.toString() }}" }
+    battleService.startHordeBattle(session, specs)
+    return null
+  }
+
+  private sealed interface HordePlan {
+    class Blocked(val reason: String) : HordePlan
+
+    class Ready(val count: Int, val pool: List<RetailEncounters.Slot>) : HordePlan
+  }
+
+  private fun hordePlan(charId: Long, state: de.fiereu.openmmo.server.game.session.PlayerState, map: MapDef?, size: Int): HordePlan {
+    if (battleService.inBattle(charId)) return HordePlan.Blocked("Already in a battle.")
+    if (!hasUsablePartyMon(charId)) return HordePlan.Blocked("No usable party monster.")
     val season = WorldClock.season()
     val time = WorldClock.timeOfDay()
     val pools: (Int) -> List<RetailEncounters.Slot>
@@ -148,21 +176,14 @@ constructor(
     } else {
       val type = ndsLand.typeAt(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt())
       val types = if (type != null && ndsLand.isGrass(type)) setOf("Grass", "Dark Grass") else setOf("Cave")
-      val name = NdsMapTypes.nameOf(state.regionId, state.bankId, state.mapId) ?: return "This map has no encounter table."
+      val name = NdsMapTypes.nameOf(state.regionId, state.bankId, state.mapId) ?: return HordePlan.Blocked("This map has no encounter table.")
       pools = { n -> RetailEncounters.hordePoolForNdsName(name, state.regionId, types, season, time, n) }
     }
     val wanted = if (size >= 5) 5 else 3
     val (count, pool) =
         listOf(wanted, 3).map { it to pools(it) }.firstOrNull { it.second.isNotEmpty() }
-            ?: return "Nothing here answers the scent."
-    val specs =
-        List(count) {
-          val slot = pickRetailSlot(pool) ?: return "Nothing here answers the scent."
-          BattleService.OpponentSpec(slot.dexId, random.nextInt(slot.minLevel, slot.maxLevel + 1), emptyList())
-        }
-    log.info { "Horde of $count for char=$charId: " + specs.joinToString { "${it.dexId} L${it.level}" } }
-    battleService.startHordeBattle(session, specs)
-    return null
+            ?: return HordePlan.Blocked("Nothing here answers the scent.")
+    return HordePlan.Ready(count, pool)
   }
 
   /** Picks from the retail pool weighted by its per-time rarity. */

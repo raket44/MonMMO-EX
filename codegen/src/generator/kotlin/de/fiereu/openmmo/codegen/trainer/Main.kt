@@ -15,7 +15,7 @@ fun main(args: Array<String>) {
   for (spec in args.drop(3)) {
     val (region, decomp) = spec.split("|")
     val dir = File(decomp)
-    val trainers = if (dir.name == "pokeplatinum" || dir.name == "pokeheartgold") NdsTrainerParser(dir).parseAll() else TrainerParser(dir).parseAll()
+    val trainers = if (dir.name == "pokeplatinum" || dir.name == "pokeheartgold" || dir.name == "server.game") NdsTrainerParser(dir).parseAll() else TrainerParser(dir).parseAll()
     println("[trainer] $region: parsed ${trainers.size} trainers from $decomp")
     TrainerRenderer(region, templatesDir, outputDir, classCacheDir).render(trainers)
   }

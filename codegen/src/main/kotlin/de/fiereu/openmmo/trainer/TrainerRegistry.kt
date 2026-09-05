@@ -5,6 +5,7 @@ import de.fiereu.openmmo.trainer.generated.GeneratedHoennTrainers
 import de.fiereu.openmmo.trainer.generated.GeneratedJohtoTrainers
 import de.fiereu.openmmo.trainer.generated.GeneratedKantoTrainers
 import de.fiereu.openmmo.trainer.generated.GeneratedSinnohTrainers
+import de.fiereu.openmmo.trainer.generated.GeneratedUnovaTrainers
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +52,7 @@ class TrainerRegistry @Inject constructor() {
     GeneratedKantoTrainers.loadInto(this)
     GeneratedSinnohTrainers.loadInto(this)
     GeneratedJohtoTrainers.loadInto(this)
+    GeneratedUnovaTrainers.loadInto(this)
   }
 
   fun register(region: Region, def: TrainerDef) {

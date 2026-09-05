@@ -24,7 +24,33 @@ class NdsTrainerParser(private val root: File) {
   private val json = Json { ignoreUnknownKeys = true }
 
   fun parseAll(): List<ParsedTrainer> =
-      if (File(root, "res/trainers/data").isDirectory) platinum() else heartgold()
+      when {
+        File(root, "nds-trainers-2.txt").isFile -> unova()
+        File(root, "res/trainers/data").isDirectory -> platinum()
+        else -> heartgold()
+      }
+
+  /** Unova: tools/nds/Trn5 rows from the ROM's trdata/trpoke archives (trn;... and mon;... lines). */
+  private fun unova(): List<ParsedTrainer> {
+    val mons = HashMap<Int, MutableList<ParsedTrainerMon>>()
+    val heads = LinkedHashMap<Int, IntArray>()
+    File(root, "nds-trainers-2.txt").forEachLine { l ->
+      val p = l.split(';')
+      when (p[0]) {
+        "trn" -> heads[p[2].toInt()] = intArrayOf(p[3].toInt(), p[4].toInt(), p[5].toInt(), p[6].toInt())
+        "mon" -> {
+          val dex = p[4].toInt()
+          if (dex in 1..649) mons.getOrPut(p[2].toInt()) { mutableListOf() } +=
+              ParsedTrainerMon(dex, p[5].toInt(), p[6].toInt(), 0, p.drop(8).mapNotNull { it.toIntOrNull() }.filter { it > 0 })
+        }
+      }
+    }
+    return heads.mapNotNull { (id, h) ->
+      val party = mons[id].orEmpty()
+      if (party.isEmpty()) null
+      else ParsedTrainer(id, "TRAINER_", "", h[0], h[2] != 0, DEFAULT_PRIZE_RATE, party, emptyList())
+    }
+  }
 
   private fun enumList(path: String): Map<String, Int> =
       File(root, path).readLines().map { it.substringBefore('=').trim() }.filter { it.isNotEmpty() }

@@ -84,12 +84,14 @@ jteCodegen {
   register("trainer") {
     mainClass.set("de.fiereu.openmmo.codegen.trainer.Main")
     val trainerSources = regionSources + mapOf("sinnoh" to "pokeplatinum", "johto" to "pokeheartgold")
+    val unovaTrainerDir = rootProject.layout.projectDirectory.dir("server.game")
     inputDirs.from(
-        trainerSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
+        trainerSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") } +
+            unovaTrainerDir.file("nds-trainers-2.txt"))
     extraArgs.set(
         trainerSources.map { (region, decomp) ->
           "$region|${rootProject.layout.projectDirectory.dir("decomp/$decomp").asFile.absolutePath}"
-        })
+        } + "unova|${unovaTrainerDir.asFile.absolutePath}")
   }
   // Per region flag and var key constants for scripts. Names come from each decomp, so this is by
   // region like maps. The generic story store in server.game does not depend on these, they are

@@ -139,6 +139,7 @@ constructor(
 
   private fun ndsTrainerId(regionId: Int, script: Int): Int? {
     val base = when (script) { in 3000..4999 -> 3000; in 5000..6999 -> 5000; else -> return null }
+    // Platinum and Unova number from 0 at the base; HeartGold from 1.
     return script - base + if (regionId == 4) 1 else 0
   }
 

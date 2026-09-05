@@ -891,7 +891,10 @@ class NdsScriptCorpusGenerator {
      * standard routines CallStd names (file 862: 2805 bag-space check, 2811 obtain item),
      * 10000+ hidden items (file 865).
      */
-    override fun chunkFiles(): Map<Int, String> = mapOf(2000 to "U864", 2800 to "U862", 10000 to "U865")
+    override fun chunkFiles(): Map<Int, String> = mapOf(2000 to "U864", 2800 to "U862", 3000 to "UTR", 10000 to "U865")
+
+    /** Trainer npcs carry script 3000 + trainer id; one synthetic battle script serves them all. */
+    override fun trainerChunkSize(base: Int): Int? = if (base == 3000) 616 else null
 
     private class Cmd(val entry: Int, val offset: Int, val name: String, val args: List<String>)
 
@@ -1082,6 +1085,8 @@ class NdsScriptCorpusGenerator {
         val entries = (entriesByFile[file] ?: HashMap()).toSortedMap().values.map { lab(it) }
         out["U$file"] = ParsedFile(entries, blocks)
       }
+      val trainer = Block("UTR_0", false, mutableListOf(listOf("LockAll"), listOf("FacePlayer"), listOf("TrainerBattle", "VAR_0x8004", "0", "0", "0"), listOf("ReleaseAll"), listOf("End")))
+      out["UTR"] = ParsedFile(listOf("UTR_0"), listOf(trainer))
       return out
     }
   }

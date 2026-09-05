@@ -84,10 +84,10 @@ jteCodegen {
   register("trainer") {
     mainClass.set("de.fiereu.openmmo.codegen.trainer.Main")
     val trainerSources = regionSources + mapOf("sinnoh" to "pokeplatinum", "johto" to "pokeheartgold")
-    val unovaTrainerDir = rootProject.layout.projectDirectory.dir("server.game")
+    // Unova trainer rows extracted from the ROM by tools/nds/Trn5 (no decomp exists for it).
+    val unovaTrainerDir = rootProject.layout.projectDirectory.dir("rom-data")
     inputDirs.from(
-        trainerSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") } +
-            unovaTrainerDir.file("nds-trainers-2.txt"))
+        trainerSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") } + unovaTrainerDir)
     extraArgs.set(
         trainerSources.map { (region, decomp) ->
           "$region|${rootProject.layout.projectDirectory.dir("decomp/$decomp").asFile.absolutePath}"

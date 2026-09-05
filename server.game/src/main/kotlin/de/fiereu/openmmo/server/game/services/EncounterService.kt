@@ -128,8 +128,8 @@ constructor(
   /**
    * Sweet Scent: what stops a horde on the tile the player stands on, null when one can start.
    */
-  fun hordeAvailable(charId: Long, state: de.fiereu.openmmo.server.game.session.PlayerState, map: MapDef?): String? =
-      hordePlan(charId, state, map, 3).let { if (it is HordePlan.Blocked) it.reason else null }
+  fun hordeAvailable(charId: Long, state: de.fiereu.openmmo.server.game.session.PlayerState, map: MapDef?, size: Int): String? =
+      hordePlan(charId, state, map, size).let { if (it is HordePlan.Blocked) it.reason else null }
 
   /**
    * Sweet Scent: a horde of [size] from the terrain the player stands on, sized down to three when

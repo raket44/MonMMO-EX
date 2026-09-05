@@ -57,11 +57,13 @@ constructor(
       return
     }
     val map = maps.getMap(state.regionId, state.bankId, state.mapId)
-    val problem = encounters.get().hordeAvailable(charId, state, map)
+    val problem = encounters.get().hordeAvailable(charId, state, map, HORDE_SIZE)
     if (problem != null) {
+      log.info { "[Ocarina] char=$charId refused: $problem" }
       ctx.send(notice(problem))
       return
     }
+    log.info { "[Ocarina] char=$charId using Sweet Scent at ${state.regionId}:${state.bankId}:${state.mapId} (${state.x}, ${state.y}), pp left ${MAX_PP - spent}" }
     // "{00} used its {01}!" (client string 6068) in the grey notice box, with the stand-in the
     // client itself shows for this region. A message box before the horde is what retail does,
     // but a GBA dialog carrying text arguments does not render on this client yet (no script has
@@ -81,6 +83,7 @@ constructor(
   private fun summon(ctx: SessionContext, state: PlayerState, charId: Long, map: MapDef?, spent: Int) {
     val started = encounters.get().startHorde(ctx, charId, state, map, HORDE_SIZE)
     if (started != null) {
+      log.info { "[Ocarina] char=$charId horde refused: $started" }
       ctx.send(notice(started))
       return
     }

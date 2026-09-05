@@ -7,6 +7,7 @@ import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.items.ItemDef
 import de.fiereu.openmmo.maps.MapManager
+import de.fiereu.openmmo.net.game.packets.dialog.DialogMessageArg
 import de.fiereu.openmmo.net.game.packets.dialog.TextPokemonSpeciesArg
 import de.fiereu.openmmo.server.game.battle.BattleResult
 import de.fiereu.openmmo.server.game.developer.DeveloperTools
@@ -90,6 +91,18 @@ internal constructor(
   }
 
   /** Begin a pret `message`; the following wait command owns the client acknowledgement. */
+  /**
+   * Text placeholder arguments (`{0N}` in ROM text) the Gen 4 Buffer* commands set; every dialog
+   * this context shows carries them, like the DS keeps its string buffers until overwritten.
+   */
+  private val messageArgs = java.util.TreeMap<Int, DialogMessageArg>()
+
+  fun setMessageArg(slot: Int, arg: DialogMessageArg) {
+    messageArgs[slot] = arg
+  }
+
+  private fun presentation() = DialogPresentation(messageArgs = messageArgs.values.toList())
+
   internal fun showMessage(line: DialogLine) {
     holdScriptedFacing()
     val sign = state.dialogMessageMode == DialogMessageMode.SIGN
@@ -99,6 +112,7 @@ internal constructor(
         line.textId,
         if (sign) SIGN else NPC,
         if (sign) -1 else entityId,
+        presentation(),
     )
   }
 
@@ -176,7 +190,7 @@ internal constructor(
   /** Ask a ROM-backed yes/no question from the interacted entity. */
   suspend fun askYesNo(line: DialogLine): Boolean {
     holdScriptedFacing()
-    return dialog.askYesNo(session, state, line.textId, entityId)
+    return dialog.askYesNo(session, state, line.textId, entityId, messageArgs.values.toList())
   }
 
   /** Ask a ROM-backed yes/no question from a cutscene npc. */

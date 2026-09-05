@@ -318,7 +318,17 @@ class NdsScriptCorpusGenerator {
       val a = line.drop(1).map { t -> if (msgBank != null && name in MESSAGE_COMMANDS && t.toIntOrNull() != null) "msg_%04d_MAP_%05d".format(msgBank, t.toInt()) else t }
       val next = lines.getOrNull(i + 1)
       when {
-        name.startsWith("Buffer") -> {}
+        // Text placeholders: the client fills `{0N}` from message args the dialog carries.
+        name.startsWith("Buffer") ->
+            when (name) {
+              "BufferPlayerName", "BufferPlayersName" -> out += "ds_buffer ${a[0]}, player"
+              "BufferRivalName", "BufferRivalsName", "BufferCounterpartName" -> out += "ds_buffer ${a[0]}, rival"
+              "BufferItemName", "BufferItemNameWithArticle", "BufferItemNamePlural", "BufferItemNameIndef" ->
+                  if (a.size >= 2) out += "ds_buffer ${a[0]}, item, ${a[1]}"
+              "BufferNumber", "BufferInt", "BufferFloorNumber", "BufferDeptStoreFloorNo" ->
+                  if (a.size >= 2) out += "ds_buffer ${a[0]}, number, ${a[1]}"
+              else -> {}
+            }
         else -> when (name) {
         // -- flow
         "End" -> out += "end"

@@ -263,6 +263,7 @@ class ScriptSupportAnalyzer(
           "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
           "ds_checktrainerflag" -> args.size == 2
           "ds_martcommon" -> args.isEmpty()
+          "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
           "ds_countbadges" -> args.size == 1
           "trainerbattle_single" -> args.size in setOf(3, 4, 5)
@@ -536,6 +537,7 @@ class ScriptSupportAnalyzer(
             "ds_warp",
             "ds_trainerbattle",
             "ds_martcommon",
+            "ds_buffer",
             "ds_pokemart",
             "ds_countbadges",
             "ds_checktrainerflag",

@@ -24,6 +24,21 @@ data class TextCreatureArg(
     val value2: Short,
 ) : DialogMessageArg()
 
+/**
+ * A text placeholder argument in the client's own wire shape (reader f/tK0.fa1): the slot the
+ * text refers to as `{0N}`, the formatter kind (f/RO0.Si: 5 raw string, 3 number, 25 item name
+ * by wire id, 24 "N x item", 26 DS ROM text entry [game, file, entry] with the region as extra),
+ * an optional region byte, and a payload by kind.
+ */
+data class RawMessageArg(
+    val slot: Byte,
+    val kind: Byte,
+    val extra: Byte? = null,
+    val shorts: List<Short> = emptyList(),
+    val text: String? = null,
+    val intValue: Int? = null,
+) : DialogMessageArg()
+
 private val DialogMessageArgCodec: Codec<DialogMessageArg> =
     object : Codec<DialogMessageArg> {
       override fun read(buf: ReadBuffer): DialogMessageArg =
@@ -46,7 +61,21 @@ private val DialogMessageArgCodec: Codec<DialogMessageArg> =
             }
 
             3 -> TextCreatureArg(buf.readByte(), buf.readByte(), S16LE.read(buf), S16LE.read(buf))
-            else -> throw MalformedPacketException("unknown dialog message arg tag $tag")
+            else -> {
+              // Raw shape: [slot][kind|0x80][extra?][payload].
+              val rawKind = buf.readByte().toInt()
+              val extra = if (rawKind and 0x80 != 0) buf.readByte() else null
+              val kind = (rawKind and 0x7F)
+              when (kind) {
+                5, 18 -> RawMessageArg(tag.toByte(), kind.toByte(), extra, text = Utf16LeNullTerminated.read(buf))
+                9, 10, 17 -> RawMessageArg(tag.toByte(), kind.toByte(), extra, intValue = S32LE.read(buf))
+                28 -> RawMessageArg(tag.toByte(), kind.toByte(), extra)
+                else -> {
+                  val n = U8.read(buf)
+                  RawMessageArg(tag.toByte(), kind.toByte(), extra, shorts = List(n) { S16LE.read(buf) })
+                }
+              }
+            }
           }
 
       override fun write(buf: WriteBuffer, value: DialogMessageArg) {
@@ -79,6 +108,21 @@ private val DialogMessageArgCodec: Codec<DialogMessageArg> =
             buf.writeByte(value.statusId)
             S16LE.write(buf, value.value1)
             S16LE.write(buf, value.value2)
+          }
+
+          is RawMessageArg -> {
+            buf.writeByte(value.slot)
+            buf.writeByte(if (value.extra != null) (value.kind.toInt() or 0x80).toByte() else value.kind)
+            value.extra?.let { buf.writeByte(it) }
+            when (value.kind.toInt()) {
+              5, 18 -> Utf16LeNullTerminated.write(buf, value.text.orEmpty())
+              9, 10, 17 -> S32LE.write(buf, value.intValue ?: 0)
+              28 -> {}
+              else -> {
+                U8.write(buf, value.shorts.size)
+                value.shorts.forEach { S16LE.write(buf, it) }
+              }
+            }
           }
         }
       }

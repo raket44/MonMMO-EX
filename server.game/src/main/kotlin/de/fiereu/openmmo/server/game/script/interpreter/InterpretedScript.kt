@@ -16,6 +16,8 @@ import de.fiereu.openmmo.script.SymbolArg
 import de.fiereu.openmmo.script.TextArg
 import de.fiereu.openmmo.script.TrainerArg
 import de.fiereu.openmmo.script.VarArg
+import de.fiereu.openmmo.net.game.packets.dialog.DialogMessageArg
+import de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg
 import de.fiereu.openmmo.server.game.battle.BattleResult
 import de.fiereu.openmmo.server.game.script.MovementStep
 import de.fiereu.openmmo.server.game.script.Script
@@ -189,6 +191,23 @@ class InterpretedScript(
           if (shelf.isNotEmpty()) ctx.pokemart(*shelf.toTypedArray())
           else log.warn { "Script ${program.id.stable}: DS mart shelf resolved no items ($ids)" }
           return
+        }
+        // Gen 4 Buffer*: fill text slot N. Kinds: player/rival name (raw string 5), item name by
+        // wire id (25), number (raw string of the value).
+        "ds_buffer" -> {
+          val slot = (instruction.arg(0) as IntArg).value
+          val region = if (program.id.source == "heartgold") 4 else 3
+          fun valueOf(arg: ScriptArg): Int = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as? IntArg)?.value ?: 0
+          val arg: DialogMessageArg? =
+              when (instruction.arg(1).token) {
+                "player" -> RawMessageArg(slot.toByte(), 5, text = ctx.playerName)
+                "rival" -> RawMessageArg(slot.toByte(), 5, text = if (region == 4) "Silver" else "Barry")
+                "item" -> RawMessageArg(slot.toByte(), 25, shorts = listOf((region * 1000 + valueOf(instruction.arg(2))).toShort()))
+                "number" -> RawMessageArg(slot.toByte(), 5, text = valueOf(instruction.arg(2)).toString())
+                else -> null
+              }
+          arg?.let { ctx.setMessageArg(slot, it) }
+          state.pc++
         }
         "ds_countbadges" -> {
           ctx.setVar(namespaced(varArg(instruction, 0).token), (0 until 16).count { ctx.isFlagSet(namespaced("FLAG_DS_BADGE_$it")) })

@@ -173,6 +173,27 @@ class InterpretedScript(
           else ctx.clearFlag(namespaced("FLAG_DS_TRAINER_$id"))
           state.pc++
         }
+        // Gen 4 marts. The common shelf is the badge-tiered table both games share; a specialty
+        // shelf lists the game's own item indexes. Wire ids are region * 1000 + index.
+        "ds_martcommon",
+        "ds_pokemart" -> {
+          val region = if (program.id.source == "heartgold") 4 else 3
+          val ids =
+              if (instruction.command == "ds_pokemart") instruction.args.mapNotNull { (it as? IntArg)?.value }
+              else {
+                val badges = (0 until 16).count { ctx.isFlagSet(namespaced("FLAG_DS_BADGE_$it")) }
+                val tier = when (badges) { 0 -> 1; 1, 2 -> 2; 3, 4 -> 3; 5, 6 -> 4; 7 -> 5; else -> 6 }
+                DS_COMMON_MART.filter { it.second <= tier }.map { it.first }
+              }
+          val shelf = ids.mapNotNull { ctx.resolveItemWire(region * 1000 + it) }
+          if (shelf.isNotEmpty()) ctx.pokemart(*shelf.toTypedArray())
+          else log.warn { "Script ${program.id.stable}: DS mart shelf resolved no items ($ids)" }
+          return
+        }
+        "ds_countbadges" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), (0 until 16).count { ctx.isFlagSet(namespaced("FLAG_DS_BADGE_$it")) })
+          state.pc++
+        }
         // A DS map header id is the client's bank (low byte) and map (high byte).
         "ds_warp" -> {
           val header = (instruction.arg(0) as IntArg).value
@@ -1579,3 +1600,7 @@ private const val B_OUTCOME_WON = 1
 private const val B_OUTCOME_LOST = 2
 private const val B_OUTCOME_RAN = 4
 private const val B_OUTCOME_CAUGHT = 7
+
+/** The Gen 4 common mart shelf: (item index, badge tier) - identical in Platinum and HeartGold. */
+private val DS_COMMON_MART: List<Pair<Int, Int>> =
+    listOf(4 to 1, 3 to 3, 2 to 4, 17 to 1, 26 to 2, 25 to 4, 24 to 5, 23 to 6, 28 to 3, 18 to 1, 22 to 1, 21 to 2, 19 to 2, 20 to 2, 27 to 4, 78 to 2, 79 to 2, 83 to 3, 84 to 4)

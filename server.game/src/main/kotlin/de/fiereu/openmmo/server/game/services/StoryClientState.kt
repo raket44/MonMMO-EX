@@ -89,11 +89,13 @@ internal object StoryClientState {
         // decomp mapping is also the wire mapping.
         KANTO_REGION -> KantoFlags.numericId(key)
         HOENN_REGION -> HoennFlags.numericId(key)
-        // NDS regions: NEVER forward ROM ids. HGSS keeps badges in a save bitfield, not event
-        // flags, so the client's whitelisted 1360..1368 are PokeMMO-invented ids - and the ROM's
-        // OWN 1360+ range is its trainer-defeated flags. Forwarding ROM ids would light badges
-        // for beating random trainers. Regions 2..4 need a probed ROM-id -> client-id table.
-        else -> null
+        // NDS regions: NEVER forward ROM ids (HGSS badges are a save bitfield; the ROM's own
+        // 1360+ flags are trainer-defeated flags). The DS scripts keep badges as the synthetic
+        // FLAG_DS_BADGE_<n>, which maps onto the client's own per-region badge ids.
+        else ->
+            Regex("FLAG_DS_BADGE_(\\d+)$").find(key)?.groupValues?.get(1)?.toIntOrNull()?.let { n ->
+              ClientStoryWhitelist.badgeIds[regionId.toInt()]?.getOrNull(n)
+            }
       }
 
   private fun varId(regionId: Byte, key: String): Int? =

@@ -57,6 +57,9 @@ class NdsScriptCorpusGenerator {
 
     /** For a chunk whose ids are base + trainer id: the number of trainer ids, else null. */
     fun trainerChunkSize(base: Int): Int? = null
+
+    /** Specialty mart shelves by the game's mart index: ITEM_ tokens. */
+    fun martTables(): Map<Int, List<String>> = emptyMap()
   }
 
   class Macro(val params: List<String>, val body: List<String>)
@@ -306,6 +309,7 @@ class NdsScriptCorpusGenerator {
     // HeartGold standard messages: GetStdMsgNaix puts a message file id in a var, MsgBoxExtern
     // shows an entry of it; folded here into the same ROM text ids as every other message.
     val stdMsg = HashMap<String, Int>()
+    var lastVar8004: Int? = null
     var i = 0
     while (i < lines.size) {
       val line = lines[i]
@@ -352,7 +356,10 @@ class NdsScriptCorpusGenerator {
         // -- flags and vars
         "SetFlag" -> out += "setflag ${a[0]}"
         "ClearFlag" -> out += "clearflag ${a[0]}"
-        "SetVar", "SetVarFromValue" -> out += "setvar ${a[0]}, ${a[1]}"
+        "SetVar", "SetVarFromValue" -> {
+          if (a[0] == "VAR_SPECIAL_x8004") lastVar8004 = a[1].toIntOrNull()
+          out += "setvar ${a[0]}, ${a[1]}"
+        }
         "AddVar" -> out += "addvar ${a[0]}, ${a[1]}"
         "SubVar" -> out += "subvar ${a[0]}, ${a[1]}"
         "CopyVar", "SetVarFromVar" -> out += "copyvar ${a[0]}, ${a[1]}"
@@ -411,8 +418,18 @@ class NdsScriptCorpusGenerator {
         }
         // Badges are a save bitfield on the DS, not event flags: they live as synthetic story
         // flags the gym scripts set the same way.
-        "GoToIfBadgeAcquired" -> out += "goto_if_set FLAG_DS_BADGE_${a[0]}, ${a[1]}"
-        "CheckBadge" -> out += "ds_flagtovar FLAG_DS_BADGE_${a[0]}, ${a[1]}"
+        "GoToIfBadgeAcquired" -> out += "goto_if_set FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
+        "CheckBadge", "CheckBadgeAcquired" -> out += "ds_flagtovar FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
+        "GiveBadge" -> out += "setflag FLAG_DS_BADGE_${badge(a[0], constants)}"
+        "CountBadgesAcquired" -> out += "ds_countbadges ${a[0]}"
+        "HealParty" -> out += "special HealPlayerParty"
+        // Marts: the badge-tiered common shelf, or a specialty shelf by the game's mart index.
+        "PokeMartCommon", "MartBuy" -> out += "ds_martcommon"
+        "MartSell", "PokeMartDecor", "PokeMartSeal", "ShowAccessoryShop" -> {}
+        "PokeMartSpecialties" -> {
+          val items = dialect.martTables()[constants[a[0]] ?: a[0].toIntOrNull() ?: -1]
+          if (items == null) out += "ds_pokemartspecialties ${a[0]}" else out += "ds_pokemart ${items.joinToString(", ")}"
+        }
         "GetStdMsgNaix" -> STD_MSG_BANKS[a[0].toIntOrNull() ?: -1]?.let { stdMsg[a[1]] = it }
         "MsgBoxExtern", "NonNPCMsgExtern" -> {
           val bank = stdMsg[a[0]]
@@ -496,7 +513,18 @@ class NdsScriptCorpusGenerator {
         "GetPlayerDir", "GetPlayerFacing" -> out += "ds_getplayerdir ${a[0]}"
         "GetWeekday" -> out += "ds_getweekday ${a[0]}"
         "CallCommonScript" -> out += "call NDS_CHUNK_${a[0].removePrefix("0x").toIntOrNull(if (a[0].startsWith("0x")) 16 else 10) ?: a[0]}"
-        "CallStd" -> out += "call NDS_CHUNK_${constants[a[0]] ?: a[0]}"
+        "CallStd" -> {
+          val id = constants[a[0]] ?: a[0].toIntOrNull()
+          when (id) {
+            2011 -> out += "ds_martcommon"
+            2052 -> {
+              // std_special_mart reads the shelf index the caller put in VAR_SPECIAL_x8004.
+              val items = lastVar8004?.let { dialect.martTables()[it] }
+              if (items == null) out += "ds_pokemartspecialties ${lastVar8004 ?: "?"}" else out += "ds_pokemart ${items.joinToString(", ")}"
+            }
+            else -> out += "call NDS_CHUNK_${id ?: a[0]}"
+          }
+        }
         "GiveItemNoCheck" -> {
           out += "giveitem ${a[0]}, ${a.getOrElse(1) { "1" }}"
           resultCopy(out, a.getOrNull(2))
@@ -669,6 +697,20 @@ class NdsScriptCorpusGenerator {
       return out
     }
 
+    /** include/data/mart_items.h: named shelves and the PokeMartSpecialties index over them. */
+    override fun martTables(): Map<Int, List<String>> {
+      val text = File(root, "include/data/mart_items.h").readText()
+      val shelves = Regex("const u16 (\\w+)\\[\\] = \\{([^}]*)\\}").findAll(text).associate { m ->
+        m.groupValues[1] to Regex("ITEM_\\w+").findAll(m.groupValues[2]).map { it.value }.toList()
+      }
+      val ids = constants()
+      return Regex("\\[(MART_SPECIALTIES_ID_\\w+)\\]\\s*=\\s*(\\w+)").findAll(text).mapNotNull { m ->
+        val id = ids[m.groupValues[1]] ?: return@mapNotNull null
+        val shelf = shelves[m.groupValues[2]] ?: return@mapNotNull null
+        id to shelf
+      }.toMap()
+    }
+
     /** SINGLE_BATTLES (3000) and DOUBLE_BATTLES (5000) carry the trainer id in the script id. */
     override fun trainerChunkSize(base: Int): Int? =
         if (base == chunkOffsets["SINGLE_BATTLES"] || base == chunkOffsets["DOUBLE_BATTLES"])
@@ -692,7 +734,7 @@ class NdsScriptCorpusGenerator {
           }
           line == ".endm" -> {
             val n = name
-            if (n != null && n.startsWith("Common_") && body.none { it.startsWith(".") }) out[n] = Macro(params, body.toList())
+            if (n != null && (n.startsWith("Common_") || n.startsWith("PokeMart")) && body.none { it.startsWith(".") }) out[n] = Macro(params, body.toList())
             name = null
           }
           name != null && line.isNotEmpty() -> body += line
@@ -767,6 +809,16 @@ class NdsScriptCorpusGenerator {
         val file = files.firstOrNull { it == "$prefix.s" || (it.startsWith(prefix + "_") && it.endsWith(".s") && !it.endsWith("_hdr.s")) } ?: return@mapNotNull null
         base to file
       }.toMap()
+    }
+
+    /** src/scrcmd_mart.c: the anonymous shelves and the _0210FA3C index SpecialMartBuy reads. */
+    override fun martTables(): Map<Int, List<String>> {
+      val text = File(root, "src/scrcmd_mart.c").readText()
+      val shelves = Regex("const u16 (_[0-9A-F]+)\\[\\] = \\{([^}]*)\\}").findAll(text).associate { m ->
+        m.groupValues[1] to Regex("ITEM_\\w+").findAll(m.groupValues[2]).map { it.value }.toList()
+      }
+      val order = Regex("const u16 \\*_0210FA3C\\[\\] = \\{([^}]*)\\}").find(text)?.groupValues?.get(1) ?: return emptyMap()
+      return Regex("_[0-9A-F]{8}").findAll(order).map { it.value }.withIndex().mapNotNull { (i, name) -> shelves[name]?.let { i to it } }.toMap()
     }
 
     override fun constants(): Map<String, Int> = constants
@@ -877,3 +929,6 @@ class NdsScriptCorpusGenerator {
     }
   }
 }
+
+/** A badge token as its number, so the eight synthetic flags can be counted. */
+private fun badge(token: String, constants: Map<String, Int>): String = (constants[token] ?: token.toIntOrNull())?.toString() ?: token

@@ -10,6 +10,7 @@ import de.fiereu.openmmo.net.game.packets.AddFriendPacket
 import de.fiereu.openmmo.net.game.packets.BlockPlayerPacket
 import de.fiereu.openmmo.net.game.packets.CancelSocialInteractionPacket
 import de.fiereu.openmmo.net.game.packets.DuelChallengePacket
+import de.fiereu.openmmo.net.game.packets.LinkKickMemberPacket
 import de.fiereu.openmmo.net.game.packets.LinkRequestPacket
 import de.fiereu.openmmo.net.game.packets.TradeActionPacket
 import de.fiereu.openmmo.net.game.packets.TradeRequestPacket
@@ -83,7 +84,9 @@ import de.fiereu.openmmo.server.game.services.MovementService
 import de.fiereu.openmmo.server.game.services.MultiplayerService
 import de.fiereu.openmmo.server.game.services.PresenceService
 import de.fiereu.openmmo.server.game.services.ShopService
+import de.fiereu.openmmo.server.game.services.LinkService
 import de.fiereu.openmmo.server.game.services.SocialRequestService
+import de.fiereu.openmmo.server.game.services.TradeService
 import de.fiereu.openmmo.server.game.services.SocialService
 import de.fiereu.openmmo.server.game.services.command.ChatCommandService
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
@@ -109,6 +112,8 @@ constructor(
     private val socialService: SocialService,
     private val guildService: GuildService,
     private val socialRequestService: SocialRequestService,
+    private val tradeService: TradeService,
+    private val linkService: LinkService,
     private val battleService: BattleService,
     private val chatCommandService: ChatCommandService,
     private val shopService: ShopService,
@@ -182,8 +187,9 @@ constructor(
     on<TradeRequestPacket> { event -> socialRequestService.onTradeRequest(event) }
     on<LinkRequestPacket> { event -> socialRequestService.onLinkRequest(event) }
     on<DuelChallengePacket> { event -> socialRequestService.onDuelChallenge(event) }
-    on<TradeActionPacket> { event -> socialRequestService.onTradeAction(event) }
-    on<TradeSelectMonPacket> { event -> socialRequestService.onTradeSelectMon(event) }
+    onSuspend<TradeActionPacket> { event -> tradeService.onAction(event) }
+    on<TradeSelectMonPacket> { event -> tradeService.onSelectMon(event) }
+    on<LinkKickMemberPacket> { event -> linkService.onKick(event) }
 
     onSuspend<GuildCreatePacket> { event -> guildService.onCreateGuild(event) }
     onSuspend<GuildInvitePacket> { event -> guildService.onGuildInvite(event) }
@@ -266,6 +272,8 @@ constructor(
       // The battle flush must land before the unload evicts the character from the cache, and
       // before the rollback, which would otherwise be overwritten by the party it persists.
       battleService.onDisconnect(session)
+      tradeService.onDisconnect(charId)
+      linkService.onDisconnect(charId)
       // Undo the interrupted script here rather than leaving it to the coroutine's own cleanup,
       // which runs on another thread and would race the flush below.
       scriptRunner.rollBack(session, state, entityId = -1)

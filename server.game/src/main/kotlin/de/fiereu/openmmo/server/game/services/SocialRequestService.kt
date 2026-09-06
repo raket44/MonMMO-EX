@@ -3,13 +3,10 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.net.game.packets.DuelChallengePacket
-import de.fiereu.openmmo.net.game.packets.DuelInvitePacket
 import de.fiereu.openmmo.net.game.packets.LinkRequestPacket
 import de.fiereu.openmmo.net.game.packets.ServerMessageArg
 import de.fiereu.openmmo.net.game.packets.ServerMessagePacket
-import de.fiereu.openmmo.net.game.packets.TradeActionPacket
 import de.fiereu.openmmo.net.game.packets.TradeRequestPacket
-import de.fiereu.openmmo.net.game.packets.TradeSelectMonPacket
 import de.fiereu.openmmo.net.game.packets.dialog.DialogActionPacket
 import de.fiereu.openmmo.server.game.session.PENDING_SOCIAL_REQUESTS
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
@@ -44,6 +41,8 @@ constructor(
     private val characterStore: CharacterStore,
     private val guildService: Provider<GuildService>,
     private val socialService: Provider<SocialService>,
+    private val tradeService: TradeService,
+    private val linkService: LinkService,
 ) {
 
   enum class Kind(val wire: Int, val accepted: Int, val rejected: Int, val autoDeclined: Int) {
@@ -71,15 +70,6 @@ constructor(
 
   fun onDuelChallenge(event: PacketEvent<DuelChallengePacket>) =
       request(event.session, Kind.CHALLENGE, event.packet.targetPlayerName, challenge = event.packet)
-
-  /** The trade window's buttons (0/1/2). The trade itself is not implemented yet: logged. */
-  fun onTradeAction(event: PacketEvent<TradeActionPacket>) {
-    log.info { "TradeAction char=${event.session.attributes[PLAYER_STATE]?.characterId} action=${event.packet.action}" }
-  }
-
-  fun onTradeSelectMon(event: PacketEvent<TradeSelectMonPacket>) {
-    log.info { "TradeSelectMon char=${event.session.attributes[PLAYER_STATE]?.characterId} slot=${event.packet.slotIndex}" }
-  }
 
   /**
    * Sends the prompt for [kind] to the player called [targetName]. Returns false when the target
@@ -163,14 +153,11 @@ constructor(
     when (pending.kind) {
       Kind.FRIEND -> socialService.get().completeFriendship(pending.requesterUserId, pending.requesterName, requester, targetState.userId, targetName, target)
       Kind.TEAM -> guildService.get().acceptInvite(pending.guildId, target, targetCharId, targetName, requester)
-      Kind.TRADE -> {
-        // Opens the trade window on both sides (s2c 0x50 f/jm0: flags, my side, peer name). The
-        // trade's own packets (0x52 offers, 0x50 actions, 0x51 outcome) are still to be built.
-        requester?.send(DuelInvitePacket(0.toByte(), 0.toByte(), targetName))
-        target.send(DuelInvitePacket(0.toByte(), 1.toByte(), pending.requesterName))
-        log.info { "Trade window opened between '${pending.requesterName}' and '$targetName' (trade mechanics not implemented yet)" }
+      Kind.TRADE -> tradeService.open(pending.requesterCharId, pending.requesterName, targetCharId, targetName)
+      Kind.LINK -> {
+        val refused = linkService.join(pending.requesterCharId, targetCharId)
+        if (refused != null) requester?.send(message(refused, targetName))
       }
-      Kind.LINK -> log.info { "Link accepted between '${pending.requesterName}' and '$targetName' (links not implemented yet)" }
       Kind.CHALLENGE -> log.info { "Duel accepted between '${pending.requesterName}' and '$targetName' (player battles not implemented yet)" }
     }
     return true

@@ -240,6 +240,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
 
   fun onInteractive(event: PacketEvent<DialogActionResponsePacket>) {
     val session = event.session
+    log.info { "Dialog response id=${event.packet.id} code=${event.packet.unk}" }
     // A social prompt (trade, link, friend, team, duel) answers through the same packet.
     if (socialRequests?.onAnswer(session, event.packet.id, event.packet.unk) == true) return
     val response = session.attributes.remove(PENDING_DIALOG_RESPONSE)

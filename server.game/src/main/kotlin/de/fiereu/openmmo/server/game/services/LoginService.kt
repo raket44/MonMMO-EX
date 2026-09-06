@@ -110,6 +110,7 @@ constructor(
     private val ndsWarps: NdsWarps,
     private val ocarinas: OcarinaService,
     private val guildService: GuildService,
+    private val linkService: LinkService,
 ) {
 
   fun onJoinGame(event: PacketEvent<JoinPacket>) {
@@ -641,6 +642,7 @@ constructor(
 
     socialService.sendFriendList(ctx)
     guildService.sendMembership(ctx)
+    linkService.sendTo(ctx, charId)
     if (ctx.attributes[PENDING_MAP_LOAD] === pendingLoad) ctx.attributes.remove(PENDING_MAP_LOAD)
     pendingLoad?.complete(Unit)
 

@@ -185,12 +185,13 @@ data class BattleBulkStatePacket(
      * outside the XML string table - so a ROM dialog id renders the trainer's real defeat speech,
      * bytecode-verified.
      */
-    fun battleEnd(prizeMoney: Int = 0, defeatTextId: Int? = null): BattleBulkStatePacket =
+    fun battleEnd(prizeMoney: Int = 0, defeatTextId: Int? = null, partnerDefeatTextId: Int? = null): BattleBulkStatePacket =
         BattleBulkStatePacket(
             phase = 0,
+            // One entry per beaten trainer: a double sighting plays both lines back to back, then
+            // the single merged prize.
             firstGroup =
-                if (defeatTextId != null) listOf(CreatureDataEntry(defeatTextId, emptyList()))
-                else listOf(NullSerializedEntry),
+                listOfNotNull(defeatTextId, partnerDefeatTextId).map { CreatureDataEntry(it, emptyList()) }.ifEmpty { listOf(NullSerializedEntry) },
             secondGroup = listOf(NullSerializedEntry),
             prizeMoney = prizeMoney,
             valueB = 0,

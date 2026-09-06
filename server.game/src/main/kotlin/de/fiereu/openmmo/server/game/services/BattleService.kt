@@ -327,6 +327,7 @@ constructor(
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
       partner: TrainerDef? = null,
+      partnerDefeatTextId: Int? = null,
   ): BattleResult {
     // A double sighting: the partner's team lines up behind the first trainer's and the two
     // field one monster each, the way Emerald and FireRed run a simultaneous spot.
@@ -341,6 +342,7 @@ constructor(
             defeatTextId = defeatTextId,
             whiteoutOnDefeat = whiteoutOnDefeat,
             partner = partner,
+            partnerDefeatTextId = partnerDefeatTextId,
         ) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
@@ -387,6 +389,7 @@ constructor(
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
       partner: TrainerDef? = null,
+      partnerDefeatTextId: Int? = null,
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {
@@ -484,7 +487,7 @@ constructor(
             party,
             enemies,
             rng,
-            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0, partner),
+            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0, partner, partnerDefeatTextId),
             format)
     for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
     for (position in 0 until format.opponentSlots) battle.opponentPositions[position] = if (position < enemies.size) position else -1

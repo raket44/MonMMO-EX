@@ -38,6 +38,7 @@ class BattleRegistry @Inject constructor() {
             rules.trainerRegion,
             format,
             partner = rules.partner,
+            partnerDefeatTextId = rules.partnerDefeatTextId,
         )
     byChar[charId] = battle
     return battle

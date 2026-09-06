@@ -347,7 +347,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     // The defeat speech only plays on a VICTORY end - prize money is the marker for one, and
     // a loss/flee must not show the trainer's beaten line.
     val defeatText = if (prizeMoney > 0) battle.defeatTextId else null
-    broadcast(battle, BattleBulkStatePacket.battleEnd(prizeMoney, defeatText))
+    val partnerText = if (prizeMoney > 0) battle.partnerDefeatTextId else null
+    broadcast(battle, BattleBulkStatePacket.battleEnd(prizeMoney, defeatText, partnerText))
     battle.session.send(EntityPresencePacket(entityId = battle.charId, status = PRESENCE_OVERWORLD))
     battle.session.send(
         PokemonContainerPacket(

@@ -244,15 +244,17 @@ constructor(
           textsA?.intro?.let { scriptCtx.say(it) }
           val faceSecond = faceStep(second.dir.opposite()) ?: playerFace
           scriptCtx.moveSelfAndNpcs(listOf(faceSecond), second.npc.entityIdx to secondSteps)
-          textsB?.intro?.let { scriptCtx.say(it) }
+          val secondEntity = npcService.entityIdFor(regionId, bankId, mapId, second.npc.entityIdx)
+          textsB?.intro?.let { scriptCtx.sayAs(secondEntity, it) }
           state.pendingPartnerTrainer = partner
+          state.pendingPartnerDefeatTextId = textsB?.defeat?.textId
           val result = scriptCtx.trainerBattle(firstTrainer, textsA?.defeat?.textId, whiteoutOnDefeat = true)
           state.pendingPartnerTrainer = null
+          state.pendingPartnerDefeatTextId = null
           if (result == de.fiereu.openmmo.server.game.battle.BattleResult.VICTORY) {
             val ns = region0.name.lowercase()
             storyService.setFlag(charId0, TrainerStoryState.defeated(ns, firstTrainer.id))
             storyService.setFlag(charId0, TrainerStoryState.defeated(ns, partner.id))
-            textsB?.defeat?.let { scriptCtx.say(it) }
           }
           done += current.npc.entityIdx
           done += second.npc.entityIdx

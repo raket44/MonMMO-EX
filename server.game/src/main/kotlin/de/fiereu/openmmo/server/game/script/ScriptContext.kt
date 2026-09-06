@@ -90,6 +90,12 @@ internal constructor(
     dialog.showAndWait(session, state, line.textId, NPC, entityId)
   }
 
+  /** [say] attributed to another npc entity - the second trainer of a double sighting speaks for itself. */
+  suspend fun sayAs(speaker: Long, line: DialogLine) {
+    holdScriptedFacing()
+    dialog.showAndWait(session, state, line.textId, NPC, speaker)
+  }
+
   /** Begin a pret `message`; the following wait command owns the client acknowledgement. */
   /**
    * Text placeholder arguments (`{0N}` in ROM text) the Gen 4 Buffer* commands set; every dialog
@@ -428,9 +434,11 @@ internal constructor(
   ): BattleResult {
     // A double sighting queued a second trainer: both fight at once, then the flag clears.
     val partner = state.pendingPartnerTrainer
+    val partnerDefeat = state.pendingPartnerDefeatTextId
     state.pendingPartnerTrainer = null
+    state.pendingPartnerDefeatTextId = null
     return checkNotNull(battles) { "Battle service is unavailable" }
-        .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat, partner)
+        .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat, partner, partnerDefeat)
   }
 
   /**

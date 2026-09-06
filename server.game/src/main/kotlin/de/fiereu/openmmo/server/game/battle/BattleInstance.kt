@@ -28,6 +28,8 @@ data class BattleRules(
     val trainerRegion: Int = 0,
     /** A second trainer fighting alongside [trainer] (double sighting); its party follows the first's. */
     val partner: TrainerDef? = null,
+    /** The partner's in-battle defeat speech, played after [defeatTextId]. */
+    val partnerDefeatTextId: Int? = null,
 )
 
 /**
@@ -78,6 +80,7 @@ class BattleInstance(
     val format: BattleFormat = BattleFormat.SINGLES,
     /** The second trainer of a double sighting, paid and flagged beaten with the first. */
     val partner: TrainerDef? = null,
+    val partnerDefeatTextId: Int? = null,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1

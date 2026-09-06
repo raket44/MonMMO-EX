@@ -58,6 +58,7 @@ data class PlayerState(
      * to run: the next trainer battle fields both as a 2v2 (Emerald/FireRed double sighting).
      */
     @field:Volatile var pendingPartnerTrainer: de.fiereu.openmmo.trainer.TrainerDef? = null,
+    @field:Volatile var pendingPartnerDefeatTextId: Int? = null,
     /**
      * The client's 0x2A story-flag handler silently DROPS updates until its game state exists
      * (f/eO0.X91 bails on a null Sw()), so the login-time world-state block never lands - badges

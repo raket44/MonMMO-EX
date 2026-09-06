@@ -42,8 +42,12 @@ if [ $data = 1 ]; then
 fi
 
 remote_sums=$($SSH "cd /opt/monmmo && find server.game/lib server.login/lib deploy/vps -type f -print0 2>/dev/null | xargs -0 sha256sum" || true)
-changed=$(cd "$stage" && find . -type f -print0 | xargs -0 sha256sum | sed 's#  \./#  #' | sort > "$stage.local" && echo "$remote_sums" | sort > "$stage.remote" && comm -23 "$stage.local" "$stage.remote" | sed 's/^[0-9a-f]*  //')
-stale=$(comm -13 <(cut -d' ' -f3- "$stage.local" | sort) <(echo "$remote_sums" | cut -d' ' -f3- | grep '/lib/' | sort) || true)
+# sha256sum prints "hash  path" on Linux and "hash *./path" on Windows; normalise both.
+norm() { awk '{ sub(/^\*?\.\//, "", $2); print $1 "  " $2 }'; }
+(cd "$stage" && find . -type f -print0 | xargs -0 sha256sum) | norm | sort > "$stage.local"
+echo "$remote_sums" | norm | sort > "$stage.remote"
+changed=$(comm -23 "$stage.local" "$stage.remote" | sed 's/^[0-9a-f]*  //')
+stale=$(comm -13 <(cut -d' ' -f3- "$stage.local" | sort) <(cut -d' ' -f3- "$stage.remote" | grep '/lib/' | sort) || true)
 rm -f "$stage.local" "$stage.remote"
 
 count=$(echo "$changed" | grep -c . || true)

@@ -1,8 +1,6 @@
 package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
-import java.time.LocalDate
-import java.time.ZoneId
 
 data class JoinResponsePacket(
     val canJoin: Boolean,
@@ -20,8 +18,8 @@ data class JoinResponsePacket(
         JoinResponsePacket(true, stats, time)
 
     fun acceptNow(playtime: Int, rewardPoints: Int, balance: Int): JoinResponsePacket {
-      val dayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond().toInt()
-      val now = (System.currentTimeMillis() / 1000).toInt()
+      val dayStart = WorldClock.dayStartSecond()
+      val now = WorldClock.nowSecond()
       return JoinResponsePacket(
           canJoin = true,
           stats = GameStats(playtime, rewardPoints, balance),
@@ -33,9 +31,8 @@ data class JoinResponsePacket(
 
 private fun nowTimeInfo(): JoinResponsePacket.TimeInfo =
     JoinResponsePacket.TimeInfo(
-        serverDayStartSecond =
-            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond().toInt(),
-        serverCurrentSecond = (System.currentTimeMillis() / 1000).toInt(),
+        serverDayStartSecond = WorldClock.dayStartSecond(),
+        serverCurrentSecond = WorldClock.nowSecond(),
     )
 
 object JoinResponsePacketCodec : PacketCodec<JoinResponsePacket>() {

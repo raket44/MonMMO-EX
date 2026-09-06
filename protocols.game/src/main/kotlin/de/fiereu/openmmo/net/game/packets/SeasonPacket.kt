@@ -1,7 +1,6 @@
 package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
-import java.time.LocalDate
 
 /**
  * The Gen 5 season. OpenMMO originally guessed this packet was a "map transition ack" with kinds
@@ -19,8 +18,8 @@ enum class Season(val id: Int) {
   ;
 
   companion object {
-    /** Gen 5 rotates monthly: Jan=SPRING, Feb=SUMMER, Mar=AUTUMN, Apr=WINTER, then repeats. */
-    fun current(): Season = entries[1 + (LocalDate.now().monthValue - 1) % 4]
+    /** Gen 5 rotates monthly in the world clock zone: Jan=SPRING, Feb=SUMMER, Mar=AUTUMN, Apr=WINTER, then repeats. */
+    fun current(): Season = entries[1 + (WorldClock.now().monthValue - 1) % 4]
 
     fun fromId(id: Int): Season = entries.firstOrNull { it.id == id } ?: NONE
   }

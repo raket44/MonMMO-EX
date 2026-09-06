@@ -20,7 +20,8 @@ class BattleMonState(
     // Both move on when a reward lands, so a second reward in the same battle builds on the first.
     var source: Pokemon,
     var stats: ComputedStats,
-    val gender: Byte = 0,
+    /** 0 male, 1 female, -1 genderless - the client's codes, derived the client's way. */
+    val gender: Byte = Gender.of(species.genderRatio, source.seed),
 ) {
   /** The species the battle started with; forms revert to it on faint and at the end. */
   val originalSpecies: SpeciesDef = species

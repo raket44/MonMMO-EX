@@ -21,6 +21,7 @@ import de.fiereu.openmmo.net.game.packets.battle.BattleListEventPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnReplyPacket
 import de.fiereu.openmmo.pokemon.SpeciesRegistry
+import de.fiereu.openmmo.server.game.battle.Gender
 import de.fiereu.openmmo.server.game.battle.BattleInstance
 import de.fiereu.openmmo.server.game.battle.BattleMonState
 import de.fiereu.openmmo.server.game.battle.BattlePacketEmitter
@@ -798,13 +799,7 @@ constructor(
       if (mon.heldItem in BreedingService.EVERSTONES) continue
       val wire = clientSpeciesId(mon.dexId)
       val def = speciesRegistry.get(mon.dexId) ?: continue
-      val female =
-          when (def.genderRatio) {
-            0 -> false
-            254,
-            255 -> def.genderRatio == 254
-            else -> (mon.seed and 0xFF) < def.genderRatio
-          }
+      val female = Gender.of(def.genderRatio, mon.seed) == Gender.FEMALE
       val target =
           EvolutionTable.levelEvolution(
               wire,

@@ -236,7 +236,7 @@ object Abilities {
       Ability.PIXILATE, Ability.REFRIGERATE, Ability.AERILATE, Ability.GALVANIZE, Ability.NORMALIZE ->
           if (move.type == PokemonType.NORMAL) pct = pct * 6 / 5
       Ability.RIVALRY ->
-          if (attacker.gender.toInt() != 0 && defender.gender.toInt() != 0) {
+          if (attacker.gender != Gender.GENDERLESS && defender.gender != Gender.GENDERLESS) {
             pct = if (attacker.gender == defender.gender) pct * 5 / 4 else pct * 3 / 4
           }
       Ability.GORILLA_TACTICS -> if (physical) pct = pct * 3 / 2

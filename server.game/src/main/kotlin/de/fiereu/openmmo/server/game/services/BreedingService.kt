@@ -7,6 +7,7 @@ import de.fiereu.openmmo.common.enums.EggGroup
 import de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket
 import de.fiereu.openmmo.net.game.packets.BreedingForecastPacket
 import de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket
+import de.fiereu.openmmo.server.game.battle.Gender
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import javax.inject.Inject
@@ -270,16 +271,15 @@ constructor(
     return null
   }
 
-  /** The client's gender derivation (f/gT0.Ug1): female iff (seed & 0xFF) < genderRatio. */
+  /** The client's gender derivation, shared with battles through [Gender]. */
   private fun genderOf(
       mon: de.fiereu.openmmo.common.Pokemon,
       def: de.fiereu.openmmo.pokemon.SpeciesDef
   ): Int =
-      when (def.genderRatio) {
-        0 -> MALE
-        254 -> FEMALE
-        255 -> GENDERLESS
-        else -> if ((mon.seed and 0xFF) < def.genderRatio) FEMALE else MALE
+      when (Gender.of(def.genderRatio, mon.seed)) {
+        Gender.FEMALE -> FEMALE
+        Gender.GENDERLESS -> GENDERLESS
+        else -> MALE
       }
 
   private fun emptyForecast(a: Long, b: Long) =

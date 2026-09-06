@@ -1,16 +1,28 @@
 package monmmo;
 
 /**
- * Appends the Gen 5 season to the menu header's day-and-time line ("Sunday, 03:37, Winter").
- * Reached from a one-instruction hook the overlay adds after the header formats that line
- * (f/gz.NZ1, string 1155). The season is the client's own global one (f/u2.MM0: the value the
- * server's season packet set, else the client's month-based fallback), so the label agrees with
- * the seasonal map art. Any failure leaves the stock line untouched.
+ * The menu header's day-and-time line, corrected in two places by the overlay's hooks into
+ * f/gz.NZ1:
+ * - the weekday: the stock header derives it from the in-game clock, which runs four in-game
+ *   days per real day, so it drifted one day every six hours; the calendar weekday replaces it;
+ * - the season: the stock line never names one; it is appended from the client's own global
+ *   season (f/u2.MM0: the server's season packet, else the client's fallback), so the label
+ *   agrees with the seasonal map art.
+ * Any failure leaves the stock behaviour in place.
  */
 public final class HudSeason {
   private static final String[] NAMES = {"Spring", "Summer", "Autumn", "Winter"};
 
   private HudSeason() {}
+
+  /** Today's weekday in the header's numbering: 0 Sunday .. 6 Saturday. */
+  public static int realWeekday() {
+    try {
+      return java.time.LocalDate.now().getDayOfWeek().getValue() % 7;
+    } catch (Throwable t) {
+      return 0;
+    }
+  }
 
   public static String withSeason(String dayAndTime) {
     try {

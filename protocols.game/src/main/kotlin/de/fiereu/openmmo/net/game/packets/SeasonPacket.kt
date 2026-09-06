@@ -18,8 +18,17 @@ enum class Season(val id: Int) {
   ;
 
   companion object {
-    /** Gen 5 rotates monthly in the world clock zone: Jan=SPRING, Feb=SUMMER, Mar=AUTUMN, Apr=WINTER, then repeats. */
-    fun current(): Season = entries[1 + (WorldClock.now().monthValue - 1) % 4]
+    /**
+     * The real northern-hemisphere season in the world clock zone: Dec-Feb winter, Mar-May spring,
+     * Jun-Aug summer, Sep-Nov autumn - not the Gen 5 monthly rotation, which had September spring.
+     */
+    fun current(): Season =
+        when (WorldClock.now().monthValue) {
+          12, 1, 2 -> WINTER
+          3, 4, 5 -> SPRING
+          6, 7, 8 -> SUMMER
+          else -> AUTUMN
+        }
 
     fun fromId(id: Int): Season = entries.firstOrNull { it.id == id } ?: NONE
   }

@@ -457,6 +457,25 @@ object EvolutionTable {
 
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
 
+  /**
+   * The species [fromWire] becomes when it arrives by trade holding [heldItem] (client item id)
+   * in exchange for [partnersWire] (the wires that went the other way), or null. ROM methods 5
+   * TRADE, 6 TRADE_WITH_ITEM (Metal Coat, King's Rock, ...), 7 TRADE_FOR_OPPOSITE (Shelmet and
+   * Karrablast for each other). Item values in the json may carry the client's +5000 shift.
+   */
+  fun tradeEvolution(fromWire: Int, heldItem: Int, partnersWire: Collection<Int>): Int? =
+      entries
+          .firstOrNull { entry ->
+            entry.from == fromWire &&
+                when (entry.method) {
+                  5 -> true
+                  6 -> heldItem != 0 && (heldItem == entry.param || heldItem + 5000 == entry.param || heldItem == entry.param + 5000)
+                  7 -> entry.param in partnersWire
+                  else -> false
+                }
+          }
+          ?.to
+
   /** True when [wire] has any evolution left, which is what Eviolite asks. */
   fun canEvolve(wire: Int): Boolean = entries.any { it.from == wire }
 

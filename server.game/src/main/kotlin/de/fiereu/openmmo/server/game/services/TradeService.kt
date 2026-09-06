@@ -3,6 +3,7 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.Pokemon
+import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.net.game.packets.DuelInviteOutcomePacket
 import de.fiereu.openmmo.net.game.packets.DuelInvitePacket
@@ -132,6 +133,17 @@ constructor(
       val ctx = sessionRegistry.getByCharacterId(charId) ?: continue
       val party = characterStore.getCharacter(charId)?.pokemon ?: continue
       ctx.send(PokemonContainerPacket(container = PokemonContainer.PARTY, hasChange = true, delete = false, pokemon = party))
+      // Trade evolutions: what this side just received evolves now, the way the cartridges do it
+      // right after the trade, through the same cancellable prompt as any other evolution.
+      val state = ctx.attributes[PLAYER_STATE] ?: continue
+      val received = give[1 - side]
+      val sentAway = give[side].map { clientSpeciesId(it.dexId) }
+      for (arrived in received) {
+        val inParty = party.firstOrNull { it.id == arrived.id } ?: continue
+        val target = EvolutionTable.tradeEvolution(clientSpeciesId(inParty.dexId), inParty.heldItem, sentAway) ?: continue
+        log.info { "Trade evolution: char=$charId monster=${inParty.id} dex=${inParty.dexId} -> wire $target" }
+        promptEvolution(ctx, state, inParty, target)
+      }
     }
   }
 

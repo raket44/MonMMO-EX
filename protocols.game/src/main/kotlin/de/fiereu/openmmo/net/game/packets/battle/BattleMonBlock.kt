@@ -57,12 +57,14 @@ internal data class BattleActiveDetail(
     val level: Byte,
     val gender: Byte,
     val flags: Short = 0,
+    /** Two-trainer battles: the client reads the first byte as the owner key, not the position. */
+    val owner: Int? = null,
 ) {
   companion object {
     const val SHINY_FLAG: Short = 1
 
-    fun of(position: Int, slot: Int, mon: BattleMonBlock): BattleActiveDetail =
-        BattleActiveDetail(position, slot, mon.species, mon.level, mon.gender, if (mon.shiny) SHINY_FLAG else 0)
+    fun of(position: Int, slot: Int, mon: BattleMonBlock, owner: Int? = null): BattleActiveDetail =
+        BattleActiveDetail(position, slot, mon.species, mon.level, mon.gender, if (mon.shiny) SHINY_FLAG else 0, owner)
   }
 }
 
@@ -70,7 +72,8 @@ internal object BattleActiveDetailCodec : PacketCodec<BattleActiveDetail>() {
   const val WIRE_SIZE = 21
 
   override fun CodecScope<BattleActiveDetail>.body(): BattleActiveDetail {
-    val position = field(S8) { it.position.toByte() }.toInt()
+    // The client reads this pair as (owner key, slot within owner): kw0.NQ1 -> side.qg1(key).VZ()[slot].
+    val position = field(S8) { (it.owner ?: it.position).toByte() }.toInt()
     val slot = field(S8) { it.slot.toByte() }.toInt()
     val species = field(S16LE) { it.species }
     val level = field(S8) { it.level }
@@ -111,6 +114,7 @@ internal object BattleFullBlockCodec : PacketCodec<BattleMonBlock>() {
  * with no body at all, which is how a trainer's benched team is hidden until it is sent out.
  */
 data class BattleOpponentBlock(
+    /** Slot within the OWNING trainer's party (equals the global index for one trainer). */
     val slot: Int,
     val revealed: Boolean,
     val entityId: Long = 0,
@@ -119,6 +123,8 @@ data class BattleOpponentBlock(
     val gender: Byte = 0,
     val maxHp: Short = 0,
     val currentHp: Short = 0,
+    /** Owner key: the first byte of the trainer entry in a two-trainer header; 0 otherwise. */
+    val owner: Int = 0,
 )
 
 private const val REVEALED: Byte = 1

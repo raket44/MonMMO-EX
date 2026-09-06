@@ -26,6 +26,8 @@ data class BattleSwitchInPacket(
     val fullBlock: Boolean,
     /** 0 sends out one of the player's own, 1 one of the opponent's. */
     val side: Byte = 0,
+    /** Two-trainer battles: owner key of the entering monster (record head + active detail). */
+    val owner: Int? = null,
 )
 
 private val NO_MOVES = List(BattleMonBlock.MOVE_SLOTS) { 0.toShort() }
@@ -48,11 +50,11 @@ object BattleSwitchInPacketCodec : PacketCodec<BattleSwitchInPacket>() {
     val fullBlock = field(U8) { if (it.fullBlock) 1 else 0 } == 1
     val block =
         if (fullBlock) {
-          field(U8) { 0 } // ns0 sub-side
+          field(U8) { it.owner ?: 0 } // ns0 owner key (sub-side); zero for one trainer
           field(BattleFullBlockCodec) { it.mon }
         } else null
     field(S8) { 1 } // NQ1 presence: the monster is on the field
-    val active = field(BattleActiveDetailCodec) { BattleActiveDetail.of(it.newSlot, it.mon.slot, it.mon) }
+    val active = field(BattleActiveDetailCodec) { BattleActiveDetail.of(it.newSlot, it.mon.slot, it.mon, it.owner) }
     val mon =
         block
             ?: BattleMonBlock(

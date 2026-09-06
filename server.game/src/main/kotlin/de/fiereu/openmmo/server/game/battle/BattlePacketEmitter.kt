@@ -34,7 +34,7 @@ import javax.inject.Singleton
 
 private val log = KotlinLogging.logger {}
 
-private val TWO_TRAINER_HEADER: Boolean = System.getProperty("monmmo.twoTrainerHeader") == "true"
+private val TWO_TRAINER_HEADER: Boolean = System.getProperty("monmmo.twoTrainerHeader") != "false"
 
 private const val ACTION_PROMPT: Byte = -128 // 0x80
 private const val MOVE_EVENT_KIND: Byte = 1
@@ -99,9 +99,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // The client resolves class and name through its per-region ROM trainer table
             // (f/W9.io(region, id)); the id alone lands in the Kanto table.
             trainerId = (battle.trainer?.id ?: 0).toShort(),
-            // The composite two-trainer header parses on the client but its monster records then look
-            // the owning entry up by a key byte we do not send yet (f/BM1.qg1 NPE). Off by default
-            // until that key is decoded; -Dmonmmo.twoTrainerHeader=true to keep iterating on it.
+            // The composite two-trainer header (f/TB0.l70 kind 4). Records carry the owner key and a
+            // slot within that trainer; -Dmonmmo.twoTrainerHeader=false falls back to one name.
             partnerTrainerId = if (TWO_TRAINER_HEADER) battle.partner?.id?.toShort() else null,
             // Only a trainer side names a region (the client keys its ROM trainer table with it). On
             // a wild side the same byte is read as side flags: a non-zero value (Hoenn = 1) made the
@@ -112,8 +111,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             playerActive = battle.playerPositions.map { it.takeIf { slot -> slot >= 0 } },
             opponentParty =
                 battle.opponent.mapIndexed { slot, mon ->
-                  if (slot in battle.opponentSeen) mon.toOpponentBlock(slot)
-                  else BattleOpponentBlock(slot = slot, revealed = false)
+                  if (slot in battle.opponentSeen) mon.toOpponentBlock(localSlot(battle, slot)).copy(owner = ownerOf(battle, slot))
+                  else BattleOpponentBlock(slot = localSlot(battle, slot), revealed = false, owner = ownerOf(battle, slot))
                 },
             opponentActive = battle.opponentPositions.map { it.takeIf { slot -> slot >= 0 } },
             format = battle.format,
@@ -274,12 +273,20 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         BattleSwitchInPacket(
             newSlot = position,
             oldSlot = oldSlot,
-            mon = battle.opponent[index].toBlock(index, movesPresent = false),
+            mon = battle.opponent[index].toBlock(localSlot(battle, index), movesPresent = false),
             fullBlock = fullBlock,
             side = OPPONENT_SIDE,
+            owner = if (battle.partner != null && TWO_TRAINER_HEADER) ownerOf(battle, index) else null,
         ),
     )
   }
+
+  /** Two-trainer header: the second trainer's monsters belong to entry 1 and count from zero. */
+  private fun ownerOf(battle: BattleInstance, index: Int): Int =
+      if (battle.partner == null || !TWO_TRAINER_HEADER) 0 else if (index >= battle.trainer!!.party.size) 1 else 0
+
+  private fun localSlot(battle: BattleInstance, index: Int): Int =
+      if (ownerOf(battle, index) == 0) index else index - battle.trainer!!.party.size
 
   /**
    * Plays the client's own evolution sequence on a battle mon: event 107 rebuilds the entity as the

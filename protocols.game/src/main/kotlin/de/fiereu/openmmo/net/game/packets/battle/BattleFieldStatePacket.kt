@@ -179,8 +179,9 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     if (kindByte.toInt() == 4) {
       // count; per entry: two bytes (slot count, first position), one byte the reader discards,
       // then the nested descriptor which reads its own kind (2) and sub (6).
+      // Entry bytes (f/E71): key (the map key records refer to), first position, one discarded.
       constant(2)
-      constant(1)
+      constant(0)
       constant(0)
       constant(0)
       constant(2)
@@ -211,7 +212,8 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     val opponentCount = field(U8) { it.opponentParty.size }
     val opponents =
         List(opponentCount) { i ->
-          constant(0)
+          // Record head: the owner key (kw0.ns0: side.qg1(key).VZ()[slot]); zero for one trainer.
+          field(S8) { it.opponentParty[i].owner.toByte() }
           field(BattleOpponentBlockCodec) { it.opponentParty[i] }
         }
     val opponentActive =
@@ -221,7 +223,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
             field(BattleActiveDetailCodec) {
                   val index = it.opponentActive[position]!!
                   val mon = it.opponentParty[index]
-                  BattleActiveDetail(position, index, mon.species, mon.level, mon.gender)
+                  BattleActiveDetail(position, mon.slot, mon.species, mon.level, mon.gender, owner = if (it.partnerTrainerId != null) mon.owner else null)
                 }
                 .slot
           } else null

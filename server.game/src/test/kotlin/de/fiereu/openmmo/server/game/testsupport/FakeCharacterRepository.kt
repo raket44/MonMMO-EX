@@ -35,4 +35,7 @@ class FakeCharacterRepository : CharacterRepository {
     if (stored.info.userId != userId) return false
     return saved.remove(id, stored)
   }
+
+  override suspend fun nameExists(name: String): Boolean =
+      saved.values.any { it.info.name.equals(name, ignoreCase = true) }
 }

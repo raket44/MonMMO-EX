@@ -31,7 +31,7 @@ object GameProtocol : Protocol() {
     s2c<CharactersListPacket>(0x02u, CharactersListPacketCodec)
 
     c2s<CreateCharacterPacket>(0x03u, CreateCharacterPacketCodec)
-    s2c<FriendRosterDeltaPacket>(0x03u, FriendRosterDeltaPacketCodec)
+    s2c<CreateCharacterResultPacket>(0x03u, CreateCharacterResultPacketCodec)
 
     c2s<SelectCharacterPacket>(0x04u, SelectCharacterPacketCodec)
     s2c<SelectedCharacterPacket>(0x04u, SelectedCharacterPacketCodec)

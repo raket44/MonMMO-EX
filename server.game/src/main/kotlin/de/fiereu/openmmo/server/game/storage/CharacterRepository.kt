@@ -28,6 +28,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 
 interface CharacterRepository {
   suspend fun loadByUser(userId: Int): List<StoredCharacter>
@@ -41,6 +42,9 @@ interface CharacterRepository {
 
   /** Deletes a character owned by the user. */
   suspend fun deleteById(userId: Int, id: Long): Boolean
+
+  /** Whether any character, on any account, already carries [name] ignoring case. */
+  suspend fun nameExists(name: String): Boolean
 }
 
 @Singleton
@@ -76,6 +80,11 @@ constructor(
             .where(CHARACTERS.ID.eq(id))
             .and(CHARACTERS.USER_ID.eq(userId))
             .execute() == 1
+      }
+
+  override suspend fun nameExists(name: String): Boolean =
+      withContext(dispatcher) {
+        dsl.fetchExists(dsl.selectOne().from(CHARACTERS).where(DSL.lower(CHARACTERS.NAME).eq(name.lowercase())))
       }
 
   private fun writeChanges(

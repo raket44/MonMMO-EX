@@ -18,6 +18,15 @@ class GuildStoreTest :
         store.getGuildForChar(100L) shouldBe guild
       }
 
+      test("name and tag lookups ignore case") {
+        val store = GuildStore()
+        val guild = store.createGuild("Knights", "KNT", leaderId = 100L, leaderName = "Leader")
+        store.findByName("knights") shouldBe guild
+        store.findByTag("knt") shouldBe guild
+        store.findByName("Rockets") shouldBe null
+        store.findByTag("RKT") shouldBe null
+      }
+
       test("invited members append to the roster") {
         val store = GuildStore()
         val guild = store.createGuild("Knights", "KNT", leaderId = 100L, leaderName = "Leader")

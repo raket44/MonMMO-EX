@@ -4,6 +4,8 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.GuildPermission
 import de.fiereu.openmmo.common.enums.GuildRank
+import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
+import de.fiereu.openmmo.net.game.packets.ServerMessagePacket
 import de.fiereu.openmmo.net.game.packets.guild.GuildActivityLogEntry
 import de.fiereu.openmmo.net.game.packets.guild.GuildActivityLogPacket
 import de.fiereu.openmmo.net.game.packets.guild.GuildActivityLogPageRequestPacket
@@ -35,6 +37,28 @@ private val log = KotlinLogging.logger {}
 
 private const val GUILD_FOUND_COST = 15000
 
+private const val STRING_NOT_ENOUGH_MONEY = 1927
+private const val STRING_ALREADY_IN_TEAM = 2606
+private const val STRING_INVALID_NAME = 2607
+private const val STRING_NAME_TAKEN = 2608
+private const val STRING_INVALID_TAG = 2609
+private const val STRING_TAG_TAKEN = 2610
+private const val STRING_DATABASE_ERROR = 2611
+
+/**
+ * The client-side rules for a new team (strings 2607 and 2609: "2-16 characters with no numbers or
+ * symbols", "2-4 characters"), mirrored so a modified client cannot bypass them. Single spaces
+ * between words are allowed in names.
+ */
+object GuildNames {
+  private val NAME = Regex("[A-Za-z]+( [A-Za-z]+)*")
+  private val TAG = Regex("[A-Za-z]{2,4}")
+
+  fun validName(name: String): Boolean = name.length in 2..16 && NAME.matches(name)
+
+  fun validTag(tag: String): Boolean = TAG.matches(tag)
+}
+
 // The entries list is length-prefixed with a single byte, so a page holds at most 255 entries.
 private const val MAX_ACTIVITY_LOG_ENTRIES = 255
 
@@ -48,24 +72,59 @@ constructor(
     private val socialRequests: Provider<SocialRequestService>,
 ) {
 
+  /**
+   * Founding a team. Refusals are the client's own strings delivered as server messages, the way
+   * the trade and link refusals are: 2606 already in a team, 2607/2609 name or tag rules, 2608/
+   * 2610 name or tag taken (ignoring case), 1927 not enough money, 2611 database error. The fee
+   * is charged only once everything passed, and the new balance is pushed so the money display
+   * follows at once instead of on the next login.
+   */
   suspend fun onCreateGuild(event: PacketEvent<GuildCreatePacket>) {
     val ctx = event.session
     val state = ctx.attributes[PLAYER_STATE] ?: return
     val charId = state.characterId ?: return
     val stored = characterStore.getCharacter(charId) ?: return
     val packet = event.packet
-    log.info {
-      "CreateGuild name='${packet.guildName}' tag='${packet.guildTag}' char=$charId money=${stored.info.money}"
-    }
-    if (stored.info.money < GUILD_FOUND_COST) {
-      log.info { "Insufficient funds to found a guild (need $GUILD_FOUND_COST)" }
+    val name = packet.guildName.trim()
+    val tag = packet.guildTag.trim()
+    log.info { "CreateGuild name='$name' tag='$tag' char=$charId money=${stored.info.money}" }
+    val refusal =
+        when {
+          guildStore.getGuildForChar(charId) != null -> STRING_ALREADY_IN_TEAM
+          !GuildNames.validName(name) -> STRING_INVALID_NAME
+          !GuildNames.validTag(tag) -> STRING_INVALID_TAG
+          guildStore.findByName(name) != null -> STRING_NAME_TAKEN
+          guildStore.findByTag(tag) != null -> STRING_TAG_TAKEN
+          stored.info.money < GUILD_FOUND_COST -> STRING_NOT_ENOUGH_MONEY
+          else -> null
+        }
+    if (refusal != null) {
+      log.info { "CreateGuild refused for char=$charId: string $refusal" }
+      ctx.send(message(refusal))
       return
     }
-    characterStore.addMoney(charId, -GUILD_FOUND_COST)
-    val guild = guildStore.createGuild(packet.guildName, packet.guildTag, charId, stored.info.name)
+    if (!characterStore.addMoney(charId, -GUILD_FOUND_COST)) {
+      ctx.send(message(STRING_DATABASE_ERROR))
+      return
+    }
+    val guild =
+        try {
+          guildStore.createGuild(name, tag, charId, stored.info.name)
+        } catch (e: Exception) {
+          // The unique index caught a founding that raced ours; the fee goes back.
+          log.warn(e) { "CreateGuild '$name' [$tag] for char=$charId could not be stored" }
+          characterStore.addMoney(charId, GUILD_FOUND_COST)
+          ctx.send(message(STRING_DATABASE_ERROR))
+          return
+        }
+    val balance = characterStore.getCharacter(charId)?.info?.money ?: (stored.info.money - GUILD_FOUND_COST)
+    ctx.send(LocalCharacterDeltaPacket(money = balance))
     ctx.send(buildMembership(guild))
     ctx.send(buildMemberSync(guild))
   }
+
+  private fun message(stringId: Int): ServerMessagePacket =
+      ServerMessagePacket(stringId, emptyList(), showOnMap = true, mode = null)
 
   fun onActivityLogPageRequest(event: PacketEvent<GuildActivityLogPageRequestPacket>) {
     val ctx = event.session

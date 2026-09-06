@@ -16,6 +16,7 @@ import de.fiereu.openmmo.net.game.packets.CharacterEntry
 import de.fiereu.openmmo.net.game.packets.CharactersListPacket
 import de.fiereu.openmmo.net.game.packets.ChatMessagePacket
 import de.fiereu.openmmo.net.game.packets.CreateCharacterPacket
+import de.fiereu.openmmo.net.game.packets.CreateCharacterResultPacket
 import de.fiereu.openmmo.net.game.packets.DeleteCharacterPacket
 import de.fiereu.openmmo.net.game.packets.DeleteCharacterResultPacket
 import de.fiereu.openmmo.net.game.packets.EntityMovePacket
@@ -155,6 +156,11 @@ constructor(
     ctx.send(JoinResponsePacket.reject()).addListener { ctx.close { "join rejected" } }
   }
 
+  /**
+   * Character creation answers with s2c 0x03 (client f/SU1): a result code the creation window
+   * turns into a string and shows in place, buttons re-enabled - see [CreateCharacterResultPacket].
+   * An accepted character is delivered as the refreshed list, which the client takes equally.
+   */
   suspend fun onCreateCharacter(event: PacketEvent<CreateCharacterPacket>) {
     val ctx = event.session
     val state = ctx.attributes[PLAYER_STATE]
@@ -163,12 +169,11 @@ constructor(
       return
     }
     val name = event.packet.name.trim()
-    if (name.isEmpty() || name.length > 32) {
-      log.warn { "Rejected character name '${event.packet.name}' for userId=${state.userId}" }
-      ctx.send(buildCharacterList(state.userId))
+    if (name.isEmpty() || name.length > 32 || characterStore.isNameTaken(name)) {
+      log.info { "Rejected character name '${event.packet.name}' for userId=${state.userId}: taken or unusable" }
+      ctx.send(CreateCharacterResultPacket(CreateCharacterResultPacket.NAME_UNAVAILABLE))
       return
     }
-    log.info { "Creating character '$name' for userId=${state.userId}" }
     val gender = CharacterGender.byWireValue(event.packet.gender)
     val startingRegion = Region.byWireValue(event.packet.startingRegion)
     if (gender == null || startingRegion == null) {
@@ -176,18 +181,29 @@ constructor(
         "Rejected character options gender=${event.packet.gender} " +
             "region=${event.packet.startingRegion} for userId=${state.userId}"
       }
-      ctx.send(buildCharacterList(state.userId))
+      ctx.send(
+          CreateCharacterResultPacket(
+              if (gender == null) CreateCharacterResultPacket.INVALID_GENDER
+              else CreateCharacterResultPacket.SYSTEM_ERROR))
       return
     }
+    log.info { "Creating character '$name' for userId=${state.userId}" }
     val appearance = event.packet.appearance
-    characterStore.createCharacter(
-        state.userId,
-        name,
-        gender,
-        startingRegion,
-        skins = appearance.toMap(),
-        skinRegionSelectionIndex = appearance.regionSelectionIndex,
-    )
+    try {
+      characterStore.createCharacter(
+          state.userId,
+          name,
+          gender,
+          startingRegion,
+          skins = appearance.toMap(),
+          skinRegionSelectionIndex = appearance.regionSelectionIndex,
+      )
+    } catch (e: Exception) {
+      // The unique index caught a creation that raced ours, or the database is unavailable.
+      log.warn(e) { "Character '$name' for userId=${state.userId} could not be stored" }
+      ctx.send(CreateCharacterResultPacket(CreateCharacterResultPacket.SYSTEM_ERROR))
+      return
+    }
     ctx.send(buildCharacterList(state.userId))
   }
 

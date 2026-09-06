@@ -133,6 +133,10 @@ constructor(
 
   fun getCharacter(id: Long): StoredCharacter? = characters[id]
 
+  /** Whether [name] is already in use by any character, cached or not, ignoring case. */
+  suspend fun isNameTaken(name: String): Boolean =
+      characters.values.any { it.info.name.equals(name, ignoreCase = true) } || repository.nameExists(name)
+
   /** Like [getCharacter] but falls back to the database when the cache has no entry. */
   suspend fun getOrLoadCharacter(id: Long): StoredCharacter? {
     pendingUnload.remove(id)

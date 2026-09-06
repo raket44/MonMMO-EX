@@ -219,6 +219,8 @@ private class GatedRepository(
 
   override suspend fun deleteById(userId: Int, id: Long) = delegate.deleteById(userId, id)
 
+  override suspend fun nameExists(name: String) = delegate.nameExists(name)
+
   override suspend fun saveChanges(previous: StoredCharacter?, current: StoredCharacter) {
     if (writes.incrementAndGet() == 1) {
       entered.complete(Unit)

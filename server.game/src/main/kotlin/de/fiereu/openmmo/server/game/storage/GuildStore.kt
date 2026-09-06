@@ -79,6 +79,18 @@ class GuildStore @Inject constructor(private val db: GuildDb? = null) {
     return guilds.values.firstOrNull { g -> g.members.any { it.name.equals(name, ignoreCase = true) } }
   }
 
+  /** The team of this name, ignoring case. */
+  fun findByName(name: String): Guild? {
+    ensureLoaded()
+    return guilds.values.firstOrNull { it.name.equals(name, ignoreCase = true) }
+  }
+
+  /** The team of this tag, ignoring case. */
+  fun findByTag(tag: String): Guild? {
+    ensureLoaded()
+    return guilds.values.firstOrNull { it.tag.equals(tag, ignoreCase = true) }
+  }
+
   fun addMember(guild: Guild, member: GuildMember) {
     guild.members.add(member)
     guildByChar[member.id] = guild.id

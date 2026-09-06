@@ -65,6 +65,19 @@ constructor(
     val mapId = map.mapId.toInt()
 
     val spotter = findSpotter(map, source, region, charId, storyFlags, storyVars, playerX, playerY, exclude = emptySet()) ?: return false
+    // Stop the player on the sighted tile right now, the way an encounter roll does: input off
+    // and a position packet to the tile, before the approach script even starts. Without this
+    // the client walked one more tile and the script's hold pulled it back.
+    ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
+    ctx.send(
+        de.fiereu.openmmo.net.game.packets.GbaEntityMovePacket(
+            entityId = charId,
+            bankId = map.bankId.toInt() and 0xff,
+            mapId = map.mapId.toInt() and 0xff,
+            x = playerX,
+            y = playerY,
+            movementMode = 2,
+            direction = state.facingDirection))
     launchApproach(ctx, state, map, spotter)
     return true
   }

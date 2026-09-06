@@ -30,6 +30,9 @@ import kotlinx.coroutines.sync.withLock
 
 private val log = KotlinLogging.logger {}
 
+/** The permission bits of a freshly created character on an ordinary account. */
+private const val DEFAULT_PERMISSIONS = 8
+
 private val FLUSH_TICK = 5.seconds
 private val FLUSH_DEBOUNCE = 10.seconds
 
@@ -85,6 +88,8 @@ constructor(
     val start = NewGameStarts.forRegion(startingRegion, female)
     val id = entityIds.newCharacterId()
     val now = LocalDateTime.now()
+    // Staff accounts (user_permissions) start their characters with their granted bits.
+    val permissions = repository.defaultPermissions(userId) ?: DEFAULT_PERMISSIONS
     val info =
         CharacterInfo(
             id = id,
@@ -97,7 +102,7 @@ constructor(
             lastLogin = now,
             createdAt = now,
             money = 30000,
-            permissions = 8,
+            permissions = permissions,
             remainingSafariSteps = 0,
             remainingSafariBalls = 0,
             pcExtraSlots = 0,

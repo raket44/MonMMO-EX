@@ -45,6 +45,12 @@ interface CharacterRepository {
 
   /** Whether any character, on any account, already carries [name] ignoring case. */
   suspend fun nameExists(name: String): Boolean
+
+  /**
+   * Permission bits granted to every character this account creates (table user_permissions,
+   * staff accounts), or null for the default.
+   */
+  suspend fun defaultPermissions(userId: Int): Int? = null
 }
 
 @Singleton
@@ -85,6 +91,11 @@ constructor(
   override suspend fun nameExists(name: String): Boolean =
       withContext(dispatcher) {
         dsl.fetchExists(dsl.selectOne().from(CHARACTERS).where(DSL.lower(CHARACTERS.NAME).eq(name.lowercase())))
+      }
+
+  override suspend fun defaultPermissions(userId: Int): Int? =
+      withContext(dispatcher) {
+        dsl.fetchOne("select permissions from user_permissions where user_id = ?", userId)?.get(0, Int::class.java)
       }
 
   private fun writeChanges(

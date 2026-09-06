@@ -36,7 +36,7 @@ data class DialogPresentation(
 )
 
 @Singleton
-class DialogService @Inject constructor() {
+class DialogService @Inject constructor(private val socialRequests: SocialRequestService? = null) {
 
   /** Emerald starter picker ROM ids. */
   suspend fun chooseHoennStarter(session: SessionContext, state: PlayerState): Int {
@@ -240,6 +240,8 @@ class DialogService @Inject constructor() {
 
   fun onInteractive(event: PacketEvent<DialogActionResponsePacket>) {
     val session = event.session
+    // A social prompt (trade, link, friend, team, duel) answers through the same packet.
+    if (socialRequests?.onAnswer(session, event.packet.id, event.packet.unk) == true) return
     val response = session.attributes.remove(PENDING_DIALOG_RESPONSE)
     if (response != null) {
       response.complete(event.packet)

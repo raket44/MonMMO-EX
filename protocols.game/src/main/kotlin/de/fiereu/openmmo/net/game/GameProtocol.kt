@@ -124,7 +124,10 @@ object GameProtocol : Protocol() {
     c2s<ShopSellRequestPacket>(0x24u, ShopSellRequestPacketCodec)
     s2c<NpcPanelTogglePacket>(0x24u, NpcPanelTogglePacketCodec)
 
-    bidi<DialogChoicePacket>(0x25u, DialogChoicePacketCodec)
+    // The client writes a duel challenge on c2s 0x25 (f/qu1); the server never sent a dialog
+    // choice, so only the reading side keeps that codec.
+    s2c<DialogChoicePacket>(0x25u, DialogChoicePacketCodec)
+    c2s<DuelChallengePacket>(0x25u, DuelChallengePacketCodec)
 
     bidi<ContainerActionPacket>(0x26u, ContainerActionPacketCodec)
 
@@ -254,7 +257,7 @@ object GameProtocol : Protocol() {
     c2s<TradeActionPacket>(0x50u, TradeActionPacketCodec)
     s2c<DuelInvitePacket>(0x50u, DuelInvitePacketCodec)
 
-    c2s<StringCommandPacket>(0x51u, StringCommandPacketCodec)
+    c2s<TradeRequestPacket>(0x51u, TradeRequestPacketCodec)
     s2c<DuelInviteOutcomePacket>(0x51u, DuelInviteOutcomePacketCodec)
 
     c2s<TradeSelectMonPacket>(0x52u, TradeSelectMonPacketCodec)
@@ -544,7 +547,7 @@ object GameProtocol : Protocol() {
 
     s2c<BattleStartScenePacket>(0xCAu, BattleStartScenePacketCodec)
 
-    c2s<SendChatCommandPacket>(0xD0u, SendChatCommandPacketCodec)
+    c2s<LinkRequestPacket>(0xD0u, LinkRequestPacketCodec)
     s2c<EntityGroupSnapshotPacket>(0xD0u, EntityGroupSnapshotPacketCodec)
 
     c2s<LinkKickMemberPacket>(0xD1u, LinkKickMemberPacketCodec)

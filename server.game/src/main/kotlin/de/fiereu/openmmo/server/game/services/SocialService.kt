@@ -19,6 +19,7 @@ import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.SocialStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 private val log = KotlinLogging.logger {}
@@ -30,6 +31,7 @@ constructor(
     private val socialStore: SocialStore,
     private val sessionRegistry: SessionRegistry,
     private val characterStore: CharacterStore,
+    private val socialRequests: Provider<SocialRequestService>,
 ) {
 
   fun sendFriendList(ctx: SessionContext) {
@@ -41,9 +43,22 @@ constructor(
     val ctx = event.session
     val state = ctx.attributes[PLAYER_STATE] ?: return
     val name = event.packet.username
+    if (name in socialStore.getFriends(state.userId)) return
+    // Retail asks the other player first ("{00} has requested you as a friend"); an offline
+    // target is added one-sidedly as before, since there is nobody to ask.
+    if (socialRequests.get().request(ctx, SocialRequestService.Kind.FRIEND, name)) return
     socialStore.addFriend(state.userId, name)
-    log.info { "AddFriend user=${state.userId} name='$name'" }
+    log.info { "AddFriend user=${state.userId} name='$name' (offline, one-sided)" }
     ctx.send(buildFriendList(state.userId))
+  }
+
+  /** A friend request was accepted: both users list each other and get their lists refreshed. */
+  fun completeFriendship(userA: Int, nameA: String, ctxA: SessionContext?, userB: Int, nameB: String, ctxB: SessionContext?) {
+    socialStore.addFriend(userA, nameB)
+    socialStore.addFriend(userB, nameA)
+    log.info { "Friends: user=$userA '$nameA' <-> user=$userB '$nameB'" }
+    ctxA?.send(buildFriendList(userA))
+    ctxB?.send(buildFriendList(userB))
   }
 
   fun onRemoveFriend(event: PacketEvent<RemoveFriendPacket>) {

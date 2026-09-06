@@ -40,3 +40,7 @@ data class OpenShop(
 )
 
 val OPEN_SHOP = SessionAttribute.of<OpenShop>("openShop")
+
+/** Social prompts (trade, link, friend, team, duel) awaiting this player's answer, by dialog id. */
+val PENDING_SOCIAL_REQUESTS =
+    SessionAttribute.of<java.util.concurrent.ConcurrentHashMap<Int, de.fiereu.openmmo.server.game.services.SocialRequestService.Pending>>("pendingSocialRequests")

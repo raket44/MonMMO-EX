@@ -28,6 +28,7 @@ import de.fiereu.openmmo.server.game.storage.GuildMember
 import de.fiereu.openmmo.server.game.storage.GuildStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 private val log = KotlinLogging.logger {}
@@ -44,6 +45,7 @@ constructor(
     private val guildStore: GuildStore,
     private val characterStore: CharacterStore,
     private val sessionRegistry: SessionRegistry,
+    private val socialRequests: Provider<SocialRequestService>,
 ) {
 
   suspend fun onCreateGuild(event: PacketEvent<GuildCreatePacket>) {
@@ -86,18 +88,23 @@ constructor(
     val guild = guildStore.getGuildForChar(charId) ?: return
     val target = event.packet.targetName
     if (guild.members.any { it.name.equals(target, ignoreCase = true) }) return
-    // An online target joins under their real character id and sees the team at once; an offline
-    // one is recorded under a placeholder id by name and adopts the real id on login.
-    val online = onlineSessionByName(target)
-    val targetId = online?.first ?: syntheticId(target)
-    log.info { "GuildInvite char=$charId target='$target' id=$targetId online=${online != null}" }
-    val member = GuildMember(targetId, target, GuildRank.GRUNT, leader = false)
-    guildStore.addMember(guild, member)
-    ctx.send(buildMemberSync(guild))
-    online?.second?.let { session ->
-      session.send(buildMembership(guild))
-      session.send(buildMemberSync(guild))
+    log.info { "GuildInvite char=$charId target='$target' guild=${guild.id}" }
+    // Retail asks first: the target sees "{00} has invited you to the team {01}" and joins only
+    // on accept (SocialRequestService). An offline target cannot be invited.
+    socialRequests.get().request(ctx, SocialRequestService.Kind.TEAM, target, extra = guild.name, guildId = guild.id)
+  }
+
+  /** The invited player accepted: they join under their real character id and both sides see the roster. */
+  fun acceptInvite(guildId: Long, target: SessionContext, targetCharId: Long, targetName: String, inviter: SessionContext?) {
+    val guild = guildStore.getGuild(guildId) ?: return
+    if (guildStore.getGuildForChar(targetCharId) != null) return
+    if (guild.members.none { it.id == targetCharId }) {
+      guildStore.addMember(guild, GuildMember(targetCharId, targetName, GuildRank.GRUNT, leader = false))
     }
+    log.info { "Guild ${guild.id} '${guild.name}': char=$targetCharId '$targetName' joined" }
+    target.send(buildMembership(guild))
+    target.send(buildMemberSync(guild))
+    inviter?.send(buildMemberSync(guild))
   }
 
   private fun onlineSessionByName(name: String): Pair<Long, SessionContext>? =

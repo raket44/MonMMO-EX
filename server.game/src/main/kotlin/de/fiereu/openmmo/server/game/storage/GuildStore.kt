@@ -63,6 +63,11 @@ class GuildStore @Inject constructor(private val db: GuildDb? = null) {
     return guild
   }
 
+  fun getGuild(id: Long): Guild? {
+    ensureLoaded()
+    return guilds[id]
+  }
+
   fun getGuildForChar(charId: Long): Guild? {
     ensureLoaded()
     return guildByChar[charId]?.let { guilds[it] }

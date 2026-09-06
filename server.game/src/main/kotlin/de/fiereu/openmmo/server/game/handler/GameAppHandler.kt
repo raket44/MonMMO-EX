@@ -9,6 +9,11 @@ import de.fiereu.openmmo.net.game.GameProtocol
 import de.fiereu.openmmo.net.game.packets.AddFriendPacket
 import de.fiereu.openmmo.net.game.packets.BlockPlayerPacket
 import de.fiereu.openmmo.net.game.packets.CancelSocialInteractionPacket
+import de.fiereu.openmmo.net.game.packets.DuelChallengePacket
+import de.fiereu.openmmo.net.game.packets.LinkRequestPacket
+import de.fiereu.openmmo.net.game.packets.TradeActionPacket
+import de.fiereu.openmmo.net.game.packets.TradeRequestPacket
+import de.fiereu.openmmo.net.game.packets.TradeSelectMonPacket
 import de.fiereu.openmmo.net.game.packets.ChatMessagePacket
 import de.fiereu.openmmo.net.game.packets.ChatMessageSendPacket
 import de.fiereu.openmmo.net.game.packets.ContainerActionPacket
@@ -78,6 +83,7 @@ import de.fiereu.openmmo.server.game.services.MovementService
 import de.fiereu.openmmo.server.game.services.MultiplayerService
 import de.fiereu.openmmo.server.game.services.PresenceService
 import de.fiereu.openmmo.server.game.services.ShopService
+import de.fiereu.openmmo.server.game.services.SocialRequestService
 import de.fiereu.openmmo.server.game.services.SocialService
 import de.fiereu.openmmo.server.game.services.command.ChatCommandService
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
@@ -102,6 +108,7 @@ constructor(
     private val presenceService: PresenceService,
     private val socialService: SocialService,
     private val guildService: GuildService,
+    private val socialRequestService: SocialRequestService,
     private val battleService: BattleService,
     private val chatCommandService: ChatCommandService,
     private val shopService: ShopService,
@@ -172,6 +179,11 @@ constructor(
     on<UnblockPlayerPacket> { event -> socialService.onUnblockPlayer(event) }
     on<RequestSocialProfilePacket> { event -> socialService.onRequestSocialProfile(event) }
     on<CancelSocialInteractionPacket> { event -> socialService.onCancelSocialInteraction(event) }
+    on<TradeRequestPacket> { event -> socialRequestService.onTradeRequest(event) }
+    on<LinkRequestPacket> { event -> socialRequestService.onLinkRequest(event) }
+    on<DuelChallengePacket> { event -> socialRequestService.onDuelChallenge(event) }
+    on<TradeActionPacket> { event -> socialRequestService.onTradeAction(event) }
+    on<TradeSelectMonPacket> { event -> socialRequestService.onTradeSelectMon(event) }
 
     onSuspend<GuildCreatePacket> { event -> guildService.onCreateGuild(event) }
     onSuspend<GuildInvitePacket> { event -> guildService.onGuildInvite(event) }

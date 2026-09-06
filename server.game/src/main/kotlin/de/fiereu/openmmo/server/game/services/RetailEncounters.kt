@@ -141,7 +141,9 @@ object RetailEncounters {
   private fun hordeSlotsOf(entries: List<Entry>, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
       entries
           .asSequence()
-          .filter { it.type in types }
+          // "Sweet Scent" rows are the horde-only entries of a route (Route 22 and 197 others have
+          // their 3x hordes typed that way rather than "Grass"), callable from any terrain there.
+          .filter { it.type in types || it.type == "Sweet Scent" }
           .filter { it.season == "Any" || it.season == season.label }
           .filter { it.form < 0 }
           .filter { if (size >= 5) it.horde5x else it.horde3x }

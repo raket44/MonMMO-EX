@@ -61,7 +61,30 @@ constructor(
     val bankId = map.bankId.toInt()
     val mapId = map.mapId.toInt()
 
+    val spotter = findSpotter(map, source, region, charId, storyFlags, storyVars, playerX, playerY, exclude = emptySet()) ?: return false
+    launchApproach(ctx, state, map, spotter)
+    return true
+  }
+
+  /** One trainer with the player in its line of sight, its approach path and battle script. */
+  private class Spotter(val npc: NpcDef, val dir: Direction, val distance: Int, val script: Script, val constant: String)
+
+  private fun findSpotter(
+      map: MapDef,
+      source: String,
+      region: Region,
+      charId: Long,
+      storyFlags: Set<String>,
+      storyVars: Map<String, Int>,
+      playerX: Int,
+      playerY: Int,
+      exclude: Set<Int>,
+  ): Spotter? {
+    val regionId = map.regionId.toInt()
+    val bankId = map.bankId.toInt()
+    val mapId = map.mapId.toInt()
     for (npc in map.npcs) {
+      if (npc.entityIdx in exclude) continue
       if (npc.sightRange <= 0) continue
       if (npc.trainerType != TRAINER_TYPE_NORMAL && npc.trainerType != TRAINER_TYPE_ALL_DIRS)
           continue
@@ -73,7 +96,6 @@ constructor(
           if (npc.trainerType == TRAINER_TYPE_ALL_DIRS) CARDINALS
           else sightDirections(npc) ?: continue
       val eff = npcService.effectiveNpc(regionId, bankId, mapId, npc, storyFlags, storyVars)
-
       for (dir in directions) {
         val distance =
             approachDistance(map, eff.x, eff.y, dir, npc.sightRange, playerX, playerY) ?: continue
@@ -81,18 +103,16 @@ constructor(
         val trainer = battleService.resolveTrainer(region, constant) ?: continue
         val defeatedKey = TrainerStoryState.defeated(region.name.lowercase(), trainer.id)
         if (storyService.isFlagSet(charId, defeatedKey)) continue
-
         val script =
             runCatching { scriptRegistry.forLabel(npc.script, source) }.getOrNull() ?: continue
-        launchApproach(ctx, state, regionId, bankId, mapId, npc, dir, distance, script)
         log.info {
           "Trainer sight: ${trainer.constant} at (${eff.x},${eff.y}) spotted player at " +
               "($playerX,$playerY) dir=$dir distance=$distance"
         }
-        return true
+        return Spotter(npc, dir, distance, script, trainer.constant)
       }
     }
-    return false
+    return null
   }
 
   /**
@@ -181,34 +201,43 @@ constructor(
     return null
   }
 
-  private fun launchApproach(
-      ctx: SessionContext,
-      state: PlayerState,
-      regionId: Int,
-      bankId: Int,
-      mapId: Int,
-      npc: NpcDef,
-      dir: Direction,
-      distance: Int,
-      script: Script,
-  ) {
-    val walk = walkStep(dir) ?: return
-    val face = faceStep(dir) ?: return
-    // Vanilla rhythm: the trainer turns, the "!" bubble pops with its spot sound (bytecode-
-    // verified action 0x62), then they walk to the tile adjacent to the player and the gaze
-    // lands on them.
-    val steps = listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
-    val entityId = npcService.entityIdFor(regionId, bankId, mapId, npc.entityIdx)
-    // The scripted-state lock (taken by the runner at script start) removes the player's input
-    // for the whole approach; all the player themselves needs is the vanilla turn toward the
-    // spotting trainer.
-    val playerFace = faceStep(dir.opposite()) ?: return
+  private fun launchApproach(ctx: SessionContext, state: PlayerState, map: MapDef, first: Spotter) {
+    val regionId = map.regionId.toInt()
+    val bankId = map.bankId.toInt()
+    val mapId = map.mapId.toInt()
+    val entityId = npcService.entityIdFor(regionId, bankId, mapId, first.npc.entityIdx)
     val approach = Script { scriptCtx ->
       scriptCtx.lockAll()
-      scriptCtx.moveSelfAndNpcs(listOf(playerFace), npc.entityIdx to steps)
-      script.run(scriptCtx)
+      var spotter: Spotter? = first
+      val done = mutableSetOf<Int>()
+      while (spotter != null) {
+        val steps = approachSteps(spotter) ?: break
+        val playerFace = faceStep(spotter.dir.opposite()) ?: break
+        scriptCtx.moveSelfAndNpcs(listOf(playerFace), spotter.npc.entityIdx to steps)
+        spotter.script.run(scriptCtx)
+        done += spotter.npc.entityIdx
+        // Two trainers spotting the player at once battle one after the other, as on the
+        // cartridge: whoever else still has the line of sight approaches once this one is done.
+        val region = Region.byId(state.regionId) ?: break
+        val source = gbaScriptSource(state.regionId) ?: break
+        val charId = state.characterId ?: break
+        val stored = characterStore.getCharacter(charId) ?: break
+        spotter = findSpotter(map, source, region, charId, stored.storyFlags, stored.storyVars, state.x.toInt(), state.y.toInt(), done)
+      }
     }
     scriptRunner.run(ctx, state, approach, entityId)
+  }
+
+  private fun approachSteps(spotter: Spotter): List<MovementStep>? {
+    val dir = spotter.dir
+    val distance = spotter.distance
+    val walk = walkStep(dir) ?: return null
+    val face = faceStep(dir) ?: return null
+    // Vanilla rhythm: the trainer turns, the "!" bubble pops with its spot sound (bytecode-
+    // verified action 0x62), then they walk to the tile adjacent to the player and the gaze
+    // lands on them. The scripted-state lock removes the player's input for the whole
+    // approach; all the player themselves needs is the vanilla turn toward the trainer.
+    return listOf(face, MovementStep.EMOTE_EXCLAMATION) + List(distance - 1) { walk } + face
   }
 
   /**

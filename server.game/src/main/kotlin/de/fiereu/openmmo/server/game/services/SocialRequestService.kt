@@ -27,9 +27,10 @@ private val log = KotlinLogging.logger {}
  * The ask-first handshake behind trade, link, friend, team and duel requests.
  *
  * Bytecode-verified against client 31914: a request reaches the target as an ordinary dialog
- * action packet (s2c 0x21) whose kind byte selects the prompt window - f/qM1 wire 16 challenge
- * (f/O21, buttons 200/201), 17 friend (f/oT0, string 2201), 18 trade (f/Jp, 203/204, string
- * 2202), 19 link (f/Fn1, 2204), 20 team invite (f/W8, 2203, two strings). The payload after the
+ * action packet (s2c 0x21) whose kind byte selects the prompt window - f/qM1 wire 20 challenge
+ * (f/O21, buttons 200/201), 21 friend (f/oT0, string 2201), 22 trade (f/Jp, 203/204, string
+ * 2202), 23 link (f/Fn1, 2204), 24 team invite (f/W8, 2203, two strings). (qM1's constructor
+ * takes (internal, wire): wires 16-19 are other kinds - 19 rendered a plain ROM text box live.) The payload after the
  * common header is the requester's name (UTF-16, nul); the team kind adds the team name and the
  * challenge kind adds the battle rules. The flags byte is echoed back: the window answers with
  * c2s 0x21 DialogActionResponse(id = that byte, code) where 1 = accept (f/c10.qe), 0 = reject,
@@ -46,11 +47,11 @@ constructor(
 ) {
 
   enum class Kind(val wire: Int, val accepted: Int, val rejected: Int, val autoDeclined: Int) {
-    CHALLENGE(16, 6026, 6027, 6017),
-    FRIEND(17, 6020, 6021, 6019),
-    TRADE(18, 6029, 6030, 6016),
-    LINK(19, 6046, 6047, 6045),
-    TEAM(20, 6023, 6024, 6018),
+    CHALLENGE(20, 6026, 6027, 6017),
+    FRIEND(21, 6020, 6021, 6019),
+    TRADE(22, 6029, 6030, 6016),
+    LINK(23, 6046, 6047, 6045),
+    TEAM(24, 6023, 6024, 6018),
   }
 
   class Pending(
@@ -131,6 +132,19 @@ constructor(
         ))
     log.info { "${kind.name} request id=$id char=$charId '${me.info.name}' -> char=$targetCharId '$targetName'" }
     return true
+  }
+
+  /** Developer aid: a prompt of [kind] on your own screen, answered like a real one (logged). */
+  fun selfPrompt(ctx: SessionContext, kind: Kind, name: String, team: String): Int {
+    val state = ctx.attributes[PLAYER_STATE] ?: return -1
+    val pending = ctx.attributes[PENDING_SOCIAL_REQUESTS] ?: ConcurrentHashMap<Int, Pending>().also { ctx.attributes[PENDING_SOCIAL_REQUESTS] = it }
+    val id = state.dialogSeqId and 0xFF
+    state.dialogSeqId = state.dialogSeqId + 1
+    pending[id] = Pending(kind, state.characterId ?: 0, name, state.userId)
+    val detail = utf16(name) + when (kind) { Kind.TEAM -> utf16(team); Kind.CHALLENGE -> challengeRules(null); else -> ByteArray(0) }
+    ctx.send(DialogActionPacket(flags = id.toByte(), actionType = kind.wire.toByte(), textId = 0, entityId = state.characterId ?: -1L, contextValue = 0, messageArgs = emptyList(), detail = detail))
+    log.info { "${kind.name} self-prompt id=$id for char=${state.characterId}" }
+    return id
   }
 
   /** The target's answer, routed here from the dialog response. True when it was ours. */

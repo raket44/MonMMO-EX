@@ -37,7 +37,10 @@ abstract class TypedProtocolHandler<P : Protocol>(
   open fun isRegistered(type: KClass<*>): Boolean = handlers.containsKey(type)
 
   protected open fun onUnhandled(event: PacketEvent<*>) {
-    log.error { "Unhandled packet ${event.packet::class.simpleName} on $side" }
+    // The fields too: a decoded-but-unhandled packet is exactly what reverse engineering needs
+    // to see, and a string field shows its UTF-16 units so a mis-typed codec is still readable.
+    val detail = event.packet.toString().let { s -> if (s.length > 400) s.take(400) + "..." else s }
+    log.error { "Unhandled packet ${event.packet::class.simpleName} on $side: $detail" }
   }
 
   final override fun onPacket(event: PacketEvent<*>) {

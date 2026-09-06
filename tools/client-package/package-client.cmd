@@ -47,7 +47,6 @@ copy /y "%~dp0README-player.txt" "%OUT%\README.txt" >nul
 echo Zipping...
 if exist "%OUT%.zip" del "%OUT%.zip"
 for %%D in ("%OUT%") do (set "OUTNAME=%%~nxD" & set "OUTPARENT=%%~dpD")
-"%SystemRoot%System32	ar.exe" -a -c -f "%OUT%.zip" -C "%OUTPARENT%." "%OUTNAME%"
-"%SystemRoot%System32	ar.exe" -a -c -f "%OUT%.zip" -C "%OUTPARENT%." "%OUTNAME%"
+"%SystemRoot%\System32\tar.exe" -a -c -f "%OUT%.zip" -C "%OUTPARENT%." "%OUTNAME%"
 
 echo Done: %OUT%.zip

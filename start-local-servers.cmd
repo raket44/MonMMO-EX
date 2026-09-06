@@ -68,7 +68,7 @@ if exist "server.login\build\install\server.login\lib" (
 )
 ping 127.0.0.1 -n 3 >nul
 if exist "server.game\build\install\server.game\lib" (
-  start "MonMMO Game Server" /min /d "%~dp0server.game" cmd /c ""%JAVA_HOME%\bin\java.exe" "-Dmonmmo.retailData=%~dp0data\pokemmo\monsters.json" -cp "build\install\server.game\lib\*" de.fiereu.openmmo.server.game.MainKt > "%~dp0logs\server-game.log" 2> "%~dp0logs\server-game.err.log""
+  start "MonMMO Game Server" /min /d "%~dp0server.game" cmd /c ""%JAVA_HOME%\bin\java.exe" "-Dmonmmo.retailData=%~dp0data\pokemmo\monsters.json" "-Dmonmmo.dumpOpcodes=30" -cp "build\install\server.game\lib\*" de.fiereu.openmmo.server.game.MainKt > "%~dp0logs\server-game.log" 2> "%~dp0logs\server-game.err.log""
 ) else (
   start "MonMMO Game Server" /min cmd /c "call gradlew.bat :server.game:run > logs\server-game.log 2> logs\server-game.err.log"
 )

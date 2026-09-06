@@ -11,6 +11,9 @@ import io.netty.channel.ChannelPromise
 
 private val log = KotlinLogging.logger {}
 
+private val DUMP_OPCODES: Set<Int> =
+    (System.getProperty("monmmo.dumpOpcodes") ?: "").split(",").mapNotNull { it.trim().ifEmpty { null }?.toIntOrNull(16) }.toSet()
+
 abstract class ProtocolHandler(
     val protocol: Protocol,
     val side: Side,
@@ -111,6 +114,11 @@ abstract class ProtocolHandler(
       buffer.writeByte(registration.opcode.toInt())
       encode(registration.codec, value, buffer)
       success = true
+      // -Dmonmmo.dumpOpcodes=30,52 logs the exact bytes of those outgoing packets, for feeding a
+      // frame to the client's own reader when it rejects one.
+      if (registration.opcode.toInt() in DUMP_OPCODES) {
+        log.info { "DUMP opcode=0x${registration.opcode.toString(16)} bytes=${io.netty.buffer.ByteBufUtil.hexDump(buffer)}" }
+      }
     } finally {
       if (!success) buffer.release()
     }

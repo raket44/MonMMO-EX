@@ -180,6 +180,13 @@ fun main(args: Array<String>) {
         DexMoveRowLabelPatch::patch,
     )
 
+    // The menu header names the day and time but never the season; the hook appends it.
+    applyOne(
+        "Menu header season",
+        HudSeasonPatch::isHeader,
+        HudSeasonPatch::patch,
+    )
+
     // The hidden-ability line is gated on a whitelist baked into the client that imported
     // species can never join; the record carries the ability, the screen just refuses to say so.
     applyOne(
@@ -339,6 +346,10 @@ fun main(args: Array<String>) {
     jar.closeEntry()
     // The vfx-playing animation, compiled against the client jar (it extends f.Dm0). Registered
     // per move by the movevfx fixups; the class rides the overlay like every other helper.
+    // The season suffix for the menu header (reads f.u2, so it compiles against the client).
+    jar.putNextEntry(ZipEntry("monmmo/HudSeason.class"))
+    jar.write(compileHelperForClientRuntime("HudSeason", client))
+    jar.closeEntry()
     jar.putNextEntry(ZipEntry("monmmo/VfxAnim.class"))
     jar.write(compileHelperForClientRuntime("VfxAnim", client, companions = listOf("MapLog")))
     jar.closeEntry()

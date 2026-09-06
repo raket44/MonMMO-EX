@@ -1,6 +1,5 @@
 package de.fiereu.openmmo.net.game.packets
 
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -18,8 +17,24 @@ object WorldClock {
 
   fun now(): ZonedDateTime = ZonedDateTime.now(zone)
 
-  /** Epoch second of today's midnight in [zone]. */
-  fun dayStartSecond(): Int = LocalDate.now(zone).atStartOfDay(zone).toEpochSecond().toInt()
+  /**
+   * The anchor the client counts from. Its weekday is the in-game one - (in-game seconds %
+   * 604800) / 86400, 0 Sunday .. 6 Saturday (f/gz) - which advances every six real hours, so
+   * it cannot track the real calendar. The anchor is placed so the weekday is the real one at
+   * the moment of joining: today's midnight moved back by whole six-hour steps (a multiple of
+   * one in-game day, so the hour is untouched) until the in-game weekday equals today's.
+   */
+  fun dayStartSecond(): Int {
+    val now = now()
+    val midnight = now.toLocalDate().atStartOfDay(zone).toEpochSecond()
+    val slot = ((now.toEpochSecond() - midnight) / REAL_SECONDS_PER_GAME_DAY).toInt()
+    val weekday = now.dayOfWeek.value % 7 // Sunday 0 .. Saturday 6, the client's numbering
+    val steps = Math.floorMod(weekday - slot, 7)
+    return (midnight - steps * REAL_SECONDS_PER_GAME_DAY).toInt()
+  }
+
+  /** Six real hours: one in-game day at the client's 4x rate. */
+  private const val REAL_SECONDS_PER_GAME_DAY = 21_600L
 
   fun nowSecond(): Int = (System.currentTimeMillis() / 1000).toInt()
 }

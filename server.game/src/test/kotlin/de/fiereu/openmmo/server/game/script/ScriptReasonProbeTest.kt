@@ -18,6 +18,17 @@ class ScriptReasonProbeTest :
         }
       }
 
+      test("map sweep") {
+        val prefix = System.getenv("MONMMO_PROBE_MAP") ?: return@test
+        val analyzer = ScriptSupportAnalyzer()
+        InterpretedScripts.sources.forEach { reg ->
+          reg.scriptsByLabel.forEach { (label, s) ->
+            if (!label.startsWith(prefix)) return@forEach
+            println("MAP ${reg.corpus.source} $label -> ${analyzer.analyze(s).reason ?: "COMPLETE"}")
+          }
+        }
+      }
+
       test("story labels") {
         val analyzer = ScriptSupportAnalyzer()
         val labels =

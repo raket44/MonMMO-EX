@@ -19,6 +19,7 @@ import de.fiereu.openmmo.server.game.services.command.DeveloperStoryCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperTeleportCommand
 import de.fiereu.openmmo.server.game.services.command.GiveMoneyCommand
 import de.fiereu.openmmo.server.game.services.command.HordeCommand
+import de.fiereu.openmmo.server.game.services.command.SocialTestCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperTourCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperWarpCommand
 import de.fiereu.openmmo.server.game.services.command.HelpCommand
@@ -61,6 +62,8 @@ interface ChatCommandModule {
   @Binds @IntoSet fun hordeCommand(command: HordeCommand): ChatCommand
 
   @Binds @IntoSet fun giveMoneyCommand(command: GiveMoneyCommand): ChatCommand
+
+  @Binds @IntoSet fun socialTestCommand(command: SocialTestCommand): ChatCommand
 
   @Binds @IntoSet fun developerReleaseCommand(command: DeveloperReleaseCommand): ChatCommand
 

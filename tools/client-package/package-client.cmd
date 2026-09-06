@@ -16,6 +16,13 @@ set "CLIENT=%LOCALAPPDATA%\MonMMO-EX\Client-31914"
 set "JAVA=C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot\bin\java.exe"
 if not exist "%JAVA%" set "JAVA=java"
 
+rem Anything a previous run of the client left in the folder must not ship: its cache, logs, the
+rem log folder, and a nested copy from unzipping into the same folder. ROMs are left alone.
+if exist "%OUT%\cache" rd /s /q "%OUT%\cache"
+if exist "%OUT%\log" rd /s /q "%OUT%\log"
+if exist "%OUT%\MonMMO-EX-Client" rd /s /q "%OUT%\MonMMO-EX-Client"
+del /q "%OUT%\*.log" 2>nul
+
 echo Building %OUT%\MonMMO-EX.exe (retail launcher stub + patched client jar + overlay)...
 "%JAVA%" "%~dp0BuildClientExe.java" "%CLIENT%\PokeMMO.exe" "%CLIENT%\MonMMO-Local.exe" "%CLIENT%\patch-classes.jar" "%OUT%\MonMMO-EX.exe" || exit /b 1
 copy /y "%CLIENT%\MonMMO-Local.l4j.ini" "%OUT%\MonMMO-EX.l4j.ini" >nul

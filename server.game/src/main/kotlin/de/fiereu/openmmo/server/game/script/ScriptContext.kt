@@ -388,10 +388,17 @@ internal constructor(
   }
 
   /** checkpartymove: the party slot of the first monster knowing [moveId], PARTY_SIZE (6) if none. */
+  /**
+   * checkpartymove, with the engine's badge gate folded in (the cartridge checks the badge before
+   * it ever runs the script) and the client's ocarinas honoured: an owned ocarina for the move
+   * stands in for a party member knowing it, as its own description promises, and answers slot 0.
+   */
   fun partyIndexWithMove(moveId: Int): Int {
-    val party = characterId?.let { characters?.getCharacter(it)?.pokemon }.orEmpty()
-    val index = party.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
-    return if (index < 0) de.fiereu.openmmo.common.MAX_PARTY_SIZE else index
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    if (!de.fiereu.openmmo.server.game.services.FieldMoves.badgeHeld(stored, state.regionId, moveId)) return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    val index = stored.pokemon.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
+    if (index >= 0) return index
+    return if (de.fiereu.openmmo.server.game.services.FieldMoves.ocarinaOwned(stored, moveId)) 0 else de.fiereu.openmmo.common.MAX_PARTY_SIZE
   }
 
   /**

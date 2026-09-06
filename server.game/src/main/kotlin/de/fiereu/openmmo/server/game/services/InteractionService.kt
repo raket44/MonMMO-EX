@@ -4,6 +4,7 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
+import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.net.game.packets.EntityInteractPacket
 import de.fiereu.openmmo.net.game.packets.TileInteractPacket
@@ -148,45 +149,27 @@ constructor(
           it.x == facingX && it.y == facingY && facingDirOk(it.facingDir, state.facingDirection)
         }
     if (bgEvent == null) {
-      // Dive: A while surfing over deep water goes under; A on the sea floor surfaces. Both are
-      // ROM field scripts (the party check, the yes/no, the message), like the Surf prompt.
-      if (state.surfing) {
-        val standing = currentMap.tileAt(stored.info.positionX.toInt(), stored.info.positionY.toInt())?.behavior
-        val hoenn = Region.byId(state.regionId) == Region.HOENN
-        val label =
-            when {
-              state.underwater -> if (hoenn) "EventScript_UseDiveUnderwater" else "EventScript_TrySurface"
-              standing == de.fiereu.openmmo.common.enums.TileBehavior.DEEP_WATER -> if (hoenn) "EventScript_UseDive" else "EventScript_DeepWater"
-              else -> null
-            }
-        if (label != null) {
-          val dive =
-              try {
-                scriptRegistry.forLabel(label, gbaScriptSource(state.regionId))
-              } catch (e: ScriptResolutionException) {
-                log.info { "Dive prompt unavailable: ${e.message}" }
-                null
-              }
-          if (dive != null) runScript(session, state, dive, entityId = -1)
-          return
-        }
-      }
+      // Dive: A while surfing over deep water goes under; A on the sea floor surfaces.
+      if (divePrompt(session, state, stored, currentMap)) return
       // Pokecenter PCs are engine tiles (MB_PC), not bg events - the behavior is the trigger.
       val behavior = currentMap.tileAt(facingX, facingY)?.behavior
       if (behavior == de.fiereu.openmmo.common.enums.TileBehavior.PC) {
         openPcStorage(session, state, stored)
         return
       }
-      // Facing water on foot is the ROM's Surf prompt (field script, not a map event).
+      // Facing water on foot is the ROM's Surf prompt (field script, not a map event). Without
+      // the badge, the move or its ocarina the cartridge stays silent; retail says a line.
       if (behavior?.isSurfable == true && !state.surfing) {
-        val surf =
-            try {
-              scriptRegistry.forLabel("EventScript_UseSurf", gbaScriptSource(state.regionId))
-            } catch (e: ScriptResolutionException) {
-              log.info { "Surf prompt unavailable: ${e.message}" }
-              null
-            }
-        if (surf != null) runScript(session, state, surf, entityId = -1)
+        if (!FieldMoves.canUse(stored, state.regionId, FieldMoves.SURF)) {
+          session.send(notice("The water is dyed a deep blue\u2026"))
+          return
+        }
+        runFieldScript(session, state, "EventScript_UseSurf", entityId = -1)
+        return
+      }
+      // Surfing and facing north into a waterfall: the same prompt the step gives.
+      if (state.surfing && behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL && state.facingDirection == Direction.UP) {
+        waterfallPrompt(session, state, stored)
         return
       }
       log.debug { "Tile interaction at ($facingX, $facingY) has no bg event" }
@@ -257,6 +240,94 @@ constructor(
       object : de.fiereu.openmmo.common.dialog.DialogLine {
         override val textId = id
       }
+
+  /** A shared ROM field script for this region's game; unresolvable ones log and do nothing. */
+  fun runFieldScript(session: SessionContext, state: PlayerState, label: String, entityId: Long) {
+    val script =
+        try {
+          scriptRegistry.forLabel(label, gbaScriptSource(state.regionId))
+        } catch (e: ScriptResolutionException) {
+          log.info { "Field script $label unavailable: ${e.message}" }
+          null
+        } ?: return
+    runScript(session, state, script, entityId)
+  }
+
+  /** The waterfall prompt, or the engine's "can't" line when the badge is missing. */
+  fun waterfallPrompt(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
+    val hoenn = Region.byId(state.regionId) == Region.HOENN
+    val label =
+        if (FieldMoves.badgeHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
+          if (hoenn) "EventScript_UseWaterfall" else "EventScript_Waterfall"
+        } else if (hoenn) "EventScript_CannotUseWaterfall" else "EventScript_CantUseWaterfall"
+    runFieldScript(session, state, label, entityId = -1)
+  }
+
+  /**
+   * A field move used from the bag's ocarina (the party-menu route is not decoded yet): exactly
+   * what pressing A would do for that move, so the ROM script does the asking and the checks.
+   */
+  fun useFieldMove(session: SessionContext, state: PlayerState, moveId: Int) {
+    if (state.blocksNewScript) return
+    val stored = currentCharacter(state) ?: return
+    val map =
+        mapManager.getMap(stored.info.positionRegionId, stored.info.positionBankId, stored.info.positionMapId)
+            ?: return
+    val region = stored.info.positionRegionId.toInt()
+    val bank = stored.info.positionBankId.toInt()
+    val mapId = stored.info.positionMapId.toInt()
+    val hoenn = Region.byId(state.regionId) == Region.HOENN
+    val fx = stored.info.positionX.toInt() + state.facingDirection.dx
+    val fy = stored.info.positionY.toInt() + state.facingDirection.dy
+    val facing = map.tileAt(fx, fy)?.behavior
+    when (moveId) {
+      FieldMoves.CUT, FieldMoves.ROCK_SMASH, FieldMoves.STRENGTH -> {
+        val wanted =
+            when (moveId) {
+              FieldMoves.CUT -> "EventScript_CutTree"
+              FieldMoves.ROCK_SMASH -> "EventScript_RockSmash"
+              else -> "EventScript_StrengthBoulder"
+            }
+        val target =
+            map.npcs
+                .map { npcService.effectiveNpc(region, bank, mapId, it, stored.storyFlags, stored.storyVars) }
+                .firstOrNull { it.x == fx && it.y == fy && it.script == wanted && (it.hideFlag.isEmpty() || it.hideFlag !in stored.storyFlags) }
+        if (target == null) {
+          session.send(notice("There is nothing here to use that on."))
+          return
+        }
+        val entityId = npcService.getNpcEntityId(region, bank, mapId, target.entityIdx) ?: -1L
+        runFieldScript(session, state, target.script, entityId)
+      }
+      FieldMoves.SURF ->
+          if (!state.surfing && facing?.isSurfable == true) runFieldScript(session, state, "EventScript_UseSurf", -1)
+          else session.send(notice("There is no water to surf on here."))
+      FieldMoves.WATERFALL ->
+          if (state.surfing && state.facingDirection == Direction.UP && facing == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL) waterfallPrompt(session, state, stored)
+          else session.send(notice("Face a waterfall while surfing to use that."))
+      FieldMoves.DIVE -> if (!divePrompt(session, state, stored, map)) session.send(notice("There is nowhere to dive here."))
+      FieldMoves.FLASH ->
+          if (map.lighting != de.fiereu.openmmo.common.enums.Lighting.REGULAR) runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
+          else session.send(notice("It is not dark here."))
+      FieldMoves.FLY -> session.send(notice("Fly is not available on this server yet."))
+      else -> log.info { "Field move $moveId has no overworld use" }
+    }
+  }
+
+  /** Dive down from deep water or surface from the sea floor; false when neither applies. */
+  private fun divePrompt(session: SessionContext, state: PlayerState, stored: StoredCharacter, map: MapDef): Boolean {
+    if (!state.surfing) return false
+    val standing = map.tileAt(stored.info.positionX.toInt(), stored.info.positionY.toInt())?.behavior
+    val hoenn = Region.byId(state.regionId) == Region.HOENN
+    val label =
+        when {
+          state.underwater -> if (hoenn) "EventScript_UseDiveUnderwater" else "EventScript_TrySurface"
+          standing == de.fiereu.openmmo.common.enums.TileBehavior.DEEP_WATER -> if (hoenn) "EventScript_UseDive" else "EventScript_DeepWater"
+          else -> return false
+        }
+    runFieldScript(session, state, label, entityId = -1)
+    return true
+  }
 
   private fun currentCharacter(state: PlayerState): StoredCharacter? {
     val charId = state.characterId ?: return null

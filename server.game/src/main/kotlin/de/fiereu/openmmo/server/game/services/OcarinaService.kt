@@ -37,9 +37,10 @@ constructor(
     private val encounters: Provider<EncounterService>,
     private val maps: MapManager,
     private val species: SpeciesRegistry,
+    private val interactions: Provider<InteractionService>? = null,
 ) {
 
-  fun isOcarina(itemId: Int): Boolean = itemId == SWEET_SCENT_OCARINA
+  fun isOcarina(itemId: Int): Boolean = itemId == SWEET_SCENT_OCARINA || FieldMoves.byOcarina(itemId) != null
 
   private fun ppSpent(stored: StoredCharacter): Int = (stored.storyVars[SPENT_KEY] ?: 0).coerceIn(0, MAX_PP)
 
@@ -48,6 +49,13 @@ constructor(
 
   /** The bag's use of the ocarina: the stand-in uses Sweet Scent here, spending pp. */
   fun use(ctx: SessionContext, state: PlayerState, charId: Long, itemId: Int) {
+    // The HM ocarinas (1180-1187) do what pressing A would for their move; the ROM script
+    // then finds the ocarina through checkpartymove, badge first.
+    FieldMoves.byOcarina(itemId)?.let {
+      log.info { "[Ocarina] char=$charId uses ocarina $itemId (move ${it.moveId})" }
+      interactions?.get()?.useFieldMove(ctx, state, it.moveId)
+      return
+    }
     if (itemId != SWEET_SCENT_OCARINA) return
     val stored = characters.getCharacter(charId) ?: return
     val spent = ppSpent(stored)

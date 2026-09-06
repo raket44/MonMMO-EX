@@ -456,7 +456,12 @@ constructor(
     // script either climbs (the field effect walks the surfer up) or explains the wall of water.
     if (state.surfing && msg.direction == Direction.UP && targetBehavior == TileBehavior.WATERFALL && !state.creative) {
       sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-      runFieldScript(ctx, state, if (Region.byId(state.regionId) == Region.HOENN) "EventScript_UseWaterfall" else "EventScript_Waterfall")
+      val hoenn = Region.byId(state.regionId) == Region.HOENN
+      val label =
+          if (FieldMoves.badgeHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
+            if (hoenn) "EventScript_UseWaterfall" else "EventScript_Waterfall"
+          } else if (hoenn) "EventScript_CannotUseWaterfall" else "EventScript_CantUseWaterfall"
+      runFieldScript(ctx, state, label)
       return
     }
     // Strength: a pushable boulder in the way slides one tile on, when that tile is free.

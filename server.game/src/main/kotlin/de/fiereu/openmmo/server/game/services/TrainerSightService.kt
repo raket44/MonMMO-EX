@@ -54,6 +54,9 @@ constructor(
     val region = Region.byId(state.regionId) ?: return false
     val source = gbaScriptSource(state.regionId) ?: return false
     val charId = state.characterId ?: return false
+    // A step that lands while a battle is starting (the client's last packets in flight after a
+    // wild encounter) must not spot anyone: the trainer battle would be refused mid-battle.
+    if (battleService.inBattle(charId)) return false
     val stored = characterStore.getCharacter(charId) ?: return false
     val storyFlags = stored.storyFlags
     val storyVars = stored.storyVars
@@ -227,23 +230,32 @@ constructor(
                 findSpotter(map, source0, region0, charId0, stored0.storyFlags, stored0.storyVars, state.x.toInt(), state.y.toInt(), done + current.npc.entityIdx)
             else null
         val partner = second?.let { battleService.resolveTrainer(region0!!, it.constant) }
+        val firstTrainer = region0?.let { battleService.resolveTrainer(it, current.constant) }
         val secondSteps = second?.let { approachSteps(it) }
-        if (second != null && partner != null && secondSteps != null) {
-          log.info { "Double sighting: ${current.constant} and ${second.constant} battle together" }
+        if (second != null && partner != null && firstTrainer != null && secondSteps != null && region0 != null && source0 != null && charId0 != null) {
+          // Vanilla order: both walk up, first intro, second intro, one 2v2 with the first
+          // trainer's defeat line inside the battle, then the second's line, both flagged beaten.
+          log.info { "Double sighting:  and  battle together" }
           scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps, second.npc.entityIdx to secondSteps)
+          val textsA = scriptRegistry.trainerBattleTexts(current.npc.script, source0)
+          val textsB = scriptRegistry.trainerBattleTexts(second.npc.script, source0)
+          textsA?.intro?.let { scriptCtx.say(it) }
+          textsB?.intro?.let { scriptCtx.say(it) }
           state.pendingPartnerTrainer = partner
+          val result = scriptCtx.trainerBattle(firstTrainer, textsA?.defeat?.textId, whiteoutOnDefeat = true)
+          state.pendingPartnerTrainer = null
+          if (result == de.fiereu.openmmo.server.game.battle.BattleResult.VICTORY) {
+            val ns = region0.name.lowercase()
+            storyService.setFlag(charId0, TrainerStoryState.defeated(ns, firstTrainer.id))
+            storyService.setFlag(charId0, TrainerStoryState.defeated(ns, partner.id))
+            textsB?.defeat?.let { scriptCtx.say(it) }
+          }
+          done += current.npc.entityIdx
+          done += second.npc.entityIdx
         } else {
           scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps)
-        }
-        current.script.run(scriptCtx)
-        state.pendingPartnerTrainer = null
-        done += current.npc.entityIdx
-        if (second != null && partner != null && region0 != null && charId0 != null) {
-          // The first trainer's script flags it beaten on a win; the partner falls with it.
-          val firstTrainer = battleService.resolveTrainer(region0, current.constant)
-          val won = firstTrainer != null && storyService.isFlagSet(charId0, TrainerStoryState.defeated(region0.name.lowercase(), firstTrainer.id))
-          if (won) storyService.setFlag(charId0, TrainerStoryState.defeated(region0.name.lowercase(), partner.id))
-          done += second.npc.entityIdx
+          current.script.run(scriptCtx)
+          done += current.npc.entityIdx
         }
         // Two trainers spotting the player at once battle one after the other, as on the
         // cartridge: whoever else still has the line of sight approaches once this one is done.

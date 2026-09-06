@@ -114,6 +114,19 @@ class ScriptRegistry(
    * interpreted program or no trainerbattle. The line-of-sight engine uses it to check the defeated
    * flag BEFORE approaching - a beaten trainer must neither approach nor auto-talk.
    */
+  /** A trainer script's intro and in-battle defeat lines, from its trainerbattle instruction. */
+  data class TrainerBattleTexts(val intro: de.fiereu.openmmo.common.dialog.DialogLine?, val defeat: de.fiereu.openmmo.common.dialog.DialogLine?)
+
+  fun trainerBattleTexts(scriptLabel: String, source: String? = null): TrainerBattleTexts? {
+    val candidates = interpretedCandidates[scriptLabel].orEmpty()
+    val interpreted =
+        (if (source == null) interpretedByBareLabel[scriptLabel] ?: candidates.singleOrNull()
+        else candidates.singleOrNull { it.program.id.source == source }) as? InterpretedScript ?: return null
+    val instruction = interpreted.program.instructions.firstOrNull { it.command.startsWith("trainerbattle") } ?: return null
+    fun text(index: Int) = (instruction.args.getOrNull(index) as? de.fiereu.openmmo.script.TextArg)?.token?.let { interpreted.textBindings[it] }
+    return TrainerBattleTexts(text(1), text(2))
+  }
+
   fun trainerConstant(scriptLabel: String, source: String? = null): String? {
     val candidates = interpretedCandidates[scriptLabel].orEmpty()
     val interpreted =

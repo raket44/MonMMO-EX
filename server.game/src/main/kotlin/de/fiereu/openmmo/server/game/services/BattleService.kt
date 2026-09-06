@@ -89,8 +89,8 @@ constructor(
     private val trainers: TrainerRegistry,
     private val items: ItemRegistry,
     private val classicMode: ClassicModeService,
-    private val trainerSight: javax.inject.Provider<TrainerSightService>,
-    private val mapManager: de.fiereu.openmmo.maps.MapManager,
+    private val trainerSight: javax.inject.Provider<TrainerSightService>? = null,
+    private val mapManager: de.fiereu.openmmo.maps.MapManager? = null,
 ) {
 
   private val pokeBallItemId: Short by lazy { items.idOf(Items.POKE_BALL).toShort() }
@@ -911,8 +911,8 @@ constructor(
     }
     if (result != BattleResult.VICTORY && result != BattleResult.FLED && result != BattleResult.CAUGHT) return
     if (state.scriptRunning) return
-    val map = mapManager.getMap(state.regionId, state.bankId, state.mapId)
-    val sight = trainerSight.get()
+    val sight = trainerSight?.get() ?: return
+    val map = mapManager?.getMap(state.regionId, state.bankId, state.mapId)
     val spotted =
         if (map != null) sight.onStep(session, state, map, state.x.toInt(), state.y.toInt())
         else sight.onNdsStep(session, state, state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt())

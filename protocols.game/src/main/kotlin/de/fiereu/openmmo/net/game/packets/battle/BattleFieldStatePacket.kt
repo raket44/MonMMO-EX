@@ -177,8 +177,11 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     val trainerRegion: Byte
     val trainerId: Short
     if (kindByte.toInt() == 4) {
+      // count; per entry: two bytes (slot count, first position), one byte the reader discards,
+      // then the nested descriptor which reads its own kind (2) and sub (6).
       constant(2)
       constant(1)
+      constant(0)
       constant(0)
       constant(2)
       constant(6)
@@ -187,6 +190,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
       constant(0)
       constant(1)
       constant(1)
+      constant(0)
       constant(2)
       constant(6)
       field(S8) { it.trainerRegion }

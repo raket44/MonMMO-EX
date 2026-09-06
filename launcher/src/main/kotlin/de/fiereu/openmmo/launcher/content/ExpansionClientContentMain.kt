@@ -676,11 +676,12 @@ private fun patchNames(
   }
 
   // Stock rewordings. The battle-end lines 5017/5018 are written for a team ("{00} have defeated
-  // {01}!"), which reads as a grammar slip for one trainer; "{00} defeated {01}!" fits both.
+  // {01}!"), which reads as a grammar slip for one trainer, and 5018 breaks the page before the
+  // names; "{00} defeated {01}!" on one line fits both.
   (0 until root.childNodes.length)
       .map(root.childNodes::item)
       .filter { it.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull() in DEFEATED_STRING_IDS }
-      .forEach { it.textContent = it.textContent.replace("have defeated", "defeated").replace("has defeated", "defeated") }
+      .forEach { it.textContent = it.textContent.replace("have defeated", "defeated").replace("has defeated", "defeated").replace("\n\n", " ") }
 
   Files.createDirectories(output.parent)
   TransformerFactory.newInstance()

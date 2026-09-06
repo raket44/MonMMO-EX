@@ -21,6 +21,8 @@ class ScriptReasonProbeTest :
                 "PalletTown_ProfessorOaksLab_EventScript_Oak",
                 "Route22_EventScript_RivalTrigger",
                 "CeruleanCity_EventScript_Rival",
+                "CeladonCity_Condominiums_RoofRoom_EventScript_EeveeBall",
+                "SilphCo_7F_EventScript_LaprasGuy",
             )
         InterpretedScripts.sources.forEach { reg ->
           labels.forEach { label ->

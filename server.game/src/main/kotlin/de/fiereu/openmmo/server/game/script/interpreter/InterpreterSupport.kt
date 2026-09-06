@@ -95,6 +95,10 @@ internal object InterpreterSupport {
           // GetSelectedSeagallopDestination answers "cancel"; the sailor's own lines still play.
           "DrawSeagallopDestinationMenu",
           "DoSeagallopFerryScene",
+          // Gift monsters: the "give it a nickname?" screen. The client has no server-driven nickname
+          // entry yet, so a YES answer keeps the species name; the gift itself already landed.
+          "ChangePokemonNickname",
+          "ChangeBoxPokemonNickname",
       )
 
   /**
@@ -102,7 +106,7 @@ internal object InterpreterSupport {
    * variable unfilled. Cosmetic, against Cut and Surf not working at all.
    */
   val BUFFER_COMMANDS =
-      setOf("bufferpartymonnick", "buffermovename", "bufferstdstring", "buffernumberstring", "bufferspeciesname", "bufferitemname", "bufferleadmonspeciesname", "bufferfirstpokemon")
+      setOf("bufferpartymonnick", "buffermovename", "bufferstdstring", "buffernumberstring", "bufferspeciesname", "bufferitemname", "bufferleadmonspeciesname", "bufferfirstpokemon", "bufferboxname")
 
   /**
    * ROM multichoice menus the client draws from its own registry (category 10 sets, f/Lx.R40):
@@ -138,6 +142,10 @@ internal object InterpreterSupport {
           // Match Call registration is not modeled either, so no trainer is ever registered;
           // post-battle scripts take their plain-dialog branch, which is the truthful answer.
           "IsTrainerRegistered" to 0,
+          // Gift monsters never route to a PC box here (givemon answers party or no room), so the
+          // box-full follow-ups are unreachable; the constants keep the scripts interpretable.
+          "ShouldShowBoxWasFullMessage" to 0,
+          "GetPCBoxToSendMon" to 0,
       )
 
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */

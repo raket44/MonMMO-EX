@@ -6,6 +6,9 @@ import de.fiereu.openmmo.common.enums.TileBehavior
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.WildEncounterSlot
 import de.fiereu.openmmo.maps.WildEncounterTable
+import de.fiereu.openmmo.net.game.packets.DialogStatePacket
+import de.fiereu.openmmo.net.game.packets.GbaEntityMovePacket
+import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
@@ -77,6 +80,7 @@ constructor(
         "Wild encounter for char=$charId at ($x, $y) [$season/$time]: " +
             "species ${slot.dexId} level $level"
       }
+      freeze(session, charId, map, x, y)
       battleService.startWildBattle(session, slot.dexId, level)
       return
     }
@@ -93,6 +97,7 @@ constructor(
     log.info {
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
+    freeze(session, charId, map, x, y)
     battleService.startWildBattle(session, slot.speciesId, level)
   }
 
@@ -101,6 +106,29 @@ constructor(
    * grass or cave floor, the map directory names the map, and the dex tables of that region roll
    * the encounter exactly as on the GBA maps.
    */
+  /**
+   * The cartridge stops the player dead on the tile the encounter rolled on. The client keeps
+   * walking on its own until the battle screen arrives, so input is removed at once (scripted
+   * state ON) and the player is put back on the encounter tile; the hold lifts when the client
+   * reports itself back in the overworld, where a trainer's line of sight is checked again.
+   */
+  private fun freeze(session: SessionContext, charId: Long, map: MapDef?, x: Int, y: Int) {
+    val state = session.attributes[PLAYER_STATE] ?: return
+    state.encounterHold = true
+    session.send(DialogStatePacket(active = true))
+    if (map != null) {
+      session.send(
+          GbaEntityMovePacket(
+              entityId = charId,
+              bankId = map.bankId.toInt() and 0xff,
+              mapId = map.mapId.toInt() and 0xff,
+              x = x,
+              y = y,
+              movementMode = 2,
+              direction = state.facingDirection))
+    }
+  }
+
   fun onNdsStep(session: SessionContext, charId: Long, region: Int, bank: Int, map: Int, x: Int, y: Int) {
     val type = ndsLand.typeAt(region, bank, map, x, y) ?: return
     val types =
@@ -122,6 +150,7 @@ constructor(
     val slot = pickRetailSlot(pool) ?: return
     val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
+    freeze(session, charId, null, x, y)
     battleService.startWildBattle(session, slot.dexId, level)
   }
 

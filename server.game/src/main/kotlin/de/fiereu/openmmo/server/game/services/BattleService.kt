@@ -89,6 +89,8 @@ constructor(
     private val trainers: TrainerRegistry,
     private val items: ItemRegistry,
     private val classicMode: ClassicModeService,
+    private val trainerSight: javax.inject.Provider<TrainerSightService>,
+    private val mapManager: de.fiereu.openmmo.maps.MapManager,
 ) {
 
   private val pokeBallItemId: Short by lazy { items.idOf(Items.POKE_BALL).toShort() }
@@ -273,6 +275,7 @@ constructor(
     val battle = battles.byChar(charId) ?: return null
     val result = battle.pendingResult ?: return null
     finishBattle(battle, result)
+    afterWildBattle(event.session, battle, result)
     // A scripted loss without whiteout (early rival) is the script's to handle.
     return if (result == BattleResult.DEFEAT && !battle.whiteoutOnDefeat) null else result
   }
@@ -893,6 +896,28 @@ constructor(
             I.FULL_RESTORE, I.MAX_REVIVE, I.PP_UP, I.MAX_ELIXIR, I.NUGGET, I.KING_S_ROCK, I.ETHER, I.WHITE_HERB,
             I.ELIXIR, I.LEFTOVERS)
       }
+
+  /**
+   * Back in the overworld after a wild battle: the encounter freeze lifts, and a trainer whose
+   * line of sight covers the tile catches the player now - the cartridge re-checks sight after
+   * every battle, so an encounter never lets anyone slip past a trainer.
+   */
+  private fun afterWildBattle(session: SessionContext, battle: BattleInstance, result: BattleResult) {
+    if (battle.trainer != null) return
+    val state = session.attributes[PLAYER_STATE] ?: return
+    if (state.encounterHold) {
+      state.encounterHold = false
+      if (!state.scriptRunning) session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
+    }
+    if (result != BattleResult.VICTORY && result != BattleResult.FLED && result != BattleResult.CAUGHT) return
+    if (state.scriptRunning) return
+    val map = mapManager.getMap(state.regionId, state.bankId, state.mapId)
+    val sight = trainerSight.get()
+    val spotted =
+        if (map != null) sight.onStep(session, state, map, state.x.toInt(), state.y.toInt())
+        else sight.onNdsStep(session, state, state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt())
+    if (spotted) log.info { "Trainer sight re-check after the wild battle caught char=${battle.charId}" }
+  }
 
   private fun finishBattle(battle: BattleInstance, result: BattleResult) {
     interestManager.leave(battle.session, battle.key)

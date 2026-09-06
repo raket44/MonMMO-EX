@@ -59,6 +59,8 @@ data class PlayerState(
      */
     @field:Volatile var pendingPartnerTrainer: de.fiereu.openmmo.trainer.TrainerDef? = null,
     @field:Volatile var pendingPartnerDefeatTextId: Int? = null,
+    /** A wild encounter froze the player (input removed, snapped to the tile); lifted when back in the overworld. */
+    @field:Volatile var encounterHold: Boolean = false,
     /**
      * The client's 0x2A story-flag handler silently DROPS updates until its game state exists
      * (f/eO0.X91 bails on a null Sw()), so the login-time world-state block never lands - badges

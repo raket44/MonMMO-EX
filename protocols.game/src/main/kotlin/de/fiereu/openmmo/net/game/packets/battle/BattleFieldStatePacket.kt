@@ -56,6 +56,8 @@ data class BattleFieldStatePacket(
     /** The opposing field positions: the opponent list index on each, null for an empty one. */
     val opponentActive: List<Int?>,
     val format: BattleFormat = BattleFormat.SINGLES,
+    /** A second trainer on the opposing side (double sighting): the header names both. */
+    val partnerTrainerId: Short? = null,
 ) {
   init {
     require(playerAppearance.size == APPEARANCE_SIZE) {
@@ -165,15 +167,41 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
           } else null
         }
 
-    // Opens the opposing side. A trainer adds its id and two more halfwords here.
-    field(S8) { if (it.opposing == OpposingSide.TRAINER) 2.toByte() else 1.toByte() }
+    // Opens the opposing side. A trainer adds its id and two more halfwords here. Two trainers
+    // (double sighting) use the client's composite descriptor instead (f/TB0.l70 kind 4): a
+    // count, then per entry two bytes (slot count, first position) and a nested kind-2 trainer
+    // descriptor - reader-verified layout, entry bytes inferred.
+    val kindByte = field(S8) { if (it.partnerTrainerId != null) 4.toByte() else if (it.opposing == OpposingSide.TRAINER) 2.toByte() else 1.toByte() }
     constant(6)
-    // Descriptor sub-type 6, then the region byte the client keys its trainer table with.
-    val trainerRegion = field(S8) { it.trainerRegion }
-    val trainerId =
-        if (opposing == OpposingSide.TRAINER) field(S16LE) { it.trainerId } else 0.toShort()
-    padding(4)
-    if (opposing == OpposingSide.TRAINER) padding(2)
+    val partnerTrainerId: Short?
+    val trainerRegion: Byte
+    val trainerId: Short
+    if (kindByte.toInt() == 4) {
+      constant(2)
+      constant(1)
+      constant(0)
+      constant(2)
+      constant(6)
+      trainerRegion = field(S8) { it.trainerRegion }
+      trainerId = field(S16LE) { it.trainerId }
+      constant(0)
+      constant(1)
+      constant(1)
+      constant(2)
+      constant(6)
+      field(S8) { it.trainerRegion }
+      partnerTrainerId = field(S16LE) { it.partnerTrainerId!! }
+      constant(0)
+      padding(3)
+      padding(2)
+    } else {
+      // Descriptor sub-type 6, then the region byte the client keys its trainer table with.
+      trainerRegion = field(S8) { it.trainerRegion }
+      trainerId = if (opposing == OpposingSide.TRAINER) field(S16LE) { it.trainerId } else 0.toShort()
+      partnerTrainerId = null
+      padding(4)
+      if (opposing == OpposingSide.TRAINER) padding(2)
+    }
 
     constant(1)
     val opponentCount = field(U8) { it.opponentParty.size }
@@ -209,6 +237,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         opponents,
         opponentActive,
         format,
+        partnerTrainerId = partnerTrainerId,
     )
   }
 }

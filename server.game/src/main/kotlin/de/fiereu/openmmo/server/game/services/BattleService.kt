@@ -122,9 +122,11 @@ constructor(
     val battle = battles.byChar(charId) ?: return
     if (battle.pendingResult != null) return
     val action = event.packet
-    // The client packs the acting position the way f/fd1 does: side in the high nibble, position
-    // in the low one; a move's extra byte is the chosen target packed the same way.
-    val position = action.slotRefPacked.toInt() and 0x0F
+    // The client packs a slot reference the way f/fd1 does (and BattleSwitchInPacket writes it):
+    // POSITION in the high nibble, side in the low one. A doubles second position arrives as
+    // 0x10; reading the low nibble collapsed both choices onto position 0 and the turn never
+    // resolved. A move's extra byte is the chosen target packed the same way.
+    val position = (action.slotRefPacked.toInt() ushr 4) and 0x0F
     log.info { "Battle action char=$charId position=$position: $action" }
     // A position whose monster fainted owes a replacement and may only switch.
     if (position in battle.forcedSwitchPositions) {
@@ -139,8 +141,8 @@ constructor(
                   position,
                   ChosenAction.Kind.MOVE,
                   action.moveOrItemId,
-                  targetSide = (action.extraFlag.toInt() ushr 4) and 0x0F,
-                  targetPosition = action.extraFlag.toInt() and 0x0F)
+                  targetSide = action.extraFlag.toInt() and 0x0F,
+                  targetPosition = (action.extraFlag.toInt() ushr 4) and 0x0F)
           BattleAction.ITEM -> ChosenAction(position, ChosenAction.Kind.ITEM)
           BattleAction.SWITCH -> ChosenAction(position, ChosenAction.Kind.SWITCH, partyIndex = action.moveOrItemId.toInt())
           BattleAction.RUN -> ChosenAction(position, ChosenAction.Kind.RUN)

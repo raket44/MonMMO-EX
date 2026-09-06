@@ -235,11 +235,15 @@ constructor(
         if (second != null && partner != null && firstTrainer != null && secondSteps != null && region0 != null && source0 != null && charId0 != null) {
           // Vanilla order: both walk up, first intro, second intro, one 2v2 with the first
           // trainer's defeat line inside the battle, then the second's line, both flagged beaten.
-          log.info { "Double sighting:  and  battle together" }
-          scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps, second.npc.entityIdx to secondSteps)
+          log.info { "Double sighting: " + firstTrainer.name + " and " + partner.name + " battle together" }
           val textsA = scriptRegistry.trainerBattleTexts(current.npc.script, source0)
           val textsB = scriptRegistry.trainerBattleTexts(second.npc.script, source0)
+          // Vanilla: the first walks up and speaks; then the second walks up, the player turns to
+          // face them, and they speak; only then the battle.
+          scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps)
           textsA?.intro?.let { scriptCtx.say(it) }
+          val faceSecond = faceStep(second.dir.opposite()) ?: playerFace
+          scriptCtx.moveSelfAndNpcs(listOf(faceSecond), second.npc.entityIdx to secondSteps)
           textsB?.intro?.let { scriptCtx.say(it) }
           state.pendingPartnerTrainer = partner
           val result = scriptCtx.trainerBattle(firstTrainer, textsA?.defeat?.textId, whiteoutOnDefeat = true)

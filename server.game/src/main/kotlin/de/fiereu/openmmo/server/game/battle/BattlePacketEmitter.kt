@@ -97,6 +97,7 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // The client resolves class and name through its per-region ROM trainer table
             // (f/W9.io(region, id)); the id alone lands in the Kanto table.
             trainerId = (battle.trainer?.id ?: 0).toShort(),
+            partnerTrainerId = battle.partner?.id?.toShort(),
             // Only a trainer side names a region (the client keys its ROM trainer table with it). On
             // a wild side the same byte is read as side flags: a non-zero value (Hoenn = 1) made the
             // client expect an extra field and die on the monster's entity id - wild battles outside

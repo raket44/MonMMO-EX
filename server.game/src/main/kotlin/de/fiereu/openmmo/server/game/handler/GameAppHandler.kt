@@ -222,7 +222,8 @@ constructor(
     on<BattleActionSubmitPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleTierSelectPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleChatMessagePacket> { event -> battleService.onBattlePacket(event) }
-    on<BattlePartySlotSelectPacket> { event -> battleService.onBattlePacket(event) }
+    // 0x53 is a trade offer while a trade is open, a battle party pick otherwise.
+    on<BattlePartySlotSelectPacket> { event -> if (!tradeService.onOffer(event)) battleService.onBattlePacket(event) }
     on<BattleTargetPickPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleTransitionReadyPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleTeamPreviewConfirmPacket> { event -> battleService.onBattlePacket(event) }

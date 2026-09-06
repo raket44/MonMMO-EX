@@ -11,7 +11,9 @@ import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
 import de.fiereu.openmmo.net.game.packets.TradeActionPacket
 import de.fiereu.openmmo.net.game.packets.TradeListEntryPacket
 import de.fiereu.openmmo.net.game.packets.TradeSelectMonPacket
+import de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattlePartySlotSelectPacket
+import de.fiereu.openmmo.net.game.packets.battle.Listing
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -67,8 +69,9 @@ constructor(
    * The offer the live client actually sends: clicking a party monster in the trade window writes
    * c2s 0x53 (f/uN1: short slot, long monster id, short context) - the same opcode a battle uses
    * to pick a party member, so the handler asks here first. The window then expects its OWN side
-   * refreshed by a container listing (s2c 0x16) tagged with the client's trade container (f/Cy
-   * yB0 = 10, its listing code routes that into nr0.T90[my side]); the peer gets s2c 0x52.
+   * updated by a monster delta (s2c 0x16, f/Y9) whose listing moves the monster into the TRADE
+   * container (f/Cy ZV1 = our ordinal 2): the client takes it off the party list and into
+   * nr0.T90[my side]. The peer gets s2c 0x52.
    * Clicking an offered monster again withdraws it. True when a trade consumed the packet.
    */
   fun onOffer(event: PacketEvent<BattlePartySlotSelectPacket>): Boolean {
@@ -81,6 +84,9 @@ constructor(
     if (mon.id in trade.offers[side]) {
       trade.offers[side] -= mon.id
       log.info { "Trade: char=$charId withdraws ${mon.dexId}" }
+      // Back to its party slot: the delta's listing move (f/Y9) takes it off the own trade list.
+      event.session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(PokemonContainer.PARTY.ordinal.toByte(), mon.containerSlot)))
+      return true
     } else {
       if (party.size - trade.offers[side].size <= 1) {
         log.info { "Trade: char=$charId cannot offer its last party monster" }
@@ -90,8 +96,10 @@ constructor(
       log.info { "Trade: char=$charId offers ${mon.dexId} (monster ${mon.id}, slot ${event.packet.slotIndex}, context ${event.packet.contextId})" }
       peerSession(trade, side)?.send(TradeListEntryPacket(mon))
     }
-    val offered = trade.offers[side].mapNotNull { id -> party.firstOrNull { it.id == id } }
-    event.session.send(PokemonContainerPacket(container = TRADE_LIST, hasChange = true, delete = false, pokemon = offered))
+    // The offerer's own list: a listing move of that monster into the TRADE container (f/Cy ZV1,
+    // our ordinal 2). f/Y9 moves it from the party list into nr0.T90[my side] on the client.
+    val index = trade.offers[side].size - 1
+    event.session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(PokemonContainer.TRADE.ordinal.toByte(), index.toShort())))
     return true
   }
 
@@ -196,8 +204,6 @@ constructor(
 
   private companion object {
     const val OPEN_FLAGS: Byte = 1
-    /** The client's trade list container (f/Cy yB0 10, capacity 60) by enum ordinal. */
-    val TRADE_LIST: PokemonContainer = PokemonContainer.entries[10]
     const val ACTION_CANCEL = 0
     const val ACTION_LOCK = 1
     const val ACTION_CONFIRM = 2

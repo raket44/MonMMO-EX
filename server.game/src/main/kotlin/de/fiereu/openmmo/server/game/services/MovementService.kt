@@ -336,26 +336,24 @@ constructor(
     }
 
     if (msg.x != fromX || msg.y != fromY) {
-      // The one-tile heal. The client is the emulator running the real ROM's collision and it
-      // resolves movement the server cannot fully observe: the emergence walk plays on its own
-      // schedule (queued behind a loading map, never echoed back as a report), it bonks on
-      // things the server does not model, and quick input reversals cancel steps the server
-      // already committed. Every one of those leaves the truth exactly one tile from the
-      // server's guess - so an adjacent claim onto a walkable tile IS the truth: resync and
-      // process the move. Fighting it desync-reset the very press that should have fired the
-      // door warp. A claim further than one tile (or into a wall) is still a real desync.
-      val adjacent =
-          Math.abs(msg.x - fromX) + Math.abs(msg.y - fromY) == 1 &&
-              isWalkable(currentMap, msg.x, msg.y, state.surfing)
-      if (!adjacent) {
+      // THE CLIENT HAS AUTHORITY OVER ITS OWN POSITION. It is the emulator running the real
+      // ROM's collision and it resolves movement the server cannot fully observe: the emergence
+      // walk plays on its own schedule, it bonks on things the server does not model, quick
+      // input reversals cancel steps the server already committed - and over a real network
+      // every step it takes while a reset is in flight lands here against a stale tile.
+      // Fighting any of it produced the rubber band: one refused step put the client several
+      // tiles ahead, every following step was refused against the old tile, and each refusal
+      // yanked the player back. So the reported tile IS the truth and the server catches up to
+      // it. Only a claim outside the map is refused - that is a different map, not a position.
+      if (msg.x !in 0 until currentMap.width || msg.y !in 0 until currentMap.height) {
         log.info {
-          "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
-              "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
+          "DESYNC: char=$charId claims (${msg.x}, ${msg.y}) outside " +
+              "${state.regionId}:${state.bankId}:${state.mapId}, server has ($fromX, $fromY), resetting"
         }
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
         return
       }
-      log.info { "One-tile heal: char=$charId resynced to (${msg.x}, ${msg.y})" }
+      log.debug { "Resync: char=$charId ($fromX, $fromY) -> (${msg.x}, ${msg.y})" }
       fromX = msg.x
       fromY = msg.y
       characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())
@@ -399,10 +397,8 @@ constructor(
           connection?.let {
             mapManager.getMap(currentMap.regionId, it.targetBank.toByte(), it.targetMap.toByte())
           }
-      if (connection == null || targetMap == null) {
-        sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-        return
-      }
+      // No neighbour there: the client's ROM has the same table and bonked, nothing to correct.
+      if (connection == null || targetMap == null) return
       val entryX =
           when (msg.direction) {
             Direction.LEFT -> targetMap.width - 1
@@ -443,11 +439,12 @@ constructor(
       return
     }
 
-    // Creative admins walk through anything; the client shows the wall, the server allows it.
+    // The client's own collision already stopped it at real walls; where the server's model
+    // disagrees, the server is the one that is wrong (its tile data is a decomp approximation
+    // of the ROM the client runs). Resetting here was the other source of the rubber band, so
+    // the step is taken and the disagreement only logged, for fixing the model.
     if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing)) {
-      log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
-      sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-      return
+      log.debug { "WALL model disagrees: char=$charId stepped to ($toX, $toY), following the client" }
     }
 
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)

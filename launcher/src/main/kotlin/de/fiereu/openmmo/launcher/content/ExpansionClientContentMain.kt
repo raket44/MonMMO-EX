@@ -681,7 +681,7 @@ private fun patchNames(
   (0 until root.childNodes.length)
       .map(root.childNodes::item)
       .filter { it.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull() in DEFEATED_STRING_IDS }
-      .forEach { it.textContent = it.textContent.replace("have defeated", "defeated").replace("has defeated", "defeated").replace("\n\n", " ") }
+      .forEach { it.textContent = it.textContent.replace("have defeated", "defeated").replace("has defeated", "defeated").replace("\\n\\n", " ") }
 
   Files.createDirectories(output.parent)
   TransformerFactory.newInstance()

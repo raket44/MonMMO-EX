@@ -5,12 +5,14 @@ import io.kotest.matchers.shouldBe
 
 class SocialStoreTest :
     FunSpec({
-      test("friends are seeded per user and survive add/remove") {
+      test("friends start empty per user and survive add/remove") {
         val store = SocialStore()
-        store.getFriends(1) shouldBe linkedSetOf("Red", "Blue", "Green")
+        store.getFriends(1) shouldBe emptySet()
 
         store.addFriend(1, "Yellow")
-        store.getFriends(1).contains("Yellow") shouldBe true
+        store.addFriend(1, "Red")
+        store.getFriends(1) shouldBe linkedSetOf("Yellow", "Red")
+        store.getFriends(2) shouldBe emptySet()
 
         store.removeFriend(1, "Red") shouldBe true
         store.getFriends(1).contains("Red") shouldBe false

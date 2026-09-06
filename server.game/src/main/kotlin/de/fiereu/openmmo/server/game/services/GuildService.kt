@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.PacketEvent
+import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.GuildPermission
 import de.fiereu.openmmo.common.enums.GuildRank
 import de.fiereu.openmmo.net.game.packets.guild.GuildActivityLogEntry
@@ -20,6 +21,7 @@ import de.fiereu.openmmo.net.game.packets.guild.GuildRankLabelUpdatePacket
 import de.fiereu.openmmo.net.game.packets.guild.GuildRankPermissionUpdatePacket
 import de.fiereu.openmmo.net.game.packets.guild.SyncGuildMembersPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
+import de.fiereu.openmmo.server.game.session.SessionRegistry
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.Guild
 import de.fiereu.openmmo.server.game.storage.GuildMember
@@ -41,6 +43,7 @@ class GuildService
 constructor(
     private val guildStore: GuildStore,
     private val characterStore: CharacterStore,
+    private val sessionRegistry: SessionRegistry,
 ) {
 
   suspend fun onCreateGuild(event: PacketEvent<GuildCreatePacket>) {
@@ -82,13 +85,27 @@ constructor(
     val charId = state.characterId ?: return
     val guild = guildStore.getGuildForChar(charId) ?: return
     val target = event.packet.targetName
-    log.info { "GuildInvite char=$charId target='$target'" }
-    guildStore.addMember(
-        guild,
-        GuildMember(syntheticId(target), target, GuildRank.GRUNT, leader = false),
-    )
+    if (guild.members.any { it.name.equals(target, ignoreCase = true) }) return
+    // An online target joins under their real character id and sees the team at once; an offline
+    // one is recorded under a placeholder id by name and adopts the real id on login.
+    val online = onlineSessionByName(target)
+    val targetId = online?.first ?: syntheticId(target)
+    log.info { "GuildInvite char=$charId target='$target' id=$targetId online=${online != null}" }
+    val member = GuildMember(targetId, target, GuildRank.GRUNT, leader = false)
+    guildStore.addMember(guild, member)
     ctx.send(buildMemberSync(guild))
+    online?.second?.let { session ->
+      session.send(buildMembership(guild))
+      session.send(buildMemberSync(guild))
+    }
   }
+
+  private fun onlineSessionByName(name: String): Pair<Long, SessionContext>? =
+      sessionRegistry.onlineCharacterIds().firstNotNullOfOrNull { id ->
+        val stored = characterStore.getCharacter(id) ?: return@firstNotNullOfOrNull null
+        if (!stored.info.name.equals(name, ignoreCase = true)) return@firstNotNullOfOrNull null
+        sessionRegistry.getByCharacterId(id)?.let { id to it }
+      }
 
   fun onRankAssign(event: PacketEvent<GuildMemberRankAssignPacket>) {
     val ctx = event.session
@@ -178,7 +195,26 @@ constructor(
         }
     guild.permissions.clear()
     guild.permissions.putAll(sanitized)
+    guildStore.savePermissions(guild)
     log.info { "RankPermUpdate char=$charId perms=$sanitized" }
+  }
+
+  /**
+   * On entering the world: the team this character belongs to, so it survives a relog and a
+   * server restart. A member invited before their character id was known (recorded under a
+   * placeholder id by name) is matched by name and takes their real id here.
+   */
+  fun sendMembership(ctx: SessionContext) {
+    val state = ctx.attributes[PLAYER_STATE] ?: return
+    val charId = state.characterId ?: return
+    val name = characterStore.getCharacter(charId)?.info?.name ?: return
+    val guild =
+        guildStore.getGuildForChar(charId)
+            ?: guildStore.getGuildForName(name)?.also { guildStore.adoptMemberId(it, name, charId) }
+            ?: return
+    log.info { "Guild membership char=$charId guild=${guild.id} '${guild.name}'" }
+    ctx.send(buildMembership(guild))
+    ctx.send(buildMemberSync(guild))
   }
 
   private fun buildMembership(guild: Guild): GuildMembershipPacket =

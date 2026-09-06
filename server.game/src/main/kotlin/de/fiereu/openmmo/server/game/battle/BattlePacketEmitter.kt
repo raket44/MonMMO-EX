@@ -34,6 +34,8 @@ import javax.inject.Singleton
 
 private val log = KotlinLogging.logger {}
 
+private val TWO_TRAINER_HEADER: Boolean = System.getProperty("monmmo.twoTrainerHeader") == "true"
+
 private const val ACTION_PROMPT: Byte = -128 // 0x80
 private const val MOVE_EVENT_KIND: Byte = 1
 // Slot-event type shown when the player gets away from a wild battle.
@@ -97,7 +99,10 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // The client resolves class and name through its per-region ROM trainer table
             // (f/W9.io(region, id)); the id alone lands in the Kanto table.
             trainerId = (battle.trainer?.id ?: 0).toShort(),
-            partnerTrainerId = battle.partner?.id?.toShort(),
+            // The composite two-trainer header parses on the client but its monster records then look
+            // the owning entry up by a key byte we do not send yet (f/BM1.qg1 NPE). Off by default
+            // until that key is decoded; -Dmonmmo.twoTrainerHeader=true to keep iterating on it.
+            partnerTrainerId = if (TWO_TRAINER_HEADER) battle.partner?.id?.toShort() else null,
             // Only a trainer side names a region (the client keys its ROM trainer table with it). On
             // a wild side the same byte is read as side flags: a non-zero value (Hoenn = 1) made the
             // client expect an extra field and die on the monster's entity id - wild battles outside

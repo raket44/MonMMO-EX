@@ -130,6 +130,13 @@ private constructor(
             val label = match.groupValues[1]
             out.getOrPut(label) { ScriptBody(file.path, mutableListOf()) }
             pending.add(label)
+          } else if (pending.isNotEmpty()) {
+            // A single-colon label INSIDE a script is a local jump target the script falls through
+            // into (field_moves.inc: EventScript_WaterCrashingDown, EventScript_EndSurface). It
+            // opens a body of its own for the gotos while the enclosing bodies keep collecting.
+            val label = match.groupValues[1]
+            out.getOrPut(label) { ScriptBody(file.path, mutableListOf()) }
+            pending.add(label)
           } else {
             // A data label ends the current script body.
             pending.clear()

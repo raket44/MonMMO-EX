@@ -533,7 +533,7 @@ object GameProtocol : Protocol() {
     s2c<MapTileAnimationTogglePacket>(0xC0u, MapTileAnimationTogglePacketCodec)
 
     c2s<TournamentRegistrationPacket>(0xC1u, TournamentRegistrationPacketCodec)
-    s2c<MapWeatherModeSetPacket>(0xC1u, MapWeatherModeSetPacketCodec)
+    s2c<MapLightingPacket>(0xC1u, MapLightingPacketCodec)
 
     bidi<KeepAlivePacket>(0xC2u, KeepAlivePacketCodec)
 

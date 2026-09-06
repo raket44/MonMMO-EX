@@ -54,8 +54,9 @@ class GeneratedScriptCorpusTest :
       }
 
       test("unsupported generated program without Kotlin fails clearly") {
-        // The nickname UI is a client special with no Kotlin port.
-        val label = "EventScript_ChangePokemonNickname"
+        // The player's PC menu is a client special with no Kotlin port (the nickname specials
+        // the test used before are accepted as no-ops now, for the gift monsters).
+        val label = "EventScript_AccessPlayersPC"
         val error = shouldThrow<ScriptResolutionException> { registry.forLabel(label, "firered") }
 
         error.message shouldContain "gba:firered:BPRE:$label"

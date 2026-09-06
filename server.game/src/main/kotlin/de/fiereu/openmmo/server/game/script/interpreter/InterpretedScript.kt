@@ -384,6 +384,12 @@ class InterpretedScript(
           state.pc = target.pc
         }
         "end" -> return
+        "setflashlevel" -> {
+          // The ROM's flash level: 0 is fully lit. The client keeps darkness per map (f/tM.Xl1),
+          // so this lights the map the player stands in until the next map load, as the GBA does.
+          ctx.lightMap(value(ctx, instruction.arg(0)))
+          state.pc++
+        }
         "checkpartymove" -> {
           val moveId = (instruction.arg(0) as IntArg).value
           ctx.setVar(namespaced("VAR_RESULT"), ctx.partyIndexWithMove(moveId))
@@ -453,7 +459,11 @@ class InterpretedScript(
           // Surf is the one field effect with a server-side state; the rest (Cut's swing, the
           // flash, the rock smash) are client visuals this dialog channel cannot trigger yet, and
           // the scripts around them already carry the outcome (removeobject, the message).
-          if (instruction.arg(0).token == "FLDEFF_USE_SURF") tracedWait(ctx, "surf") { ctx.startSurfing() }
+          when (instruction.arg(0).token) {
+            "FLDEFF_USE_SURF" -> tracedWait(ctx, "surf") { ctx.startSurfing() }
+            "FLDEFF_USE_WATERFALL" -> tracedWait(ctx, "waterfall") { ctx.climbWaterfall() }
+            "FLDEFF_USE_DIVE" -> tracedWait(ctx, "dive") { ctx.dive() }
+          }
           state.pc++
         }
         "multichoicedefault",
@@ -471,6 +481,9 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
+            // Rock Smash encounters: the retail tables carry no Rock Smash entries, so no monster
+            // ever hides under a rock here - the truthful answer, not a shortcut.
+            "RockSmashWildEncounter" -> ctx.setVar(namespaced("VAR_RESULT"), 0)
             "SetVermilionTrashCans" -> {
               // src/field_specials.c: the live can is random, the second switch sits beside it
               // (right or below when there is room, else left or above) in the 5x3 grid.

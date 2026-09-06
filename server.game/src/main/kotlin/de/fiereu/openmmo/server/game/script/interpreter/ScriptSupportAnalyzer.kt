@@ -210,6 +210,7 @@ class ScriptSupportAnalyzer(
           "multichoicedefault",
           "multichoicegrid" -> args.size == 5
           "checkpartymove" -> args.size == 1
+          "setflashlevel" -> args.size == 1
           "checkmoney" -> args.size in 1..2
           "addmoney",
           "removemoney" -> args.size in 1..2
@@ -589,6 +590,7 @@ class ScriptSupportAnalyzer(
             "multichoicedefault",
             "multichoicegrid",
             "checkpartymove",
+            "setflashlevel",
             "checkmoney",
             "addmoney",
             "removemoney",

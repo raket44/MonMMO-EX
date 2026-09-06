@@ -16,7 +16,14 @@ import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
+import de.fiereu.openmmo.common.enums.Region
+import de.fiereu.openmmo.server.game.script.ScriptRegistry
+import de.fiereu.openmmo.server.game.script.ScriptResolutionException
+import de.fiereu.openmmo.server.game.script.ScriptRunner
+import de.fiereu.openmmo.server.game.script.gbaScriptSource
+import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 private val log = KotlinLogging.logger {}
@@ -65,6 +72,8 @@ constructor(
     private val warpRules: WarpRules,
     private val trainerSight: TrainerSightService,
     private val scriptMovement: ScriptMovementService,
+    private val scriptRegistry: ScriptRegistry? = null,
+    private val scriptRunner: Provider<ScriptRunner>? = null,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -443,6 +452,16 @@ constructor(
       return
     }
 
+    // Waterfall: pushing up into the fall while surfing is the ROM's prompt, not a step. The
+    // script either climbs (the field effect walks the surfer up) or explains the wall of water.
+    if (state.surfing && msg.direction == Direction.UP && targetBehavior == TileBehavior.WATERFALL && !state.creative) {
+      sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
+      runFieldScript(ctx, state, if (Region.byId(state.regionId) == Region.HOENN) "EventScript_UseWaterfall" else "EventScript_Waterfall")
+      return
+    }
+    // Strength: a pushable boulder in the way slides one tile on, when that tile is free.
+    pushBoulder(ctx, charId, stored, state, currentMap, toX, toY, msg.direction)
+
     // Creative admins walk through anything; the client shows the wall, the server allows it.
     if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing)) {
       log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
@@ -564,18 +583,71 @@ constructor(
     )
   }
 
+  /** Runs a shared ROM field script (Surf, Waterfall, Dive prompts) for this region's game. */
+  private fun runFieldScript(ctx: SessionContext, state: PlayerState, label: String) {
+    val registry = scriptRegistry ?: return
+    val runner = scriptRunner ?: return
+    val script =
+        try {
+          registry.forLabel(label, gbaScriptSource(state.regionId))
+        } catch (e: ScriptResolutionException) {
+          log.info { "Field script $label unavailable: ${e.message}" }
+          null
+        } ?: return
+    runner.get().run(ctx, state, script, entityId = -1)
+  }
+
+  /**
+   * Strength's boulder push (the GBA engine's, not a script's): with FLAG_SYS_USE_STRENGTH set
+   * for this region, a pushable boulder on the tile being stepped onto moves one tile further in
+   * the walking direction if that tile is walkable and no other object stands there. The new
+   * place rides the same story var setobjectxyperm uses, which the map reset clears on the way
+   * out - boulders reset when the map reloads, as on the cartridge. True when a boulder moved.
+   */
+  private fun pushBoulder(
+      ctx: SessionContext,
+      charId: Long,
+      stored: StoredCharacter,
+      state: PlayerState,
+      map: MapDef,
+      toX: Int,
+      toY: Int,
+      direction: Direction,
+  ): Boolean {
+    val region = map.regionId.toInt()
+    val bank = map.bankId.toInt()
+    val mapId = map.mapId.toInt()
+    val namespace = Region.byId(region)?.name?.lowercase() ?: return false
+    if ("$namespace/FLAG_SYS_USE_STRENGTH" !in stored.storyFlags) return false
+    val placed = map.npcs.map { npcService.effectiveNpc(region, bank, mapId, it, stored.storyFlags, stored.storyVars) }
+    val boulder =
+        placed.firstOrNull {
+          it.script == "EventScript_StrengthBoulder" && it.x == toX && it.y == toY && (it.hideFlag.isEmpty() || it.hideFlag !in stored.storyFlags)
+        } ?: return false
+    val beyondX = toX + direction.dx
+    val beyondY = toY + direction.dy
+    if (!isWalkable(map, beyondX, beyondY)) return false
+    if (placed.any { it !== boulder && it.x == beyondX && it.y == beyondY && (it.hideFlag.isEmpty() || it.hideFlag !in stored.storyFlags) }) return false
+    characterStore.setStoryVar(charId, npcService.xyOverrideKey(region, bank, mapId, boulder.entityIdx), (beyondX shl 12) or beyondY)
+    npcService.repositionNpc(ctx, region, bank, mapId, boulder.entityIdx, beyondX, beyondY)
+    log.info { "Strength: char=$charId pushed boulder ${boulder.entityIdx} to ($beyondX, $beyondY)" }
+    return true
+  }
+
   private fun isWalkable(map: MapDef, x: Int, y: Int, surfing: Boolean = false): Boolean {
     if (x !in 0 until map.width || y !in 0 until map.height) return false
     val tile = map.tileAt(x, y) ?: return true
     // Water blocks feet and carries a surfer.
-    if (tile.behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER) return surfing
+    if (tile.behavior.isSurfable) return surfing
     return !tile.blocksMovement()
   }
 
   /** Stepping from water onto land ends the surf: the client's own bit clears the same way. */
   private fun dismountIfAshore(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int) {
     if (!state.surfing) return
-    if (map.tileAt(x, y)?.behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER) return
+    // Under the surface the whole floor is ridden; only Dive's emerge ends that.
+    if (state.underwater) return
+    if (map.tileAt(x, y)?.behavior?.isSurfable == true) return
     state.surfing = false
     ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0))
     log.info { "Surf ended for char=$charId at ($x, $y)" }

@@ -3,6 +3,7 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.Direction
+import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.net.game.packets.EntityInteractPacket
 import de.fiereu.openmmo.net.game.packets.TileInteractPacket
@@ -147,6 +148,29 @@ constructor(
           it.x == facingX && it.y == facingY && facingDirOk(it.facingDir, state.facingDirection)
         }
     if (bgEvent == null) {
+      // Dive: A while surfing over deep water goes under; A on the sea floor surfaces. Both are
+      // ROM field scripts (the party check, the yes/no, the message), like the Surf prompt.
+      if (state.surfing) {
+        val standing = currentMap.tileAt(stored.info.positionX.toInt(), stored.info.positionY.toInt())?.behavior
+        val hoenn = Region.byId(state.regionId) == Region.HOENN
+        val label =
+            when {
+              state.underwater -> if (hoenn) "EventScript_UseDiveUnderwater" else "EventScript_TrySurface"
+              standing == de.fiereu.openmmo.common.enums.TileBehavior.DEEP_WATER -> if (hoenn) "EventScript_UseDive" else "EventScript_DeepWater"
+              else -> null
+            }
+        if (label != null) {
+          val dive =
+              try {
+                scriptRegistry.forLabel(label, gbaScriptSource(state.regionId))
+              } catch (e: ScriptResolutionException) {
+                log.info { "Dive prompt unavailable: ${e.message}" }
+                null
+              }
+          if (dive != null) runScript(session, state, dive, entityId = -1)
+          return
+        }
+      }
       // Pokecenter PCs are engine tiles (MB_PC), not bg events - the behavior is the trigger.
       val behavior = currentMap.tileAt(facingX, facingY)?.behavior
       if (behavior == de.fiereu.openmmo.common.enums.TileBehavior.PC) {
@@ -154,7 +178,7 @@ constructor(
         return
       }
       // Facing water on foot is the ROM's Surf prompt (field script, not a map event).
-      if (behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATER && !state.surfing) {
+      if (behavior?.isSurfable == true && !state.surfing) {
         val surf =
             try {
               scriptRegistry.forLabel("EventScript_UseSurf", gbaScriptSource(state.regionId))

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -182,7 +183,10 @@ class PretGbaParser(
         blockData = parseBlockData(layout),
         behaviorData = parseBehaviorData(layout),
         encounters = parseEncounters(mapJson, ctx),
-        lighting = "Lighting.REGULAR",
+        // Dark caves (map.json requires_flash) darken on the client and Flash lights them.
+        lighting =
+            if (mapJson["requires_flash"]?.jsonPrimitive?.booleanOrNull == true) "Lighting.DARK_FLASH_USABLE"
+            else "Lighting.REGULAR",
         weather =
             region.weatherMap[mapJson["weather"]?.jsonPrimitive?.contentOrNull]
                 ?: "Weather.REGULAR_WEATHER",

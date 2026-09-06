@@ -33,6 +33,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
 
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
+private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+
 class ScriptContext
 internal constructor(
     internal val session: SessionContext,
@@ -408,6 +410,53 @@ internal constructor(
           else -> MovementStep.WALK_DOWN
         }
     movement.moveSelf(session, state, listOf(step))
+  }
+
+  /**
+   * Waterfall (FLDEFF_USE_WATERFALL): the surfer rides up every waterfall tile ahead and onto the
+   * water above it, the forced climb the GBA's field effect performs.
+   */
+  suspend fun climbWaterfall() {
+    val id = characterId ?: return
+    val info = characters?.getCharacter(id)?.info ?: return
+    val map = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val x = info.positionX.toInt()
+    var y = info.positionY.toInt() - 1
+    var falls = 0
+    while (map.tileAt(x, y)?.behavior == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL) {
+      falls++
+      y--
+    }
+    if (falls == 0) return
+    state.surfing = true
+    movement.moveSelf(session, state, List(falls + 1) { MovementStep.WALK_UP })
+  }
+
+  /**
+   * Dive (FLDEFF_USE_DIVE): the map's DIVE connection is the sea floor under this spot and its
+   * EMERGE connection the surface above; the player keeps the tile. The client draws underwater
+   * from the map kind on its own, and the surf flag stays so the floor counts as ridable.
+   */
+  fun dive() {
+    val id = characterId ?: return
+    val info = characters?.getCharacter(id)?.info ?: return
+    val map = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val wanted = if (state.underwater) Direction.EMERGE else Direction.DIVE
+    val link = map.connections.firstOrNull { it.direction == wanted }
+    if (link == null) {
+      log.info { "Dive: ${info.positionRegionId}:${info.positionBankId}:${info.positionMapId} has no $wanted connection" }
+      return
+    }
+    val goingUnder = wanted == Direction.DIVE
+    warp?.rawWarp(session, id, info.positionRegionId.toInt(), link.targetBank, link.targetMap, info.positionX.toInt(), info.positionY.toInt())
+    state.surfing = true
+    state.underwater = goingUnder
+    log.info { "Dive: char=$id ${if (goingUnder) "went under to" else "surfaced to"} ${link.targetBank}:${link.targetMap}" }
+  }
+
+  /** Flash (setflashlevel): lights the map the player stands in until its next load (s2c 0xC1). */
+  fun lightMap(level: Int) {
+    session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket(level.toByte(), lit = true))
   }
 
   /** How many party monsters can still fight - the vanilla double-battle entry gate reads it. */

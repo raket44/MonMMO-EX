@@ -44,6 +44,8 @@ internal object InterpreterSupport {
           // Statue text is cosmetic; blocking every gym leader on it was the real cost.
           "set_gym_trainers",
           "waitstate",
+          // Flash: the flicker is client-side; setflashlevel below carries the lit state.
+          "animateflash",
           "showmoneybox",
           "hidemoneybox",
           "updatemoneybox",
@@ -116,7 +118,7 @@ internal object InterpreterSupport {
   val BUILTIN_MENUS: Map<String, Int> = emptyMap()
 
   /** Specials the executor implements for real. */
-  val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty", "SetVermilionTrashCans")
+  val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty", "SetVermilionTrashCans", "RockSmashWildEncounter")
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
 
@@ -142,6 +144,9 @@ internal object InterpreterSupport {
           // Match Call registration is not modeled either, so no trainer is ever registered;
           // post-battle scripts take their plain-dialog branch, which is the truthful answer.
           "IsTrainerRegistered" to 0,
+          // Rock Smash in Rusturf Tunnel: the special answers TRUE only for the two story rocks that
+          // open the tunnel, whose scene is not modeled; every other rock smashes normally on FALSE.
+          "TryUpdateRusturfTunnelState" to 0,
           // Gift monsters never route to a PC box here (givemon answers party or no room), so the
           // box-full follow-ups are unreachable; the constants keep the scripts interpretable.
           "ShouldShowBoxWasFullMessage" to 0,

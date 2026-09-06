@@ -18,6 +18,13 @@ class ScriptReasonProbeTest :
         }
       }
 
+      test("corpus diagnostics") {
+        de.fiereu.openmmo.script.GeneratedScriptCorpus.sources.forEach { c ->
+          println("CORPUS ${c.source}: programs=${c.programs.size} rockSmash=${"EventScript_RockSmash" in c.programs} cutTree=${"EventScript_CutTree" in c.programs}")
+          c.diagnostics.parseFailureSamples.forEach { (k, v) -> println("CORPUS ${c.source} failure $k: ${v.take(3)}") }
+        }
+      }
+
       test("map sweep") {
         val prefix = System.getenv("MONMMO_PROBE_MAP") ?: return@test
         val analyzer = ScriptSupportAnalyzer()
@@ -44,6 +51,17 @@ class ScriptReasonProbeTest :
                 "Route22_EventScript_RivalTrigger",
                 "CeruleanCity_EventScript_Rival",
                 "CeladonCity_Condominiums_RoofRoom_EventScript_EeveeBall",
+                "EventScript_CutTree",
+                "EventScript_RockSmash",
+                "EventScript_StrengthBoulder",
+                "EventScript_Waterfall",
+                "EventScript_UseWaterfall",
+                "EventScript_DeepWater",
+                "EventScript_TrySurface",
+                "EventScript_UseDive",
+                "EventScript_UseDiveUnderwater",
+                "EventScript_FldEffFlash",
+                "EventScript_UseSurf",
                 "SilphCo_7F_EventScript_LaprasGuy",
             )
         InterpretedScripts.sources.forEach { reg ->

@@ -92,13 +92,15 @@ private constructor(
           // Pokecenter PCs are engine tiles, not bg events - interaction needs the behavior.
           "MB_PC" -> TileBehavior.PC
           "MB_POND_WATER",
-          "MB_DEEP_WATER",
           "MB_OCEAN_WATER",
-          "MB_INTERIOR_DEEP_WATER",
           "MB_NO_SURFACING",
           "MB_SEAWEED",
-          "MB_SEAWEED_NO_SURFACING",
-          "MB_SOOTOPOLIS_DEEP_WATER" -> TileBehavior.WATER
+          "MB_SEAWEED_NO_SURFACING" -> TileBehavior.WATER
+          // The decomp's MetatileBehavior_IsDiveable set: surfable, and where Dive goes under.
+          "MB_DEEP_WATER",
+          "MB_INTERIOR_DEEP_WATER",
+          "MB_SOOTOPOLIS_DEEP_WATER" -> TileBehavior.DEEP_WATER
+          "MB_WATERFALL" -> TileBehavior.WATERFALL
           "MB_JUMP_EAST" -> TileBehavior.JUMP_EAST
           "MB_JUMP_WEST" -> TileBehavior.JUMP_WEST
           "MB_JUMP_NORTH" -> TileBehavior.JUMP_NORTH

@@ -114,7 +114,7 @@ constructor(
     private val linkService: LinkService,
 ) {
 
-  fun onJoinGame(event: PacketEvent<JoinPacket>) {
+  suspend fun onJoinGame(event: PacketEvent<JoinPacket>) {
     val ctx = event.session
     val authData = event.packet.authData
 
@@ -147,7 +147,11 @@ constructor(
     sessionRegistry.register(ctx)
     log.info { "Session created for user $userId" }
 
-    ctx.send(JoinResponsePacket.acceptNow(playtime = 1337, rewardPoints = 420, balance = 187))
+    // The first int is not playtime: the client (f/OQ -> NZ1.mP, read by the menu header f/gz)
+    // treats it as the Donator Status expiry in epoch seconds and shows the status while it lies
+    // in the future. The other two are still unidentified.
+    val donatorUntil = characterStore.donatorUntil(userId)?.coerceIn(0, Int.MAX_VALUE.toLong())?.toInt() ?: 0
+    ctx.send(JoinResponsePacket.acceptNow(playtime = donatorUntil, rewardPoints = 420, balance = 187))
   }
 
   // Closing is what keeps a refused peer from going on to send packets the handlers would

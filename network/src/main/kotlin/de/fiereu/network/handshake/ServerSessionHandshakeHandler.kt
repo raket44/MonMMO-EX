@@ -31,6 +31,25 @@ internal class ServerSessionHandshakeHandler(
 
   private val ephemeralKeyPair = EcKeys.generateEphemeralKeyPair()
 
+  /**
+   * Port scanners hold sockets open without ever saying hello, which counts as a player to
+   * anything that reads the socket table. A session still in the handshake when the timer fires
+   * is closed; a completed handshake has replaced this handler, so the check is by identity.
+   */
+  override fun onActive() {
+    val channel = session.channel
+    channel.eventLoop().schedule(
+        {
+          if (channel.isActive && channel.pipeline().get(PipelineNames.PROTOCOL_HANDLER) === this) {
+            log.info { "Closing ${session.remoteAddress}: no handshake within ${options.handshakeTimeout}" }
+            channel.close()
+          }
+        },
+        options.handshakeTimeout.inWholeMilliseconds,
+        java.util.concurrent.TimeUnit.MILLISECONDS,
+    )
+  }
+
   init {
     on<ClientHelloPacket> { event ->
       val skew = abs(System.currentTimeMillis() - event.packet.timestamp)

@@ -51,6 +51,12 @@ interface CharacterRepository {
    * staff accounts), or null for the default.
    */
   suspend fun defaultPermissions(userId: Int): Int? = null
+
+  /** Donator Status expiry (epoch seconds) for this account, or null when it has none. */
+  suspend fun donatorUntil(userId: Int): Long? = null
+
+  /** Sets or clears (null) the account's Donator Status expiry. */
+  suspend fun setDonatorUntil(userId: Int, untilEpoch: Long?) {}
 }
 
 @Singleton
@@ -96,6 +102,18 @@ constructor(
   override suspend fun defaultPermissions(userId: Int): Int? =
       withContext(dispatcher) {
         dsl.fetchOne("select permissions from user_permissions where user_id = ?", userId)?.get(0, Int::class.java)
+      }
+
+  override suspend fun donatorUntil(userId: Int): Long? =
+      withContext(dispatcher) {
+        dsl.fetchOne("select until_epoch from user_donator where user_id = ?", userId)?.get(0, Long::class.java)
+      }
+
+  override suspend fun setDonatorUntil(userId: Int, untilEpoch: Long?) =
+      withContext(dispatcher) {
+        if (untilEpoch == null) dsl.execute("delete from user_donator where user_id = ?", userId)
+        else dsl.execute("insert into user_donator (user_id, until_epoch) values (?, ?) on conflict (user_id) do update set until_epoch = excluded.until_epoch", userId, untilEpoch)
+        Unit
       }
 
   private fun writeChanges(

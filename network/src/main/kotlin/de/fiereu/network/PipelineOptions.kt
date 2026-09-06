@@ -11,4 +11,6 @@ data class PipelineOptions(
     val compressionThreshold: Int = 256,
     val maxHelloSkew: Duration = 10.seconds,
     val frameLogging: Boolean = false,
+    /** A connection that has not completed the session handshake by then is closed (port scanners). */
+    val handshakeTimeout: Duration = 60.seconds,
 )

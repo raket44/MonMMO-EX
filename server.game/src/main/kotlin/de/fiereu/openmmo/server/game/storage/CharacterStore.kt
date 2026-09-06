@@ -142,6 +142,10 @@ constructor(
   suspend fun isNameTaken(name: String): Boolean =
       characters.values.any { it.info.name.equals(name, ignoreCase = true) } || repository.nameExists(name)
 
+  suspend fun donatorUntil(userId: Int): Long? = repository.donatorUntil(userId)
+
+  suspend fun setDonatorUntil(userId: Int, untilEpoch: Long?) = repository.setDonatorUntil(userId, untilEpoch)
+
   /** Like [getCharacter] but falls back to the database when the cache has no entry. */
   suspend fun getOrLoadCharacter(id: Long): StoredCharacter? {
     pendingUnload.remove(id)

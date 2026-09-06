@@ -46,6 +46,8 @@ copy /y "%~dp0README-player.txt" "%OUT%\README.txt" >nul
 
 echo Zipping...
 if exist "%OUT%.zip" del "%OUT%.zip"
-tar -a -c -f "%OUT%.zip" -C "%OUT%\.." "%~nx2"
-if "%~2"=="" tar -a -c -f "%OUT%.zip" -C "%USERPROFILE%\Downloads" "MonMMO-EX-Client"
+for %%D in ("%OUT%") do (set "OUTNAME=%%~nxD" & set "OUTPARENT=%%~dpD")
+"%SystemRoot%System32	ar.exe" -a -c -f "%OUT%.zip" -C "%OUTPARENT%." "%OUTNAME%"
+"%SystemRoot%System32	ar.exe" -a -c -f "%OUT%.zip" -C "%OUTPARENT%." "%OUTNAME%"
+
 echo Done: %OUT%.zip

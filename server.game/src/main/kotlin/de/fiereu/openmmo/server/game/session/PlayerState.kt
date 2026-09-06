@@ -54,6 +54,11 @@ data class PlayerState(
     /** Trusts one source tile after scripted movement. */
     @field:Volatile var acceptNextMoveSource: Boolean = false,
     /**
+     * A second trainer who spotted the player at the same time as the one whose script is about
+     * to run: the next trainer battle fields both as a 2v2 (Emerald/FireRed double sighting).
+     */
+    @field:Volatile var pendingPartnerTrainer: de.fiereu.openmmo.trainer.TrainerDef? = null,
+    /**
      * The client's 0x2A story-flag handler silently DROPS updates until its game state exists
      * (f/eO0.X91 bails on a null Sw()), so the login-time world-state block never lands - badges
      * looked reset on every relog. The first RequestPlayer re-sends the flags once, in-world.

@@ -324,16 +324,21 @@ constructor(
       trainer: TrainerDef,
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
+      partner: TrainerDef? = null,
   ): BattleResult {
+    // A double sighting: the partner's team lines up behind the first trainer's and the two
+    // field one monster each, the way Emerald and FireRed run a simultaneous spot.
+    val opponents = (trainer.party + (partner?.party ?: emptyList())).map { OpponentSpec(it.dexId, it.level, it.moveIds, it.iv) }
     val battle =
         createBattle(
             session,
-            trainer.party.map { OpponentSpec(it.dexId, it.level, it.moveIds, it.iv) },
+            opponents,
             catchable = false,
             escapable = false,
             trainer = trainer,
             defeatTextId = defeatTextId,
             whiteoutOnDefeat = whiteoutOnDefeat,
+            partner = partner,
         ) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
@@ -379,6 +384,7 @@ constructor(
       trainer: TrainerDef? = null,
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
+      partner: TrainerDef? = null,
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {
@@ -465,7 +471,7 @@ constructor(
     val alive = party.indices.filter { !party[it].fainted }
     val format =
         when {
-          trainer?.doubleBattle == true && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
+          (trainer?.doubleBattle == true || partner != null) && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
           trainer == null && enemies.size >= 2 -> BattleFormat.HORDE
           else -> BattleFormat.SINGLES
         }
@@ -476,7 +482,7 @@ constructor(
             party,
             enemies,
             rng,
-            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0),
+            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0, partner),
             format)
     for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
     for (position in 0 until format.opponentSlots) battle.opponentPositions[position] = if (position < enemies.size) position else -1
@@ -679,7 +685,9 @@ constructor(
   private suspend fun endVictory(battle: BattleInstance) {
     evolveEligible(battle)
     pickup(battle)
-    var prize = battle.trainer?.let { rewards.trainerPrize(it, battle.opponent.last().level) } ?: 0
+    var prize = battle.trainer?.let { rewards.trainerPrize(it, battle.trainer.party.lastOrNull()?.level ?: battle.opponent.last().level) } ?: 0
+    // The second trainer of a double sighting pays too, off its own last monster.
+    prize += battle.partner?.let { rewards.trainerPrize(it, it.party.lastOrNull()?.level ?: 1) } ?: 0
     // An Amulet Coin anywhere in the party doubles the prize money.
     if (prize > 0 && battle.party.any { items.get(it.heldItem) == de.fiereu.openmmo.items.generated.Items.AMULET_COIN })
         prize *= 2

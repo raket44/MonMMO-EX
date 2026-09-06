@@ -26,6 +26,8 @@ data class BattleRules(
     val whiteoutOnDefeat: Boolean = true,
     /** Region whose ROM trainer table names the opponent (client W9.io(region, id)). */
     val trainerRegion: Int = 0,
+    /** A second trainer fighting alongside [trainer] (double sighting); its party follows the first's. */
+    val partner: TrainerDef? = null,
 )
 
 /**
@@ -74,6 +76,8 @@ class BattleInstance(
     /** Region whose ROM trainer table names the opponent; the client shows class + name from it. */
     val trainerRegion: Int = 0,
     val format: BattleFormat = BattleFormat.SINGLES,
+    /** The second trainer of a double sighting, paid and flagged beaten with the first. */
+    val partner: TrainerDef? = null,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1

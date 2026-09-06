@@ -210,12 +210,41 @@ constructor(
       scriptCtx.lockAll()
       var spotter: Spotter? = first
       val done = mutableSetOf<Int>()
-      while (spotter != null) {
+      while (true) {
+        val current = spotter ?: break
         val steps = approachSteps(spotter) ?: break
-        val playerFace = faceStep(spotter.dir.opposite()) ?: break
-        scriptCtx.moveSelfAndNpcs(listOf(playerFace), spotter.npc.entityIdx to steps)
-        spotter.script.run(scriptCtx)
-        done += spotter.npc.entityIdx
+        val playerFace = faceStep(current.dir.opposite()) ?: break
+        // Emerald / FireRed double sighting: a second trainer with the line of sight at the same
+        // moment walks up too, and with two usable monsters the player fights both in one 2v2.
+        // With one monster the second trainer simply battles next (the loop below).
+        val region0 = Region.byId(state.regionId)
+        val source0 = gbaScriptSource(state.regionId)
+        val charId0 = state.characterId
+        val stored0 = charId0?.let { characterStore.getCharacter(it) }
+        val usable = stored0?.pokemon?.count { it.hp > 0 } ?: 0
+        val second =
+            if (region0 != null && source0 != null && charId0 != null && stored0 != null && usable >= 2)
+                findSpotter(map, source0, region0, charId0, stored0.storyFlags, stored0.storyVars, state.x.toInt(), state.y.toInt(), done + current.npc.entityIdx)
+            else null
+        val partner = second?.let { battleService.resolveTrainer(region0!!, it.constant) }
+        val secondSteps = second?.let { approachSteps(it) }
+        if (second != null && partner != null && secondSteps != null) {
+          log.info { "Double sighting: ${current.constant} and ${second.constant} battle together" }
+          scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps, second.npc.entityIdx to secondSteps)
+          state.pendingPartnerTrainer = partner
+        } else {
+          scriptCtx.moveSelfAndNpcs(listOf(playerFace), current.npc.entityIdx to steps)
+        }
+        current.script.run(scriptCtx)
+        state.pendingPartnerTrainer = null
+        done += current.npc.entityIdx
+        if (second != null && partner != null && region0 != null && charId0 != null) {
+          // The first trainer's script flags it beaten on a win; the partner falls with it.
+          val firstTrainer = battleService.resolveTrainer(region0, current.constant)
+          val won = firstTrainer != null && storyService.isFlagSet(charId0, TrainerStoryState.defeated(region0.name.lowercase(), firstTrainer.id))
+          if (won) storyService.setFlag(charId0, TrainerStoryState.defeated(region0.name.lowercase(), partner.id))
+          done += second.npc.entityIdx
+        }
         // Two trainers spotting the player at once battle one after the other, as on the
         // cartridge: whoever else still has the line of sight approaches once this one is done.
         val region = Region.byId(state.regionId) ?: break

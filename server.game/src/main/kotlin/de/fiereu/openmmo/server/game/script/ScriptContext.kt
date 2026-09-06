@@ -425,9 +425,13 @@ internal constructor(
       trainer: TrainerDef,
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
-  ): BattleResult =
-      checkNotNull(battles) { "Battle service is unavailable" }
-          .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat)
+  ): BattleResult {
+    // A double sighting queued a second trainer: both fight at once, then the flag clears.
+    val partner = state.pendingPartnerTrainer
+    state.pendingPartnerTrainer = null
+    return checkNotNull(battles) { "Battle service is unavailable" }
+        .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat, partner)
+  }
 
   /**
    * Walk the map npc with decomp local id [localId] (its entityIdx) through [steps] and wait for

@@ -171,12 +171,14 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     // (double sighting) use the client's composite descriptor instead (f/TB0.l70 kind 4): a
     // count, then per entry two bytes (slot count, first position) and a nested kind-2 trainer
     // descriptor - reader-verified layout, entry bytes inferred.
-    val kindByte = field(S8) { if (it.partnerTrainerId != null) 4.toByte() else if (it.opposing == OpposingSide.TRAINER) 2.toByte() else 1.toByte() }
+    // Kind 5 is the NPC two-trainer list (f/pu1 code 5, flagged like a trainer); kind 4 is the same
+    // list for human opponents and dresses the battle as a match (timer, turn counter).
+    val kindByte = field(S8) { if (it.partnerTrainerId != null) 5.toByte() else if (it.opposing == OpposingSide.TRAINER) 2.toByte() else 1.toByte() }
     constant(6)
     val partnerTrainerId: Short?
     val trainerRegion: Byte
     val trainerId: Short
-    if (kindByte.toInt() == 4) {
+    if (kindByte.toInt() == 5 || kindByte.toInt() == 4) {
       // count; per entry: two bytes (slot count, first position), one byte the reader discards,
       // then the nested descriptor which reads its own kind (2) and sub (6).
       // Entry bytes (f/E71): key (the map key records refer to), first position, one discarded.

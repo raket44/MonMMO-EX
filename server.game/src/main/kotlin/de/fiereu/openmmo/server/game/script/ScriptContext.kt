@@ -347,6 +347,11 @@ internal constructor(
     return px < npc.x
   }
 
+  /** A client string shown as a server message on the map (the proven 0xF5 channel). */
+  fun clientMessage(stringId: Int) {
+    session.send(de.fiereu.openmmo.net.game.packets.ServerMessagePacket(stringId, emptyList(), showOnMap = true, mode = null))
+  }
+
   /** The player's money, for checkmoney. */
   fun money(): Int = characterId?.let { characters?.getCharacter(it)?.info?.money } ?: 0
 

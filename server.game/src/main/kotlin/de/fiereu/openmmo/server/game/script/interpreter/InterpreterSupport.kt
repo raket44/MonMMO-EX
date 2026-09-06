@@ -148,6 +148,13 @@ internal object InterpreterSupport {
           "GetPCBoxToSendMon" to 0,
       )
 
+  /**
+   * ROM lines replaced by a client string, by text label. The GBA "no more room" line blames full
+   * boxes, which is not why a gift is refused here: the party is full. Client string 2305 says so.
+   */
+  val CLIENT_STRING_OVERRIDES: Map<String, Int> =
+      mapOf("Text_NoMoreRoomForPokemon" to 2305, "gText_NoMoreRoomForPokemon" to 2305)
+
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */
   val ITEM_COMMANDS = setOf("giveitem", "checkitem", "removeitem", "checkitemspace", "finditem")
 }

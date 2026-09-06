@@ -7,6 +7,17 @@ import io.kotest.core.spec.style.FunSpec
 /** Prints why the story-critical labels below are (or are not) interpreter-complete. */
 class ScriptReasonProbeTest :
     FunSpec({
+      test("gift monster scripts") {
+        val analyzer = ScriptSupportAnalyzer()
+        val gifts = setOf("givemon", "giveegg")
+        InterpretedScripts.sources.forEach { reg ->
+          reg.scriptsByLabel.forEach { (label, s) ->
+            if (s.program.instructions.none { it.command in gifts }) return@forEach
+            println("GIFT ${reg.corpus.source} $label -> ${analyzer.analyze(s).reason ?: "COMPLETE"}")
+          }
+        }
+      }
+
       test("story labels") {
         val analyzer = ScriptSupportAnalyzer()
         val labels =

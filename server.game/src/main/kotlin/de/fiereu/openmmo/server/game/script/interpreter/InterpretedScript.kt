@@ -864,6 +864,10 @@ class InterpretedScript(
   ): DialogLine {
     val label = textArg(instruction, 0).token
     val line = textLine(label, instruction)
+    InterpreterSupport.CLIENT_STRING_OVERRIDES[label]?.let { stringId ->
+      ctx.clientMessage(stringId)
+      return line
+    }
     when (instruction.args.getOrNull(1)?.token) {
       "MSGBOX_SIGN" -> ctx.sign(line)
       // The prompt shows the text with yes/no attached; the answer lands in VAR_RESULT exactly

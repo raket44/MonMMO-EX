@@ -1,0 +1,17 @@
+[Unit]
+Description=MonMMO login server
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=monmmo
+WorkingDirectory=/opt/monmmo/server.login
+EnvironmentFile=/opt/monmmo/.env
+ExecStart=/opt/java/current/bin/java -Xms64m -Xmx256m -cp "lib/*" de.fiereu.openmmo.server.login.MainKt
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/monmmo/logs/server-login.log
+StandardError=append:/opt/monmmo/logs/server-login.err.log
+
+[Install]
+WantedBy=multi-user.target

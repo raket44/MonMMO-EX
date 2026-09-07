@@ -34,7 +34,8 @@ import kotlinx.coroutines.currentCoroutineContext
 
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
 private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
-private val BANNER_SERIAL = java.util.concurrent.atomic.AtomicInteger((System.currentTimeMillis() / 1000).toInt() and 0x3FFF)
+/** The stand-in the client summons per region (f/ZB1.mf1's table), by region id. */
+private val STAND_INS = mapOf(0 to 71, 1 to 357, 2 to 549, 3 to 415, 4 to 216)
 
 class ScriptContext
 internal constructor(
@@ -405,11 +406,11 @@ internal constructor(
    * serial]. The client remembers the last (item, value) pair and skips a repeat (f/ln1.lPt7),
    * hence the serial. Sent at the script's dofieldeffect in place of the ROM's message box.
    */
-  fun fieldMoveBanner(fieldEffect: String) {
+  fun fieldMoveBanner(fieldEffect: String): Boolean {
     val fm = de.fiereu.openmmo.server.game.services.FieldMoves
     val moveId =
         when {
-          !fieldEffect.startsWith("FLDEFF_USE_") && fieldEffect != "FLDEFF_FLASH" -> return
+          !fieldEffect.startsWith("FLDEFF_USE_") && fieldEffect != "FLDEFF_FLASH" -> return false
           "CUT" in fieldEffect -> fm.CUT
           "ROCK_SMASH" in fieldEffect -> fm.ROCK_SMASH
           "STRENGTH" in fieldEffect -> fm.STRENGTH
@@ -417,13 +418,18 @@ internal constructor(
           "WATERFALL" in fieldEffect -> fm.WATERFALL
           "DIVE" in fieldEffect -> fm.DIVE
           "FLASH" in fieldEffect -> fm.FLASH
-          else -> return
+          else -> return false
         }
-    val stored = characterId?.let { characters?.getCharacter(it) } ?: return
-    val itemId = if (fm.partyKnows(stored, moveId)) -1 else fm.byMove(moveId)?.ocarinaItemId ?: -1
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return false
+    // Second short = the species to show: 0 lets the client pick the party member that knows the
+    // move; an ocarina shows the region's stand-in (the client's own Sweet Scent table).
+    val party = fm.partyKnows(stored, moveId)
+    val itemId = if (party) -1 else fm.byMove(moveId)?.ocarinaItemId ?: -1
+    val species = if (party) 0 else STAND_INS[state.regionId] ?: 71
     session.send(
         de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
-            2, moveId.toByte(), listOf(itemId.toShort(), BANNER_SERIAL.incrementAndGet().toShort())))
+            2, moveId.toByte(), listOf(itemId.toShort(), species.toShort())))
+    return true
   }
 
   fun partyIndexWithMove(moveId: Int): Int {

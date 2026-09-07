@@ -5,17 +5,15 @@ import de.fiereu.openmmo.net.game.packets.ServerMessageArg
 import de.fiereu.openmmo.net.game.packets.ServerMessagePacket
 import de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * The client's HM banner ("{mon} used Cut!" sliding in with the Pokemon, plus the player's
  * field-move pose): s2c 0xB6 case 2 (f/Ty0) with the move id as subject and two shorts - the
- * party slot and 0 for a party member, or a fresh key and the stand-in species encoded negative
- * (f/kC1.YL1 reads a negative second value as species in its low 12 bits) for an ocarina. The
- * client remembers the last (key, value) pair per key and skips a repeat (f/ln1.lPt7), hence the
- * running key. The grey box is client string 6068 "{00} used its {01}!", the one Sweet Scent
+ * move id (f/kC1.YL1 picks a party Pokemon that knows it) and the party slot, zero-based, or the
+ * stand-in species encoded negative (low 12 bits) for an ocarina. The client remembers the last
+ * species shown per move (f/ln1.lPt7) and skips only the pose on a repeat; the banner still shows. The grey box is client string 6068 "{00} used its {01}!", the one Sweet Scent
  * shows. Used by the ROM scripts' dofieldeffect and by Fly; callers wait [HOLD_MILLIS] before the
  * move lands so the pose and the banner's slide finish first.
  */
@@ -26,18 +24,16 @@ constructor(
     private val moves: de.fiereu.openmmo.moves.MoveRegistry,
     private val species: de.fiereu.openmmo.pokemon.SpeciesRegistry,
 ) {
-  private val serial = AtomicInteger(1)
-
   /** Sends the banner and the grey box; false when the character cannot use the move. */
   fun send(session: SessionContext, stored: StoredCharacter, regionId: Int, moveId: Int): Boolean {
     val slot = stored.pokemon.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
     val ocarina = slot < 0
     if (ocarina && !FieldMoves.ocarinaOwned(stored, moveId)) return false
     val standIn = OCARINA_STAND_INS[regionId to moveId] ?: SWEET_SCENT_STAND_INS[regionId] ?: 71
-    // Party member: 0 - the client finds the party Pokemon by the move itself (a slot number
-    // here drew a blank banner whenever the mover was not in slot 0).
-    val first = if (ocarina) serial.incrementAndGet() and 0x0FFF else 0
-    val second = if (ocarina) standIn - 4096 else 0
+    // f/kC1.YL1: first = move id (the banner takes a party Pokemon that knows it), second = the
+    // party slot, zero-based, or a species encoded negative for an ocarina.
+    val first = moveId
+    val second = if (ocarina) standIn - 4096 else slot
     session.send(WorldActionDispatchPacket(2, moveId.toByte(), listOf(first.toShort(), second.toShort())))
     val who =
         if (!ocarina) stored.pokemon[slot].let { it.nickname.ifEmpty { species.get(it.dexId)?.name ?: "" } }

@@ -53,7 +53,7 @@ constructor(
     /** The pose (900 ms) plus the banner's slide in, hold and slide out on the client. */
     const val HOLD_MILLIS = 2600L
     /** Fly warps afterwards and the map change wipes the banner, so it waits for the whole show. */
-    const val FLY_HOLD_MILLIS = 5000L
+    const val FLY_HOLD_MILLIS = 3500L
     /** Client string "{00} used its {01}!". */
     const val USED_MOVE_STRING = 6068
     /** Message argument kind for a raw string (client f/RO0 kind 5). */

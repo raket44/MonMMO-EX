@@ -273,10 +273,14 @@ constructor(
    * pose (f/l31.xR) for 900 ms unless surfing or biking, then f/ln1.n40 plays the move's own
    * follow-up (Cut's swing, the Surf mount). Retail sends it before the ROM script's message.
    */
+  // The client keeps the last (item, value) pair per item and skips the banner when it repeats
+  // (f/ln1.lPt7), so every use carries a fresh value.
+  private val summonSerial = java.util.concurrent.atomic.AtomicInteger((System.currentTimeMillis() / 1000).toInt() and 0x3FFF)
+
   private fun summonAnimation(session: SessionContext, moveId: Int, itemId: Int) {
     session.send(
         de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
-            2, moveId.toByte(), listOf(itemId.toShort(), 0)))
+            2, moveId.toByte(), listOf(itemId.toShort(), summonSerial.incrementAndGet().toShort())))
   }
 
   fun useFieldMove(session: SessionContext, state: PlayerState, moveId: Int, itemId: Int = -1) {

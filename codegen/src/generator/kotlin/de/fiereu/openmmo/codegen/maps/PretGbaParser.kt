@@ -196,7 +196,8 @@ class PretGbaParser(
         warps = parseWarps(mapJson, ctx),
         visibleNpcs = parseNpcs(mapJson, mapDirName, ctx),
         bgEvents = parseBgEvents(mapJson),
-        onTransitionScript = parseOnTransitionScript(mapDirName),
+        onTransitionScript = parseMapScript(mapDirName, "MAP_SCRIPT_ON_TRANSITION"),
+        onLoadScript = parseMapScript(mapDirName, "MAP_SCRIPT_ON_LOAD"),
         onFrameScripts = parseOnFrameScripts(mapDirName),
         coordScripts = parseCoordScripts(mapJson),
     )
@@ -205,10 +206,12 @@ class PretGbaParser(
   // The map's ON_TRANSITION script runs whenever the player enters the map. It sits in the map's
   // scripts.inc _MapScripts table as a direct label, unlike the ON_FRAME/ON_WARP conditional
   // tables.
-  private fun parseOnTransitionScript(mapDirName: String): String {
+  // ON_LOAD runs right after the layout loads and is where the decomp re-applies setmetatile
+  // changes that must survive a reload (Vermilion Gym's beams, Rock Tunnel's boulders).
+  private fun parseMapScript(mapDirName: String, kind: String): String {
     val file = File(rootDir, "data/maps/$mapDirName/scripts.inc")
     if (!file.exists()) return ""
-    val re = Regex("""map_script\s+MAP_SCRIPT_ON_TRANSITION\s*,\s*(\w+)""")
+    val re = Regex("""map_script\s+$kind\s*,\s*(\w+)""")
     return re.find(file.readText())?.groupValues?.get(1) ?: ""
   }
 

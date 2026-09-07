@@ -49,6 +49,7 @@ internal val ${objectName}: MapDef =
         npcs = ${RenderUtil.INSTANCE.npcs(map.getVisibleNpcs())},
         bgEvents = ${RenderUtil.INSTANCE.bgEvents(map.getBgEvents())},
         onTransitionScript = "${map.getOnTransitionScript()}",
+        onLoadScript = "${map.getOnLoadScript()}",
         onFrameScripts = ${RenderUtil.INSTANCE.frameScripts(map.getOnFrameScripts())},
         coordScripts = ${RenderUtil.INSTANCE.coordScripts(map.getCoordScripts())},
     )

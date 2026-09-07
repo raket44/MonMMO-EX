@@ -36,6 +36,8 @@ class MapDef(
     val bgEvents: List<BgEventDef> = emptyList(),
     /** Decomp label of the script that runs when a player enters this map, or "" if none. */
     val onTransitionScript: String = "",
+    /** Decomp label of the ON_LOAD script (tile changes re-applied on every load), or "" if none. */
+    val onLoadScript: String = "",
     /** Conditional entry scripts: run [MapFrameScript.script] when its var equals its value. */
     val onFrameScripts: List<MapFrameScript> = emptyList(),
     /** Conditional tile scripts checked after the player completes a step. */

@@ -30,6 +30,8 @@ constructor(
     val charId = state.characterId
     return buildList {
       resolve(map.onTransitionScript, map.regionId.toInt())?.let { add(it) }
+      // ON_LOAD follows the layout load on the cartridge: the setmetatile fixes a map re-applies.
+      resolve(map.onLoadScript, map.regionId.toInt())?.let { add(it) }
       if (charId != null) {
         map.onFrameScripts
             .firstOrNull { storyService.getVar(charId, it.varKey) == it.value }

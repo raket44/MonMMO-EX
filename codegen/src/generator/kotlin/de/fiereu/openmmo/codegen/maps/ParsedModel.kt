@@ -28,6 +28,8 @@ data class ParsedMap(
     val bgEvents: List<ParsedBgEvent>,
     // Decomp label of the map's ON_TRANSITION script, or "" when the map has none.
     val onTransitionScript: String,
+    // Decomp label of the map's ON_LOAD script (setmetatile fixes on every load), or "".
+    val onLoadScript: String,
     // The map's ON_FRAME table: run the script once its var equals the value, on map entry.
     val onFrameScripts: List<ParsedFrameScript>,
     // Tile triggers from map.json coord_events.

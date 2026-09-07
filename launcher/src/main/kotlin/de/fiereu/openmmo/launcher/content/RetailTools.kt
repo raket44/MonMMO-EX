@@ -166,6 +166,16 @@ object RetailTools {
           9427 to 431, // Johto HM08 Rock Climb
       )
 
+  /**
+   * The bag's TM/HM pocket (f/ra0) does not show an item's own name: it reads the FIRST item's
+   * name slot of the class block as the class tag and appends " - <move>" itself (the regional
+   * machine number the stock client adds is what the numberless rename removes). Writing
+   * "TM Hone Claws" / "HM Cut" into those slots made every row read "TM Hone Claws - Toxic"
+   * (2026-09-07). They hold the bare tag instead; the items' own moves still render after the dash.
+   */
+  val CLASS_NAME_SLOTS: Set<Int> =
+      setOf(TM_ITEM_BASE + 1, 339, 5420, 8420, 9420).map { ITEM_NAME_STRING_BASE + it }.toSet()
+
   /** (name string id, move id) for every retail TM to rename. */
   fun renames(): List<Pair<Int, Int>> =
       TM_MOVES.mapIndexed { index, moveId ->

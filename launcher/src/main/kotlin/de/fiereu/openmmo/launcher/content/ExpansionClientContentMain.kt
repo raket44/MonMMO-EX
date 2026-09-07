@@ -555,7 +555,8 @@ private fun patchNames(
     root.appendChild(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())
-          textContent = "$prefix $moveName"
+          // The block's first slot is the bag pocket's class tag (RetailTools.CLASS_NAME_SLOTS).
+          textContent = if (stringId in RetailTools.CLASS_NAME_SLOTS) prefix else "$prefix $moveName"
         })
   }
 

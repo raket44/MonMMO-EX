@@ -34,8 +34,34 @@ import kotlinx.coroutines.currentCoroutineContext
 
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
 private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+/**
+ * The Pokemon an HM ocarina summons, by (region, move): a native of the region that can learn the
+ * move, like retail's per-region set (Abra for Teleport in Kanto, Teddiursa for Sweet Scent in
+ * Johto). Regions: 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4 Johto. Missing pairs fall back to the
+ * region's Sweet Scent stand-in.
+ */
+private val OCARINA_STAND_INS: Map<Pair<Int, Int>, Int> =
+    mapOf(
+        // Kanto: Farfetch'd, Pidgeot, Lapras, Machoke, Voltorb, Geodude, Goldeen, Tentacruel
+        (0 to 15) to 83, (0 to 19) to 18, (0 to 57) to 131, (0 to 70) to 67, (0 to 148) to 100,
+        (0 to 249) to 74, (0 to 127) to 118, (0 to 291) to 73, (0 to 100) to 63,
+        // Hoenn: Zigzagoon, Swellow, Wailmer, Makuhita, Volbeat, Nosepass, Barboach, Relicanth, Ralts
+        (1 to 15) to 263, (1 to 19) to 277, (1 to 57) to 320, (1 to 70) to 296, (1 to 148) to 313,
+        (1 to 249) to 299, (1 to 127) to 339, (1 to 291) to 369, (1 to 100) to 280,
+        // Unova: Patrat, Unfezant, Basculin, Timburr, Watchog, Roggenrola, Basculin, Frillish, Elgyem
+        (2 to 15) to 504, (2 to 19) to 521, (2 to 57) to 550, (2 to 70) to 532, (2 to 148) to 505,
+        (2 to 249) to 524, (2 to 127) to 550, (2 to 291) to 592, (2 to 100) to 605,
+        // Sinnoh: Bidoof, Staravia, Bibarel, Monferno, Chingling, Shieldon, Buizel, Finneon, Abra
+        (3 to 15) to 399, (3 to 19) to 397, (3 to 57) to 400, (3 to 70) to 391, (3 to 148) to 433,
+        (3 to 249) to 410, (3 to 127) to 418, (3 to 291) to 456, (3 to 100) to 63,
+        // Johto: Sentret, Noctowl, Quagsire, Sudowoodo, Ledian, Phanpy, Chinchou, Mantine, Natu
+        (4 to 15) to 161, (4 to 19) to 164, (4 to 57) to 195, (4 to 70) to 185, (4 to 148) to 166,
+        (4 to 249) to 231, (4 to 127) to 170, (4 to 291) to 226, (4 to 100) to 177,
+    )
+
 /** The stand-in the client summons per region (f/ZB1.mf1's table), by region id. */
 private val STAND_INS = mapOf(0 to 71, 1 to 357, 2 to 549, 3 to 415, 4 to 216)
+private val BANNER_SERIAL = java.util.concurrent.atomic.AtomicInteger(1)
 
 class ScriptContext
 internal constructor(
@@ -421,14 +447,22 @@ internal constructor(
           else -> return false
         }
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return false
-    // Second short = the species to show: 0 lets the client pick the party member that knows the
-    // move; an ocarina shows the region's stand-in (the client's own Sweet Scent table).
-    val party = fm.partyKnows(stored, moveId)
-    val itemId = if (party) -1 else fm.byMove(moveId)?.ocarinaItemId ?: -1
-    val species = if (party) 0 else STAND_INS[state.regionId] ?: 71
+    // f/kC1.YL1: a NEGATIVE second short is a species (low 12 bits) - the ocarina's stand-in;
+    // 0 lets the client show the party member that knows the move. The first short is the key
+    // the client remembers per second value (f/ln1.lPt7) and the party slot for the banner.
+    val slot = stored.pokemon.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
+    val first: Int
+    val second: Int
+    if (slot >= 0) {
+      first = slot
+      second = 0
+    } else {
+      first = BANNER_SERIAL.incrementAndGet() and 0x0FFF
+      second = (OCARINA_STAND_INS[state.regionId to moveId] ?: STAND_INS[state.regionId] ?: 71) - 4096
+    }
     session.send(
         de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
-            2, moveId.toByte(), listOf(itemId.toShort(), species.toShort())))
+            2, moveId.toByte(), listOf(first.toShort(), second.toShort())))
     return true
   }
 

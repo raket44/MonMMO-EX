@@ -28,6 +28,7 @@ constructor(
     private val mapManager: MapManager,
     private val warpService: WarpService,
     private val battleService: BattleService,
+    private val banners: FieldMoveBanners,
 ) {
   private data class Destination(val mapName: String, val x: Int, val y: Int, val healLocation: String)
 
@@ -38,7 +39,7 @@ constructor(
             (f[0].toInt() to f[1].toInt()) to Destination(f[2], f[3].toInt(), f[4].toInt(), f[5])
           } ?: emptyMap()
 
-  fun onFly(event: PacketEvent<FlyRequestPacket>) {
+  suspend fun onFly(event: PacketEvent<FlyRequestPacket>) {
     val session = event.session
     val state = session.attributes[PLAYER_STATE] ?: return
     val charId = state.characterId ?: return
@@ -62,6 +63,8 @@ constructor(
               log.warn { "[fly] map ${dest.mapName} missing for ${dest.healLocation}" }
               return
             }
+    // The banner ("{mon} used Fly!", the pose) plays before the player leaves, like every HM.
+    if (banners.send(session, stored, state.regionId, FieldMoves.FLY)) kotlinx.coroutines.delay(FieldMoveBanners.HOLD_MILLIS)
     warpService.executeWarp(
         session,
         charId,

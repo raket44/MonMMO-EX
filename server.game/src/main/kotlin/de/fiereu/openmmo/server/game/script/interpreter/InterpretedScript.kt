@@ -32,8 +32,6 @@ import kotlinx.coroutines.delay
 
 private val log = KotlinLogging.logger {}
 
-/** How long the HM pose plus banner take on the client; the effect waits this out. */
-private const val FIELD_MOVE_BANNER_MILLIS = 2600L
 
 class UnsupportedScriptCommandException(
     scriptId: String,
@@ -467,7 +465,7 @@ class InterpretedScript(
           // the scripts around them already carry the outcome (removeobject, the message).
           // The pose (900 ms) and the banner's slide in, hold and slide out run on the client
           // before the move lands.
-          if (ctx.fieldMoveBanner(instruction.arg(0).token)) delay(FIELD_MOVE_BANNER_MILLIS)
+          if (ctx.fieldMoveBanner(instruction.arg(0).token)) delay(de.fiereu.openmmo.server.game.services.FieldMoveBanners.HOLD_MILLIS)
           when (instruction.arg(0).token) {
             "FLDEFF_USE_SURF" -> tracedWait(ctx, "surf") { ctx.startSurfing() }
             "FLDEFF_USE_WATERFALL" -> tracedWait(ctx, "waterfall") { ctx.climbWaterfall() }

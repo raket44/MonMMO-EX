@@ -17,7 +17,9 @@ private val log = KotlinLogging.logger {}
  * ([FlyRequestPacket]); the id numbers the region's ROM heal locations 0-based, which is also
  * where the GBA lands the player (the town's Pokemon Center door). Resource
  * monmmo/fly-destinations.csv holds that table for Kanto and Hoenn, generated from the decomps'
- * heal_locations.json. The engine's field-move gate applies (badge plus a party member with Fly
+ * heal_locations.json; Sinnoh rows follow Platinum's sSpawnLocations (spawn_locations.c) in the town
+ * map's fly-location order, Johto rows the pokegear flypoint index (gMapFlypointParams) with the
+ * landing left to the map's entry tile. The engine's field-move gate applies (badge plus a party member with Fly
  * or the Thunder Fly ocarina); the client already greys out towns not yet visited.
  */
 @Singleton
@@ -29,6 +31,7 @@ constructor(
     private val warpService: WarpService,
     private val battleService: BattleService,
     private val banners: FieldMoveBanners,
+    private val ndsWarps: NdsWarps,
 ) {
   private data class Destination(val mapName: String, val x: Int, val y: Int, val healLocation: String)
 
@@ -55,6 +58,23 @@ constructor(
     if (dest == null) {
       session.send(notice("That place cannot be flown to yet."))
       log.info { "[fly] no destination for region=${state.regionId} id=$id" }
+      return
+    }
+    // DS regions: the row's map is "bank:map" (ROM header = map * 256 + bank) and the landing is
+    // the decomp's fly spawn in world tiles, or -1 to land on the map's own entry tile. The client
+    // renders those maps itself, so the raw-warp path applies (WarpService.executeRawWarp).
+    if (state.regionId >= 2) {
+      val (bank, mapId) = dest.mapName.split(':').map { it.toInt() }
+      val landing =
+          if (dest.x >= 0) dest.x to dest.y
+          else ndsWarps.spawnOf(state.regionId, bank, mapId)
+              ?: run {
+                log.warn { "[fly] no landing for ${state.regionId}:$bank:$mapId (${dest.healLocation})" }
+                session.send(notice("That place has no landing spot yet."))
+                return
+              }
+      if (banners.send(session, stored, state.regionId, FieldMoves.FLY)) kotlinx.coroutines.delay(FieldMoveBanners.FLY_HOLD_MILLIS)
+      warpService.executeRawWarp(session, charId, state.regionId, bank, mapId, landing.first, landing.second)
       return
     }
     val map =

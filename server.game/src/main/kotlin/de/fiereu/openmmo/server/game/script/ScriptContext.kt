@@ -509,9 +509,12 @@ internal constructor(
     val collision: Byte = (((existing?.collision?.toInt() ?: 0x10) and 0xFC) or (if (impassable) 1 else 0)).toByte()
     state.tileOverrides[key] =
         de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, existing?.behavior ?: de.fiereu.openmmo.common.enums.TileBehavior.NORMAL)
-    // Not sent to the client: s2c 0x22 with these values drew the Vermilion Gym beam tiles as
-    // black and wall graphics (2026-09-06) for reasons never found, so the map stays exactly as
-    // the ROM draws it. The server-side override still tracks the script's collision.
+    // The client's own setmetatile: one tile packet with the ROM's metatile id and the GBA upper
+    // byte (collision bits + the tile's existing elevation), drawn from the ROM tileset.
+    session.send(
+        de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
+            info.positionRegionId, info.positionBankId, info.positionMapId,
+            x.toShort(), y.toShort(), collision.toShort(), metatileId.toShort()))
   }
 
   /** A ROM string variable (STR_VAR_n) for the next dialogs of this script: a raw text argument. */

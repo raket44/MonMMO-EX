@@ -7,9 +7,9 @@ import de.fiereu.bytecodec.S8
 
 /**
  * Replaces one metatile on a loaded map (s2c 0x22, client f/eZ) - the GBA's setmetatile.
- * Bytecode-verified: three bytes key the map (f/jp0.Jx0 -> f/tS1.tt), two shorts pick the block
- * (f/tM.Pp(x, y, 0)), then f/eP1.Bp0(collision, metatile) stores the tile: the short indexes the
- * tileset's tile table and the byte becomes the block's collision. The client then re-checks the
+ * Three bytes key the map (f/jp0.Jx0 -> f/tS1.tt), two shorts pick the block (f/tM.Pp(x, y, 0)),
+ * then a short METATILE and a short COLLISION reach f/eP1.Bp0: the metatile indexes the tileset's
+ * tile table (raw ROM id, secondary from 0x280) and the collision becomes the block's upper byte. The client then re-checks the
  * local player and every entity standing on the map (f/eZ.aK). OpenMMO had this opcode as the
  * client-to-server interaction request's mirror; the two directions are unrelated packets.
  */
@@ -30,8 +30,11 @@ object MapTileSetPacketCodec : PacketCodec<MapTileSetPacket>() {
     val mapId = field(S8) { it.mapId }
     val x = field(S16LE) { it.x }
     val y = field(S16LE) { it.y }
-    val collision = field(S16LE) { it.collision }
+    // Metatile BEFORE collision on the wire: sent the other way round the client drew Building
+    // tile #<collision byte> (0 black, 1 wall, 12 bedroom floor, 13 stairs) - the Vermilion Gym
+    // beams mystery of 2026-09-06, spotted by the user's romhacking eye.
     val metatileId = field(S16LE) { it.metatileId }
+    val collision = field(S16LE) { it.collision }
     return MapTileSetPacket(regionId, bankId, mapId, x, y, collision, metatileId)
   }
 }

@@ -24,10 +24,11 @@ class LayoutVariants @Inject constructor() {
   data class Variant(val regionId: Int, val bankId: Int, val mapId: Int, val flag: String, val footerId: Int)
 
   private val variants =
-      listOf(
+      listOf<Variant>(
           // Vermilion Gym: both switches found -> the electric barrier is down
           // (VermilionCity_Gym_EventScript_SetBeamsOff baked into footer 0-450).
-          Variant(0, 9, 6, "kanto/FLAG_FOUND_BOTH_VERMILION_GYM_SWITCHES", 450),
+          // Vermilion Gym footer 450 is off while the ROM's own setmetatile path (s2c 0x22) is tested.
+          // Variant(0, 9, 6, "kanto/FLAG_FOUND_BOTH_VERMILION_GYM_SWITCHES", 450),
       )
 
   /** On arrival: every variant of this map whose flag is already set. Send after LoadMap. */

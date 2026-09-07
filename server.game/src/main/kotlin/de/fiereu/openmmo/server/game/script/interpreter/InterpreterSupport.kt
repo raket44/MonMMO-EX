@@ -156,6 +156,16 @@ internal object InterpreterSupport {
    * ROM lines replaced by a client string, by text label. The GBA "no more room" line blames full
    * boxes, which is not why a gift is refused here: the party is full. Client string 2305 says so.
    */
+  /**
+   * "{mon} used CUT!" and kin: the client shows its own HM banner for these (ScriptContext
+   * .fieldMoveBanner at the script's dofieldeffect), so the ROM's box is not shown.
+   */
+  val USED_MOVE_TEXTS =
+      setOf(
+          "Text_MonUsedMove", "Text_MonUsedStrengthCanMoveBoulders", "Text_MonUsedWaterfall",
+          "Text_MonUsedDive", "Text_UsedSurf", "Text_MonUsedFieldMove", "Text_MonUsedStrength",
+          "gText_PlayerUsedSurf")
+
   val CLIENT_STRING_OVERRIDES: Map<String, Int> =
       mapOf("Text_NoMoreRoomForPokemon" to 2305, "gText_NoMoreRoomForPokemon" to 2305)
 

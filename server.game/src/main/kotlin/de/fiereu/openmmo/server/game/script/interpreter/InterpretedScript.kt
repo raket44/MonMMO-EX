@@ -70,7 +70,10 @@ class InterpretedScript(
       }
       when (instruction.command) {
         "msgbox" -> {
-          state.currentMessage = tracedWait(ctx, "dialog") { runMsgbox(ctx, instruction) }
+          // The HM "used" box is the client's banner here, sent at the dofieldeffect that follows.
+          if (textArg(instruction, 0).token !in InterpreterSupport.USED_MOVE_TEXTS) {
+            state.currentMessage = tracedWait(ctx, "dialog") { runMsgbox(ctx, instruction) }
+          }
           state.pc++
         }
         "message" -> {
@@ -459,6 +462,7 @@ class InterpretedScript(
           // Surf is the one field effect with a server-side state; the rest (Cut's swing, the
           // flash, the rock smash) are client visuals this dialog channel cannot trigger yet, and
           // the scripts around them already carry the outcome (removeobject, the message).
+          ctx.fieldMoveBanner(instruction.arg(0).token)
           when (instruction.arg(0).token) {
             "FLDEFF_USE_SURF" -> tracedWait(ctx, "surf") { ctx.startSurfing() }
             "FLDEFF_USE_WATERFALL" -> tracedWait(ctx, "waterfall") { ctx.climbWaterfall() }

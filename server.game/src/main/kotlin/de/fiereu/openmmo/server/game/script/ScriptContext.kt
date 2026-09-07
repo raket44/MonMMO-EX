@@ -34,6 +34,7 @@ import kotlinx.coroutines.currentCoroutineContext
 
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
 private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
+private val BANNER_SERIAL = java.util.concurrent.atomic.AtomicInteger((System.currentTimeMillis() / 1000).toInt() and 0x3FFF)
 
 class ScriptContext
 internal constructor(
@@ -398,6 +399,33 @@ internal constructor(
    * it ever runs the script) and the client's ocarinas honoured: an owned ocarina for the move
    * stands in for a party member knowing it, as its own description promises, and answers slot 0.
    */
+  /**
+   * The client's HM banner ("{mon} used Cut!" with the party member, or the region's stand-in
+   * for an ocarina): s2c 0xB6 case 2 (f/Ty0) - subject = move id, args = [ocarina item id or -1,
+   * serial]. The client remembers the last (item, value) pair and skips a repeat (f/ln1.lPt7),
+   * hence the serial. Sent at the script's dofieldeffect in place of the ROM's message box.
+   */
+  fun fieldMoveBanner(fieldEffect: String) {
+    val fm = de.fiereu.openmmo.server.game.services.FieldMoves
+    val moveId =
+        when {
+          !fieldEffect.startsWith("FLDEFF_USE_") && fieldEffect != "FLDEFF_FLASH" -> return
+          "CUT" in fieldEffect -> fm.CUT
+          "ROCK_SMASH" in fieldEffect -> fm.ROCK_SMASH
+          "STRENGTH" in fieldEffect -> fm.STRENGTH
+          "SURF" in fieldEffect -> fm.SURF
+          "WATERFALL" in fieldEffect -> fm.WATERFALL
+          "DIVE" in fieldEffect -> fm.DIVE
+          "FLASH" in fieldEffect -> fm.FLASH
+          else -> return
+        }
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return
+    val itemId = if (fm.partyKnows(stored, moveId)) -1 else fm.byMove(moveId)?.ocarinaItemId ?: -1
+    session.send(
+        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+            2, moveId.toByte(), listOf(itemId.toShort(), BANNER_SERIAL.incrementAndGet().toShort())))
+  }
+
   fun partyIndexWithMove(moveId: Int): Int {
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
     if (!de.fiereu.openmmo.server.game.services.FieldMoves.badgeHeld(stored, state.regionId, moveId)) return de.fiereu.openmmo.common.MAX_PARTY_SIZE

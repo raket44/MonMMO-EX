@@ -184,6 +184,36 @@ constructor(
     return "$namespace/objxy/$bankId:$mapId:$entityIdx"
   }
 
+  /** The story-var key setobjectmovementtype writes (MovementType ordinal + 1). */
+  fun movementOverrideKey(regionId: Int, bankId: Int, mapId: Int, entityIdx: Int): String {
+    val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()
+    return "$namespace/objmov/$bankId:$mapId:$entityIdx"
+  }
+
+  fun movementOverridePrefix(regionId: Int, bankId: Int, mapId: Int): String {
+    val namespace = Region.byId(regionId)?.name?.lowercase() ?: regionId.toString()
+    return "$namespace/objmov/$bankId:$mapId:"
+  }
+
+  /**
+   * The ROM's setobjectmovementtype: an entry script pins a wanderer in place (Pallet's sign lady
+   * faces the route entrance while she waits for you) and the client must be told the pinned
+   * type, or it wanders her off the tile her trigger sits beside.
+   */
+  private fun applyMovementOverride(regionId: Int, bankId: Int, mapId: Int, npc: NpcDef, storyVars: Map<String, Int>): NpcDef {
+    val stored = storyVars[movementOverrideKey(regionId, bankId, mapId, npc.entityIdx)] ?: return npc
+    val type = MovementType.entries.getOrNull(stored - 1) ?: return npc
+    val facing =
+        when (type) {
+          MovementType.FACE_UP -> Direction.UP
+          MovementType.FACE_DOWN -> Direction.DOWN
+          MovementType.FACE_LEFT -> Direction.LEFT
+          MovementType.FACE_RIGHT -> Direction.RIGHT
+          else -> npc.facing
+        }
+    return npc.copy(movementType = type, facing = facing)
+  }
+
   private fun applyXyOverride(
       regionId: Int,
       bankId: Int,
@@ -191,8 +221,9 @@ constructor(
       npc: NpcDef,
       storyVars: Map<String, Int>,
   ): NpcDef {
-    val packed = storyVars[xyOverrideKey(regionId, bankId, mapId, npc.entityIdx)] ?: return npc
-    return npc.copy(x = packed shr 12, y = packed and 0xFFF)
+    val moved = applyMovementOverride(regionId, bankId, mapId, npc, storyVars)
+    val packed = storyVars[xyOverrideKey(regionId, bankId, mapId, npc.entityIdx)] ?: return moved
+    return moved.copy(x = packed shr 12, y = packed and 0xFFF)
   }
 
   /** Allocate (or return) the stable entity id for a map npc by its decomp local id. */

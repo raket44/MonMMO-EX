@@ -657,6 +657,13 @@ internal constructor(
       movement.respawnNpcByHideFlag(session, state, flag)
 
   /** Persist an npc's overridden tile (`setobjectxyperm`); every later spawn uses it. */
+  /** setobjectmovementtype: pins an npc's movement type for this map visit and re-sends it. */
+  fun setNpcMovementType(localId: Int, type: de.fiereu.openmmo.common.enums.MovementType) {
+    val key = movement.npcMovementOverrideKey(state, localId) ?: return
+    setVar(key, type.ordinal + 1)
+    movement.showNpc(session, state, localId)
+  }
+
   fun setNpcXyOverride(localId: Int, x: Int, y: Int) {
     val key = movement.npcXyOverrideKey(state, localId) ?: return
     setVar(key, (x shl 12) or y)

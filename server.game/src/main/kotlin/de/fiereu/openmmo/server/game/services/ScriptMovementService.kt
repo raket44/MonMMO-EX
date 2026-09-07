@@ -79,6 +79,12 @@ constructor(
   }
 
   /** The story-var key holding an npc's setobjectxyperm override on the player's current map. */
+  fun npcMovementOverrideKey(state: PlayerState, localId: Int): String? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    return npcService.movementOverrideKey(
+        info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+  }
+
   fun npcXyOverrideKey(state: PlayerState, localId: Int): String? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     return npcService.xyOverrideKey(

@@ -78,8 +78,9 @@ constructor(
   private fun resetMapLocalState(charId: Long, map: MapDef): Boolean {
     val stored = characterStore.getCharacter(charId) ?: return false
     val prefix = npcService.xyOverridePrefix(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+    val movementPrefix = npcService.movementOverridePrefix(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
     var changed = false
-    stored.storyVars.keys.filter { it.startsWith(prefix) }.forEach {
+    stored.storyVars.keys.filter { it.startsWith(prefix) || it.startsWith(movementPrefix) }.forEach {
       characterStore.setStoryVar(charId, it, 0)
       changed = true
     }

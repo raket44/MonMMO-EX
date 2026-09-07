@@ -205,6 +205,7 @@ class ScriptSupportAnalyzer(
           "giveitem_msg" -> args.size in 2..4
           "setobjectxy",
           "setobjectxyperm",
+          "setobjectmovementtype",
           "warp" -> args.size == 3
           "multichoice" -> args.size == 4
           "multichoicedefault",
@@ -358,6 +359,7 @@ class ScriptSupportAnalyzer(
           "hideobjectat" -> args[0] is ObjectArg
           "setobjectxy",
           "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
+          "setobjectmovementtype" -> args.size == 2 && args[0] is ObjectArg
           "warp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
@@ -613,6 +615,7 @@ class ScriptSupportAnalyzer(
             "giveitem_msg",
             "setobjectxy",
             "setobjectxyperm",
+            "setobjectmovementtype",
             "showobjectat",
             "hideobjectat",
             "trainerbattle_no_intro",

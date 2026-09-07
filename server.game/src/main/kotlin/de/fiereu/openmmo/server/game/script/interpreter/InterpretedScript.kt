@@ -608,6 +608,17 @@ class InterpretedScript(
         }
         // Overrides the npc's template tile: ON_TRANSITION scripts place story npcs with it (the
         // Viridian old man). Persisted, so every later spawn of this map uses the new tile.
+        "setobjectmovementtype" -> {
+          val target =
+              resolveMovementTarget(
+                  ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
+          val type =
+              de.fiereu.openmmo.common.enums.MovementType.entries.firstOrNull {
+                it.name == instruction.arg(1).token.removePrefix("MOVEMENT_TYPE_")
+              }
+          if (target is MovementTarget.Npc && type != null) ctx.setNpcMovementType(target.localId, type)
+          state.pc++
+        }
         "setobjectxyperm" -> {
           val target =
               resolveMovementTarget(

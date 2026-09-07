@@ -36,7 +36,6 @@ internal object InterpreterSupport {
           "incrementgamestat",
           "dotimebasedevents",
           "setrespawn",
-          "setobjectmovementtype",
           "turnobject",
           "famechecker",
           // Seeds the gym-statue "trainers defeated" bookkeeping (setvar VAR_0x8008 + call).

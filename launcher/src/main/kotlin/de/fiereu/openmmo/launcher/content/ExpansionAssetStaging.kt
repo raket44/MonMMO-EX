@@ -74,6 +74,9 @@ class ExpansionAssetStaging(
       listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/", "sprites/itemicons/")
           .forEach { zip.directory(it) }
       zip.write("info.xml", INFO_XML.toByteArray())
+      // Alternate block grids the server swaps in with s2c 0x2D (ClientMapFooters).
+      zip.directory("world_map_footers/")
+      ClientMapFooters.entries().forEach { (name, bytes) -> zip.write("world_map_footers/$name", bytes) }
       // The follower renderer slices a mod's sheets by this grid (uu1.yz1/ha1 from the loader's
       // atlasdata parse) and reads which row faces where. Without the file the grid stays 0x0,
       // every sheet sliced to nothing and the client crashed the moment an imported species

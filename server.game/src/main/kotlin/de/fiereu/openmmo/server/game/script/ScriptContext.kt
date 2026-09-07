@@ -54,6 +54,7 @@ internal constructor(
     private val developerTools: DeveloperTools? = null,
     private val moves: de.fiereu.openmmo.moves.MoveRegistry? = null,
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry? = null,
+    private val layoutVariants: de.fiereu.openmmo.server.game.services.LayoutVariants? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -220,6 +221,8 @@ internal constructor(
   fun setFlag(flag: String) {
     characterId?.let { charId ->
       story.setFlag(charId, flag)
+      // A flag that selects a map variant swaps the client's block grid right away.
+      layoutVariants?.onFlagSet(session, state, flag)
       val update = StoryClientState.flagUpdate(state.regionId.toByte(), flag, enabled = true)
       if (update != null) {
         session.send(update)

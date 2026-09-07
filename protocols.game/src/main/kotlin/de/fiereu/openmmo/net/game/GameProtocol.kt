@@ -151,7 +151,7 @@ object GameProtocol : Protocol() {
     s2c<EntityTitleTagPacket>(0x2Cu, EntityTitleTagPacketCodec)
 
     c2s<EntityInteractRequestPacket>(0x2Du, EntityInteractRequestPacketCodec)
-    s2c<MapCellTilesetPacket>(0x2Du, MapCellTilesetPacketCodec)
+    s2c<MapLayoutSwitchPacket>(0x2Du, MapLayoutSwitchPacketCodec)
 
     c2s<SendDirectMessagePacket>(0x2Eu, SendDirectMessagePacketCodec)
     s2c<EntityRenamePacket>(0x2Eu, EntityRenamePacketCodec)

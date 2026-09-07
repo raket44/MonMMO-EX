@@ -32,6 +32,9 @@ import kotlinx.coroutines.delay
 
 private val log = KotlinLogging.logger {}
 
+/** How long the HM pose plus banner take on the client; the effect waits this out. */
+private const val FIELD_MOVE_BANNER_MILLIS = 2600L
+
 class UnsupportedScriptCommandException(
     scriptId: String,
     command: String,
@@ -462,8 +465,9 @@ class InterpretedScript(
           // Surf is the one field effect with a server-side state; the rest (Cut's swing, the
           // flash, the rock smash) are client visuals this dialog channel cannot trigger yet, and
           // the scripts around them already carry the outcome (removeobject, the message).
-          // The banner and the player's pose run 900 ms on the client before the move lands.
-          if (ctx.fieldMoveBanner(instruction.arg(0).token)) delay(900)
+          // The pose (900 ms) and the banner's slide in, hold and slide out run on the client
+          // before the move lands.
+          if (ctx.fieldMoveBanner(instruction.arg(0).token)) delay(FIELD_MOVE_BANNER_MILLIS)
           when (instruction.arg(0).token) {
             "FLDEFF_USE_SURF" -> tracedWait(ctx, "surf") { ctx.startSurfing() }
             "FLDEFF_USE_WATERFALL" -> tracedWait(ctx, "waterfall") { ctx.climbWaterfall() }

@@ -464,6 +464,18 @@ internal constructor(
     session.send(
         de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
             2, moveId.toByte(), listOf(first.toShort(), second.toShort())))
+    // The grey box Sweet Scent gets: client string 6068 "{00} used its {01}!" with raw text args.
+    val who =
+        if (slot >= 0) partyNickname(slot) ?: stored.info.name
+        else "${stored.info.name}'s summoned ${speciesName(second + 4096) ?: "Pokemon"}"
+    session.send(
+        de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
+            6068,
+            listOf(
+                de.fiereu.openmmo.net.game.packets.ServerMessageArg(0, 5, false, 0, null, null, who, null),
+                de.fiereu.openmmo.net.game.packets.ServerMessageArg(1, 5, false, 0, null, null, moveName(moveId) ?: "", null)),
+            showOnMap = true,
+            mode = null))
     return true
   }
 

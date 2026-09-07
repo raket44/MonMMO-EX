@@ -10,12 +10,13 @@ package de.fiereu.openmmo.launcher.content
  * byte borderHeight, short skipped, then width*height little-endian map.bin block words, then the
  * border words. Ids 384-423 are retail's; ours start at 450.
  *
- * 0-450: Vermilion City Gym with the electric barrier down - the decomp layout with the ten
- * setmetatile edits of VermilionCity_Gym_EventScript_SetBeamsOff applied (elevation bits kept,
- * collision set where the script says impassable).
+ * Footer 0-450 (Vermilion Gym, beams down) was the first use and is retired: the ROM script's
+ * setmetatile renders directly once the tile packet's fields were in the right order.
  */
 object ClientMapFooters {
-  private val NAMES = listOf("0-450.bin")
+  // Empty since the Vermilion Gym beams run on the ROM's own setmetatile (s2c 0x22); add a
+  // "<region>-<id>.bin" here for a variant that has no ROM script.
+  private val NAMES = emptyList<String>()
 
   fun entries(): List<Pair<String, ByteArray>> =
       NAMES.map { name ->

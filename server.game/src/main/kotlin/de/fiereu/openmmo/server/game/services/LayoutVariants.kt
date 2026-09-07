@@ -23,13 +23,9 @@ private val log = KotlinLogging.logger {}
 class LayoutVariants @Inject constructor() {
   data class Variant(val regionId: Int, val bankId: Int, val mapId: Int, val flag: String, val footerId: Int)
 
-  private val variants =
-      listOf<Variant>(
-          // Vermilion Gym: both switches found -> the electric barrier is down
-          // (VermilionCity_Gym_EventScript_SetBeamsOff baked into footer 0-450).
-          // Vermilion Gym footer 450 is off while the ROM's own setmetatile path (s2c 0x22) is tested.
-          // Variant(0, 9, 6, "kanto/FLAG_FOUND_BOTH_VERMILION_GYM_SWITCHES", 450),
-      )
+  // Empty: every ROM setmetatile puzzle renders through the tile packet since commit ee67d9dc6.
+  // Add a Variant(region, bank, map, flag, footerId) for a map variant that has no ROM script.
+  private val variants = listOf<Variant>()
 
   /** On arrival: every variant of this map whose flag is already set. Send after LoadMap. */
   fun onMapEnter(session: SessionContext, state: PlayerState, isFlagSet: (String) -> Boolean) {

@@ -34,7 +34,9 @@ constructor(
     val ocarina = slot < 0
     if (ocarina && !FieldMoves.ocarinaOwned(stored, moveId)) return false
     val standIn = OCARINA_STAND_INS[regionId to moveId] ?: SWEET_SCENT_STAND_INS[regionId] ?: 71
-    val first = if (ocarina) serial.incrementAndGet() and 0x0FFF else slot
+    // Party member: 0 - the client finds the party Pokemon by the move itself (a slot number
+    // here drew a blank banner whenever the mover was not in slot 0).
+    val first = if (ocarina) serial.incrementAndGet() and 0x0FFF else 0
     val second = if (ocarina) standIn - 4096 else 0
     session.send(WorldActionDispatchPacket(2, moveId.toByte(), listOf(first.toShort(), second.toShort())))
     val who =
@@ -53,7 +55,7 @@ constructor(
 
   companion object {
     /** The pose (900 ms) plus the banner's slide in, hold and slide out on the client. */
-    const val HOLD_MILLIS = 2600L
+    const val HOLD_MILLIS = 5000L
     /** Client string "{00} used its {01}!". */
     const val USED_MOVE_STRING = 6068
     /** Message argument kind for a raw string (client f/RO0 kind 5). */

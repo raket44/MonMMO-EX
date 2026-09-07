@@ -178,7 +178,7 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                     null,
                     null,
                     BattleEventBody.AbilityPopup(
-                        abilityId = event.ability.ordinal,
+                        abilityId = de.fiereu.openmmo.pokemon.AbilityWireIds.of(event.ability),
                         kind =
                             (if (event.otherId != 0L) 1 else 0) or
                                 (if (event.moveId != 0) 2 else 0) or

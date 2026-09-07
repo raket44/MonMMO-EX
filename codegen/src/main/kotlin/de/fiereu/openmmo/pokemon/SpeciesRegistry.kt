@@ -136,8 +136,9 @@ constructor(
             }
             ?: base?.type1
             ?: PokemonType.NORMAL
+    // Retail ability ids are the standard numbering (the client's), not the enum's ordinals.
     fun ability(abilityId: Int, fallback: Ability?): Ability =
-        Ability.entries.getOrNull(abilityId) ?: fallback ?: Ability.NONE
+        AbilityWireIds.ability(abilityId) ?: fallback ?: Ability.NONE
     val groups = retail.eggGroups
     return SpeciesDef(
         id = retail.id,

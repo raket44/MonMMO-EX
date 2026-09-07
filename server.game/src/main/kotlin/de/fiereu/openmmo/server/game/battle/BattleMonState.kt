@@ -195,7 +195,7 @@ class BattleMonState(
           species = shownSpeciesId(),
           level = source.level,
           gender = illusionOf?.gender ?: gender,
-          abilityId = ability.ordinal.toShort(),
+          abilityId = de.fiereu.openmmo.pokemon.AbilityWireIds.of(ability).toShort(),
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,

@@ -91,9 +91,15 @@ private val AbilityPopupBodyCodec: Codec<BattleEventBody> =
         val kind = field(S8) { (it as BattleEventBody.AbilityPopup).kind.toByte() }.toInt()
         val ability = field(S16LE) { (it as BattleEventBody.AbilityPopup).abilityId.toShort() }.toInt()
         val self = field(S64LE) { (it as BattleEventBody.AbilityPopup).self }
-        val other = field(S64LE) { (it as BattleEventBody.AbilityPopup).other }
-        val moveId = field(S16LE) { (it as BattleEventBody.AbilityPopup).moveId.toShort() }.toInt()
-        val itemId = field(S16LE) { (it as BattleEventBody.AbilityPopup).itemId.toShort() }.toInt()
+        // Bytecode-verified (f/SF1 event 51 -> f/sL): the rest is conditional on the kind bits. Bit 1
+        // adds the second monster; bit 2 adds the move, else bit 8 adds the item (one short, never
+        // both); bit 4 adds one more short the server never sets. Writing every field regardless
+        // left surplus bytes that the client parsed as the next event - Intimidate on a horde's
+        // third switch-in ended in a buffer underflow on the client (2026-09-06).
+        val other = if (kind and 1 != 0) field(S64LE) { (it as BattleEventBody.AbilityPopup).other } else 0L
+        val moveId = if (kind and 2 != 0) field(S16LE) { (it as BattleEventBody.AbilityPopup).moveId.toShort() }.toInt() else 0
+        val itemId = if (kind and 2 == 0 && kind and 8 != 0) field(S16LE) { (it as BattleEventBody.AbilityPopup).itemId.toShort() }.toInt() else 0
+        if (kind and 4 != 0) field(S16LE) { 0 }
         return BattleEventBody.AbilityPopup(ability, kind, self, other, moveId, itemId)
       }
     }

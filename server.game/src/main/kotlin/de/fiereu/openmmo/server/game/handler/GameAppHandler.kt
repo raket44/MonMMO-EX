@@ -126,6 +126,7 @@ constructor(
     private val sessionRegistry: SessionRegistry,
     private val characterStore: CharacterStore,
     private val storyPlayerService: de.fiereu.openmmo.server.game.services.StoryPlayerService,
+    private val flyService: de.fiereu.openmmo.server.game.services.FlyService,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -165,6 +166,7 @@ constructor(
           de.fiereu.openmmo.server.game.services.notice(
               "Channel $channel is not available: this server runs a single channel."))
     }
+    on<de.fiereu.openmmo.net.game.packets.FlyRequestPacket> { event -> flyService.onFly(event) }
     on<de.fiereu.openmmo.net.game.packets.PartyMemberSelectPacket> { event ->
       presenceService.onPartyMemberSelect(event)
     }

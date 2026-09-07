@@ -68,7 +68,8 @@ object GameProtocol : Protocol() {
     c2s<PokemonListAddPacket>(0x0Fu, PokemonListAddPacketCodec)
     s2c<EntityPresencePacket>(0x0Fu, EntityPresencePacketCodec)
 
-    bidi<LoadMapPacket>(0x10u, LoadMapPacketCodec)
+    s2c<LoadMapPacket>(0x10u, LoadMapPacketCodec)
+    c2s<FlyRequestPacket>(0x10u, FlyRequestPacketCodec)
 
     c2s<PartyMemberSelectPacket>(0x11u, PartyMemberSelectPacketCodec)
     s2c<NpcUpdatePacket>(0x11u, NpcUpdatePacketCodec)

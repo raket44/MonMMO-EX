@@ -62,13 +62,13 @@ rem   gradlew.bat :server.game:installDist :server.login:installDist
 rem Working dir is each server's project dir - the hot-reload data files (warp-rules.txt,
 rem nds-*.txt) resolve relative to it.
 if exist "server.login\build\install\server.login\lib" (
-  start "MonMMO Login Server" /min /d "%~dp0server.login" cmd /c ""%JAVA_HOME%\bin\java.exe" -cp "build\install\server.login\lib\*" de.fiereu.openmmo.server.login.MainKt > "%~dp0logs\server-login.log" 2> "%~dp0logs\server-login.err.log""
+  start "MonMMO Login Server" /min /d "%~dp0server.login" cmd /c ""%JAVA_HOME%\bin\java.exe" -Xms64m -Xmx256m -cp "build\install\server.login\lib\*" de.fiereu.openmmo.server.login.MainKt > "%~dp0logs\server-login.log" 2> "%~dp0logs\server-login.err.log""
 ) else (
   start "MonMMO Login Server" /min cmd /c "call gradlew.bat :server.login:run > logs\server-login.log 2> logs\server-login.err.log"
 )
 ping 127.0.0.1 -n 3 >nul
 if exist "server.game\build\install\server.game\lib" (
-  start "MonMMO Game Server" /min /d "%~dp0server.game" cmd /c ""%JAVA_HOME%\bin\java.exe" "-Dmonmmo.retailData=%~dp0data\pokemmo\monsters.json" "-Dmonmmo.dumpOpcodes=30" -cp "build\install\server.game\lib\*" de.fiereu.openmmo.server.game.MainKt > "%~dp0logs\server-game.log" 2> "%~dp0logs\server-game.err.log""
+  start "MonMMO Game Server" /min /d "%~dp0server.game" cmd /c ""%JAVA_HOME%\bin\java.exe" -Xms128m -Xmx768m "-Dmonmmo.retailData=%~dp0data\pokemmo\monsters.json" "-Dmonmmo.dumpOpcodes=30,33" -cp "build\install\server.game\lib\*" de.fiereu.openmmo.server.game.MainKt > "%~dp0logs\server-game.log" 2> "%~dp0logs\server-game.err.log""
 ) else (
   start "MonMMO Game Server" /min cmd /c "call gradlew.bat :server.game:run > logs\server-game.log 2> logs\server-game.err.log"
 )

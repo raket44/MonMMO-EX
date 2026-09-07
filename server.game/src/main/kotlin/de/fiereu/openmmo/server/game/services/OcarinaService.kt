@@ -53,7 +53,7 @@ constructor(
     // then finds the ocarina through checkpartymove, badge first.
     FieldMoves.byOcarina(itemId)?.let {
       log.info { "[Ocarina] char=$charId uses ocarina $itemId (move ${it.moveId})" }
-      interactions?.get()?.useFieldMove(ctx, state, it.moveId)
+      interactions?.get()?.useFieldMove(ctx, state, it.moveId, itemId)
       return
     }
     if (itemId != SWEET_SCENT_OCARINA) return

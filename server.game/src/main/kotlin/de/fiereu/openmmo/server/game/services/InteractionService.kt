@@ -267,7 +267,19 @@ constructor(
    * A field move used from the bag's ocarina (the party-menu route is not decoded yet): exactly
    * what pressing A would do for that move, so the ROM script does the asking and the checks.
    */
-  fun useFieldMove(session: SessionContext, state: PlayerState, moveId: Int) {
+  /**
+   * The client's own HM animation: s2c 0xB6 case 2 (f/Ty0) with the move id as subject and the
+   * ocarina item id (or -1 for a party member) plus a value - the player strikes the field-move
+   * pose (f/l31.xR) for 900 ms unless surfing or biking, then f/ln1.n40 plays the move's own
+   * follow-up (Cut's swing, the Surf mount). Retail sends it before the ROM script's message.
+   */
+  private fun summonAnimation(session: SessionContext, moveId: Int, itemId: Int) {
+    session.send(
+        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+            2, moveId.toByte(), listOf(itemId.toShort(), 0)))
+  }
+
+  fun useFieldMove(session: SessionContext, state: PlayerState, moveId: Int, itemId: Int = -1) {
     if (state.blocksNewScript) return
     val stored = currentCharacter(state) ?: return
     val map =
@@ -297,17 +309,27 @@ constructor(
           return
         }
         val entityId = npcService.getNpcEntityId(region, bank, mapId, target.entityIdx) ?: -1L
+        summonAnimation(session, moveId, itemId)
         runFieldScript(session, state, target.script, entityId)
       }
       FieldMoves.SURF ->
-          if (!state.surfing && facing?.isSurfable == true) runFieldScript(session, state, "EventScript_UseSurf", -1)
+          if (!state.surfing && facing?.isSurfable == true) {
+            summonAnimation(session, moveId, itemId)
+            runFieldScript(session, state, "EventScript_UseSurf", -1)
+          }
           else session.send(notice("There is no water to surf on here."))
       FieldMoves.WATERFALL ->
-          if (state.surfing && state.facingDirection == Direction.UP && facing == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL) waterfallPrompt(session, state, stored)
+          if (state.surfing && state.facingDirection == Direction.UP && facing == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL) {
+            summonAnimation(session, moveId, itemId)
+            waterfallPrompt(session, state, stored)
+          }
           else session.send(notice("Face a waterfall while surfing to use that."))
       FieldMoves.DIVE -> if (!divePrompt(session, state, stored, map)) session.send(notice("There is nowhere to dive here."))
       FieldMoves.FLASH ->
-          if (map.lighting != de.fiereu.openmmo.common.enums.Lighting.REGULAR) runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
+          if (map.lighting != de.fiereu.openmmo.common.enums.Lighting.REGULAR) {
+            summonAnimation(session, moveId, itemId)
+            runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
+          }
           else session.send(notice("It is not dark here."))
       FieldMoves.FLY -> session.send(notice("Fly is not available on this server yet."))
       else -> log.info { "Field move $moveId has no overworld use" }

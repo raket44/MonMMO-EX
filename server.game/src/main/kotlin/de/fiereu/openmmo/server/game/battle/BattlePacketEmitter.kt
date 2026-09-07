@@ -204,11 +204,16 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.HpUpdate(event.newHp.toShort()))
         is BattleEvent.StageChanged ->
-            if (!event.failed) {
-              target(event.targetId).subEvents +=
-                  BattleActionEvent(
-                      null, null, BattleEventBody.StatChange(statIndex(event.stat), event.delta.toShort()))
-            }
+            // A change that could not go further still prints "won't go any higher / lower": the
+            // client keys that on a zero direction byte with the sign in the delta.
+            target(event.targetId).subEvents +=
+                BattleActionEvent(
+                    null,
+                    null,
+                    BattleEventBody.StatChange(
+                        statIndex(event.stat),
+                        (if (event.failed) (if (event.delta < 0) -1 else 1) else event.delta).toShort(),
+                        applied = !event.failed))
         is BattleEvent.StatusChanged ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.StatusChange(event.status.toByte()))

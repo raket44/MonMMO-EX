@@ -12,8 +12,20 @@ sealed interface BattleEventBody {
    * [stageDelta] the signed number of stages (-1 down one, +2 up two). [changeType] is 0 for a
    * normal stage change.
    */
-  data class StatChange(val stat: Byte, val stageDelta: Short, val changeType: Byte = 0) :
-      BattleEventBody
+  /**
+   * Event 1, the stat stage change (client f/w71, decoded 2026-09-06): [changeType] 0 for a plain
+   * change (1 and 2 print special lines), the stat with bit 0x80 set so the line is printed, the
+   * signed [stageDelta] (magnitude picks rose / sharply / drastically, sign picks fell), and a
+   * fourth byte the animation takes as its direction: the delta again when the change [applied],
+   * 0 when the stat could not go further ("won't go any higher"). A constant 0xFF there - what
+   * the captures of stat DROPS showed - animated every rise as a fall.
+   */
+  data class StatChange(
+      val stat: Byte,
+      val stageDelta: Short,
+      val changeType: Byte = 0,
+      val applied: Boolean = true,
+  ) : BattleEventBody
 
   /** Event 5, BattlePokemonFainted. [playFaintAnimation] plays the faint-in-place animation. */
   data class Faint(val playFaintAnimation: Boolean) : BattleEventBody
@@ -244,7 +256,9 @@ private val StatusChangeBodyCodec: Codec<BattleEventBody> =
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
         val kind = field(S8) { (it as BattleEventBody.StatusChange).kind }
         val status = field(S8) { (it as BattleEventBody.StatusChange).status }
-        val aux = field(S16LE) { (it as BattleEventBody.StatusChange).aux }
+        // Bytecode-verified (f/SF1 event 2 -> f/Et0): the short follows only when the status byte
+        // is 1, and kind 3 adds an entity id (never sent). Writing it always left two surplus bytes.
+        val aux = if (status.toInt() == 1) field(S16LE) { (it as BattleEventBody.StatusChange).aux } else 0
         return BattleEventBody.StatusChange(status, kind, aux)
       }
     }
@@ -263,14 +277,13 @@ private val StatChangeBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
         val changeType = field(S8) { (it as BattleEventBody.StatChange).changeType }
-        // Only the low seven bits name the stat. The top bit is a separate emphasis flag, and the
-        // direction rides in the signed stage count rather than here.
-        val stat = field(S8) { (it as BattleEventBody.StatChange).stat }
+        // Low seven bits name the stat (client f/RC0 order); bit 0x80 asks for the text line.
+        val stat = field(S8) { ((it as BattleEventBody.StatChange).stat.toInt() or 0x80).toByte() }
         val stages = field(S8) { (it as BattleEventBody.StatChange).stageDelta.toByte() }
-        // 0xFF in every capture.
-        reserved(0xFF)
+        // The animation's direction byte: the delta when the change landed, 0 when it could not.
+        val direction = field(S8) { val c = it as BattleEventBody.StatChange; if (c.applied) c.stageDelta.toByte() else 0 }
         return BattleEventBody.StatChange(
-            (stat.toInt() and STAT_INDEX_MASK).toByte(), stages.toShort(), changeType)
+            (stat.toInt() and STAT_INDEX_MASK).toByte(), stages.toShort(), changeType, direction.toInt() != 0)
       }
     }
 

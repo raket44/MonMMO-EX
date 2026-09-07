@@ -21,6 +21,7 @@ class PretGbaParser(
     private val region: RegionConstants,
     private val movementTypes: MovementTypes,
     private val metatileBehaviors: MetatileBehaviors,
+    private val clientOverrides: ClientTileOverrides = ClientTileOverrides.load(),
 ) {
 
   private val json = Json { ignoreUnknownKeys = true }
@@ -180,8 +181,8 @@ class PretGbaParser(
         musicId = ctx.musicIds[musicName] ?: 405,
         mapsecId = ctx.mapsecIds[mapsecName] ?: 0,
         borderTiles = parseBorderTiles(layout),
-        blockData = parseBlockData(layout),
-        behaviorData = parseBehaviorData(layout),
+        blockData = parseBlockData(layout, layoutId),
+        behaviorData = parseBehaviorData(layout, layoutId),
         encounters = parseEncounters(mapJson, ctx),
         // Dark caves (map.json requires_flash) darken on the client and Flash lights them.
         lighting =
@@ -380,22 +381,27 @@ class PretGbaParser(
         readBorderTiles(File(rootDir, it))
       } ?: emptyList()
 
-  private fun parseBlockData(layout: JsonObject): String {
-    val path = layout["blockdata_filepath"]?.jsonPrimitive?.contentOrNull ?: return ""
+  // The layout's map.bin with the client's own edits applied (ClientTileOverrides): the server
+  // must walk the same tiles the client draws.
+  private fun layoutBlocks(layout: JsonObject, layoutId: String): ByteArray? {
+    val path = layout["blockdata_filepath"]?.jsonPrimitive?.contentOrNull ?: return null
     val file = File(rootDir, path)
-    if (!file.exists()) return ""
-    return Base64.getEncoder().encodeToString(file.readBytes())
+    if (!file.exists()) return null
+    return clientOverrides.patched(region.regionId, layoutId, file.readBytes())
+  }
+
+  private fun parseBlockData(layout: JsonObject, layoutId: String): String {
+    val bytes = layoutBlocks(layout, layoutId) ?: return ""
+    return Base64.getEncoder().encodeToString(bytes)
   }
 
   // One behavior byte per tile, resolved from the layout's tilesets. Empty when there is no block
   // data to align with.
-  private fun parseBehaviorData(layout: JsonObject): String {
-    val path = layout["blockdata_filepath"]?.jsonPrimitive?.contentOrNull ?: return ""
-    val file = File(rootDir, path)
-    if (!file.exists()) return ""
+  private fun parseBehaviorData(layout: JsonObject, layoutId: String): String {
+    val bytes = layoutBlocks(layout, layoutId) ?: return ""
     val primary = layout["primary_tileset"]?.jsonPrimitive?.contentOrNull
     val secondary = layout["secondary_tileset"]?.jsonPrimitive?.contentOrNull
-    return metatileBehaviors.behaviorData(primary, secondary, file.readBytes())
+    return metatileBehaviors.behaviorData(primary, secondary, bytes)
   }
 
   private fun parseEncounters(mapJson: JsonObject, ctx: Context): List<ParsedEncounterTable> {

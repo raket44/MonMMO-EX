@@ -64,7 +64,7 @@ constructor(
               return
             }
     // The banner ("{mon} used Fly!", the pose) plays before the player leaves, like every HM.
-    if (banners.send(session, stored, state.regionId, FieldMoves.FLY)) kotlinx.coroutines.delay(FieldMoveBanners.HOLD_MILLIS)
+    if (banners.send(session, stored, state.regionId, FieldMoves.FLY)) kotlinx.coroutines.delay(FieldMoveBanners.FLY_HOLD_MILLIS)
     warpService.executeWarp(
         session,
         charId,

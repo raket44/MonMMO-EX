@@ -25,7 +25,7 @@ constructor(
 ) : ChatCommand {
   override val name = "probe"
   override val usage =
-      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin>"
+      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin|world <action> <subject> [shorts]|entityaction <action>>"
   override val description = "sends one candidate packet to see how the client renders it"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -162,6 +162,34 @@ constructor(
                 direction = stance.toByte(),
             ))
         ctx.reply("Ride applied instantly: bike type=$type stance=$stance")
+      }
+      // s2c 0xB6 (client f/Ty0), the world-action packet: action byte (cases 0-10, 12-15, 32-35),
+      // subject byte, then shorts. The field-move summon animation (ball throw, stand-in popup)
+      // must be one of its cases; this fires one so a player can watch what each does.
+      // "/probe world <action> <subject> [short ...]"
+      "world" -> {
+        val action = ctx.args.getOrNull(1)?.toIntOrNull()
+        val subject = ctx.args.getOrNull(2)?.toIntOrNull() ?: 0
+        if (action == null) {
+          ctx.reply("/probe world <action> <subject> [short ...]")
+          return
+        }
+        val args = ctx.args.drop(3).mapNotNull { it.toIntOrNull()?.toShort() }
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(action.toByte(), subject.toByte(), args))
+        ctx.reply("Sent world action=$action subject=$subject args=$args")
+      }
+      // s2c 0xB0 (client f/om1): entity uid + action byte, handed to the active scene.
+      // "/probe entityaction <action>" targets your own entity.
+      "entityaction" -> {
+        val action = ctx.args.getOrNull(1)?.toIntOrNull()
+        if (action == null) {
+          ctx.reply("/probe entityaction <action>")
+          return
+        }
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.SceneEntityActionDispatchPacket(ctx.characterId, action.toByte()))
+        ctx.reply("Sent entity action=$action on yourself")
       }
       "notice" -> {
         val type = ctx.args.getOrNull(1)?.toIntOrNull()

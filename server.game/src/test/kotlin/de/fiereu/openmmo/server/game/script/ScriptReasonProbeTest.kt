@@ -25,6 +25,13 @@ class ScriptReasonProbeTest :
         }
       }
 
+      test("setmetatile constants resolve") {
+        InterpretedScripts.sources.filter { it.corpus.source == "firered" }.forEach { reg ->
+          val s = reg.scriptsByLabel["VermilionCity_Gym_EventScript_SetBeamsOff"] ?: return@forEach
+          s.program.instructions.take(3).forEach { println("METATILE ${it.command} ${it.args.map { a -> a::class.simpleName + ":" + a.token }}") }
+        }
+      }
+
       test("map sweep") {
         val prefix = System.getenv("MONMMO_PROBE_MAP") ?: return@test
         val analyzer = ScriptSupportAnalyzer()

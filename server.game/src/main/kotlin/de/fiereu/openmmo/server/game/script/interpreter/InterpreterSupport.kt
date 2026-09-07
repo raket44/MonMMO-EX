@@ -36,7 +36,6 @@ internal object InterpreterSupport {
           "incrementgamestat",
           "dotimebasedevents",
           "setrespawn",
-          "setmetatile",
           "setobjectmovementtype",
           "turnobject",
           "famechecker",

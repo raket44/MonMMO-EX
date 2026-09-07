@@ -471,7 +471,31 @@ class InterpretedScript(
           tracedWait(ctx, "dialog choice") { runMultichoice(ctx, state, instruction) }
           state.pc++
         }
-        in InterpreterSupport.BUFFER_COMMANDS -> state.pc++
+        in InterpreterSupport.BUFFER_COMMANDS -> {
+          // ROM string variables ride the dialog as raw text arguments (slot = the variable).
+          val variable = stringVariable(instruction.arg(0).token)
+          val text =
+              if (variable == null) null
+              else
+                  when (instruction.command) {
+                    "bufferpartymonnick" -> ctx.partyNickname(value(ctx, instruction.arg(1)))
+                    "buffermovename" -> ctx.moveName(value(ctx, instruction.arg(1)))
+                    "bufferspeciesname" -> ctx.speciesName(value(ctx, instruction.arg(1)))
+                    "bufferleadmonspeciesname" -> ctx.leadSpeciesName()
+                    "buffernumberstring" -> value(ctx, instruction.arg(1)).toString()
+                    else -> null
+                  }
+          if (variable != null && text != null) ctx.bufferText(variable, text)
+          state.pc++
+        }
+        "setmetatile" -> {
+          ctx.setMetatile(
+              value(ctx, instruction.arg(0)),
+              value(ctx, instruction.arg(1)),
+              value(ctx, instruction.arg(2)),
+              value(ctx, instruction.arg(3)) != 0)
+          state.pc++
+        }
         in InterpreterSupport.NOOP_COMMANDS -> state.pc++
         "delay" -> {
           val frames = (instruction.arg(0) as? IntArg)?.value ?: 0
@@ -1437,6 +1461,10 @@ class InterpretedScript(
           )
         }
   }
+
+  /** STR_VAR_1..3 -> 1..3; anything else is not a string variable. */
+  private fun stringVariable(token: String): Int? =
+      if (token.startsWith("STR_VAR_")) token.removePrefix("STR_VAR_").toIntOrNull() else null
 
   private fun textLine(label: String, instruction: ScriptInstruction): DialogLine =
       textBindings[label]

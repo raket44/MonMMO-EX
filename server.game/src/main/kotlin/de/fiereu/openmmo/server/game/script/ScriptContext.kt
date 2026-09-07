@@ -52,6 +52,8 @@ internal constructor(
     private val entryScripts: MapEntryScripts? = null,
     private val shops: ShopService? = null,
     private val developerTools: DeveloperTools? = null,
+    private val moves: de.fiereu.openmmo.moves.MoveRegistry? = null,
+    private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -83,19 +85,19 @@ internal constructor(
   /** Show [line] as a sign and wait for the player to close it. */
   suspend fun sign(line: DialogLine) {
     holdScriptedFacing()
-    dialog.showAndWait(session, state, line.textId, SIGN, -1)
+    dialog.showAndWait(session, state, line.textId, SIGN, -1, presentation())
   }
 
   /** Show [line] from the interacted entity and wait for the player to go on. */
   suspend fun say(line: DialogLine) {
     holdScriptedFacing()
-    dialog.showAndWait(session, state, line.textId, NPC, entityId)
+    dialog.showAndWait(session, state, line.textId, NPC, entityId, presentation())
   }
 
   /** [say] attributed to another npc entity - the second trainer of a double sighting speaks for itself. */
   suspend fun sayAs(speaker: Long, line: DialogLine) {
     holdScriptedFacing()
-    dialog.showAndWait(session, state, line.textId, NPC, speaker)
+    dialog.showAndWait(session, state, line.textId, NPC, speaker, presentation())
   }
 
   /** Begin a pret `message`; the following wait command owns the client acknowledgement. */
@@ -460,6 +462,45 @@ internal constructor(
     state.underwater = goingUnder
     log.info { "Dive: char=$id ${if (goingUnder) "went under to" else "surfaced to"} ${link.targetBank}:${link.targetMap}" }
   }
+
+
+  /**
+   * setmetatile: the tile the player's map shows at (x, y) becomes [metatileId] with the given
+   * collision, for this player, until the map reloads (s2c 0x22). Movement reads the override.
+   */
+  fun setMetatile(x: Int, y: Int, metatileId: Int, impassable: Boolean) {
+    val id = characterId ?: return
+    val info = characters?.getCharacter(id)?.info ?: return
+    val collision: Byte = if (impassable) 1 else 0
+    state.tileOverrides[(x shl 16) or (y and 0xFFFF)] =
+        de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, de.fiereu.openmmo.common.enums.TileBehavior.NORMAL)
+    session.send(
+        de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
+            info.positionRegionId,
+            info.positionBankId,
+            info.positionMapId,
+            x.toShort(),
+            y.toShort(),
+            collision.toShort(),
+            metatileId.toShort()))
+  }
+
+  /** A ROM string variable (STR_VAR_n) for the next dialogs of this script: a raw text argument. */
+  fun bufferText(variable: Int, text: String) {
+    setMessageArg(variable, de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(slot = variable.toByte(), kind = 5, text = text))
+  }
+
+  fun partyNickname(slot: Int): String? {
+    val mon = characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) } ?: return null
+    return mon.nickname.ifEmpty { speciesName(mon.dexId) }
+  }
+
+  fun moveName(moveId: Int): String? = moves?.get(moveId)?.name
+
+  fun speciesName(dexId: Int): String? = speciesRegistry?.get(dexId)?.name
+
+  fun leadSpeciesName(): String? =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.firstOrNull() }?.let { speciesName(it.dexId) }
 
   /** Flash (setflashlevel): lights the map the player stands in until its next load (s2c 0xC1). */
   fun lightMap(level: Int) {

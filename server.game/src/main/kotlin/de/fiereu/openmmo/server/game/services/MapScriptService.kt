@@ -35,6 +35,7 @@ constructor(
     // The GBA forgets two things on every map load, and ON_TRANSITION rewrites what still
     // applies: the FLAG_TEMP_* flags and setobjectxyperm placements. Keeping them made the
     // Cerulean policeman stay in front of the door after the S.S. Ticket, and cut trees cut.
+    state.tileOverrides.clear()
     if (charId != null && resetMapLocalState(charId, map)) {
       npcService.refreshDynamicNpcs(session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
     }

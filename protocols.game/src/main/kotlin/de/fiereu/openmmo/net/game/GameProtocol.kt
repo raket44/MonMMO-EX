@@ -116,7 +116,8 @@ object GameProtocol : Protocol() {
     c2s<DialogActionResponsePacket>(0x21u, DialogActionResponsePacketCodec)
     s2c<DialogActionPacket>(0x21u, DialogActionPacketCodec)
 
-    bidi<EntityInteractPacket>(0x22u, EntityInteractPacketCodec)
+    c2s<EntityInteractPacket>(0x22u, EntityInteractPacketCodec)
+    s2c<MapTileSetPacket>(0x22u, MapTileSetPacketCodec)
 
     c2s<ExchangeItemRequestPacket>(0x23u, ExchangeItemRequestPacketCodec)
     s2c<ShopCatalogPacket>(0x23u, ShopCatalogPacketCodec)

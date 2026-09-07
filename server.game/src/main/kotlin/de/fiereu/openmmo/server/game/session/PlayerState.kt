@@ -104,6 +104,8 @@ data class PlayerState(
     @field:Volatile var surfing: Boolean = false,
     /** Under the surface after Dive: still "surfing" for movement, on the underwater map. */
     @field:Volatile var underwater: Boolean = false,
+    /** Tiles a script replaced on the current map (setmetatile): key (x shl 16 or y). Cleared on arrival. */
+    val tileOverrides: java.util.concurrent.ConcurrentHashMap<Int, de.fiereu.openmmo.common.Tile2D> = java.util.concurrent.ConcurrentHashMap(),
     /**
      * The emergence step: after this arrival's LoadEntity, the server sends an EntityMove one tile
      * in this direction and the CLIENT walks it - the client's 0xE4 handler routes any entity, the

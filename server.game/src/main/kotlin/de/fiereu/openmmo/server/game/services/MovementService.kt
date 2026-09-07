@@ -355,7 +355,7 @@ constructor(
       // door warp. A claim further than one tile (or into a wall) is still a real desync.
       val adjacent =
           Math.abs(msg.x - fromX) + Math.abs(msg.y - fromY) == 1 &&
-              isWalkable(currentMap, msg.x, msg.y, state.surfing)
+              isWalkable(currentMap, msg.x, msg.y, state.surfing, state.tileOverrides)
       if (!adjacent) {
         log.info {
           "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
@@ -440,7 +440,7 @@ constructor(
     val stepsIntoWarp =
         when (targetRule?.fire) {
           WarpRules.Fire.STEP -> targetRule.press == msg.direction
-          WarpRules.Fire.CONTACT -> state.creative || isWalkable(currentMap, toX, toY, state.surfing)
+          WarpRules.Fire.CONTACT -> state.creative || isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides)
           // STAND fixtures never fire from the step toward them; no rule = not a warp fixture.
           WarpRules.Fire.STAND,
           null -> false
@@ -468,7 +468,7 @@ constructor(
     pushBoulder(ctx, charId, stored, state, currentMap, toX, toY, msg.direction)
 
     // Creative admins walk through anything; the client shows the wall, the server allows it.
-    if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing)) {
+    if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides)) {
       log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
       sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
       return
@@ -631,7 +631,7 @@ constructor(
         } ?: return false
     val beyondX = toX + direction.dx
     val beyondY = toY + direction.dy
-    if (!isWalkable(map, beyondX, beyondY)) return false
+    if (!isWalkable(map, beyondX, beyondY, overrides = state.tileOverrides)) return false
     if (placed.any { it !== boulder && it.x == beyondX && it.y == beyondY && (it.hideFlag.isEmpty() || it.hideFlag !in stored.storyFlags) }) return false
     characterStore.setStoryVar(charId, npcService.xyOverrideKey(region, bank, mapId, boulder.entityIdx), (beyondX shl 12) or beyondY)
     npcService.repositionNpc(ctx, region, bank, mapId, boulder.entityIdx, beyondX, beyondY)
@@ -639,9 +639,16 @@ constructor(
     return true
   }
 
-  private fun isWalkable(map: MapDef, x: Int, y: Int, surfing: Boolean = false): Boolean {
+  private fun isWalkable(
+      map: MapDef,
+      x: Int,
+      y: Int,
+      surfing: Boolean = false,
+      overrides: Map<Int, de.fiereu.openmmo.common.Tile2D> = emptyMap(),
+  ): Boolean {
     if (x !in 0 until map.width || y !in 0 until map.height) return false
-    val tile = map.tileAt(x, y) ?: return true
+    // A tile a script replaced (setmetatile) carries its own collision until the map reloads.
+    val tile = overrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y) ?: return true
     // Water blocks feet and carries a surfer.
     if (tile.behavior.isSurfable) return surfing
     return !tile.blocksMovement()

@@ -756,6 +756,8 @@ constructor(
             hp = reward.newCurrentHp.toShort(),
             eVs = reward.newEvs,
             moves = winner.moves.map { PokemonMove(it.id, it.pp) },
+            status = persistedStatus(winner),
+            heldItem = winner.heldItem,
         )
     winner.source = grown
     winner.stats = reward.newStats
@@ -858,19 +860,25 @@ constructor(
   }
 
   /** Write the battle's live hp and pp back into the party and flush the character. */
+  /**
+   * What a battle leaves on the record: Toxic goes home as ordinary poison, as the cartridges do,
+   * and a faint clears everything. The XP reward writes the winner's record itself (persistParty
+   * skips rewarded winners), so it has to carry this too - a status caught in the winning fight
+   * used to vanish with the reward's pre-battle copy.
+   */
+  private fun persistedStatus(state: BattleMonState): Int {
+    if (state.currentHp <= 0) return 0
+    val toxic = de.fiereu.openmmo.common.StatusCondition.TOXIC
+    return if (state.status and toxic != 0) (state.status and toxic.inv()) or de.fiereu.openmmo.common.StatusCondition.POISON else state.status
+  }
+
   private fun persistParty(battle: BattleInstance, skip: Set<Long> = emptySet()) {
     for (state in battle.party) {
       if (state.entityId in skip) continue
-      // Toxic poison leaves the battle as ordinary poison, as the cartridges do.
-      val status =
-          if (state.status and de.fiereu.openmmo.common.StatusCondition.TOXIC != 0)
-              (state.status and de.fiereu.openmmo.common.StatusCondition.TOXIC.inv()) or
-                  de.fiereu.openmmo.common.StatusCondition.POISON
-          else state.status
       val updated =
           state.source.copy(
               hp = state.currentHp.toShort(),
-              status = if (state.currentHp <= 0) 0 else status,
+              status = persistedStatus(state),
               heldItem = state.heldItem,
               moves = state.moves.map { PokemonMove(it.id, it.pp) },
           )

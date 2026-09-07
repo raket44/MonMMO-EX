@@ -49,6 +49,8 @@ constructor(
     private val entryScripts: MapEntryScripts,
     private val shopService: ShopService,
     private val developerTools: DeveloperTools? = null,
+    private val moveRegistry: de.fiereu.openmmo.moves.MoveRegistry? = null,
+    private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry? = null,
 ) {
   fun run(session: SessionContext, state: PlayerState, script: Script, entityId: Long) =
       runAll(session, state, listOf(script), entityId)
@@ -108,6 +110,8 @@ constructor(
             entryScripts,
             shopService,
             developerTools,
+            moveRegistry,
+            speciesRegistry,
         )
     scope.launch {
       var finished = false

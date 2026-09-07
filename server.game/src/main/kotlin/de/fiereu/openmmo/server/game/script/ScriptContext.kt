@@ -471,9 +471,16 @@ internal constructor(
   fun setMetatile(x: Int, y: Int, metatileId: Int, impassable: Boolean) {
     val id = characterId ?: return
     val info = characters?.getCharacter(id)?.info ?: return
-    val collision: Byte = if (impassable) 1 else 0
-    state.tileOverrides[(x shl 16) or (y and 0xFFFF)] =
-        de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, de.fiereu.openmmo.common.enums.TileBehavior.NORMAL)
+    // The block's upper byte is collision (bits 0-1) plus elevation (bits 2-5, stored +1). The
+    // client compares elevations when walking and draws by them, so the existing tile's bits
+    // stay and only the collision changes - a bare 0/1 here read as elevation -1: unwalkable and
+    // drawn on the wrong layer.
+    val key = (x shl 16) or (y and 0xFFFF)
+    val map = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    val existing = state.tileOverrides[key] ?: map?.tileAt(x, y)
+    val collision: Byte = (((existing?.collision?.toInt() ?: 0x10) and 0xFC) or (if (impassable) 1 else 0)).toByte()
+    state.tileOverrides[key] =
+        de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, existing?.behavior ?: de.fiereu.openmmo.common.enums.TileBehavior.NORMAL)
     session.send(
         de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
             info.positionRegionId,

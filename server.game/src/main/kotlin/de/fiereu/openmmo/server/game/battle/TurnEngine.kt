@@ -664,7 +664,7 @@ constructor(
       mon.status = (mon.status and StatusCondition.SLEEP_MASK.inv()) or left.coerceAtLeast(0)
       if (left > 0) {
         own()
-        events += BattleEvent.Line(mon.entityId, BattleLine.SLEEP, listOf(0))
+        events += BattleEvent.Line(mon.entityId, BattleLine.SLEEP, listOf(1)) // 1 = "is fast asleep" (f/Kz: true -> entry 309; false -> 312 "woke up")
         events += BattleEvent.CantMove(mon.entityId, CantMoveReason.ASLEEP)
         return false
       }

@@ -78,6 +78,7 @@ constructor(
   fun resetClientCache(ctx: SessionContext, map: MapDef) {
     val state = ctx.attributes[PLAYER_STATE] ?: return
     state.loadedMaps.clear()
+    state.spawnedNpcMaps.clear()
     state.loadedMaps.add(mapCacheKey(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt()))
   }
 

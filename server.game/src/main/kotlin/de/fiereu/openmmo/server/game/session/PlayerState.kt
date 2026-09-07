@@ -179,6 +179,12 @@ data class PlayerState(
     /** Maps the client already holds. A warp sends deleteCache, which empties this. */
     val loadedMaps: MutableSet<Int> = ConcurrentHashMap.newKeySet(),
     /**
+     * Maps whose NPCs this session already received. Re-sending a spawn snaps the NPC back to its
+     * template tile on the client, so a seam crossing must not repeat the maps it already sent;
+     * cleared with [loadedMaps] when a warp drops the client's cache.
+     */
+    val spawnedNpcMaps: MutableSet<Int> = ConcurrentHashMap.newKeySet(),
+    /**
      * The map whose entry scripts already ran for this arrival. The client re-requests its player
      * several times while loading an outdoor map (once per connection), and each request used to
      * re-run the ON_TRANSITION script and re-take the script lock - one logical arrival must run

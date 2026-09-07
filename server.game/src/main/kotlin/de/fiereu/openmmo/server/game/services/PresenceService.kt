@@ -29,6 +29,7 @@ constructor(
     private val policy: InterestPolicy,
     private val mapLoadService: MapLoadService,
     private val characterStore: CharacterStore,
+    private val mapManager: de.fiereu.openmmo.maps.MapManager,
 ) {
 
   /** Spawn the player into its map group and exchange entity snapshots with its observers. */
@@ -59,14 +60,22 @@ constructor(
     val newKey = mapKeyFor(ctx)
     val oldKey = currentMapKey(ctx)
     if (oldKey == newKey) return
-    if (oldKey != null) {
-      interestManager.leave(ctx, oldKey)
-      val entityId = entityIdOf(ctx)
-      if (entityId != null) {
-        for (other in observers(ctx, oldKey)) other.send(EntityLeavePacket(entityId))
-      }
+    // Observers span connected maps, so a seam crossing keeps everyone still in range: only the
+    // sessions that fall out of range get a leave, only the newly in range get a spawn.
+    val oldObservers = if (oldKey != null) observers(ctx, oldKey).toSet() else emptySet()
+    if (oldKey != null) interestManager.leave(ctx, oldKey)
+    val newObservers = if (newKey != null) observers(ctx, newKey).toSet() else emptySet()
+    val entityId = entityIdOf(ctx)
+    for (other in oldObservers - newObservers) {
+      if (entityId != null) other.send(EntityLeavePacket(entityId))
+      entityIdOf(other)?.let { ctx.send(EntityLeavePacket(it)) }
     }
-    if (newKey != null) spawnInto(ctx, newKey)
+    val self = loadEntityFor(ctx)
+    for (other in newObservers - oldObservers) {
+      if (self != null) other.send(self)
+      loadEntityFor(other)?.let { ctx.send(it) }
+    }
+    if (newKey != null) interestManager.join(ctx, newKey)
   }
 
   private fun spawnInto(ctx: SessionContext, key: MapInterestKey) {
@@ -79,8 +88,17 @@ constructor(
     interestManager.join(ctx, key)
   }
 
+  /**
+   * Everyone on this map or a map connected to it: outdoor GBA maps are stitched at their seams
+   * and the client draws the neighbour, so a player one step across the seam must stay visible.
+   */
   private fun observers(ctx: SessionContext, key: MapInterestKey): List<SessionContext> =
-      policy.filter(ctx, interestManager.members(key))
+      policy.filter(ctx, neighbourhood(key).flatMap { interestManager.members(it) }.toSet())
+
+  private fun neighbourhood(key: MapInterestKey): List<MapInterestKey> {
+    val map = mapManager.getMap(key.regionId, key.bankId, key.mapId) ?: return listOf(key)
+    return listOf(key) + map.connections.map { MapInterestKey(key.regionId, it.targetBank, it.targetMap) }
+  }
 
   private fun mapKeyFor(ctx: SessionContext): MapInterestKey? {
     val state = ctx.attributes[PLAYER_STATE] ?: return null

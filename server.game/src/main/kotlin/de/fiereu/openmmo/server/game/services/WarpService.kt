@@ -254,6 +254,7 @@ constructor(
       state.x = x.toShort()
       state.y = y.toShort()
       state.loadedMaps.clear()
+      state.spawnedNpcMaps.clear()
       // Same dismount rule as executeWarp - the fresh spawn draws on foot regardless.
       state.riding = false
     }

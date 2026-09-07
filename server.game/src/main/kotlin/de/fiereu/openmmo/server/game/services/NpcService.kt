@@ -41,11 +41,18 @@ constructor(
    * clears it.
    */
   fun spawnNpcsWithNeighbors(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {
-    spawnNpcsForMap(ctx, bankId, mapId, regionId)
+    spawnNpcsOnce(ctx, bankId, mapId, regionId)
     val map = mapManager.getMap(regionId, bankId, mapId) ?: return
     for (connection in map.connections) {
-      spawnNpcsForMap(ctx, connection.targetBank, connection.targetMap, regionId)
+      spawnNpcsOnce(ctx, connection.targetBank, connection.targetMap, regionId)
     }
+  }
+
+  /** [spawnNpcsForMap] unless this session already holds that map's NPCs (PlayerState.spawnedNpcMaps). */
+  private fun spawnNpcsOnce(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {
+    val state = ctx.attributes[PLAYER_STATE]
+    if (state != null && !state.spawnedNpcMaps.add(de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId))) return
+    spawnNpcsForMap(ctx, bankId, mapId, regionId)
   }
 
   fun spawnNpcsForMap(ctx: SessionContext, bankId: Int, mapId: Int, regionId: Int) {

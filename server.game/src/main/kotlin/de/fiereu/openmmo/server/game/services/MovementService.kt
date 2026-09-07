@@ -424,6 +424,13 @@ constructor(
             Direction.DOWN -> 0
             else -> (fromY - connection.unknown).coerceIn(0, targetMap.height - 1)
           }
+      // The landing tile must be walkable. Pallet Town's bottom row is open across its width but
+      // Route 21's top row is a fence with one gap: the client bonks on the fence while the server
+      // crossed the seam anyway, snapping NPCs back and desyncing the player (2026-09-07).
+      if (!isWalkable(targetMap, entryX, entryY, state.surfing)) {
+        sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
+        return
+      }
       edgeTransition(ctx, charId, currentMap.regionId, connection, entryX.toByte(), entryY.toByte())
       return
     }

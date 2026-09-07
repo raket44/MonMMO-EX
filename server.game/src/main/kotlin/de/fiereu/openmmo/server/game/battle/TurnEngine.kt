@@ -1039,7 +1039,7 @@ constructor(
         Ability.FLAME_BODY -> if (roll(30) && canReceiveStatus(battle, defender, attacker, StatusCondition.BURN)) { shown(defender); inflictStatus(battle, defender, attacker, StatusCondition.BURN, events) }
         Ability.EFFECT_SPORE ->
             if (roll(30)) {
-              val status = listOf(StatusCondition.POISON, StatusCondition.PARALYSIS, StatusCondition.asleep(2 + battle.rng.pick(4)))[battle.rng.pick(3)]
+              val status = listOf(StatusCondition.POISON, StatusCondition.PARALYSIS, StatusCondition.asleep(2 + battle.rng.pick(3)))[battle.rng.pick(3)]
               if (canReceiveStatus(battle, defender, attacker, status)) { shown(defender); inflictStatus(battle, defender, attacker, status, events) }
             }
         Ability.ROUGH_SKIN, Ability.IRON_BARBS ->
@@ -1536,7 +1536,7 @@ constructor(
     val defender = action.defender
     val target = if (extra.self) attacker else defender
     when (extra.effect) {
-      MoveAdditionalEffect.SLEEP -> inflictStatus(battle, attacker, target, StatusCondition.asleep(2 + battle.rng.pick(4)), events)
+      MoveAdditionalEffect.SLEEP -> inflictStatus(battle, attacker, target, StatusCondition.asleep(2 + battle.rng.pick(3)), events)
       MoveAdditionalEffect.POISON -> inflictStatus(battle, attacker, target, StatusCondition.POISON, events)
       MoveAdditionalEffect.TOXIC -> inflictStatus(battle, attacker, target, StatusCondition.TOXIC, events)
       MoveAdditionalEffect.BURN -> inflictStatus(battle, attacker, target, StatusCondition.BURN, events)
@@ -1661,7 +1661,7 @@ constructor(
       MoveEffect.PARALYZE, MoveEffect.WILL_O_WISP, MoveEffect.DARK_VOID, MoveEffect.YAWN -> {
         val status =
             when (move.effect) {
-              MoveEffect.SLEEP, MoveEffect.DARK_VOID -> StatusCondition.asleep(2 + battle.rng.pick(4))
+              MoveEffect.SLEEP, MoveEffect.DARK_VOID -> StatusCondition.asleep(2 + battle.rng.pick(3))
               MoveEffect.POISON -> StatusCondition.POISON
               MoveEffect.TOXIC -> StatusCondition.TOXIC
               MoveEffect.PARALYZE -> StatusCondition.PARALYSIS
@@ -1897,7 +1897,7 @@ constructor(
 
   private fun statusFor(battle: BattleInstance, effect: MoveAdditionalEffect?): Int =
       when (effect) {
-        MoveAdditionalEffect.SLEEP -> StatusCondition.asleep(2 + battle.rng.pick(4))
+        MoveAdditionalEffect.SLEEP -> StatusCondition.asleep(2 + battle.rng.pick(3))
         MoveAdditionalEffect.POISON -> StatusCondition.POISON
         MoveAdditionalEffect.TOXIC -> StatusCondition.TOXIC
         MoveAdditionalEffect.BURN -> StatusCondition.BURN
@@ -2244,7 +2244,7 @@ constructor(
       if (mon.drowsyTurns > 0) {
         mon.drowsyTurns--
         if (mon.drowsyTurns == 0 && !StatusCondition.hasAny(mon.status)) {
-          mon.status = StatusCondition.asleep(2 + battle.rng.pick(4))
+          mon.status = StatusCondition.asleep(2 + battle.rng.pick(3))
           events += BattleEvent.TurnEffect(mon.entityId)
           events += BattleEvent.StatusChanged(mon.entityId, mon.status)
         }

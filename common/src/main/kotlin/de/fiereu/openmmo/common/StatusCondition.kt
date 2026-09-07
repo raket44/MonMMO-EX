@@ -31,5 +31,11 @@ object StatusCondition {
 
   fun hasAny(status: Int): Boolean = status and 0xFF != 0
 
+  /**
+   * Sleep counters. The engine subtracts one on each attempt to move and the monster wakes (and
+   * acts) when it reaches zero, so a counter of N is N-1 sleeping turns - the same decrement-
+   * then-check as the cartridges and Showdown. Moves roll 2..4 (1-3 sleeping turns, the Gen 5+
+   * rule PokeMMO plays by); Gen 3's 2..5 was one turn too long at the top.
+   */
   fun asleep(turns: Int): Int = turns.coerceIn(1, 7)
 }

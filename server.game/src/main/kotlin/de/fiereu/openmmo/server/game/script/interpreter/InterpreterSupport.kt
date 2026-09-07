@@ -78,6 +78,8 @@ internal object InterpreterSupport {
           "QuestLog_CutRecording",
           "DrawWholeMapView",
           "DisableMsgBoxWalkaway",
+          // The walk-away-from-a-sign cancel timer; there is no walk-away cancel here.
+          "SetWalkingIntoSignVars",
           "ShakeScreen",
           "DoPokemonLeagueLightingEffect",
           "PlayerFaceTrainerAfterBattle",

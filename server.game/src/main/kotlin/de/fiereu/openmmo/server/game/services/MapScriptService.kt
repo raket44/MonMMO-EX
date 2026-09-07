@@ -87,6 +87,12 @@ constructor(
       characterStore.clearStoryFlag(charId, it)
       changed = true
     }
+    // VAR_TEMP_0..F are wiped on every map load too. Pallet Town arms its sign-lady trigger
+    // through VAR_TEMP_2 and a stale 1 re-fired it on every later visit (2026-09-07).
+    stored.storyVars.keys.filter { it.contains("/VAR_TEMP_") && stored.storyVars[it] != 0 }.forEach {
+      characterStore.setStoryVar(charId, it, 0)
+      changed = true
+    }
     return changed
   }
 

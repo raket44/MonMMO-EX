@@ -36,8 +36,8 @@ import kotlinx.coroutines.currentCoroutineContext
 private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 /**
  * The Pokemon an HM ocarina summons, by (region, move): a native of the region that can learn the
- * move, like retail's per-region set (Abra for Teleport in Kanto, Teddiursa for Sweet Scent in
- * Johto). Regions: 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4 Johto. Missing pairs fall back to the
+ * move and comes from that region's own generation, like retail's per-region set (Abra for
+ * Teleport in Kanto, Teddiursa for Sweet Scent in Johto); no species repeats within a region. Regions: 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4 Johto. Missing pairs fall back to the
  * region's Sweet Scent stand-in.
  */
 private val OCARINA_STAND_INS: Map<Pair<Int, Int>, Int> =
@@ -48,12 +48,13 @@ private val OCARINA_STAND_INS: Map<Pair<Int, Int>, Int> =
         // Hoenn: Zigzagoon, Swellow, Wailmer, Makuhita, Volbeat, Nosepass, Barboach, Relicanth, Ralts
         (1 to 15) to 263, (1 to 19) to 277, (1 to 57) to 320, (1 to 70) to 296, (1 to 148) to 313,
         (1 to 249) to 299, (1 to 127) to 339, (1 to 291) to 369, (1 to 100) to 280,
-        // Unova: Patrat, Unfezant, Basculin, Timburr, Watchog, Roggenrola, Basculin, Frillish, Elgyem
+        // Unova: Patrat, Unfezant, Basculin, Timburr, Watchog, Roggenrola, Alomomola, Frillish, Elgyem
         (2 to 15) to 504, (2 to 19) to 521, (2 to 57) to 550, (2 to 70) to 532, (2 to 148) to 505,
-        (2 to 249) to 524, (2 to 127) to 550, (2 to 291) to 592, (2 to 100) to 605,
-        // Sinnoh: Bidoof, Staravia, Bibarel, Monferno, Chingling, Shieldon, Buizel, Finneon, Abra
-        (3 to 15) to 399, (3 to 19) to 397, (3 to 57) to 400, (3 to 70) to 391, (3 to 148) to 433,
-        (3 to 249) to 410, (3 to 127) to 418, (3 to 291) to 456, (3 to 100) to 63,
+        (2 to 249) to 524, (2 to 127) to 594, (2 to 291) to 592, (2 to 100) to 605,
+        // Sinnoh: Bidoof, Staravia, Buizel, Monferno, Chingling, Shieldon, Bibarel, Finneon
+        // (no Gen 4 native learns Teleport; that one falls back to Combee)
+        (3 to 15) to 399, (3 to 19) to 397, (3 to 57) to 418, (3 to 70) to 391, (3 to 148) to 433,
+        (3 to 249) to 410, (3 to 127) to 400, (3 to 291) to 456,
         // Johto: Sentret, Noctowl, Quagsire, Sudowoodo, Ledian, Phanpy, Chinchou, Mantine, Natu
         (4 to 15) to 161, (4 to 19) to 164, (4 to 57) to 195, (4 to 70) to 185, (4 to 148) to 166,
         (4 to 249) to 231, (4 to 127) to 170, (4 to 291) to 226, (4 to 100) to 177,

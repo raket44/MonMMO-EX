@@ -10,6 +10,11 @@ import de.fiereu.openmmo.server.game.services.BattleService
 import de.fiereu.openmmo.server.game.services.StoryPlayerService
 import de.fiereu.openmmo.server.game.services.WarpService
 import de.fiereu.openmmo.server.game.services.WorldStateService
+import de.fiereu.openmmo.server.game.services.CLIENT_BICYCLE_ITEM
+import de.fiereu.openmmo.server.game.services.DUPLICATE_BICYCLE_ITEM
+import de.fiereu.openmmo.server.game.services.REGIONAL_BIKE_ITEMS
+import de.fiereu.openmmo.server.game.services.itemStackUpdatePacket
+import de.fiereu.openmmo.server.game.services.storyItemStacksPacket
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.NewGameStarts
 import javax.inject.Inject
@@ -28,6 +33,8 @@ constructor(
 ) : ChatCommand {
   override val name = "story"
   override val usage = "/story [checkpoint|reset|reset keep]"
+
+  private val ALL_BIKE_ITEMS = REGIONAL_BIKE_ITEMS + CLIENT_BICYCLE_ITEM + DUPLICATE_BICYCLE_ITEM
   override val description = "jumps to a story scene, or lists the scenes with no argument"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -71,10 +78,15 @@ constructor(
     val female = stored.info.rivalSex == CharacterGender.FEMALE.wireValue
     val start = NewGameStarts.forRegion(region, female)
 
+    // Every bike quest is reset with the flags, so every bike goes with them even when the bag is
+    // kept: the login reclaim only runs at login, and a reset made mid-session left the Bicycle
+    // in the bag until the next relog (2026-09-08).
+    val keptItems = stored.items.filterKeys { it !in ALL_BIKE_ITEMS }
+    val takenBikes = stored.items.keys.filter { it in ALL_BIKE_ITEMS }
     characterStore.replaceProgress(
         characterId = charId,
         party = if (keepBuild) stored.pokemon.toList() else emptyList(),
-        items = if (keepBuild) stored.items.toMap() else emptyMap(),
+        items = if (keepBuild) keptItems else emptyMap(),
         storyFlags = start.storyFlags,
         storyVars = start.storyVars,
         pc = if (keepBuild) stored.pcStorage.toList() else emptyList(),
@@ -84,6 +96,9 @@ constructor(
 
     val refreshed = characterStore.getCharacter(charId) ?: return
     worldStateService.send(ctx.session, refreshed, fullVars = true)
+    // The bag as it now is, then a zero stack for each bike so an open bag drops it at once.
+    ctx.session.send(storyItemStacksPacket(refreshed.items))
+    for (itemId in takenBikes) ctx.session.send(itemStackUpdatePacket(itemId, 0))
     warpService.executeWarp(
         ctx.session,
         charId,

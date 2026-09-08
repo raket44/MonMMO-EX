@@ -2234,10 +2234,13 @@ constructor(
         mon.trappedTurns--
         if (mon.trappedTurns == 0) {
           events += BattleEvent.TurnEffect(mon.entityId)
-          events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.currentHp, mon.trappingMoveId))
+          // f/N00(byte kind, short MOVE, short HP): the move comes first, the hp goes to the base
+          // class. Sent the other way round, the client named the hp as a move ("hurt by Defense
+          // Curl" at 111 hp) and set the hp to the move id - Bind left a Pokemon at 20 (2026-09-08).
+          events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.trappingMoveId, mon.currentHp))
           mon.trappingMoveId = 0
         } else {
-          hurt(mon.maxHp / (mon.trapDamageDivisor * 2), BattleLine.TRAP, prefix = listOf(1), suffix = listOf(mon.trappingMoveId))
+          hurt(mon.maxHp / (mon.trapDamageDivisor * 2), BattleLine.TRAP, prefix = listOf(1, mon.trappingMoveId))
         }
       }
       if (mon.fainted) continue

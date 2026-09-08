@@ -156,7 +156,7 @@ enum class BattleLine(val id: Int, val shape: LineShape) {
   NIGHTMARE_DAMAGE(19, LineShape.SHORT),
   /** 22 f/AN: kind 0 "endured the hit", 1 Focus Band, 2 the ability (Sturdy), 3 Focus Sash "hung on using its {01}". */
   ENDURED(22, LineShape.BYTE),
-  /** 24 f/N00: 1 hurt by the trapping move (hp, move id), 2 freed from it. */
+  /** 24 f/N00: 1 hurt by the trapping move, 2 freed from it; then the MOVE id, then the new hp (bytecode-verified order). */
   TRAP(24, LineShape.BYTE_SHORT_SHORT),
   /** 27 f/qw: 0 "{00} was seeded!" */
   SEEDED(27, LineShape.BYTE),

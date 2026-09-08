@@ -219,6 +219,9 @@ internal const val ITEM_ENTITY_TAG = 0x5000L
 /** The client's Bicycle (FRLG ITEM_BICYCLE 360), the item its bike feature is tied to. */
 const val CLIENT_BICYCLE_ITEM = 360
 
+/** The Gen 5-numbered duplicate "Bicycle" the registry used to hand out; reclaimed on sight. */
+const val DUPLICATE_BICYCLE_ITEM = 5450
+
 /** Hoenn's Mach Bike (1259) and Acro Bike (1272). */
 val HOENN_BIKE_ITEMS = listOf(1259, 1272)
 

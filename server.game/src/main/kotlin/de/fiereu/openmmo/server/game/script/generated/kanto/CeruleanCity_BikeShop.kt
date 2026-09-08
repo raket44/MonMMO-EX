@@ -30,7 +30,7 @@ internal object CeruleanCity_BikeShop_EventScript_Clerk : Script {
     if (ctx.isFlagSet(KantoFlags.FLAG_GOT_BIKE_VOUCHER)) {
       // The Fan Club chairman's voucher buys the bike; the ROM's message-then-add pair.
       ctx.say(CeruleanCity_BikeShop.OhBikeVoucherHereYouGo)
-      if (!ctx.giveItem(Items.BICYCLE)) return ctx.say(CeruleanCity_BikeShop.MakeRoomForBicycle)
+      if (!ctx.giveItemById(de.fiereu.openmmo.server.game.services.CLIENT_BICYCLE_ITEM)) return ctx.say(CeruleanCity_BikeShop.MakeRoomForBicycle)
       ctx.announceItem(Items.BICYCLE)
       ctx.sign(CeruleanCity_BikeShop.ExchangedVoucherForBicycle)
       ctx.setFlag(KantoFlags.FLAG_GOT_BICYCLE)

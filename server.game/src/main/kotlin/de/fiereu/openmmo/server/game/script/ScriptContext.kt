@@ -324,6 +324,10 @@ internal constructor(
     send(packet)
   }
 
+  /** Grant by raw client item id, for items the registry lists under several ids. */
+  suspend fun giveItemById(itemId: Int, quantity: Int = 1): Boolean =
+      checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.giveItemById(session, state, itemId, quantity)
+
   /** Take an item back out of the bag, the decomp removeitem. False when the bag lacks it. */
   suspend fun takeItem(item: ItemDef, quantity: Int = 1): Boolean = giveItem(item, -quantity)
 

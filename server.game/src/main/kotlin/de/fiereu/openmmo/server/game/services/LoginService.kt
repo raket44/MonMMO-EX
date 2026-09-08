@@ -287,16 +287,16 @@ constructor(
         stored.storyFlags.contains(de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_BICYCLE) ||
             stored.storyFlags.contains(de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_BIKE) ||
             stored.items.keys.any { it in DS_BICYCLE_ITEMS }
-    if (!earnedBike) {
-      var reclaimed = 0
-      for (itemId in listOf(CLIENT_BICYCLE_ITEM) + HOENN_BIKE_ITEMS) {
-        val held = stored.items[itemId] ?: continue
-        if (held > 0 && characterStore.addItem(charId, itemId, -held)) reclaimed++
-      }
-      if (reclaimed > 0) {
-        characterStore.flushCharacterAsync(charId)
-        log.info { "Reclaimed $reclaimed granted bike item(s) from character $charId" }
-      }
+    val toReclaim =
+        listOf(DUPLICATE_BICYCLE_ITEM) + if (earnedBike) emptyList() else listOf(CLIENT_BICYCLE_ITEM) + HOENN_BIKE_ITEMS
+    var reclaimed = 0
+    for (itemId in toReclaim) {
+      val held = stored.items[itemId] ?: continue
+      if (held > 0 && characterStore.addItem(charId, itemId, -held)) reclaimed++
+    }
+    if (reclaimed > 0) {
+      characterStore.flushCharacterAsync(charId)
+      log.info { "Reclaimed $reclaimed granted or duplicate bike item(s) from character $charId" }
     }
     // The twelve bicycle colors, as cosmetic-category items. PROVEN by two live sessions: the
     // customization dialog's option lists are built from the bag (when the 793-cosmetic grant

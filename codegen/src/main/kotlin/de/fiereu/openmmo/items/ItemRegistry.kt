@@ -17,6 +17,10 @@ class ItemRegistry @Inject constructor() {
     GeneratedItems.loadInto(this)
     loadImportedItems()
     registerGbaKeyItems()
+    // The client rides FRLG's Bicycle (360); the generated table lists the item only under the
+    // Gen 5-numbered 5450. Registering 360 on the same item makes it the id scripts hand out
+    // (idOf takes the lowest), so there is one Bicycle, not two.
+    register(de.fiereu.openmmo.items.generated.Items.BICYCLE, 360)
   }
 
   /**

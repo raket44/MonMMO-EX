@@ -22,6 +22,8 @@ class ScriptLabelProbeTest :
                 "CeruleanCity_Gym_EventScript_Misty",
                 "VermilionCity_Gym_EventScript_LtSurge",
                 "PewterCity_Gym_EventScript_JrTrainer",
+                "Route2_EastBuilding_EventScript_Aide",
+                "EventScript_FldEffFlash",
                 "UTR_0",
                 "NDS_CHUNK_3001",
                 "NDS_CHUNK_3002",

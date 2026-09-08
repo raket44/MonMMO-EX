@@ -24,6 +24,13 @@ object FieldMoves {
       val hoennBadge: Int,
   )
 
+  /**
+   * The ROM's FLAG_SYS_FLASH_ACTIVE for the region: set when Flash is used (fldeff_flash.c), it
+   * keeps every dark cave floor lit on arrival, and stepping outdoors clears it (overworld.c).
+   */
+  fun flashActiveFlag(regionId: Int): String =
+      "${(Region.byId(regionId) ?: Region.KANTO).name.lowercase()}/FLAG_SYS_FLASH_ACTIVE"
+
   const val CUT = 15
   const val FLY = 19
   const val SURF = 57

@@ -578,6 +578,28 @@ internal constructor(
 
   fun speciesName(dexId: Int): String? = speciesRegistry?.get(dexId)?.name
 
+  /**
+   * Pokedex seen and owned counts, the way the client's dex tiers are built: owned is every
+   * species held in the party or PC, seen is that plus every species marked seen. [kantoOnly]
+   * limits both to the first 151, the ROM's Kanto dex.
+   */
+  fun dexCounts(kantoOnly: Boolean): Pair<Int, Int> {
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return 0 to 0
+    val owned =
+        (stored.pokemon + stored.pcStorage)
+            .map { de.fiereu.openmmo.common.clientSpeciesId(it.dexId) }
+            .filter { it >= 1 }
+            .toSet()
+    val seen =
+        owned +
+            stored.storyFlags
+                .filter { it.startsWith(de.fiereu.openmmo.server.game.services.DexProgressService.SEEN_FLAG_PREFIX) }
+                .mapNotNull { it.removePrefix(de.fiereu.openmmo.server.game.services.DexProgressService.SEEN_FLAG_PREFIX).toIntOrNull() }
+                .filter { it >= 1 }
+    val last = if (kantoOnly) 151 else Int.MAX_VALUE
+    return seen.count { it <= last } to owned.count { it <= last }
+  }
+
   fun leadSpeciesName(): String? =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.firstOrNull() }?.let { speciesName(it.dexId) }
 

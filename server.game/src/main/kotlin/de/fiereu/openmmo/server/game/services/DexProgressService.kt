@@ -87,7 +87,7 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
 
   private fun group(wireIds: Set<Int>): ByteArray = DexProgressGroups.encode(wireIds)
 
-  private companion object {
+  companion object {
     /** Covers the Dex-numbered range and the staged form block above 1079, with headroom. */
     const val LAST_WIRE_ID = DexProgressGroups.LAST_WIRE_ID
 

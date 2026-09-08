@@ -306,9 +306,19 @@ constructor(
           if (state.surfing && state.facingDirection == Direction.UP && facing == de.fiereu.openmmo.common.enums.TileBehavior.WATERFALL) waterfallPrompt(session, state, stored)
           else session.send(notice("Face a waterfall while surfing to use that."))
       FieldMoves.DIVE -> if (!divePrompt(session, state, stored, map)) session.send(notice("There is nowhere to dive here."))
-      FieldMoves.FLASH ->
-          if (map.lighting != de.fiereu.openmmo.common.enums.Lighting.REGULAR) runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
-          else session.send(notice("It is not dark here."))
+      FieldMoves.FLASH -> {
+        // fldeff_flash.c: only in a dark cave, once per stay (the flag), and the flag is what
+        // keeps the next floor lit and what going outdoors clears (MapScriptService).
+        val flashFlag = FieldMoves.flashActiveFlag(state.regionId)
+        when {
+          map.lighting == de.fiereu.openmmo.common.enums.Lighting.REGULAR -> session.send(notice("It is not dark here."))
+          flashFlag in stored.storyFlags -> session.send(notice("Flash is already lighting the way."))
+          else -> {
+            state.characterId?.let { characterStore.setStoryFlag(it, flashFlag) }
+            runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
+          }
+        }
+      }
       FieldMoves.FLY -> session.send(notice("Fly is not available on this server yet."))
       else -> log.info { "Field move $moveId has no overworld use" }
     }

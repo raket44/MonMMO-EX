@@ -560,6 +560,15 @@ class InterpretedScript(
                 val sailor = state.activeProgram.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: program.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: 5
                 if (ctx.isPlayerLeftOfNpc(sailor)) 1 else 0
               }
+              else if (function == "GetPokedexCount") {
+                // src/prof_pc.c: VAR_0x8004 0 = the Kanto dex, else national; 0x8005 seen, 0x8006
+                // owned; the answer itself is IsNationalPokedexEnabled. Oak's aides read 0x8006.
+                val kantoOnly = ctx.getVar(namespaced("VAR_0x8004")) == 0
+                val (seen, owned) = ctx.dexCounts(kantoOnly)
+                ctx.setVar(namespaced("VAR_0x8005"), seen)
+                ctx.setVar(namespaced("VAR_0x8006"), owned)
+                0
+              }
               else InterpreterSupport.SPECIALVAR_RESULTS[function]
                   ?: throw UnsupportedScriptCommandException(
                       program.id.stable, "specialvar $function", instruction.sourceLine)

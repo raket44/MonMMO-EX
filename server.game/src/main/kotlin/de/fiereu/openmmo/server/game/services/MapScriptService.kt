@@ -38,6 +38,7 @@ constructor(
     // applies: the FLAG_TEMP_* flags and setobjectxyperm placements. Keeping them made the
     // Cerulean policeman stay in front of the door after the S.S. Ticket, and cut trees cut.
     state.tileOverrides.clear()
+    if (charId != null) applyFlashState(session, charId, map)
     if (charId != null && resetMapLocalState(charId, map)) {
       npcService.refreshDynamicNpcs(session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
     }
@@ -75,6 +76,24 @@ constructor(
     scriptRunner.run(session, state, Script { ctx -> entry.forEach { it.run(ctx) } }, entityId = -1)
   }
 
+  /**
+   * overworld.c on a map load: outdoors clears FLAG_SYS_FLASH_ACTIVE; a dark cave with the flag
+   * still set loads fully lit (SetDefaultFlashLevel), so Flash carries from Rock Tunnel 1F to
+   * B1F instead of asking again on every floor (2026-09-08).
+   */
+  private fun applyFlashState(session: SessionContext, charId: Long, map: MapDef) {
+    val flag = FieldMoves.flashActiveFlag(map.regionId.toInt())
+    val stored = characterStore.getCharacter(charId) ?: return
+    if (flag !in stored.storyFlags) return
+    if (map.mapType in OUTDOORS) {
+      characterStore.clearStoryFlag(charId, flag)
+      return
+    }
+    if (map.lighting == de.fiereu.openmmo.common.enums.Lighting.DARK_FLASH_USABLE) {
+      session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket(0, lit = true))
+    }
+  }
+
   /** Clears this map's object placements and every temporary flag; true when anything was set. */
   private fun resetMapLocalState(charId: Long, map: MapDef): Boolean {
     val stored = characterStore.getCharacter(charId) ?: return false
@@ -99,6 +118,16 @@ constructor(
   }
 
   companion object {
+    /** IsMapTypeOutdoors: town, city, route, underwater and ocean route. */
+    private val OUTDOORS =
+        setOf(
+            de.fiereu.openmmo.common.enums.MapType.VILLAGE,
+            de.fiereu.openmmo.common.enums.MapType.CITY,
+            de.fiereu.openmmo.common.enums.MapType.ROUTE,
+            de.fiereu.openmmo.common.enums.MapType.UNDERWATER,
+            de.fiereu.openmmo.common.enums.MapType.UNKNOWN_0x06,
+        )
+
     fun entryScriptsKey(map: MapDef): Long =
         (map.regionId.toLong() and 0xFF shl 40) or
             (map.bankId.toLong() and 0xFF shl 20) or

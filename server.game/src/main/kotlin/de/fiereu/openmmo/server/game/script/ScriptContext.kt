@@ -56,6 +56,7 @@ internal constructor(
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry? = null,
     private val layoutVariants: de.fiereu.openmmo.server.game.services.LayoutVariants? = null,
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
+    private val tutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -385,12 +386,27 @@ internal constructor(
    * copyobjectxytoperm: an npc's current tile becomes its permanent one. The live tile is the
    * override a script already wrote, else the map's own placement.
    */
+  /**
+   * copyobjectxytoperm: the tile the npc stands on NOW becomes its template for later spawns -
+   * after the scripted walk that just moved it (Miguel beside the fossil he claimed), not the
+   * tile the map data lists. Re-sending the template tile here snapped him back mid-walk.
+   */
   fun copyNpcXyToPerm(localId: Int) {
-    val key = movement.npcXyOverrideKey(state, localId) ?: return
-    if (getVar(key) != 0) return
+    movement.npcXyOverrideKey(state, localId) ?: return
+    val walked = movement.scriptedNpcPose(state, localId)
     val info = characterId?.let { characters?.getCharacter(it)?.info } ?: return
-    val npc = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.npcs?.getOrNull(localId) ?: return
-    setNpcXyOverride(localId, npc.x, npc.y)
+    val npc = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.npcs?.firstOrNull { it.entityIdx == localId } ?: return
+    setNpcXyOverride(localId, walked?.x ?: npc.x, walked?.y ?: npc.y)
+  }
+
+  /**
+   * special ChooseMonForMoveTutor: the player picks the party member to teach the move the tutor
+   * index (VAR_0x8005) names; true once it sits in a slot, false when they back out.
+   */
+  suspend fun chooseMonForMoveTutor(tutorIndex: Int): Boolean {
+    val service = tutor ?: return false
+    holdScriptedFacing()
+    return service.tutor(session, state, entityId, tutorIndex)
   }
 
   /** checkpartymove: the party slot of the first monster knowing [moveId], PARTY_SIZE (6) if none. */

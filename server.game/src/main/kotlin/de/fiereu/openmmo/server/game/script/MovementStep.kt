@@ -4,9 +4,12 @@ import de.fiereu.openmmo.common.enums.Direction
 
 /**
  * One step of an applymovement sequence: either a walk one tile in [direction] or a turn in place
- * to face [direction]. [action] is the client movement-action byte (from packet captures: face
- * 0x00-0x03, walk 0x10-0x13); a whole sequence of these is sent in one movement packet. This is the
- * small game agnostic vocabulary scripts use.
+ * to face [direction]. [action] is the client movement-action byte, matched against the client's
+ * own table (f/l31, keyed by code and the packet's first byte): faces are 0x01 up, 0x02 left,
+ * 0x03 right and 0x04 DOWN - there is no 0x00 entry, so the GBA's FACE_DOWN byte was silently
+ * dropped and no npc ever turned to face a player standing below it (2026-09-07). Walks are the
+ * GBA codes (0x10-0x13 normal, 0x1D-0x20 fast, 0x35-0x38 faster). A whole sequence goes in one
+ * packet. This is the small game agnostic vocabulary scripts use.
  */
 enum class MovementStep(
     val direction: Direction,
@@ -17,7 +20,7 @@ enum class MovementStep(
     /** Client-side duration override in ms, for actions that hold (emote bubbles run 750ms). */
     val holdMs: Long? = null,
 ) {
-  FACE_DOWN(Direction.DOWN, false, 0x00),
+  FACE_DOWN(Direction.DOWN, false, 0x04),
   FACE_UP(Direction.UP, false, 0x01),
   FACE_LEFT(Direction.LEFT, false, 0x02),
   FACE_RIGHT(Direction.RIGHT, false, 0x03),

@@ -228,5 +228,9 @@ enum class MovementType(vararg mappings: Pair<Region, RegionMovementType>) {
 
   private val byRegion = mappings.toMap()
 
+  /** Walks around on its own (the client owns its tile): the WANDER_* and WALK_* patrol types. */
+  val wanders: Boolean
+    get() = name.startsWith("WANDER_") || name.startsWith("WALK_")
+
   fun forRegion(region: Region): RegionMovementType = byRegion[region] ?: RegionMovementType.NONE
 }

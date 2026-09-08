@@ -53,6 +53,7 @@ constructor(
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry? = null,
     private val layoutVariants: de.fiereu.openmmo.server.game.services.LayoutVariants? = null,
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
+    private val moveTutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
 ) {
   fun run(session: SessionContext, state: PlayerState, script: Script, entityId: Long) =
       runAll(session, state, listOf(script), entityId)
@@ -116,6 +117,7 @@ constructor(
             speciesRegistry,
             layoutVariants,
             banners,
+            moveTutor,
         )
     scope.launch {
       var finished = false

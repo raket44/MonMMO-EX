@@ -29,7 +29,7 @@ constructor(
     private val policy: InterestPolicy,
     private val mapLoadService: MapLoadService,
     private val characterStore: CharacterStore,
-    private val mapManager: de.fiereu.openmmo.maps.MapManager,
+    private val mapManager: de.fiereu.openmmo.maps.MapManager? = null,
 ) {
 
   /** Spawn the player into its map group and exchange entity snapshots with its observers. */
@@ -96,7 +96,7 @@ constructor(
       policy.filter(ctx, neighbourhood(key).flatMap { interestManager.members(it) }.toSet())
 
   private fun neighbourhood(key: MapInterestKey): List<MapInterestKey> {
-    val map = mapManager.getMap(key.regionId, key.bankId, key.mapId) ?: return listOf(key)
+    val map = mapManager?.getMap(key.regionId, key.bankId, key.mapId) ?: return listOf(key)
     return listOf(key) + map.connections.map { MapInterestKey(key.regionId, it.targetBank, it.targetMap) }
   }
 

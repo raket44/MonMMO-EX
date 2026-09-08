@@ -531,6 +531,13 @@ class InterpretedScript(
               ctx.setVar(namespaced("VAR_0x8004"), idx)
               ctx.setVar(namespaced("VAR_0x8005"), second)
             }
+            "ChooseMonForMoveTutor" -> {
+              val taught =
+                  tracedWait(ctx, "move tutor") {
+                    ctx.chooseMonForMoveTutor(ctx.getVar(namespaced("VAR_0x8005")))
+                  }
+              ctx.setVar(namespaced("VAR_RESULT"), if (taught) 1 else 0)
+            }
             in InterpreterSupport.NOOP_SPECIALS -> Unit
             else ->
                 throw UnsupportedScriptCommandException(
@@ -1500,6 +1507,7 @@ class InterpretedScript(
             when (arg.token) {
               "TRUE" -> 1
               "FALSE" -> 0
+              in InterpreterSupport.MOVE_TUTOR_INDEXES -> InterpreterSupport.MOVE_TUTOR_INDEXES.getValue(arg.token)
               // A map-local object id used as a value (setvar VAR_LAST_TALKED, LOCALID_X): the
               // pret local id, one above the object index, so a later applymovement finds it.
               else ->

@@ -118,7 +118,29 @@ internal object InterpreterSupport {
   val BUILTIN_MENUS: Map<String, Int> = emptyMap()
 
   /** Specials the executor implements for real. */
-  val IMPLEMENTED_SPECIALS = setOf("HealPlayerParty", "SetVermilionTrashCans", "RockSmashWildEncounter")
+  val IMPLEMENTED_SPECIALS =
+      setOf("HealPlayerParty", "SetVermilionTrashCans", "RockSmashWildEncounter", "ChooseMonForMoveTutor")
+
+  /**
+   * The tutor indexes `setvar VAR_0x8005, <symbol>` hands ChooseMonForMoveTutor: pokefirered's
+   * MOVETUTOR_* (include/constants/moves.h) and pokeemerald's TUTOR_MOVE_* (constants/party_menu.h),
+   * each in its ROM's own order. MoveTutorService maps the index back to a move per region.
+   */
+  val MOVE_TUTOR_INDEXES: Map<String, Int> =
+      listOf(
+              "MEGA_PUNCH", "SWORDS_DANCE", "MEGA_KICK", "BODY_SLAM", "DOUBLE_EDGE", "COUNTER", "SEISMIC_TOSS",
+              "MIMIC", "METRONOME", "SOFT_BOILED", "DREAM_EATER", "THUNDER_WAVE", "EXPLOSION", "ROCK_SLIDE",
+              "SUBSTITUTE", "FRENZY_PLANT", "BLAST_BURN", "HYDRO_CANNON")
+          .withIndex()
+          .associate { (index, name) -> "MOVETUTOR_$name" to index } +
+          listOf(
+                  "MEGA_PUNCH", "SWORDS_DANCE", "MEGA_KICK", "BODY_SLAM", "DOUBLE_EDGE", "COUNTER", "SEISMIC_TOSS",
+                  "MIMIC", "METRONOME", "SOFT_BOILED", "DREAM_EATER", "THUNDER_WAVE", "EXPLOSION", "ROCK_SLIDE",
+                  "SUBSTITUTE", "DYNAMIC_PUNCH", "ROLLOUT", "PSYCH_UP", "SNORE", "ICY_WIND", "ENDURE", "MUD_SLAP",
+                  "ICE_PUNCH", "SWAGGER", "SLEEP_TALK", "SWIFT", "DEFENSE_CURL", "THUNDER_PUNCH", "FIRE_PUNCH",
+                  "FURY_CUTTER")
+              .withIndex()
+              .associate { (index, name) -> "TUTOR_MOVE_$name" to index }
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
 

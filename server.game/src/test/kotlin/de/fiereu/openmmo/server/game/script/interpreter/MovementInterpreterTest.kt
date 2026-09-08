@@ -157,7 +157,8 @@ class MovementInterpreterTest :
           interpreted(listOf("faceplayer", "end")).run(fixture.ctx)
 
           fixture.session.sent shouldBe
-              listOf(DialogDataPacket(fixture.npcEntityId, 0, 1, byteArrayOf(0x00)))
+              // Face DOWN is 0x04 on this client; 0x00 has no table entry and is dropped.
+              listOf(DialogDataPacket(fixture.npcEntityId, 0, 1, byteArrayOf(0x04)))
         }
       }
 
@@ -178,7 +179,7 @@ class MovementInterpreterTest :
                       fixture.npcEntityId,
                       0,
                       3,
-                      byteArrayOf(0x11, 0x12, 0x00),
+                      byteArrayOf(0x11, 0x12, 0x04),
                   ))
         }
       }

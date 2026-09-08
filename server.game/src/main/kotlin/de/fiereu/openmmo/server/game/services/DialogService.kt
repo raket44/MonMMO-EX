@@ -119,6 +119,28 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
           )
           .unk
 
+  /**
+   * The starter-pick window (client f/X50 in its species mode, kind 0x23) over any list of species
+   * - the party, for a tutor's "which one?" - returning the 1-based button pressed, 0 when the
+   * window was closed. Species 0 renders as "???" (an egg).
+   */
+  suspend fun chooseFromSpecies(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      speciesIds: List<Int>,
+  ): Int {
+    val detail = ByteArray(1 + speciesIds.size * 2)
+    detail[0] = speciesIds.size.toByte()
+    speciesIds.forEachIndexed { i, id ->
+      detail[1 + i * 2] = (id and 0xFF).toByte()
+      detail[2 + i * 2] = (id shr 8).toByte()
+    }
+    return showChoiceAndWait(
+            session, state, textId, STARTER_PICK, NO_ENTITY, contextValue = STARTER_CONTEXT, detail = detail)
+        .unk
+  }
+
   /** Show a ROM-backed yes/no box and return true for YES. */
   suspend fun askYesNo(
       session: SessionContext,

@@ -79,6 +79,7 @@ constructor(
     val state = ctx.attributes[PLAYER_STATE] ?: return
     state.loadedMaps.clear()
     state.spawnedNpcMaps.clear()
+    state.scriptedNpcPoses.clear()
     state.loadedMaps.add(mapCacheKey(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt()))
   }
 

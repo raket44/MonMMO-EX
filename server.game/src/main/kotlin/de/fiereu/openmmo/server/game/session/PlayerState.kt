@@ -185,6 +185,14 @@ data class PlayerState(
      */
     val spawnedNpcMaps: MutableSet<Int> = ConcurrentHashMap.newKeySet(),
     /**
+     * Where a script walked a map npc this visit, keyed by [scriptedNpcKey]. The template tile is
+     * only right until the first applymovement: a later applymovement starts from here, faceplayer
+     * measures from here and copyobjectxytoperm copies this tile (Miguel snapped back to his desk
+     * mid-walk when copyobjectxytoperm re-sent his template tile, 2026-09-07). Cleared with
+     * [spawnedNpcMaps], since the client keeps the npc until then.
+     */
+    val scriptedNpcPoses: MutableMap<Long, ScriptedNpcPose> = ConcurrentHashMap(),
+    /**
      * The map whose entry scripts already ran for this arrival. The client re-requests its player
      * several times while loading an outdoor map (once per connection), and each request used to
      * re-run the ON_TRANSITION script and re-take the script lock - one logical arrival must run
@@ -234,6 +242,12 @@ data class PendingEvolution(val targetWire: Int, val consumeItemId: Int = 0)
 /** Packs a map address into one key for [PlayerState.loadedMaps]. */
 fun mapCacheKey(regionId: Int, bankId: Int, mapId: Int): Int =
     (regionId shl 16) or (bankId shl 8) or mapId
+
+/** A map npc's tile and facing after a scripted walk. */
+data class ScriptedNpcPose(val x: Int, val y: Int, val facing: Direction)
+
+fun scriptedNpcKey(regionId: Int, bankId: Int, mapId: Int, localId: Int): Long =
+    (mapCacheKey(regionId, bankId, mapId).toLong() shl 8) or (localId.toLong() and 0xFF)
 
 /**
  * Key for [PlayerState.doorApproach]: the map a warp fires IN plus the partner-door tile its row

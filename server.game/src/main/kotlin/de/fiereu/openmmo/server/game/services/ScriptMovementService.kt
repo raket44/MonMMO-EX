@@ -9,6 +9,8 @@ import de.fiereu.openmmo.net.game.packets.DialogDataPacket
 import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.server.game.script.MovementStep
 import de.fiereu.openmmo.server.game.session.PlayerState
+import de.fiereu.openmmo.server.game.session.ScriptedNpcPose
+import de.fiereu.openmmo.server.game.session.scriptedNpcKey
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
@@ -111,8 +113,22 @@ constructor(
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
     val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    // Where the npc really stands: a scripted walk earlier this visit, else its spawned tile
+    // (story placement and setobjectxyperm included), else the DS event table.
+    val stored = characterStore.getCharacter(charId)
     val npc =
-        map?.npcs?.firstOrNull { it.entityIdx == localId }?.let { Pose(it.x, it.y, it.facing) }
+        scriptedNpcPose(state, localId)
+            ?: map?.npcs?.firstOrNull { it.entityIdx == localId }?.let {
+              val spawned =
+                  npcService.effectiveNpc(
+                      info.positionRegionId.toInt(),
+                      info.positionBankId.toInt(),
+                      info.positionMapId.toInt(),
+                      it,
+                      stored?.storyFlags.orEmpty(),
+                      stored?.storyVars.orEmpty())
+              Pose(spawned.x, spawned.y, spawned.facing)
+            }
             ?: ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
             ?: return
     val entityId =
@@ -140,7 +156,19 @@ constructor(
         sendActions(session, info.id, listOf(glance))
       }
     }
-    drive(session, entityId, npc, steps)
+    val end = drive(session, entityId, npc, steps)
+    state.scriptedNpcPoses[scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)] =
+        ScriptedNpcPose(end.x, end.y, end.facing)
+  }
+
+  /** The tile a script walked this npc to earlier in the visit, if any. */
+  fun scriptedNpcPose(state: PlayerState, localId: Int): Pose? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    val pose =
+        state.scriptedNpcPoses[
+            scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)]
+            ?: return null
+    return Pose(pose.x, pose.y, pose.facing)
   }
 
   /** Starts concurrent NPC movement paths. */
@@ -293,6 +321,8 @@ constructor(
   fun removeNpc(session: SessionContext, state: PlayerState, localId: Int) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
+    state.scriptedNpcPoses.remove(
+        scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId))
     npcService.despawnNpc(
         session,
         info.positionRegionId.toInt(),
@@ -394,8 +424,13 @@ constructor(
             stored?.storyFlags.orEmpty(),
             stored?.storyVars.orEmpty(),
         )
-    val dx = info.positionX.toInt() - npc.x
-    val dy = info.positionY.toInt() - npc.y
+    val walked = scriptedNpcPose(state, template.entityIdx)
+    // A wanderer's tile is the client's to know: measuring against its template tile turned it
+    // the wrong way whenever it had strolled off. The player's facing (kept current by the turn
+    // packet) is the truth for those; the delta only serves npcs that stand where the server put them.
+    if (walked == null && npc.movementType.wanders) return null
+    val dx = info.positionX.toInt() - (walked?.x ?: npc.x)
+    val dy = info.positionY.toInt() - (walked?.y ?: npc.y)
     if (Math.abs(dx) + Math.abs(dy) != 1) return null
     return when {
       dy > 0 -> MovementStep.FACE_DOWN

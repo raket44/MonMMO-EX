@@ -22,7 +22,7 @@ constructor(
     private val scriptRunner: ScriptRunner,
     private val npcService: NpcService,
     private val characterStore: de.fiereu.openmmo.server.game.storage.CharacterStore,
-    private val layoutVariants: LayoutVariants,
+    private val layoutVariants: LayoutVariants? = null,
 ) {
   fun onMapEnter(session: SessionContext, state: PlayerState, map: MapDef) {
     // A script is already running for this player, do not start a second one on top of it.
@@ -43,7 +43,7 @@ constructor(
     // Story-dependent map variants: the client's block grid follows the flags already set.
     if (charId != null) {
       val flags = characterStore.getCharacter(charId)?.storyFlags ?: emptySet()
-      layoutVariants.onMapEnter(session, state) { it in flags }
+      layoutVariants?.onMapEnter(session, state) { it in flags }
     }
     val entry = entryScripts.onEntry(state, map)
     val hasArrivalTrigger = entryScripts.hasCoordinate(map, state.x.toInt(), state.y.toInt())

@@ -65,6 +65,8 @@ private data class PendingMoveLearn(
     val charId: Long,
     val entityId: Long,
     val offered: List<Short>,
+    /** A move tutor waiting on the forget dialog: true once the move took a slot, false otherwise. */
+    val onAnswer: ((Boolean) -> Unit)? = null,
 )
 
 /**
@@ -212,6 +214,15 @@ constructor(
     return true
   }
 
+  /**
+   * Offers [moveId] to a full-moveset monster outside battle (a move tutor): the client opens its
+   * forget dialog and answers through the level-up reply packet, which then calls [onAnswer].
+   */
+  fun offerMove(session: SessionContext, charId: Long, monId: Long, moveId: Short, onAnswer: (Boolean) -> Unit) {
+    pendingLearns[monId] = PendingMoveLearn(charId, monId, listOf(moveId), onAnswer)
+    session.send(MoveLearnPromptPacket(monId, MoveLearnPromptPacket.ASK, moveId))
+  }
+
   /** Applies the moveset the player picked after a level up. */
   fun onMoveLearnReply(event: PacketEvent<MoveLearnReplyPacket>) {
     val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
@@ -224,19 +235,28 @@ constructor(
     else pendingLearns[reply.entityId] = pending.copy(offered = remaining)
     if (reply.slot < 0) {
       log.info { "char=$charId declined move ${reply.moveId} for ${reply.entityId}" }
+      pending.onAnswer?.invoke(false)
       return
     }
     val stored =
         characterStore.getCharacter(charId)?.pokemon?.firstOrNull { it.id == reply.entityId }
-            ?: return
+    if (stored == null) {
+      pending.onAnswer?.invoke(false)
+      return
+    }
     val moves = stored.moves.toMutableList()
     if (!moveLearner.replace(moves, reply.slot.toInt(), reply.moveId)) {
       log.warn {
         "char=$charId picked an invalid slot ${reply.slot} for move ${reply.moveId} on ${reply.entityId}"
       }
+      pending.onAnswer?.invoke(false)
       return
     }
-    if (moves == stored.moves) return
+    if (moves == stored.moves) {
+      pending.onAnswer?.invoke(false)
+      return
+    }
+    pending.onAnswer?.invoke(true)
     characterStore.updatePokemon(charId, stored.copy(moves = moves))
     characterStore.flushCharacterAsync(charId)
     // A battle still running holds its own copy, and the next reward writes that copy back over

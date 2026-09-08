@@ -42,6 +42,10 @@ constructor(
             (f[0].toInt() to f[1].toInt()) to Destination(f[2], f[3].toInt(), f[4].toInt(), f[5])
           } ?: emptyMap()
 
+  /** The floor tile's elevation in the client's scale (GBA elevation - 1); 0, "any", when unknown. */
+  private fun landingElevation(map: de.fiereu.openmmo.maps.MapDef, x: Int, y: Int): Int =
+      map.tileAt(x, y)?.let { ((it.collision.toInt() and 0xFF) shr 2) - 1 }?.takeIf { it >= 0 } ?: 0
+
   suspend fun onFly(event: PacketEvent<FlyRequestPacket>) {
     val session = event.session
     val state = session.attributes[PLAYER_STATE] ?: return
@@ -96,7 +100,11 @@ constructor(
             targetMapId = map.mapId,
             targetX = dest.x,
             targetY = dest.y,
-            targetElevation = 3,
+            // The landing tile's own floor elevation, client scale (GBA - 1), as npc spawns do.
+            // A fixed 3 put the player a level above Cerulean's ground, and the client refuses
+            // every step between mismatched elevations: stuck until the door, whose warp tile
+            // is elevation "any" (2026-09-08). The GM teleport lands at 0 and always walked.
+            targetElevation = landingElevation(map, dest.x, dest.y),
             exitFacing = de.fiereu.openmmo.common.enums.Direction.DOWN,
         ))
   }

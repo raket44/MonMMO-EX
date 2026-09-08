@@ -142,6 +142,7 @@ constructor(
     onSuspend<FaceDirectionPacket> { event -> movementService.onFaceDirection(event) }
 
     onSuspend<EntityInteractPacket> { event -> interactionService.onEntityInteract(event) }
+    on<de.fiereu.openmmo.net.game.packets.EntityActionRequestPacket> { event -> interactionService.onFieldMoveRequest(event) }
     onSuspend<TileInteractPacket> { event -> interactionService.onTileInteract(event) }
     onSuspend<DialogActionResponsePacket> { event -> dialogService.onInteractive(event) }
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }

@@ -34,7 +34,32 @@ constructor(
     private val scriptRunner: ScriptRunner,
     private val scriptMovement: ScriptMovementService,
     private val ocarinas: OcarinaService,
+    private val banners: FieldMoveBanners,
 ) {
+
+  /**
+   * The party menu's field-move use: the client sends c2s 0x14 with the monster's entity id and
+   * the MOVE id as the action type (Flash arrived as actionType 148 on a party member,
+   * 2026-09-08, and went unhandled - only the ocarina route reached [useFieldMove]). The
+   * monster must be in the party and know the move; the rest is what pressing A would do.
+   */
+  fun onFieldMoveRequest(event: PacketEvent<de.fiereu.openmmo.net.game.packets.EntityActionRequestPacket>) {
+    val session = event.session
+    val state = session.attributes[PLAYER_STATE] ?: return
+    val stored = currentCharacter(state) ?: return
+    val moveId = event.packet.actionType.toInt()
+    if (moveId !in FieldMoves.MOVE_IDS) {
+      log.info { "[FieldMove] char=${state.characterId} action $moveId on ${event.packet.targetEntityId} is not a field move" }
+      return
+    }
+    val mon = stored.pokemon.firstOrNull { it.id == event.packet.targetEntityId }
+    if (mon == null || mon.moves.none { it.id.toInt() == moveId }) {
+      log.info { "[FieldMove] char=${state.characterId} move $moveId: monster ${event.packet.targetEntityId} not in party or does not know it" }
+      return
+    }
+    log.info { "[FieldMove] char=${state.characterId} uses move $moveId from monster ${mon.id}" }
+    useFieldMove(session, state, moveId)
+  }
 
   /**
    * A DS-map npc: the ROM's own event table gives its script index, the client's bank/map pair is
@@ -315,6 +340,10 @@ constructor(
           flashFlag in stored.storyFlags -> session.send(notice("Flash is already lighting the way."))
           else -> {
             state.characterId?.let { characterStore.setStoryFlag(it, flashFlag) }
+            // FireRed's EventScript_FldEffFlash has no dofieldeffect - on the cartridge the field
+            // effect itself shows the monster - so the banner is sent here; Emerald's UseFlash
+            // reaches it through dofieldeffect.
+            if (!hoenn) banners.send(session, stored, state.regionId, FieldMoves.FLASH)
             runFieldScript(session, state, if (hoenn) "EventScript_UseFlash" else "EventScript_FldEffFlash", -1)
           }
         }

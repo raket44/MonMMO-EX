@@ -31,6 +31,9 @@ object FieldMoves {
   fun flashActiveFlag(regionId: Int): String =
       "${(Region.byId(regionId) ?: Region.KANTO).name.lowercase()}/FLAG_SYS_FLASH_ACTIVE"
 
+  /** Every move the party menu may offer for field use. */
+  val MOVE_IDS: Set<Int> get() = setOf(CUT, FLY, SURF, STRENGTH, FLASH, ROCK_SMASH, WATERFALL, DIVE)
+
   const val CUT = 15
   const val FLY = 19
   const val SURF = 57

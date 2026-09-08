@@ -725,6 +725,14 @@ constructor(
       log.error { "Could not pay char=${battle.charId} the $prize prize" }
     }
     endBattle(battle, BattleResult.VICTORY, battle.rewardedWinners, if (paid) prize else 0)
+    // The battle-end line only announces the prize; the client's wallet is a separate number that
+    // nothing refreshed, so the HUD kept the old total until a shop or a relog (2026-09-08). The
+    // same delta the shop sends after a purchase carries the new balance.
+    if (paid) {
+      characterStore.getCharacter(battle.charId)?.let {
+        battle.session.send(de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket(money = it.info.money))
+      }
+    }
   }
 
   /**

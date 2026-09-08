@@ -13,4 +13,10 @@ data class PipelineOptions(
     val frameLogging: Boolean = false,
     /** A connection that has not completed the session handshake by then is closed (port scanners). */
     val handshakeTimeout: Duration = 60.seconds,
+    /**
+     * A connection that has sent nothing for this long is closed (ReadIdleCloser). The client
+     * heartbeats far more often than this while alive; only a peer that vanished without a FIN or
+     * RST reaching us goes quiet this long.
+     */
+    val readIdleTimeout: Duration = 3.minutes,
 )

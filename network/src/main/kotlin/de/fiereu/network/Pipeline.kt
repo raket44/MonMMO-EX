@@ -61,6 +61,11 @@ fun installPipeline(
       PipelineNames.WRITE_TIMEOUT,
       WriteTimeoutHandler(options.writeTimeout.inWholeSeconds, TimeUnit.SECONDS),
   )
+  pipeline.addLast(
+      PipelineNames.READ_IDLE,
+      io.netty.handler.timeout.IdleStateHandler(options.readIdleTimeout.inWholeSeconds, 0, 0, TimeUnit.SECONDS),
+  )
+  pipeline.addLast(PipelineNames.READ_IDLE_CLOSER, ReadIdleCloser())
   if (options.frameLogging) {
     pipeline.addLast(PipelineNames.FRAME_LOGGER, LoggingHandler(LogLevel.TRACE))
   }

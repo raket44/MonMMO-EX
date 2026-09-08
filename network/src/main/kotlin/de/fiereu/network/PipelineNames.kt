@@ -2,6 +2,8 @@ package de.fiereu.network
 
 object PipelineNames {
   const val WRITE_TIMEOUT = "write-timeout"
+  const val READ_IDLE = "read-idle"
+  const val READ_IDLE_CLOSER = "read-idle-closer"
   const val FRAME_LOGGER = "frame-logger"
   const val FRAME_DECODER = "frame-decoder"
   const val FRAME_ENCODER = "frame-encoder"

@@ -216,12 +216,24 @@ class PretGbaParser(
     return re.find(file.readText())?.groupValues?.get(1) ?: ""
   }
 
+  /**
+   * Seams the gates make unreachable are not sent. FireRed's Saffron City is entered only through
+   * its four gate buildings: Routes 5-8 do not connect to the city but to a 48x40 dummy layout
+   * (SaffronCity_Connection) and the city's own connections back to the routes are one-way. On the
+   * cartridge the gate walls hide both; the client draws every neighbour it is told about, so it
+   * showed the dummy and the routes' blocks through Saffron's tileset from every side (the
+   * "walk through walls into Saffron" garbage, 2026-09-08). No neighbours for the city, none to
+   * or from the dummy.
+   */
   private fun parseConnections(mapJson: JsonObject, ctx: Context): List<ParsedConnection> =
       mapJson["connections"]?.jsonArrayOrNull()?.mapNotNull { conn ->
         val obj = conn.jsonObject
+        val selfName = mapJson["id"]?.jsonPrimitive?.contentOrNull ?: ""
+        if (selfName in GATED_CITIES || selfName.endsWith("_CONNECTION")) return@mapNotNull null
         val dirName = obj["direction"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
         val dir = region.dirMap[dirName] ?: error("Unknown connection direction '$dirName'")
         val mapName = obj["map"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+        if (mapName.endsWith("_CONNECTION")) return@mapNotNull null
         val addr = ctx.addresses[mapName] ?: return@mapNotNull null
         ParsedConnection(
             direction = dir,
@@ -498,6 +510,11 @@ class PretGbaParser(
   }
 
   private fun wireBank(groupIndex: Int): Int = groupIndex + region.gbaBankOffset
+
+  private companion object {
+    /** Cities whose route connections exist only for the gates' sake (see parseConnections). */
+    val GATED_CITIES = setOf("MAP_SAFFRON_CITY")
+  }
 
   private fun JsonElement.jsonArrayOrNull() = (this as? JsonArray)
 }

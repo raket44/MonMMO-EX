@@ -152,6 +152,16 @@ data class PlayerState(
      */
     @field:Volatile var scriptOwnsMapEntry: Boolean = false,
     /**
+     * A step accepted while the previous tile's script was still finishing (a one-line
+     * lockall/releaseall takes a millisecond, the runner's release a little longer, and a
+     * running player's steps arrive in pairs inside that window) lands on a tile whose own
+     * trigger must not be lost. The GBA never loses it: a script finishes or locks before the
+     * next step can begin. The runner fires this tile's trigger once the script is over, if the
+     * player still stands there. Vermilion's ticket check follows a one-line reset trigger on
+     * the tile before it, and a runner past the sailor was the symptom (2026-09-08).
+     */
+    @field:Volatile var deferredTrigger: DeferredTrigger? = null,
+    /**
      * Creative mode for world-building admins: collision and wild encounters are skipped, so
      * walking anywhere to place warps is unobstructed. Toggled by /gm, developer-gated.
      */
@@ -245,6 +255,9 @@ fun mapCacheKey(regionId: Int, bankId: Int, mapId: Int): Int =
     (regionId shl 16) or (bankId shl 8) or mapId
 
 /** A map npc's tile and facing after a scripted walk. */
+/** A tile whose coordinate trigger waits for the running script to end, see [PlayerState.deferredTrigger]. */
+data class DeferredTrigger(val regionId: Int, val bankId: Int, val mapId: Int, val x: Int, val y: Int)
+
 data class ScriptedNpcPose(val x: Int, val y: Int, val facing: Direction)
 
 fun scriptedNpcKey(regionId: Int, bankId: Int, mapId: Int, localId: Int): Long =

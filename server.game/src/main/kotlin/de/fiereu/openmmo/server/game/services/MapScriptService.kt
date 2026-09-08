@@ -4,6 +4,7 @@ import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRunner
+import de.fiereu.openmmo.server.game.session.DeferredTrigger
 import de.fiereu.openmmo.server.game.session.PlayerState
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -112,7 +113,18 @@ constructor(
       x: Int,
       y: Int,
   ): Boolean {
-    if (state.blocksNewScript) return false
+    if (state.blocksNewScript) {
+      // The previous tile's script is still finishing (no dialog is up, or this step would have
+      // been refused): remember this tile so the runner fires its trigger when that script ends.
+      // Counted as handled so the step rolls no encounter on top of it.
+      if (state.scriptRunning && !state.dialogVisible && entryScripts.hasCoordinate(map, x, y)) {
+        state.deferredTrigger =
+            DeferredTrigger(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt(), x, y)
+        return true
+      }
+      return false
+    }
+    state.deferredTrigger = null
     val charId = state.characterId ?: return false
     val script = entryScripts.atCoordinate(charId, map, x, y) ?: return false
     scriptRunner.run(session, state, script, entityId = -1)

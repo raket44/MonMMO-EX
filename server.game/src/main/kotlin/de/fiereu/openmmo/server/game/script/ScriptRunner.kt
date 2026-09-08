@@ -158,8 +158,27 @@ constructor(
         // "poof"). Hold delays carry no such risk; clearing them is the point.
         runCatching { movementService.awaitSelfActions(state) }
         movementService.releasePlayerHold(session, state)
+        runDeferredTrigger(session, state)
       }
     }
+  }
+
+  /**
+   * The coordinate trigger of a tile the player stepped onto while this script was still
+   * finishing, see [PlayerState.deferredTrigger]. Only while they still stand on that tile of
+   * that map - a warp or a step away since means the trigger was never entered.
+   */
+  private fun runDeferredTrigger(session: SessionContext, state: PlayerState) {
+    val pending = state.deferredTrigger ?: return
+    state.deferredTrigger = null
+    if (state.regionId != pending.regionId || state.bankId != pending.bankId || state.mapId != pending.mapId) return
+    if (state.x.toInt() != pending.x || state.y.toInt() != pending.y) return
+    if (state.blocksNewScript) return
+    val charId = state.characterId ?: return
+    val map = mapManager.getMap(pending.regionId, pending.bankId, pending.mapId) ?: return
+    val script = entryScripts.atCoordinate(charId, map, pending.x, pending.y) ?: return
+    log.info { "Coordinate trigger at (${pending.x}, ${pending.y}) deferred behind the previous script fires now" }
+    run(session, state, script, entityId = -1)
   }
 
   private fun describe(script: Script): String =

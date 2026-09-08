@@ -284,7 +284,12 @@ constructor(
       sessionRegistry.getByCharacterId(trade.chars[1 - side])
 
   private companion object {
-    const val OPEN_FLAGS: Byte = 1
+    /**
+     * s2c 0x50 flags: bit0 -> nr0.BY0 enables the bag lists and the money box (f/Dt0 KT0 gates),
+     * bit1 -> nr0.cOM2 enables the party slots up top (f/Dt0 E0[side][i].dA(lD())). With only
+     * bit0 the circles never opened the party picker (2026-09-08).
+     */
+    const val OPEN_FLAGS: Byte = 3
     /** The client's trade list container (f/Cy 10; our enum calls ordinal 10 BATTLE_BOX_1). */
     const val TRADE_LIST_CONTAINER: Byte = 10
     const val ACTION_CANCEL = 0

@@ -85,8 +85,8 @@ constructor(
     // Temporarily INFO: hunting the phantom steps around script locks - shows every client
     // step with the lock state it met.
     log.info {
-      "Movement: (${msg.x}, ${msg.y}) dir=${msg.direction} locked=${state.blocksPlayerInput} " +
-          "script=${state.scriptRunning}"
+      "Movement: char=$charId (${msg.x}, ${msg.y}) dir=${msg.direction} state=0x%02x".format(msg.stateRaw) +
+          " locked=${state.blocksPlayerInput} script=${state.scriptRunning}"
     }
 
     val stored = characterStore.getCharacter(charId) ?: return

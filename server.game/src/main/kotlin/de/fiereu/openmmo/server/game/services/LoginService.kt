@@ -277,13 +277,8 @@ constructor(
     sessionRegistry.bindCharacter(ctx, charId)
     log.info { "Player selected character '${stored.info.name}' (id=$charId)" }
 
-    // Everyone owns a bicycle here - there is no bike-shop quest to gate it behind. Granted
-    // before the character payload goes out, so the bag arrives with it already inside.
-    if (BICYCLE_ITEM_ID !in stored.items) {
-      characterStore.addItem(charId, BICYCLE_ITEM_ID, 1)
-      characterStore.flushCharacterAsync(charId)
-      log.info { "Granted bicycle to character $charId" }
-    }
+    // The Bicycle is earned through each region's own bike quest (StoryPlayerService maps every
+    // region's bike item onto the client's Bicycle); the old unconditional grant is gone.
     // The twelve bicycle colors, as cosmetic-category items. PROVEN by two live sessions: the
     // customization dialog's option lists are built from the bag (when the 793-cosmetic grant
     // was in the bag, EVERY mount was listed; with an empty bag only the client's two built-in

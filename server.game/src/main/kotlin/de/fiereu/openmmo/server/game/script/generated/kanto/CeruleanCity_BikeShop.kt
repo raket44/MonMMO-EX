@@ -1,6 +1,8 @@
 package de.fiereu.openmmo.server.game.script.generated.kanto
 
 import de.fiereu.openmmo.dialog.generated.kanto.CeruleanCity_BikeShop
+import de.fiereu.openmmo.items.generated.Items
+import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptContext
 
@@ -23,8 +25,24 @@ import de.fiereu.openmmo.server.game.script.ScriptContext
  * ```
  */
 internal object CeruleanCity_BikeShop_EventScript_Clerk : Script {
-  override suspend fun run(ctx: ScriptContext) =
-      TODO("port CeruleanCity_BikeShop_EventScript_Clerk")
+  override suspend fun run(ctx: ScriptContext) {
+    if (ctx.isFlagSet(KantoFlags.FLAG_GOT_BICYCLE)) return ctx.say(CeruleanCity_BikeShop.HowDoYouLikeNewBicycle)
+    if (ctx.isFlagSet(KantoFlags.FLAG_GOT_BIKE_VOUCHER)) {
+      // The Fan Club chairman's voucher buys the bike; the ROM's message-then-add pair.
+      ctx.say(CeruleanCity_BikeShop.OhBikeVoucherHereYouGo)
+      if (!ctx.giveItem(Items.BICYCLE)) return ctx.say(CeruleanCity_BikeShop.MakeRoomForBicycle)
+      ctx.announceItem(Items.BICYCLE)
+      ctx.sign(CeruleanCity_BikeShop.ExchangedVoucherForBicycle)
+      ctx.setFlag(KantoFlags.FLAG_GOT_BICYCLE)
+      ctx.resolveItem("ITEM_BIKE_VOUCHER")?.let { ctx.takeItem(it) }
+      return ctx.say(CeruleanCity_BikeShop.ThankYouComeAgain)
+    }
+    // The shop: the ROM never checks the price - a 1,000,000 bike nobody can afford. The buy
+    // choice is the only real option, so the clerk apologises straight away.
+    ctx.say(CeruleanCity_BikeShop.WelcomeToBikeShop)
+    ctx.say(CeruleanCity_BikeShop.SorryYouCantAffordIt)
+    ctx.say(CeruleanCity_BikeShop.ThankYouComeAgain)
+  }
 }
 
 /**

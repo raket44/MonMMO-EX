@@ -141,6 +141,13 @@ constructor(
     // as bogus standalone cosmetics (and login would reclaim them anyway).
     if (itemId in CosmeticsRegistry.variantAltItems) return false
     if (!characters.addItem(characterId, itemId, quantity)) return false
+    // The bike quests: Hoenn's Mach/Acro Bike and the DS Bicycles are regional key items the
+    // scripts check for, but riding is tied to the client's own Bicycle (360), so that comes
+    // along with the first of them. There is no unconditional grant any more.
+    if (quantity > 0 && itemId in REGIONAL_BIKE_ITEMS) {
+      val bag = characters.getCharacter(characterId)?.items.orEmpty()
+      if (CLIENT_BICYCLE_ITEM !in bag) characters.addItem(characterId, CLIENT_BICYCLE_ITEM, 1)
+    }
     val stored = characters.getCharacter(characterId) ?: return false
     session.send(storyItemStacksPacket(stored.items))
     worldState.refreshUnlocks(session, stored)
@@ -208,3 +215,9 @@ fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
 
 /** Low 16 bits of every bag stack uid the client is given (`itemId shl 16 or tag`); TradeService tells stacks from monsters by it. */
 internal const val ITEM_ENTITY_TAG = 0x5000L
+
+/** The client's Bicycle (FRLG ITEM_BICYCLE 360), the item its bike feature is tied to. */
+const val CLIENT_BICYCLE_ITEM = 360
+
+/** Hoenn's Mach Bike (1259) and Acro Bike (1272), the DS Bicycles (region * 1000 + 433). */
+val REGIONAL_BIKE_ITEMS = setOf(1259, 1272, 2433, 3433, 4433)

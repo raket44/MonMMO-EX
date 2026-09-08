@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.script.generated.hoenn
 
 import de.fiereu.openmmo.dialog.generated.hoenn.MauvilleCity_BikeShop
+import de.fiereu.openmmo.story.generated.hoenn.HoennFlags
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptContext
 
@@ -18,9 +19,47 @@ import de.fiereu.openmmo.server.game.script.ScriptContext
  * end
  * ```
  */
+/**
+ * Rydel's Cycles. The ROM offers Mach or Acro through a shop menu the client cannot draw; this
+ * client rides one Bicycle whichever the key item, so a far-away traveller gets the Mach Bike
+ * straight away (and with it the client's Bicycle, through the regional-bike rule). The switch
+ * counter keeps the ROM's Mach/Acro swap.
+ */
 internal object MauvilleCity_BikeShop_EventScript_Rydel : Script {
-  override suspend fun run(ctx: ScriptContext) =
-      TODO("port MauvilleCity_BikeShop_EventScript_Rydel")
+  override suspend fun run(ctx: ScriptContext) {
+    if (ctx.isFlagSet(HoennFlags.FLAG_RECEIVED_BIKE)) return switchBikes(ctx)
+    if (!ctx.isFlagSet(HoennFlags.FLAG_DECLINED_BIKE)) ctx.say(MauvilleCity_BikeShop.RydelGreeting)
+    if (!ctx.askYesNo(MauvilleCity_BikeShop.DidYouComeFromFarAway)) {
+      ctx.setFlag(HoennFlags.FLAG_DECLINED_BIKE)
+      return ctx.say(MauvilleCity_BikeShop.GuessYouDontNeedBike)
+    }
+    ctx.setFlag(HoennFlags.FLAG_RECEIVED_BIKE)
+    ctx.say(MauvilleCity_BikeShop.ChoseMachBike)
+    ctx.resolveItem("ITEM_MACH_BIKE")?.let { if (ctx.giveItem(it)) ctx.announceItem(it) }
+    ctx.say(MauvilleCity_BikeShop.ComeBackToSwitchBikes)
+  }
+
+  private suspend fun switchBikes(ctx: ScriptContext) {
+    if (!ctx.askYesNo(MauvilleCity_BikeShop.WantToSwitchBikes)) return ctx.say(MauvilleCity_BikeShop.HappyYouLikeIt)
+    ctx.say(MauvilleCity_BikeShop.IllSwitchBikes)
+    val mach = ctx.resolveItem("ITEM_MACH_BIKE")
+    val acro = ctx.resolveItem("ITEM_ACRO_BIKE")
+    if (mach == null || acro == null) return ctx.say(MauvilleCity_BikeShop.OhYourBikeIsInPC)
+    when {
+      ctx.itemCount(acro) > 0 -> {
+        ctx.say(MauvilleCity_BikeShop.ExchangedAcroForMach)
+        ctx.takeItem(acro)
+        ctx.giveItem(mach)
+      }
+      ctx.itemCount(mach) > 0 -> {
+        ctx.say(MauvilleCity_BikeShop.ExchangedMachForAcro)
+        ctx.takeItem(mach)
+        ctx.giveItem(acro)
+      }
+      else -> return ctx.say(MauvilleCity_BikeShop.OhYourBikeIsInPC)
+    }
+    ctx.say(MauvilleCity_BikeShop.ComeBackToSwitchBikes)
+  }
 }
 
 internal object MauvilleCity_BikeShop_EventScript_Assistant : Script {

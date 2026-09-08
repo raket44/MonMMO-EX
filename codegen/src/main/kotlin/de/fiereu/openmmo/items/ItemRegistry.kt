@@ -32,6 +32,12 @@ class ItemRegistry @Inject constructor() {
       register(item, wireId)
       byGbaConstant[constant] = item
     }
+    // The DS games' Bicycle (item 433 in DPPt, HGSS and BW): Eterna's Rad Rickshaw, Goldenrod's
+    // bike shop and Unova's Route 3 day-care man hand it out; StoryPlayerService turns every
+    // regional bike into the client's Bicycle (360).
+    add(2, "BICYCLE_UNOVA", 433, "Bicycle")
+    add(3, "BICYCLE_SINNOH", 433, "Bicycle")
+    add(4, "BICYCLE_JOHTO", 433, "Bicycle")
     // FireRed (region 0 table).
     add(0, "OAKS_PARCEL", 349, "Oak's Parcel")
     add(0, "POKE_FLUTE", 350, "Poké Flute")

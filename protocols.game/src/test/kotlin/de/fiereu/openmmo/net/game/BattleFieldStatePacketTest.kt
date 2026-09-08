@@ -181,6 +181,35 @@ class BattleFieldStateSamplesTest :
                 opponentActive = listOf(0, 1),
                 format = BattleFormat.DOUBLES,
             ))
+        // A player with a hat and a bike variant (mask bit 15 -> a variant byte per slot): RaKeT's
+        // stored set on 2026-09-08, for the client-reader oracle.
+        write(
+            "field-cosmetics.bin",
+            BattleFieldStatePacket(
+                playerName = "RaKeT",
+                playerId = 2327266921807450112L,
+                gender = 0,
+                appearance =
+                    SkinSet(
+                        1,
+                        listOf(
+                                Skin(SkinSlot.HAT, 80u, 0u),
+                                Skin(SkinSlot.HAIR, 30u, 45u),
+                                Skin(SkinSlot.EYES, 2u, 0u),
+                                Skin(SkinSlot.FACIAL_HAIR, 1u, 42u),
+                                Skin(SkinSlot.TOP, 5u, 5u),
+                                Skin(SkinSlot.FOOTWEAR, 0u, 5u),
+                                Skin(SkinSlot.LEGGINGS, 0u, 5u),
+                                Skin(SkinSlot.BIKE, 62u, 1u, 1u))
+                            .associateBy { it.slot }),
+                background = 0,
+                opposing = OpposingSide.WILD,
+                trainerId = 0,
+                playerParty = listOf(mon(0, 66, 23)),
+                playerActive = listOf(0),
+                opponentParty = listOf(foe(0, 66, 23)),
+                opponentActive = listOf(0),
+            ))
         write(
             "field-horde.bin",
             BattleFieldStatePacket(

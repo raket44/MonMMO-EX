@@ -116,7 +116,12 @@ class ItemRegistry @Inject constructor() {
     idsByItem.merge(item, ids.toList()) { old, new -> (old + new).distinct().sorted() }
   }
 
-  fun get(id: Int): ItemDef? = byId[id]
+  /**
+   * The client lists every 5000-band item a second time at +1000 (6233 and 5233 are both Metal
+   * Coat, name for name across the whole band). An id from that mirror band that nothing claims
+   * resolves to the 5000-band item, so a held 6233 is a Metal Coat to battle and evolution alike.
+   */
+  fun get(id: Int): ItemDef? = byId[id] ?: if (id in MIRROR_ITEM_BAND) byId[id - 1000] else null
 
   fun idsOf(item: ItemDef): List<Int> = idsByItem[item].orEmpty()
 
@@ -162,6 +167,9 @@ class ItemRegistry @Inject constructor() {
 
   private companion object {
     const val GBA_REGION_TABLE = 1000
+
+    /** The client's second copy of the 5000-band items: 5000-band id + 1000. */
+    val MIRROR_ITEM_BAND = 6000..6999
     val GEN3_ALIASES =
         mapOf(
             "PARLYZ_HEAL" to "PARALYZE_HEAL",

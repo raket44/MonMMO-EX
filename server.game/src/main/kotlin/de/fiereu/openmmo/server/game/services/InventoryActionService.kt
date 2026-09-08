@@ -431,6 +431,9 @@ object EvolutionTable {
   /** ROM methods where the player uses an item on the monster directly. */
   private val ITEM_METHODS = setOf(8, 16, 17)
 
+  /** The client's second copy of the 5000-band items, each at its 5000-band id + 1000. */
+  private val MIRROR_ITEM_BAND = 6000..6999
+
   /** The client evolution-method enum (f/kx) by ordinal - the words the dump uses. */
   private val METHOD_WORDS =
       listOf(
@@ -505,6 +508,18 @@ object EvolutionTable {
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
 
   /**
+   * Whether client item [itemId] (held or used) is the item an entry's [param] names. The json
+   * carries client ids (5233 Metal Coat), the csv the pre-shift ROM value (233), and the client
+   * lists every 5000-band item a second time at +1000 (6233 is also Metal Coat, name for name
+   * across all 429 of them); an Onix traded holding THAT Metal Coat stayed an Onix (2026-09-08).
+   */
+  private fun itemMatches(itemId: Int, param: Int): Boolean {
+    if (itemId == 0) return false
+    val canonical = if (itemId in MIRROR_ITEM_BAND) itemId - 1000 else itemId
+    return canonical == param || canonical == param + 5000 || canonical + 5000 == param
+  }
+
+  /**
    * The species [fromWire] becomes when it arrives by trade holding [heldItem] (client item id)
    * in exchange for [partnersWire] (the wires that went the other way), or null. ROM methods 5
    * TRADE, 6 TRADE_WITH_ITEM (Metal Coat, King's Rock, ...), 7 TRADE_FOR_OPPOSITE (Shelmet and
@@ -516,7 +531,7 @@ object EvolutionTable {
             entry.from == fromWire &&
                 when (entry.method) {
                   5 -> true
-                  6 -> heldItem != 0 && (heldItem == entry.param || heldItem + 5000 == entry.param || heldItem == entry.param + 5000)
+                  6 -> itemMatches(heldItem, entry.param)
                   7 -> entry.param in partnersWire
                   else -> false
                 }
@@ -530,7 +545,7 @@ object EvolutionTable {
             entry.from == fromWire &&
                 when (entry.method) {
                   5 -> true
-                  6 -> heldItem != 0 && (heldItem == entry.param || heldItem + 5000 == entry.param || heldItem == entry.param + 5000)
+                  6 -> itemMatches(heldItem, entry.param)
                   7 -> entry.param in partnersWire
                   else -> false
                 }
@@ -590,9 +605,7 @@ object EvolutionTable {
                   13 -> context.level >= entry.param && (context.seed shr 16) % 10 < 5
                   19, // LEVEL_ITEM_DAY and NIGHT: the held item is the condition; the server
                   20 -> // has no day cycle, so either time works.
-                  context.heldItem != 0 &&
-                          (context.heldItem == entry.param ||
-                              context.heldItem == entry.param + 5000)
+                  itemMatches(context.heldItem, entry.param)
                   23 -> context.level >= entry.param && !context.female // LEVEL_MALE
                   24 -> context.level >= entry.param && context.female // LEVEL_FEMALE
                   else -> false
@@ -606,7 +619,7 @@ object EvolutionTable {
           .firstOrNull {
             it.from == fromWire &&
                 it.method in ITEM_METHODS &&
-                (it.param + 5000 == clientItemId || it.param == clientItemId)
+                itemMatches(clientItemId, it.param)
           }
           ?.to
 }

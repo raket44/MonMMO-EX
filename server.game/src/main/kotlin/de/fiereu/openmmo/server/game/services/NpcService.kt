@@ -376,6 +376,19 @@ constructor(
         } else {
           0
         }
+    // The position's elevation byte (client f/Wi1, one below the GBA number: floor 3 -> 2). It
+    // was a constant 2, so an npc on a raised tile - the Fan Club chairman and his clerk on their
+    // dais, GBA elevation 4 - sat a level under its own floor: drawn clipped by the tiles, no
+    // hitbox for the player at the counter (2026-09-08). The floor tile's elevation decides;
+    // the template's own value (minus one) is the fallback, 2 when it says "any".
+    val floor = mapManager.getMap(regionId, bankId, mapId)?.tileAt(npc.x, npc.y)
+    val floorElevation = floor?.let { ((it.collision.toInt() and 0xFF) shr 2) - 1 } ?: -1
+    val elevation =
+        when {
+          floorElevation >= 0 -> floorElevation
+          npc.elevation > 0 -> npc.elevation - 1
+          else -> 2
+        }
     return NpcSpawnPacket(
         entityId = entityId,
         spriteRegionId = regionId,
@@ -388,7 +401,7 @@ constructor(
         x = npc.x,
         y = npc.y,
         facing = npc.facing.ordinal,
-        unk5 = 2,
+        unk5 = elevation,
         unk6 = 8,
     )
   }

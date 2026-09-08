@@ -280,13 +280,23 @@ constructor(
     // The Bicycle is earned through each region's own bike quest (StoryPlayerService maps every
     // region's bike item onto the client's Bicycle); the old unconditional grant is gone, and a
     // Bicycle that grant handed out is reclaimed until a quest earns it back.
+    // Earned = the quest flag (Kanto's voucher exchange, Rydel's gift) or a DS Bicycle, which only
+    // a script hands out. A Hoenn Mach/Acro Bike without Rydel's flag is the old mistaken grant
+    // under its new wire id, so it goes back with the Bicycle.
     val earnedBike =
         stored.storyFlags.contains(de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_BICYCLE) ||
-            stored.items.keys.any { it in REGIONAL_BIKE_ITEMS }
-    if (CLIENT_BICYCLE_ITEM in stored.items && !earnedBike) {
-      characterStore.addItem(charId, CLIENT_BICYCLE_ITEM, -(stored.items[CLIENT_BICYCLE_ITEM] ?: 1))
-      characterStore.flushCharacterAsync(charId)
-      log.info { "Reclaimed the granted bicycle from character $charId" }
+            stored.storyFlags.contains(de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_BIKE) ||
+            stored.items.keys.any { it in DS_BICYCLE_ITEMS }
+    if (!earnedBike) {
+      var reclaimed = 0
+      for (itemId in listOf(CLIENT_BICYCLE_ITEM) + HOENN_BIKE_ITEMS) {
+        val held = stored.items[itemId] ?: continue
+        if (held > 0 && characterStore.addItem(charId, itemId, -held)) reclaimed++
+      }
+      if (reclaimed > 0) {
+        characterStore.flushCharacterAsync(charId)
+        log.info { "Reclaimed $reclaimed granted bike item(s) from character $charId" }
+      }
     }
     // The twelve bicycle colors, as cosmetic-category items. PROVEN by two live sessions: the
     // customization dialog's option lists are built from the bag (when the 793-cosmetic grant

@@ -219,5 +219,11 @@ internal const val ITEM_ENTITY_TAG = 0x5000L
 /** The client's Bicycle (FRLG ITEM_BICYCLE 360), the item its bike feature is tied to. */
 const val CLIENT_BICYCLE_ITEM = 360
 
-/** Hoenn's Mach Bike (1259) and Acro Bike (1272), the DS Bicycles (region * 1000 + 433). */
-val REGIONAL_BIKE_ITEMS = setOf(1259, 1272, 2433, 3433, 4433)
+/** Hoenn's Mach Bike (1259) and Acro Bike (1272). */
+val HOENN_BIKE_ITEMS = listOf(1259, 1272)
+
+/** The DS games' Bicycle, region * 1000 + 433. */
+val DS_BICYCLE_ITEMS = setOf(2433, 3433, 4433)
+
+/** Every regional bike item; any of them brings the client's Bicycle along. */
+val REGIONAL_BIKE_ITEMS = HOENN_BIKE_ITEMS.toSet() + DS_BICYCLE_ITEMS

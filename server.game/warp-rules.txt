@@ -4,6 +4,10 @@
 #
 #   region;type;fire;press;arrival
 #
+#   GBA arrow warps ARRIVE with a step: the cartridge walks you one tile off the arrow tile the
+#   way you face (the S.S. Anne gangway, the Underground Path stairs). Resting there left the
+#   client armed on a warp tile, and its next step faded to black with no map coming (2026-09-08).
+#
 #   region : 0 Kanto, 1 Hoenn, 3 Sinnoh, 4 Johto (2 Unova needs no rows - its warps carry
 #            their own directions from the ROM)
 #   type   : Gen 4 = the ROM tile-behavior byte (decimal, names from the decomps);
@@ -68,10 +72,10 @@
 0;LADDER;CONTACT;-;REST
 0;STAIR_WARP_EAST;STAND;RIGHT;REST
 0;STAIR_WARP_WEST;STAND;LEFT;REST
-0;NORTH_ARROW_WARP;STAND;UP;REST
-0;SOUTH_ARROW_WARP;STAND;DOWN;REST
-0;EAST_ARROW_WARP;STAND;RIGHT;REST
-0;WEST_ARROW_WARP;STAND;LEFT;REST
+0;NORTH_ARROW_WARP;STAND;UP;STEP
+0;SOUTH_ARROW_WARP;STAND;DOWN;STEP
+0;EAST_ARROW_WARP;STAND;RIGHT;STEP
+0;WEST_ARROW_WARP;STAND;LEFT;STEP
 
 # ---- Hoenn (1) ----
 1;DOOR;STEP;UP;STEP
@@ -79,7 +83,7 @@
 1;LADDER;CONTACT;-;REST
 1;STAIR_WARP_EAST;STAND;RIGHT;REST
 1;STAIR_WARP_WEST;STAND;LEFT;REST
-1;NORTH_ARROW_WARP;STAND;UP;REST
-1;SOUTH_ARROW_WARP;STAND;DOWN;REST
-1;EAST_ARROW_WARP;STAND;RIGHT;REST
-1;WEST_ARROW_WARP;STAND;LEFT;REST
+1;NORTH_ARROW_WARP;STAND;UP;STEP
+1;SOUTH_ARROW_WARP;STAND;DOWN;STEP
+1;EAST_ARROW_WARP;STAND;RIGHT;STEP
+1;WEST_ARROW_WARP;STAND;LEFT;STEP

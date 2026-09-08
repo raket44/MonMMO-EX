@@ -200,12 +200,12 @@ class ScriptSupportAnalyzer(
           "getplayerxy",
           "trainerbattle_no_intro",
           "showobjectat",
-          "hideobjectat" -> args.size == 2
+          "hideobjectat",
+          "setobjectmovementtype" -> args.size == 2
           in InterpreterSupport.DEFEATED_BRANCHES -> args.size == 2
           "giveitem_msg" -> args.size in 2..4
           "setobjectxy",
           "setobjectxyperm",
-          "setobjectmovementtype",
           "warp" -> args.size == 3
           "multichoice" -> args.size == 4
           "multichoicedefault",

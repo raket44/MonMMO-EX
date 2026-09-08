@@ -297,6 +297,33 @@ internal constructor(
   suspend fun giveItem(item: ItemDef, quantity: Int = 1): Boolean =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.giveItem(session, state, item, quantity)
 
+  /** The client's "You found a {00}!" toast for an item a script handed over. */
+  fun announceItem(item: de.fiereu.openmmo.items.ItemDef, quantity: Int = 1) {
+    fun stringArg(id: Int, text: String) =
+        de.fiereu.openmmo.net.game.packets.ServerMessageArg(
+            argId = id.toByte(),
+            type = 5,
+            hasExtra = false,
+            extra = 0,
+            longValue = null,
+            intValue = null,
+            stringValue = text,
+            shortValues = null,
+        )
+    val packet =
+        if (quantity == 1) {
+          de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
+              FOUND_ITEM_STRING, listOf(stringArg(0, item.name)), true, null)
+        } else {
+          de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
+              FOUND_ITEMS_STRING,
+              listOf(stringArg(0, quantity.toString()), stringArg(1, item.name)),
+              true,
+              null)
+        }
+    send(packet)
+  }
+
   /** Take an item back out of the bag, the decomp removeitem. False when the bag lacks it. */
   suspend fun takeItem(item: ItemDef, quantity: Int = 1): Boolean = giveItem(item, -quantity)
 
@@ -747,6 +774,9 @@ internal constructor(
     // Sign boxes have no speaker, npc boxes point at the entity.
     const val SIGN = 3
     const val NPC = 4
+    // Client string table (strings_en.xml): "You found a {00}!" / "You found {00} {01}(s)!"
+    const val FOUND_ITEM_STRING = 6063
+    const val FOUND_ITEMS_STRING = 6066
     const val FEMALE: Byte = 1
     const val STORY_PLAYER_UNAVAILABLE = "Story player service is unavailable"
   }

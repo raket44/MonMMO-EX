@@ -1080,31 +1080,7 @@ class InterpretedScript(
       ctx: ScriptContext,
       item: de.fiereu.openmmo.items.ItemDef,
       quantity: Int,
-  ) {
-    fun stringArg(id: Int, text: String) =
-        de.fiereu.openmmo.net.game.packets.ServerMessageArg(
-            argId = id.toByte(),
-            type = 5,
-            hasExtra = false,
-            extra = 0,
-            longValue = null,
-            intValue = null,
-            stringValue = text,
-            shortValues = null,
-        )
-    val packet =
-        if (quantity == 1) {
-          de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
-              FOUND_ITEM_STRING, listOf(stringArg(0, item.name)), true, null)
-        } else {
-          de.fiereu.openmmo.net.game.packets.ServerMessagePacket(
-              FOUND_ITEMS_STRING,
-              listOf(stringArg(0, quantity.toString()), stringArg(1, item.name)),
-              true,
-              null)
-        }
-    ctx.send(packet)
-  }
+  ) = ctx.announceItem(item, quantity)
 
   /** Only the yes/no menu is modeled; the analyzer admits no other multichoice. */
   private suspend fun runMultichoice(
@@ -1625,9 +1601,6 @@ class InterpretedScript(
     const val GBA_VALUE_MASK = 0xFFFF
     const val FRAME_MILLIS = 17L
     const val MAX_DELAY_MILLIS = 5_000L
-    // Client string table (strings_en.xml): "You found a {00}!" / "You found {00} {01}(s)!"
-    const val FOUND_ITEM_STRING = 6063
-    const val FOUND_ITEMS_STRING = 6066
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1

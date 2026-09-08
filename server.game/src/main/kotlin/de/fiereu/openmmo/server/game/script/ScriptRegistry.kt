@@ -10,6 +10,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
+/** Script labels whose retail behaviour differs from the ROM's; see the Kotlin ports. */
+private val RETAIL_KOTLIN_FIRST = setOf("Route4_EventScript_MegaPunchTutor", "Route4_EventScript_MegaKickTutor")
+
 internal fun gbaScriptSource(regionId: Int): String? =
     when (Region.byId(regionId)) {
       Region.KANTO -> "firered"
@@ -80,6 +83,12 @@ class ScriptRegistry(
           "No Kotlin script resolves for forced override $kotlinOverride (label $scriptLabel)")
     }
 
+    // Retail rewrote a few npcs outright (the Route 4 karate brothers hand over TMs instead of
+    // opening a party menu); their Kotlin ports carry that behaviour and beat the ROM script.
+    if (scriptLabel in RETAIL_KOTLIN_FIRST && kotlin != null) {
+      log.info { "[ScriptResolver] KOTLIN_RETAIL $scriptId" }
+      return kotlin
+    }
     val support =
         if (interpreted is InterpretedScript) supportAnalyzer.analyze(interpreted) else null
     if (support?.complete == true) {

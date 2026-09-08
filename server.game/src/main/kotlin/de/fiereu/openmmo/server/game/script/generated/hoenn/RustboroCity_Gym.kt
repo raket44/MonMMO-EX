@@ -52,7 +52,9 @@ internal object RustboroCity_Gym_EventScript_Roxanne : Script {
 }
 
 private suspend fun giveRockTomb(ctx: ScriptContext) {
-  if (ctx.giveItem(Items.TM39)) {
+  // TM39 by the Gen 3 move (Rock Tomb): the generated Items.TM39 is the Gen 5-numbered entry.
+  val rockTomb = checkNotNull(ctx.itemByScriptConstant("ITEM_TM39")) { "TM39 (Rock Tomb) is not in the catalogue" }
+  if (ctx.giveItem(rockTomb)) {
     ctx.setFlag(HoennFlags.FLAG_RECEIVED_TM_ROCK_TOMB)
     ctx.say(RustboroCity_Gym.ExplainRockTomb)
   }

@@ -324,6 +324,9 @@ internal constructor(
     send(packet)
   }
 
+  /** A ROM script item constant ("ITEM_TM39") resolved the way the interpreter resolves it. */
+  fun itemByScriptConstant(token: String): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(token)
+
   /** Grant by raw client item id, for items the registry lists under several ids. */
   suspend fun giveItemById(itemId: Int, quantity: Int = 1): Boolean =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.giveItemById(session, state, itemId, quantity)

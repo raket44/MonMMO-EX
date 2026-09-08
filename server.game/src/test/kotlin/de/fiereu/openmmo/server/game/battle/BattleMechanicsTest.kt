@@ -155,6 +155,33 @@ class BattleMechanicsTest :
         wild.currentHp shouldBe wild.maxHp - wild.maxHp / 8
       }
 
+      test("poison still ticks on the turn a foe faints when another foe is waiting") {
+        val player = state(PIDGEOT, 60, listOf(TACKLE), PLAYER_ID)
+        player.status = StatusCondition.POISON
+        val first = state(RATTATA, 5, listOf(SPLASH), WILD_ID)
+        val second = state(RATTATA, 5, listOf(SPLASH), WILD_ID + 1)
+        val instance =
+            BattleInstance(1L, 100L, FakeSession(100L), listOf(player), listOf(first, second), BattleRng(1))
+        val events = engine.resolveTurn(instance, TACKLE)
+        first.fainted shouldBe true
+        events.filterIsInstance<BattleEvent.Line>().count {
+          it.targetId == PLAYER_ID && it.line == BattleLine.POISON_DAMAGE
+        } shouldBe 1
+        player.currentHp shouldBe player.maxHp - player.maxHp / 8
+      }
+
+      test("no poison tick on the turn the last foe faints") {
+        val player = state(PIDGEOT, 60, listOf(TACKLE), PLAYER_ID)
+        player.status = StatusCondition.POISON
+        val wild = state(RATTATA, 5, listOf(SPLASH), WILD_ID)
+        val events = engine.resolveTurn(battle(player, wild, 1), TACKLE)
+        wild.fainted shouldBe true
+        events.filterIsInstance<BattleEvent.Line>().none {
+          it.targetId == PLAYER_ID && it.line == BattleLine.POISON_DAMAGE
+        } shouldBe true
+        player.currentHp shouldBe player.maxHp
+      }
+
       test("a sleeping monster loses its turn and counts down") {
         val player = state(PIDGEOT, 60, listOf(SPLASH), PLAYER_ID)
         val wild = state(SNORLAX, 50, listOf(TACKLE), WILD_ID)

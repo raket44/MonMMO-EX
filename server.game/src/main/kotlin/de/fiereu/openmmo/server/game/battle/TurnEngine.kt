@@ -322,7 +322,11 @@ constructor(
       if (!wasCharging && action.attacker.chargingMoveId != 0) charging += action.attacker
       if (battle.opponentActives().all { it.fainted } || battle.playerActives().all { it.fainted }) break
     }
-    if (battle.playerActives().any { !it.fainted } && battle.opponentActives().any { !it.fainted }) endOfTurn(battle, events)
+    // End-of-turn effects run whenever the battle goes on, replacement pending or not - the
+    // cartridges tick poison on the survivor before the next monster comes out. Gating on both
+    // sides' ACTIVES standing skipped the whole phase every time a foe fell, so a poisoned
+    // player who one-shot each opponent never took poison damage at all (2026-09-08).
+    if (battle.party.any { !it.fainted } && battle.opponent.any { !it.fainted }) endOfTurn(battle, events)
     for (mon in battle.actives()) mon.endTurn()
     return events
   }

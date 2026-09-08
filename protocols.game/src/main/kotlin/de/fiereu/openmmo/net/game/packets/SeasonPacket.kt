@@ -22,8 +22,11 @@ enum class Season(val id: Int) {
      * The real northern-hemisphere season in the world clock zone: Dec-Feb winter, Mar-May spring,
      * Jun-Aug summer, Sep-Nov autumn - not the Gen 5 monthly rotation, which had September spring.
      */
+    /** A developer-forced season (/devseason); null follows the calendar. */
+    @Volatile var override: Season? = null
+
     fun current(): Season =
-        when (WorldClock.now().monthValue) {
+        override ?: when (WorldClock.now().monthValue) {
           12, 1, 2 -> WINTER
           3, 4, 5 -> SPRING
           6, 7, 8 -> SUMMER

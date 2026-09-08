@@ -206,4 +206,5 @@ fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
             ),
     )
 
-private const val ITEM_ENTITY_TAG = 0x5000L
+/** Low 16 bits of every bag stack uid the client is given (`itemId shl 16 or tag`); TradeService tells stacks from monsters by it. */
+internal const val ITEM_ENTITY_TAG = 0x5000L

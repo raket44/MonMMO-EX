@@ -190,7 +190,7 @@ constructor(
     on<LinkRequestPacket> { event -> socialRequestService.onLinkRequest(event) }
     on<DuelChallengePacket> { event -> socialRequestService.onDuelChallenge(event) }
     onSuspend<TradeActionPacket> { event -> tradeService.onAction(event) }
-    on<TradeSelectMonPacket> { event -> tradeService.onSelectMon(event) }
+    on<TradeSelectMonPacket> { event -> tradeService.onMoney(event) }
     on<LinkKickMemberPacket> { event -> linkService.onKick(event) }
 
     onSuspend<GuildCreatePacket> { event -> guildService.onCreateGuild(event) }

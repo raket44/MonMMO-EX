@@ -7,12 +7,15 @@ import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.net.game.packets.DuelInviteOutcomePacket
 import de.fiereu.openmmo.net.game.packets.DuelInvitePacket
+import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
 import de.fiereu.openmmo.net.game.packets.TradeActionPacket
 import de.fiereu.openmmo.net.game.packets.TradeListEntryPacket
 import de.fiereu.openmmo.net.game.packets.TradeSelectMonPacket
+import de.fiereu.openmmo.net.game.packets.battle.BattleBoardCellPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattlePartySlotSelectPacket
+import de.fiereu.openmmo.net.game.packets.battle.BattleStateSlotIntPacket
 import de.fiereu.openmmo.net.game.packets.battle.Listing
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
@@ -25,17 +28,25 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /**
- * Player-to-player trades. Bytecode-verified wire (client 31914):
- * - s2c 0x50 (f/jm0) opens the trade window f/Dt0: flags byte (bit0 must be set or the window
- *   refuses to offer anything - f/Dt0.Ad checks nr0.BY0), my side (0/1), peer name.
- * - c2s 0x52 (f/be1) offers the party monster in a slot; the server relays it to the peer as
- *   s2c 0x52 (f/PA1), whose client files it on the OTHER side of its window.
- * - c2s 0x50 (f/H02) is a button: 0 cancel (f/Dt0.Dt1), 1 lock list (UB1, string 1955),
- *   2 confirm (lz1, string 1956).
- * - s2c 0x51 (f/Yd1) is a state change: code byte (f/kG1: 1 completed, 2 canceled, 3 locked,
- *   4 confirmed) and the side it applies to. 3/4 set that side's flag in the window; 1/2 end the
- *   session and print "Trade completed." / "Trade canceled.".
- * Trades live only in memory; a disconnect cancels.
+ * Player-to-player trades. Wire decoded from client 31914 (window f/Dt0, session f/nr0), 2026-09-08:
+ * - s2c 0x50 (f/jm0) opens the window: flags byte (bit0 = offering allowed, nr0.BY0), my side
+ *   (0/1), peer name.
+ * - c2s 0x53 (f/uN1: short list, long uid, short quantity) is EVERY offer click, monsters and
+ *   items alike (f/JK.lj1): the uid is a party monster's or a bag stack's (`itemId shl 16 or
+ *   0x5000`, the id our bag snapshot hands out). A stack above one asks "How many {00} do you
+ *   want to trade?" (string 1962) and sends the count; a single one sends 1. Clicking an offered
+ *   monster again withdraws it.
+ * - The offerer's own monsters show through a container listing into f/Cy 10 (f/Y9 case 10 files
+ *   it into nr0.T90[my side]); the peer gets the whole monster as s2c 0x52 (f/PA1 -> T90[other]).
+ * - Item offers go out as s2c 0x54 (f/Dr: side, slot, uid, itemId, quantity, flag) to BOTH
+ *   players: each client files nr0.fB1[side][slot] and re-renders its bag for its own side.
+ * - c2s 0x52 (f/be1: int) is the money box (f/Dt0.Ad -> nr0.Kr0[me]); relayed as s2c 0x53
+ *   (f/QE0: side, amount) to both.
+ * - c2s 0x50 (f/H02) buttons: 0 cancel, 1 lock, 2 confirm. s2c 0x51 (f/Yd1) state = (code, side)
+ *   with code through f/kG1: 1 completed, 2 canceled, 4 LOCKED (nr0.D21), 3 CONFIRMED
+ *   (nr0.LpT6). 3 and 4 were the other way round here, so a peer's lock rendered as a confirm and
+ *   the Confirm button (enabled once both D21 flags are set) never lit.
+ * Trades live only in memory; a disconnect cancels. Nothing moves until both confirm.
  */
 @Singleton
 class TradeService
@@ -45,8 +56,12 @@ constructor(
     private val characterStore: CharacterStore,
 ) {
 
+  class ItemOffer(val itemId: Int, var quantity: Int)
+
   class Trade(val chars: LongArray) {
-    val offers = arrayOf(mutableListOf<Long>(), mutableListOf<Long>())
+    val monsters = arrayOf(mutableListOf<Long>(), mutableListOf<Long>())
+    val items = arrayOf(mutableListOf<ItemOffer>(), mutableListOf<ItemOffer>())
+    val money = IntArray(2)
     val locked = BooleanArray(2)
     val confirmed = BooleanArray(2)
 
@@ -66,65 +81,113 @@ constructor(
   }
 
   /**
-   * The offer the live client actually sends: clicking a party monster in the trade window writes
-   * c2s 0x53 (f/uN1: short slot, long monster id, short context) - the same opcode a battle uses
-   * to pick a party member, so the handler asks here first. The window then expects its OWN side
-   * updated by a monster delta (s2c 0x16, f/Y9) whose listing moves the monster into the TRADE
-   * container (f/Cy ZV1 = our ordinal 2): the client takes it off the party list and into
-   * nr0.T90[my side]. The peer gets s2c 0x52.
-   * Clicking an offered monster again withdraws it. True when a trade consumed the packet.
+   * An offer click in the trade window (c2s 0x53, shared with the battle party pick, so the
+   * handler asks here first). True when a trade consumed the packet.
    */
   fun onOffer(event: PacketEvent<BattlePartySlotSelectPacket>): Boolean {
     val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return false
     val trade = byChar[charId] ?: return false
     val side = trade.side(charId)
-    if (trade.locked[side]) return true
-    val party = characterStore.getCharacter(charId)?.pokemon ?: return true
-    val mon = party.firstOrNull { it.id == event.packet.pokemonEntityId } ?: return true
-    if (mon.id in trade.offers[side]) {
-      trade.offers[side] -= mon.id
-      log.info { "Trade: char=$charId withdraws ${mon.dexId}" }
-      // Back to its party slot: the delta's listing move (f/Y9) takes it off the own trade list.
-      event.session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(PokemonContainer.PARTY.ordinal.toByte(), mon.containerSlot)))
+    val packet = event.packet
+    val uid = packet.pokemonEntityId
+    log.info { "Trade: char=$charId offer click list=${packet.slotIndex} uid=$uid quantity=${packet.contextId}" }
+    if (trade.locked[side]) {
+      log.info { "Trade: char=$charId is locked, offer ignored" }
       return true
-    } else {
-      if (party.size - trade.offers[side].size <= 1) {
-        log.info { "Trade: char=$charId cannot offer its last party monster" }
-        return true
-      }
-      trade.offers[side] += mon.id
-      log.info { "Trade: char=$charId offers ${mon.dexId} (monster ${mon.id}, slot ${event.packet.slotIndex}, context ${event.packet.contextId})" }
-      peerSession(trade, side)?.send(TradeListEntryPacket(mon))
     }
-    // The offerer's own list: a listing move of that monster into the TRADE container (f/Cy ZV1,
-    // our ordinal 2). f/Y9 moves it from the party list into nr0.T90[my side] on the client.
-    val index = trade.offers[side].size - 1
-    event.session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(PokemonContainer.TRADE.ordinal.toByte(), index.toShort())))
+    val stored = characterStore.getCharacter(charId) ?: return true
+    val mon = stored.pokemon.firstOrNull { it.id == uid }
+    if (mon != null) {
+      offerMonster(event.session, trade, side, charId, stored.pokemon, mon)
+      return true
+    }
+    if ((uid and 0xFFFF) == ITEM_ENTITY_TAG) {
+      offerItem(trade, side, charId, stored.items, (uid shr 16).toInt(), packet.contextId.toInt())
+      return true
+    }
+    log.info { "Trade: char=$charId offered uid $uid, neither a party monster nor a bag stack" }
     return true
   }
 
-  fun onSelectMon(event: PacketEvent<TradeSelectMonPacket>) {
-    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
-    val trade = byChar[charId] ?: return
-    val side = trade.side(charId)
-    if (trade.locked[side]) return
-    val party = characterStore.getCharacter(charId)?.pokemon ?: return
-    val slot = event.packet.slotIndex
-    val mon = party.firstOrNull { it.containerSlot.toInt() == slot } ?: party.getOrNull(slot) ?: return
-    if (mon.id in trade.offers[side]) return
-    if (party.size - trade.offers[side].size <= 1) {
+  private fun offerMonster(session: SessionContext, trade: Trade, side: Int, charId: Long, party: List<Pokemon>, mon: Pokemon) {
+    val offered = trade.monsters[side]
+    if (mon.id in offered) {
+      offered -= mon.id
+      log.info { "Trade: char=$charId withdraws monster ${mon.dexId}#${mon.id}" }
+      // Back to its party slot: the listing move (f/Y9) takes it off the own trade list.
+      session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(PokemonContainer.PARTY.ordinal.toByte(), mon.containerSlot)))
+      return
+    }
+    if (party.size - offered.size <= 1) {
       log.info { "Trade: char=$charId cannot offer its last party monster" }
       return
     }
-    trade.offers[side] += mon.id
-    log.info { "Trade: char=$charId offers ${mon.dexId} (slot $slot)" }
+    offered += mon.id
+    log.info { "Trade: char=$charId offers monster ${mon.dexId}#${mon.id}" }
     peerSession(trade, side)?.send(TradeListEntryPacket(mon))
+    // The own side of the window: a listing move into the client's trade container (f/Cy 10).
+    session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(TRADE_LIST_CONTAINER, (offered.size - 1).toShort())))
+  }
+
+  private fun offerItem(trade: Trade, side: Int, charId: Long, bag: Map<Int, Int>, itemId: Int, quantity: Int) {
+    val held = bag[itemId] ?: 0
+    val offers = trade.items[side]
+    val existing = offers.indexOfFirst { it.itemId == itemId }
+    val wanted = quantity.coerceIn(0, held)
+    if (wanted <= 0) {
+      if (existing < 0) {
+        log.info { "Trade: char=$charId offered item $itemId x$quantity but holds $held" }
+        return
+      }
+      offers[existing].quantity = 0
+      log.info { "Trade: char=$charId withdraws item $itemId" }
+      broadcastItem(trade, side, existing, offers[existing])
+      return
+    }
+    val slot =
+        if (existing >= 0) {
+          offers[existing].quantity = wanted
+          existing
+        } else {
+          offers += ItemOffer(itemId, wanted)
+          offers.size - 1
+        }
+    log.info { "Trade: char=$charId offers item $itemId x$wanted (slot $slot)" }
+    broadcastItem(trade, side, slot, offers[slot])
+  }
+
+  /** s2c 0x54 to both players: each window files it under [side], the owner re-renders its bag. */
+  private fun broadcastItem(trade: Trade, side: Int, slot: Int, offer: ItemOffer) {
+    val packet =
+        BattleBoardCellPacket(
+            row = side.toByte(),
+            column = slot.toShort(),
+            entityId = (offer.itemId.toLong() shl 16) or ITEM_ENTITY_TAG,
+            valueA = offer.itemId.toShort(),
+            valueB = offer.quantity.toShort(),
+            flags = 0)
+    for (charId in trade.chars) sessionRegistry.getByCharacterId(charId)?.send(packet)
+  }
+
+  /** c2s 0x52: the money box. Relayed to both windows as s2c 0x53 (side, amount). */
+  fun onMoney(event: PacketEvent<TradeSelectMonPacket>) {
+    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
+    val trade = byChar[charId] ?: return
+    val side = trade.side(charId)
+    val held = characterStore.getCharacter(charId)?.info?.money ?: 0
+    val amount = event.packet.slotIndex.coerceIn(0, held)
+    log.info { "Trade: char=$charId offers money ${event.packet.slotIndex} (holds $held) -> $amount locked=${trade.locked[side]}" }
+    if (trade.locked[side]) return
+    trade.money[side] = amount
+    val packet = BattleStateSlotIntPacket(side.toByte(), amount)
+    for (id in trade.chars) sessionRegistry.getByCharacterId(id)?.send(packet)
   }
 
   suspend fun onAction(event: PacketEvent<TradeActionPacket>) {
     val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
     val trade = byChar[charId] ?: return
     val side = trade.side(charId)
+    log.info { "Trade: char=$charId action ${event.packet.action} (locked=${trade.locked[side]} confirmed=${trade.confirmed[side]})" }
     when (event.packet.action.toInt()) {
       ACTION_CANCEL -> cancel(trade, "char=$charId canceled")
       ACTION_LOCK -> {
@@ -150,7 +213,7 @@ constructor(
     val give = arrayOf(mutableListOf<Pokemon>(), mutableListOf<Pokemon>())
     for (side in 0..1) {
       val party = characterStore.getCharacter(trade.chars[side])?.pokemon ?: emptyList()
-      give[side] += trade.offers[side].mapNotNull { id -> party.firstOrNull { it.id == id } }
+      give[side] += trade.monsters[side].mapNotNull { id -> party.firstOrNull { it.id == id } }
     }
     for (side in 0..1) {
       val from = trade.chars[side]
@@ -165,15 +228,33 @@ constructor(
                 containerSlot = 0)
         characterStore.addPokemon(to, moved)
       }
+      for (offer in trade.items[side]) {
+        if (offer.quantity <= 0) continue
+        // The giver's stack is checked again at the moment of transfer; a short stack moves nothing.
+        if (!characterStore.addItem(from, offer.itemId, -offer.quantity)) {
+          log.info { "Trade: char=$from no longer holds ${offer.quantity} of item ${offer.itemId}" }
+          continue
+        }
+        characterStore.addItem(to, offer.itemId, offer.quantity)
+      }
+      val money = trade.money[side]
+      if (money > 0 && characterStore.addMoney(from, -money)) characterStore.addMoney(to, money)
     }
-    log.info { "Trade completed: ${trade.chars[0]} gave ${give[0].size}, ${trade.chars[1]} gave ${give[1].size}" }
+    log.info {
+      "Trade completed: ${trade.chars[0]} gave ${give[0].size} monsters, ${trade.items[0].sumOf { it.quantity }} items, $${trade.money[0]}; " +
+          "${trade.chars[1]} gave ${give[1].size} monsters, ${trade.items[1].sumOf { it.quantity }} items, $${trade.money[1]}"
+    }
     broadcast(trade, STATE_COMPLETED, 0)
     for (side in 0..1) {
       val charId = trade.chars[side]
       byChar.remove(charId)
+      characterStore.flushCharacterAsync(charId)
       val ctx = sessionRegistry.getByCharacterId(charId) ?: continue
-      val party = characterStore.getCharacter(charId)?.pokemon ?: continue
+      val stored = characterStore.getCharacter(charId) ?: continue
+      val party = stored.pokemon
       ctx.send(PokemonContainerPacket(container = PokemonContainer.PARTY, hasChange = true, delete = false, pokemon = party))
+      ctx.send(storyItemStacksPacket(stored.items))
+      ctx.send(LocalCharacterDeltaPacket(money = stored.info.money))
       // Trade evolutions: what this side just received evolves now, the way the cartridges do it
       // right after the trade, through the same cancellable prompt as any other evolution.
       val state = ctx.attributes[PLAYER_STATE] ?: continue
@@ -204,12 +285,15 @@ constructor(
 
   private companion object {
     const val OPEN_FLAGS: Byte = 1
+    /** The client's trade list container (f/Cy 10; our enum calls ordinal 10 BATTLE_BOX_1). */
+    const val TRADE_LIST_CONTAINER: Byte = 10
     const val ACTION_CANCEL = 0
     const val ACTION_LOCK = 1
     const val ACTION_CONFIRM = 2
+    // f/kG1 codes, matched to f/Yd1's switch: 4 sets nr0.D21 (locked), 3 sets nr0.LpT6 (confirmed).
     const val STATE_COMPLETED = 1
     const val STATE_CANCELED = 2
-    const val STATE_LOCKED = 3
-    const val STATE_CONFIRMED = 4
+    const val STATE_CONFIRMED = 3
+    const val STATE_LOCKED = 4
   }
 }

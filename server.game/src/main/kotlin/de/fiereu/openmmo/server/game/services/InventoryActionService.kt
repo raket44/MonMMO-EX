@@ -58,6 +58,7 @@ constructor(
     private val ocarinas: OcarinaService,
     private val moveTeacher: MoveTutorService,
     private val moves: de.fiereu.openmmo.moves.MoveRegistry,
+    private val trades: TradeService,
 ) {
 
   private val consumeScope =
@@ -311,6 +312,12 @@ constructor(
     val before = placements(characters.getCharacter(charId) ?: return)
     var changed = false
     for (move in packet.moves) {
+      // The trade window's party picker sends its choice as a drag into the client's TRADE
+      // container (f/Cy 2), and taking it back as the reverse drag. Neither touches storage.
+      if (move.toContainer == TRADE_CONTAINER || move.fromContainer == TRADE_CONTAINER) {
+        trades.onPartyMove(ctx, charId, move.fromContainer, move.fromSlot, move.toContainer)
+        continue
+      }
       val from = clientContainer(move.fromContainer)
       val to = clientContainer(move.toContainer)
       if (from == null || to == null) {
@@ -396,6 +403,8 @@ constructor(
   private companion object {
     /** Measured: the Ice Stone (id 21000) arrived as 18952. Validated against the bag per use. */
     const val ITEM_CODE_OFFSET = 2048
+    /** The client's trade container in its drag packets (f/Cy 2); the listing side uses 10. */
+    const val TRADE_CONTAINER = 2
 
     /** The client's container ordinals (f/Cy) as its drag packet writes them. */
     const val PC_CONTAINER = 0

@@ -109,6 +109,38 @@ constructor(
     return true
   }
 
+  /**
+   * A party drag in or out of the client's trade container (c2s 0x09 PartyReorder, f/Cy 2): the
+   * party picker behind the window's party slots sends `party slot -> trade`, taking one back
+   * sends `trade index -> party`. Party slots are 0-based party indexes.
+   */
+  fun onPartyMove(session: SessionContext, charId: Long, fromContainer: Int, fromSlot: Int, toContainer: Int) {
+    val trade = byChar[charId]
+    if (trade == null) {
+      log.info { "Trade: char=$charId dragged $fromContainer:$fromSlot -> $toContainer with no trade open" }
+      return
+    }
+    val side = trade.side(charId)
+    if (trade.locked[side]) {
+      log.info { "Trade: char=$charId is locked, drag ignored" }
+      return
+    }
+    val party = characterStore.getCharacter(charId)?.pokemon ?: return
+    val mon =
+        when (fromContainer) {
+          PARTY_CONTAINER -> party.getOrNull(fromSlot)
+          TRADE_CONTAINER -> trade.monsters[side].getOrNull(fromSlot)?.let { id -> party.firstOrNull { it.id == id } }
+          else -> null
+        }
+    if (mon == null) {
+      log.info { "Trade: char=$charId dragged $fromContainer:$fromSlot -> $toContainer, nothing there" }
+      return
+    }
+    val offering = toContainer == TRADE_CONTAINER
+    if (offering == (mon.id in trade.monsters[side])) return
+    offerMonster(session, trade, side, charId, party, mon)
+  }
+
   private fun offerMonster(session: SessionContext, trade: Trade, side: Int, charId: Long, party: List<Pokemon>, mon: Pokemon) {
     val offered = trade.monsters[side]
     if (mon.id in offered) {
@@ -292,6 +324,9 @@ constructor(
     const val OPEN_FLAGS: Byte = 3
     /** The client's trade list container (f/Cy 10; our enum calls ordinal 10 BATTLE_BOX_1). */
     const val TRADE_LIST_CONTAINER: Byte = 10
+    /** Client drag-packet container ids (f/Cy): party and the trade window's own list. */
+    const val PARTY_CONTAINER = 1
+    const val TRADE_CONTAINER = 2
     const val ACTION_CANCEL = 0
     const val ACTION_LOCK = 1
     const val ACTION_CONFIRM = 2

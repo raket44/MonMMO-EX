@@ -73,6 +73,12 @@ constructor(
     val storyVars = stored?.storyVars.orEmpty()
 
     for (npc in map.npcs) {
+      // An object placed outside its own map is the ROM's stand-in for a neighbour's object,
+      // drawn while that map is not loaded (nine exist, all scriptless: Cerulean's second cut
+      // tree at (50,18) sits on Route 9's (2,8), where Route 9 keeps the real one). The GBA never
+      // shows both; we spawned both, so cutting Route 9's tree left Cerulean's twin standing
+      // and blocking (2026-09-08). Neighbours are spawned from their own lists here.
+      if (npc.x !in 0 until map.width || npc.y !in 0 until map.height) continue
       // Decoration slots are not normal NPCs.
       if (npc.hideFlag.substringAfter('/').startsWith(DECORATION_FLAG_PREFIX)) continue
 

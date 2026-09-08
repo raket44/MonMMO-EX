@@ -34,8 +34,9 @@ fun promptEvolution(
     mon: Pokemon,
     targetWire: Int,
     consumeItemId: Int = 0,
+    consumeHeldItem: Boolean = false,
 ) {
-  state.pendingEvolutions[mon.id] = PendingEvolution(targetWire, consumeItemId)
+  state.pendingEvolutions[mon.id] = PendingEvolution(targetWire, consumeItemId, consumeHeldItem)
   ctx.send(EvolutionPromptPacket(mon.id, targetWire.toShort(), cancellable = true))
 }
 
@@ -78,12 +79,17 @@ constructor(
     val toName =
         expansion.getByClientWireId(pending.targetWire)?.displayName ?: evolvedDef?.name ?: "something new"
     var evolved = mon.copy(dexId = newDexId)
+    // A held item that triggered a trade evolution is used up, as on the cartridges.
+    if (pending.consumeHeldItem && mon.heldItem != 0) evolved = evolved.copy(heldItem = 0)
     if (evolvedDef != null) {
       // Max HP rises with the new base stats; current HP carries over, capped at the new max.
       val maxHp = StatCalculator.computeAll(evolvedDef, evolved).hp
       evolved = evolved.copy(hp = mon.hp.toInt().coerceAtMost(maxHp).toShort())
     }
     characters.updatePokemon(charId, evolved)
+    if (pending.consumeHeldItem && mon.heldItem != 0) {
+      ctx.send(de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket(entityId = monId, heldItem = 0))
+    }
     if (pending.consumeItemId > 0) {
       characters.addItem(charId, pending.consumeItemId, -1)
       val left = characters.getCharacter(charId)?.items?.get(pending.consumeItemId) ?: 0

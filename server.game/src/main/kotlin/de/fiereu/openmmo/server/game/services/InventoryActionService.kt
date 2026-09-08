@@ -523,6 +523,20 @@ object EvolutionTable {
           }
           ?.to
 
+  /** True when the trade evolution [tradeEvolution] picks for these inputs is the held-item kind (method 6). */
+  fun tradeEvolutionUsesHeldItem(fromWire: Int, heldItem: Int, partnersWire: Collection<Int>): Boolean =
+      entries
+          .firstOrNull { entry ->
+            entry.from == fromWire &&
+                when (entry.method) {
+                  5 -> true
+                  6 -> heldItem != 0 && (heldItem == entry.param || heldItem + 5000 == entry.param || heldItem == entry.param + 5000)
+                  7 -> entry.param in partnersWire
+                  else -> false
+                }
+          }
+          ?.method == 6
+
   /** True when [wire] has any evolution left, which is what Eviolite asks. */
   fun canEvolve(wire: Int): Boolean = entries.any { it.from == wire }
 

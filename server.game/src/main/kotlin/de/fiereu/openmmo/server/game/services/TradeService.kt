@@ -314,7 +314,8 @@ constructor(
         val inParty = party.firstOrNull { it.id == arrived.id } ?: continue
         val target = EvolutionTable.tradeEvolution(clientSpeciesId(inParty.dexId), inParty.heldItem, sentAway) ?: continue
         log.info { "Trade evolution: char=$charId monster=${inParty.id} dex=${inParty.dexId} -> wire $target" }
-        promptEvolution(ctx, state, inParty, target)
+        val usesHeldItem = EvolutionTable.tradeEvolutionUsesHeldItem(clientSpeciesId(inParty.dexId), inParty.heldItem, sentAway)
+        promptEvolution(ctx, state, inParty, target, consumeHeldItem = usesHeldItem)
       }
     }
   }

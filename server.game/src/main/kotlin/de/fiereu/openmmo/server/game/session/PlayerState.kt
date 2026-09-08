@@ -237,7 +237,8 @@ data class PlayerState(
  * One offered evolution: the client wire id the monster becomes, and the bag item (a stone) that
  * is consumed once the client confirms - 0 when the trigger was a level.
  */
-data class PendingEvolution(val targetWire: Int, val consumeItemId: Int = 0)
+/** [consumeHeldItem]: a trade evolution the monster's held item triggered (Metal Coat and kin) takes the item with it. */
+data class PendingEvolution(val targetWire: Int, val consumeItemId: Int = 0, val consumeHeldItem: Boolean = false)
 
 /** Packs a map address into one key for [PlayerState.loadedMaps]. */
 fun mapCacheKey(regionId: Int, bankId: Int, mapId: Int): Int =

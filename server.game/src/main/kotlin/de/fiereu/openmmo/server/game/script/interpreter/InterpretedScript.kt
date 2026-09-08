@@ -611,7 +611,7 @@ class InterpretedScript(
         "setobjectmovementtype" -> {
           val target =
               resolveMovementTarget(
-                  ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
+                  ctx, state.activeProgram, instruction, ObjectArg(instruction.arg(0).token), true)
           val type =
               de.fiereu.openmmo.common.enums.MovementType.entries.firstOrNull {
                 it.name == instruction.arg(1).token.removePrefix("MOVEMENT_TYPE_")

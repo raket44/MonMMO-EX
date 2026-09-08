@@ -359,7 +359,9 @@ class ScriptSupportAnalyzer(
           "hideobjectat" -> args[0] is ObjectArg
           "setobjectxy",
           "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
-          "setobjectmovementtype" -> args.size == 2 && args[0] is ObjectArg
+          // The parser types the first argument as an object only for a fixed command list; the
+          // interpreter rebuilds the ObjectArg from the token (as copyobjectxytoperm does).
+          "setobjectmovementtype" -> args.size == 2
           "warp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg

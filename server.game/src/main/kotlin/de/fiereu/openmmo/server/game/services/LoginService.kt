@@ -278,7 +278,16 @@ constructor(
     log.info { "Player selected character '${stored.info.name}' (id=$charId)" }
 
     // The Bicycle is earned through each region's own bike quest (StoryPlayerService maps every
-    // region's bike item onto the client's Bicycle); the old unconditional grant is gone.
+    // region's bike item onto the client's Bicycle); the old unconditional grant is gone, and a
+    // Bicycle that grant handed out is reclaimed until a quest earns it back.
+    val earnedBike =
+        stored.storyFlags.contains(de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_BICYCLE) ||
+            stored.items.keys.any { it in REGIONAL_BIKE_ITEMS }
+    if (CLIENT_BICYCLE_ITEM in stored.items && !earnedBike) {
+      characterStore.addItem(charId, CLIENT_BICYCLE_ITEM, -(stored.items[CLIENT_BICYCLE_ITEM] ?: 1))
+      characterStore.flushCharacterAsync(charId)
+      log.info { "Reclaimed the granted bicycle from character $charId" }
+    }
     // The twelve bicycle colors, as cosmetic-category items. PROVEN by two live sessions: the
     // customization dialog's option lists are built from the bag (when the 793-cosmetic grant
     // was in the bag, EVERY mount was listed; with an empty bag only the client's two built-in

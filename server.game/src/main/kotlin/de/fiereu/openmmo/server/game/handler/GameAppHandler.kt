@@ -271,6 +271,16 @@ constructor(
     val state = session.attributes[PLAYER_STATE] ?: return
     log.info { "Player ${state.characterId} disconnected." }
     val charId = state.characterId
+    // A stale session - one that went silent and was replaced by a fresh login for the same
+    // character before its socket finally died - must not tear down the LIVE session's state:
+    // doing so evicted the character (every later write dropped, the hotbar with them) and
+    // unbound it, so the live player was "not in the world" until they relogged (2026-09-08).
+    // Only the session the registry still points at owns the cleanup; a ghost just leaves.
+    if (charId != null && sessionRegistry.getByCharacterId(charId) !== session) {
+      log.info { "Stale session for character $charId left; the live session keeps it." }
+      presenceService.leave(session)
+      return
+    }
     if (charId != null) {
       // The battle flush must land before the unload evicts the character from the cache, and
       // before the rollback, which would otherwise be overwritten by the party it persists.

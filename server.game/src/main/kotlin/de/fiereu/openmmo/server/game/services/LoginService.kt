@@ -273,6 +273,14 @@ constructor(
       return
     }
 
+    // Another session still bound to this character is a ghost (a dropped connection the kernel
+    // has not given up on yet) or a second client; the new login takes the character over and the
+    // old socket is closed, so it cannot linger in the map or claim the cleanup later.
+    sessionRegistry.getByCharacterId(charId)?.takeIf { it !== ctx }?.let { stale ->
+      log.info { "Character $charId is still bound to ${stale.channel.remoteAddress()}; replacing that session" }
+      presenceService.leave(stale)
+      stale.channel.close()
+    }
     state.characterId = charId
     sessionRegistry.bindCharacter(ctx, charId)
     log.info { "Player selected character '${stored.info.name}' (id=$charId)" }

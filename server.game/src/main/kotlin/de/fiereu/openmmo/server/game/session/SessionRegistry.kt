@@ -19,9 +19,9 @@ class SessionRegistry @Inject constructor() {
     sessionsByChannel.remove(ctx.channel)
     val state = ctx.attributes[PLAYER_STATE]
     val charId = state?.characterId
-    if (charId != null) {
-      sessionsByCharacter.remove(charId)
-    }
+    // Only if this session still owns the character: a stale session unregistering after a fresh
+    // login for the same character must not drop the live session's binding.
+    if (charId != null) sessionsByCharacter.remove(charId, ctx)
   }
 
   fun bindCharacter(ctx: SessionContext, characterId: Long) {

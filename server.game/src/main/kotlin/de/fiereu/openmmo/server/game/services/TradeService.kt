@@ -156,9 +156,12 @@ constructor(
     }
     offered += mon.id
     log.info { "Trade: char=$charId offers monster ${mon.dexId}#${mon.id}" }
-    peerSession(trade, side)?.send(TradeListEntryPacket(mon))
-    // The own side of the window: a listing move into the client's trade container (f/Cy 10).
-    session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(TRADE_LIST_CONTAINER, (offered.size - 1).toShort())))
+    // The peer's window places the entry by the record's slot field, so it carries the offer
+    // index (0-based), not the party slot the monster came from.
+    val index = (offered.size - 1).toShort()
+    peerSession(trade, side)?.send(TradeListEntryPacket(mon.copy(containerSlot = index)))
+    // The own side of the window: a listing move into the client's trade container.
+    session.send(BattleEntityDeltaPacket(entityId = mon.id, listing = Listing(TRADE_LIST_CONTAINER, index)))
   }
 
   private fun offerItem(trade: Trade, side: Int, charId: Long, bag: Map<Int, Int>, itemId: Int, quantity: Int) {
@@ -247,18 +250,33 @@ constructor(
       val party = characterStore.getCharacter(trade.chars[side])?.pokemon ?: emptyList()
       give[side] += trade.monsters[side].mapNotNull { id -> party.firstOrNull { it.id == id } }
     }
+    // Monsters: every departure first (removePokemon renumbers the giver's party), then each
+    // arrival into a FREE slot - the party's next index, or the PC's next slot. Landing on slot 0
+    // regardless collided with the receiver's own slot 0 and the write failed (2026-09-08).
+    val moving = arrayOf(mutableListOf<Pokemon>(), mutableListOf<Pokemon>())
+    for (side in 0..1) {
+      for (mon in give[side]) if (characterStore.removePokemon(trade.chars[side], mon.id)) moving[side] += mon
+    }
     for (side in 0..1) {
       val from = trade.chars[side]
       val to = trade.chars[1 - side]
-      for (mon in give[side]) {
-        if (!characterStore.removePokemon(from, mon.id)) continue
-        val room = (characterStore.getCharacter(to)?.pokemon?.size ?: 6) < 6
+      for (mon in moving[side]) {
+        val receiver = characterStore.getCharacter(to)
+        val party = receiver?.pokemon.orEmpty()
+        val room = party.size < de.fiereu.openmmo.common.MAX_PARTY_SIZE
+        val slot =
+            if (room) party.size
+            else (receiver?.pcStorage.orEmpty().maxOfOrNull { it.containerSlot.toInt() } ?: -1) + 1
         val moved =
             mon.copy(
                 ownerId = to,
                 container = if (room) PokemonContainer.PARTY else PokemonContainer.PC,
-                containerSlot = 0)
-        characterStore.addPokemon(to, moved)
+                containerSlot = slot.toShort())
+        if (!characterStore.addPokemon(to, moved)) {
+          log.error { "Trade: monster ${mon.dexId}#${mon.id} could not be added to $to; returning it to ${trade.chars[side]}" }
+          val back = (characterStore.getCharacter(from)?.pcStorage.orEmpty().maxOfOrNull { it.containerSlot.toInt() } ?: -1) + 1
+          characterStore.addPokemon(from, mon.copy(container = PokemonContainer.PC, containerSlot = back.toShort()))
+        }
       }
       for (offer in trade.items[side]) {
         if (offer.quantity <= 0) continue
@@ -322,8 +340,12 @@ constructor(
      * bit0 the circles never opened the party picker (2026-09-08).
      */
     const val OPEN_FLAGS: Byte = 3
-    /** The client's trade list container (f/Cy 10; our enum calls ordinal 10 BATTLE_BOX_1). */
-    const val TRADE_LIST_CONTAINER: Byte = 10
+    /**
+     * The client's trade list container on the wire: f/Cy ZV1 = 2. (f/Y9's `case 10` is a compiler
+     * switch-map index - f/YZ1.MZ[ZV1] = 10 - not a container id; sending 10 filed the monster into
+     * an unrelated list and the own side stayed empty, 2026-09-08.)
+     */
+    const val TRADE_LIST_CONTAINER: Byte = 2
     /** Client drag-packet container ids (f/Cy): party and the trade window's own list. */
     const val PARTY_CONTAINER = 1
     const val TRADE_CONTAINER = 2

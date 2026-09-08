@@ -119,7 +119,13 @@ internal object InterpreterSupport {
 
   /** Specials the executor implements for real. */
   val IMPLEMENTED_SPECIALS =
-      setOf("HealPlayerParty", "SetVermilionTrashCans", "RockSmashWildEncounter", "ChooseMonForMoveTutor")
+      setOf(
+          "HealPlayerParty",
+          "SetVermilionTrashCans",
+          "RockSmashWildEncounter",
+          "ChooseMonForMoveTutor",
+          "DoSSAnneDepartureCutscene",
+      )
 
   /**
    * The tutor indexes `setvar VAR_0x8005, <symbol>` hands ChooseMonForMoveTutor: pokefirered's

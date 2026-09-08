@@ -538,6 +538,12 @@ class InterpretedScript(
                   }
               ctx.setVar(namespaced("VAR_RESULT"), if (taught) 1 else 0)
             }
+            "DoSSAnneDepartureCutscene" -> {
+              // src/ss_anne.c: the boat object (local id 1) slides west until it is off screen.
+              val boat =
+                  state.activeProgram.objectIds["LOCALID_SS_ANNE"] ?: program.objectIds["LOCALID_SS_ANNE"] ?: 0
+              tracedWait(ctx, "S.S. Anne departure") { ctx.sailBoatAway(boat) }
+            }
             in InterpreterSupport.NOOP_SPECIALS -> Unit
             else ->
                 throw UnsupportedScriptCommandException(

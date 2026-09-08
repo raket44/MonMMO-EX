@@ -629,6 +629,21 @@ internal constructor(
   suspend fun moveNpc(localId: Int, vararg steps: MovementStep) =
       movement.moveNpc(session, state, localId, steps.toList())
 
+  /**
+   * The S.S. Anne leaving harbour, src/ss_anne.c DoSSAnneDepartureCutscene: after a short hold the
+   * boat object slides west until it is off screen, then a beat before the script goes on. The ROM
+   * moves the sprite a pixel every five frames for about 240 pixels; here the boat walks the same
+   * distance, sixteen tiles, at npc walking speed. The wake and smoke sprites are ROM-drawn effects
+   * the client cannot be asked for, and the horn has no server-side sound channel. The script's own
+   * removeobject, player walk, scene var and warp follow as written (2026-09-08: the ship never
+   * sailed because this special was unsupported, so the whole departure script was skipped).
+   */
+  suspend fun sailBoatAway(localId: Int) {
+    kotlinx.coroutines.delay(50 * 1000L / 60)
+    moveNpc(localId, *Array(16) { MovementStep.WALK_LEFT })
+    kotlinx.coroutines.delay(40 * 1000L / 60)
+  }
+
   /** Starts concurrent NPC movement paths. */
   suspend fun moveNpcs(vararg paths: Pair<Int, List<MovementStep>>) =
       movement.moveNpcs(session, state, paths.toList())

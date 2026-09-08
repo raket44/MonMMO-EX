@@ -474,7 +474,7 @@ constructor(
         (RESCUED_BIRCH_FLAG in storyFlags || ROUTE_101_RESCUE_HIDDEN_FLAG in storyFlags)
   }
 
-  private companion object {
+  companion object {
     const val DECORATION_FLAG_PREFIX = "FLAG_DECORATION_"
     const val DYNAMIC_GFX_VAR_0 = 240
     const val DYNAMIC_GFX_VAR_3 = 243

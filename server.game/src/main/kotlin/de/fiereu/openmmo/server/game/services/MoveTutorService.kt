@@ -92,8 +92,21 @@ constructor(
         else -> learnsets[dexId]?.contains(moveId) == true
       }
 
-  /** A free slot takes the move at once; a full moveset goes through the client's forget dialog. */
+  /** [teach] for a script that can wait on the forget dialog. */
   private suspend fun teach(session: SessionContext, charId: Long, monId: Long, moveId: Int): Boolean {
+    val answer = CompletableDeferred<Boolean>()
+    if (!teach(session, charId, monId, moveId) { answer.complete(it) }) return false
+    return withTimeoutOrNull(FORGET_DIALOG_TIMEOUT_MILLIS) { answer.await() } ?: false
+  }
+
+  /**
+   * Teaches [moveId] to the party monster [monId]: a free slot takes it at once, a full moveset
+   * opens the client's forget dialog. [onResult] gets true once the move sits in a slot (right
+   * away, or from the dialog's answer) and false when the player gave up. Returns false without
+   * calling back when the monster or move does not exist. Shared by the tutors and the bag's TMs
+   * and HMs.
+   */
+  fun teach(session: SessionContext, charId: Long, monId: Long, moveId: Int, onResult: (Boolean) -> Unit): Boolean {
     val def = moveRegistry.get(moveId) ?: return false
     val stored = characterStore.getCharacter(charId)?.pokemon?.firstOrNull { it.id == monId } ?: return false
     val moves = stored.moves.toMutableList()
@@ -108,14 +121,15 @@ constructor(
       val taken = moves.indexOfFirst { it.id.toInt() == moveId }
       session.send(MoveLearnPromptPacket(monId, taken.toByte(), moveId.toShort()))
       session.send(emitter.moveSlotsDelta(monId, moves.map { it.id to it.pp }, 0))
-      log.info { "char=$charId tutor taught move $moveId to $monId in slot $taken" }
+      log.info { "char=$charId taught move $moveId to $monId in slot $taken" }
+      onResult(true)
       return true
     }
-    val answer = CompletableDeferred<Boolean>()
-    battles.offerMove(session, charId, monId, moveId.toShort()) { answer.complete(it) }
-    val taught = withTimeoutOrNull(FORGET_DIALOG_TIMEOUT_MILLIS) { answer.await() } ?: false
-    log.info { "char=$charId tutor move $moveId for $monId: ${if (taught) "replaced a move" else "declined"}" }
-    return taught
+    battles.offerMove(session, charId, monId, moveId.toShort()) { taught ->
+      log.info { "char=$charId move $moveId for $monId: ${if (taught) "replaced a move" else "declined"}" }
+      onResult(taught)
+    }
+    return true
   }
 
   private fun load(resource: String): Map<Int, Set<Int>> {

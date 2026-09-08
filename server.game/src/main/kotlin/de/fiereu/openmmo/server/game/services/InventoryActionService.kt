@@ -20,6 +20,7 @@ import de.fiereu.openmmo.server.game.battle.StatCalculator
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,7 +56,12 @@ constructor(
     private val breedingService: BreedingService,
     private val presenceService: PresenceService,
     private val ocarinas: OcarinaService,
+    private val moveTeacher: MoveTutorService,
+    private val moves: de.fiereu.openmmo.moves.MoveRegistry,
 ) {
+
+  private val consumeScope =
+      kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
 
   suspend fun onContainerAction(event: PacketEvent<ContainerActionPacket>) {
     val ctx = event.session
@@ -180,6 +186,38 @@ constructor(
       sendStack(ctx, charId, itemId)
       sendParty(ctx, charId)
       ctx.reply("$itemName restored ${healed.hp - target.hp} HP.")
+      return
+    }
+
+    // TMs and HMs: the client's own tools table says which move the item teaches (MachineMoves).
+    // The client only offers the party members its learnsets allow, so the pick is trusted here.
+    // A TM is used up once the move sits in a slot (also after the forget dialog); an HM never is.
+    val machineMove =
+        MachineMoves.moveFor(itemId, itemName) { name ->
+          moves.all().firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+        }
+    if (machineMove != null) {
+      when {
+        target.isEgg -> ctx.reply("An Egg cannot learn a move.")
+        target.moves.any { it.id.toInt() == machineMove } ->
+            ctx.reply("${target.nickname} already knows ${moves.get(machineMove)?.name ?: "that move"}.")
+        else -> {
+          val consumable = !MachineMoves.isHm(itemId)
+          val started =
+              moveTeacher.teach(ctx, charId, target.id, machineMove) { learned ->
+                if (learned && consumable) {
+                  // The forget dialog answers on the packet thread; the store's item update suspends.
+                  consumeScope.launch {
+                    characters.addItem(charId, itemId, -1)
+                    characters.flushCharacterAsync(charId)
+                    sendStack(ctx, charId, itemId)
+                  }
+                }
+              }
+          log.info { "[UseItem] MACHINE char=$charId item=$itemId move=$machineMove monster=$monsterId started=$started" }
+          if (!started) ctx.reply("$itemName could not be taught.")
+        }
+      }
       return
     }
 

@@ -1,0 +1,688 @@
+# Client tool items that teach a move, from the client's own tools table (DexPatch dumptoolsfile -> monmmo-tools.csv): item id, move id, name.
+339,15,HM
+340,19,HM Fly
+341,57,HM Surf
+342,70,HM Strength
+343,148,HM Flash
+344,249,HM Rock Smash
+345,127,HM Waterfall
+346,291,HM Dive
+1297,249,Battle Box Expansion Drive
+1298,148,Pokémon
+1600,264,Unknown Item
+1601,352,Unknown Item
+1602,331,Unknown Item
+1603,202,Unknown Item
+1604,231,Unknown Item
+1605,351,Unknown Item
+1606,290,Unknown Item
+1607,211,Unknown Item
+1608,285,Unknown Item
+1609,289,Unknown Item
+1610,355,Unknown Item
+1611,362,Unknown Item
+1612,203,Unknown Item
+1613,406,Unknown Item
+1614,409,Unknown Item
+1615,318,Unknown Item
+1616,278,Unknown Item
+1617,419,Unknown Item
+1618,446,Unknown Item
+1619,445,Unknown Item
+1620,399,Unknown Item
+1621,214,Unknown Item
+1622,363,Unknown Item
+1623,141,Unknown Item
+1624,267,Unknown Item
+1625,403,Unknown Item
+1626,405,Unknown Item
+1627,408,Unknown Item
+1628,13,Unknown Item
+1629,413,Unknown Item
+1630,18,Unknown Item
+1631,417,Unknown Item
+1632,422,Unknown Item
+1633,423,Unknown Item
+1634,424,Unknown Item
+1635,427,Unknown Item
+1636,32,Unknown Item
+1637,36,Unknown Item
+1638,437,Unknown Item
+1639,438,Unknown Item
+1640,42,Unknown Item
+1641,440,Unknown Item
+1642,55,Unknown Item
+1643,56,Unknown Item
+1644,61,Unknown Item
+1645,66,Unknown Item
+1646,72,Unknown Item
+1647,82,Unknown Item
+1648,83,Unknown Item
+1649,484,Unknown Item
+1650,486,Unknown Item
+1651,90,Unknown Item
+1652,97,Unknown Item
+1653,99,Unknown Item
+1654,100,Unknown Item
+1655,500,Unknown Item
+1656,506,Unknown Item
+1657,116,Unknown Item
+1658,117,Unknown Item
+1659,121,Unknown Item
+1660,130,Unknown Item
+1661,133,Unknown Item
+1662,534,Unknown Item
+1663,535,Unknown Item
+1664,541,Unknown Item
+1665,542,Unknown Item
+1666,149,Unknown Item
+1667,161,Unknown Item
+1668,174,Unknown Item
+1669,179,Unknown Item
+1670,184,Unknown Item
+1671,191,Unknown Item
+1672,192,Unknown Item
+1673,197,Unknown Item
+1674,204,Unknown Item
+1675,224,Unknown Item
+1676,225,Unknown Item
+1677,226,Unknown Item
+1678,227,Unknown Item
+1679,230,Unknown Item
+1680,242,Unknown Item
+1681,248,Unknown Item
+1682,250,Unknown Item
+1683,251,Unknown Item
+1684,279,Unknown Item
+1685,286,Unknown Item
+1686,103,Unknown Item
+1687,299,Unknown Item
+1688,311,Unknown Item
+1689,313,Unknown Item
+1690,322,Unknown Item
+1691,328,Unknown Item
+1692,330,Unknown Item
+1693,333,Unknown Item
+1694,341,Unknown Item
+1695,345,Unknown Item
+1696,348,Unknown Item
+1697,349,Unknown Item
+1698,350,Unknown Item
+1699,370,Unknown Item
+1700,372,Unknown Item
+1701,384,Unknown Item
+1702,385,Unknown Item
+1703,6,Unknown Item
+1704,390,Unknown Item
+1705,394,Unknown Item
+1706,396,Unknown Item
+1707,68,Unknown Item
+1708,118,Unknown Item
+1709,25,Unknown Item
+1710,5,Unknown Item
+1711,38,Unknown Item
+1712,34,Unknown Item
+1713,135,Unknown Item
+1714,205,Unknown Item
+1715,223,Unknown Item
+1716,102,Unknown Item
+1717,210,Unknown Item
+1718,69,Unknown Item
+1719,189,Unknown Item
+1720,60,Unknown Item
+1721,109,Unknown Item
+1722,342,Unknown Item
+1723,232,Unknown Item
+1724,129,Unknown Item
+1725,196,Unknown Item
+1726,314,Unknown Item
+1727,101,Unknown Item
+1728,492,Unknown Item
+1729,402,Unknown Item
+1730,442,Unknown Item
+1731,441,Unknown Item
+1732,334,Unknown Item
+1733,529,Unknown Item
+1734,271,Unknown Item
+1735,366,Unknown Item
+1736,304,Unknown Item
+1737,257,Unknown Item
+1738,414,Unknown Item
+1739,200,Unknown Item
+1740,434,Unknown Item
+1741,7,Unknown Item
+1742,8,Unknown Item
+1743,9,Unknown Item
+1744,428,Unknown Item
+1745,270,Unknown Item
+1746,67,Unknown Item
+1747,491,Unknown Item
+1748,29,Unknown Item
+1749,120,Unknown Item
+1750,276,Unknown Item
+1751,268,Unknown Item
+1752,114,Unknown Item
+1753,180,Unknown Item
+1754,356,Unknown Item
+1755,282,Unknown Item
+1756,450,Unknown Item
+1757,162,Unknown Item
+1758,410,Unknown Item
+1759,253,Unknown Item
+1760,283,Unknown Item
+1761,220,Unknown Item
+1762,297,Unknown Item
+1763,319,Unknown Item
+1764,527,Unknown Item
+1765,47,Unknown Item
+1766,377,Unknown Item
+1767,143,Unknown Item
+1768,4,Unknown Item
+1769,480,Unknown Item
+1770,246,Unknown Item
+1771,435,Unknown Item
+1772,530,Unknown Item
+1773,252,Unknown Item
+1774,443,Unknown Item
+1775,305,Unknown Item
+1776,400,Unknown Item
+1777,325,Unknown Item
+1778,80,Unknown Item
+1779,329,Unknown Item
+1780,458,Unknown Item
+1781,509,Unknown Item
+1782,466,Unknown Item
+5328,468,TM
+5329,337,TM Dragon Claw
+5330,473,TM Psyshock
+5331,347,TM Calm Mind
+5332,46,TM Roar
+5333,92,TM Toxic
+5334,258,TM Hail
+5335,339,TM Bulk Up
+5336,474,TM Venoshock
+5337,237,TM Hidden Power
+5338,241,TM Sunny Day
+5339,269,TM Taunt
+5340,58,TM Ice Beam
+5341,59,TM Blizzard
+5342,63,TM Hyper Beam
+5343,113,TM Light Screen
+5344,182,TM Protect
+5345,240,TM Rain Dance
+5346,477,TM Telekinesis
+5347,219,TM Safeguard
+5348,218,TM Frustration
+5349,76,TM Solar Beam
+5350,479,TM Smack Down
+5351,85,TM Thunderbolt
+5352,87,TM Thunder
+5353,89,TM Earthquake
+5354,216,TM Return
+5355,91,TM Dig
+5356,94,TM Psychic
+5357,247,TM Shadow Ball
+5358,280,TM Brick Break
+5359,104,TM Double Team
+5360,115,TM Reflect
+5361,482,TM Sludge Wave
+5362,53,TM Flamethrower
+5363,188,TM Sludge Bomb
+5364,201,TM Sandstorm
+5365,126,TM Fire Blast
+5366,317,TM Rock Tomb
+5367,332,TM Aerial Ace
+5368,259,TM Torment
+5369,263,TM Facade
+5370,488,TM Flame Charge
+5371,156,TM Rest
+5372,213,TM Attract
+5373,168,TM Thief
+5374,490,TM Low Sweep
+5375,496,TM Round
+5376,497,TM Echoed Voice
+5377,315,TM Overheat
+5378,502,TM Ally Switch
+5379,411,TM Focus Blast
+5380,412,TM Energy Ball
+5381,206,TM False Swipe
+5382,503,TM Scald
+5383,374,TM Fling
+5384,451,TM Charge Beam
+5385,507,TM Sky Drop
+5386,510,TM Incinerate
+5387,511,TM Quash
+5388,261,TM Will-O-Wisp
+5389,512,TM Acrobatics
+5390,373,TM Embargo
+5391,153,TM Explosion
+5392,421,TM Shadow Claw
+5393,371,TM Payback
+5394,514,TM Retaliate
+5395,416,TM Giga Impact
+5396,397,TM Rock Polish
+5397,148,TM Flash
+5398,444,TM Stone Edge
+5399,521,TM Volt Switch
+5400,86,TM Thunder Wave
+5401,360,TM Gyro Ball
+5402,14,TM Swords Dance
+5403,522,TM Struggle Bug
+5404,244,TM Psych Up
+5405,523,TM Bulldoze
+5406,524,TM Frost Breath
+5407,157,TM Rock Slide
+5408,404,TM X-Scissor
+5409,525,TM Dragon Tail
+5410,526,TM Work Up
+5411,398,TM Poison Jab
+5412,138,TM Dream Eater
+5413,447,TM Grass Knot
+5414,207,TM Swagger
+5415,365,TM Pluck
+5416,369,TM U-turn
+5417,164,TM Substitute
+5418,430,TM Flash Cannon
+5419,433,TM Trick Room
+5420,15,HM
+5421,19,HM Fly
+5422,57,HM Surf
+5423,70,HM Strength
+5424,127,HM Waterfall
+5425,291,HM Dive
+5618,528,TM Wild Charge
+5619,249,TM Rock Smash
+5620,555,TM Snarl
+6328,468,TM
+6329,337,TM Dragon Claw
+6330,473,TM Psyshock
+6331,347,TM Calm Mind
+6332,46,TM Roar
+6333,92,TM Toxic
+6334,258,TM Hail
+6335,339,TM Bulk Up
+6336,474,TM Venoshock
+6337,237,TM Hidden Power
+6338,241,TM Sunny Day
+6339,269,TM Taunt
+6340,58,TM Ice Beam
+6341,59,TM Blizzard
+6342,63,TM Hyper Beam
+6343,113,TM Light Screen
+6344,182,TM Protect
+6345,240,TM Rain Dance
+6346,477,TM Telekinesis
+6347,219,TM Safeguard
+6348,218,TM Frustration
+6349,76,TM Solar Beam
+6350,479,TM Smack Down
+6351,85,TM Thunderbolt
+6352,87,TM Thunder
+6353,89,TM Earthquake
+6354,216,TM Return
+6355,91,TM Dig
+6356,94,TM Psychic
+6357,247,TM Shadow Ball
+6358,280,TM Brick Break
+6359,104,TM Double Team
+6360,115,TM Reflect
+6361,482,TM Sludge Wave
+6362,53,TM Flamethrower
+6363,188,TM Sludge Bomb
+6364,201,TM Sandstorm
+6365,126,TM Fire Blast
+6366,317,TM Rock Tomb
+6367,332,TM Aerial Ace
+6368,259,TM Torment
+6369,263,TM Facade
+6370,488,TM Flame Charge
+6371,156,TM Rest
+6372,213,TM Attract
+6373,168,TM Thief
+6374,490,TM Low Sweep
+6375,496,TM Round
+6376,497,TM Echoed Voice
+6377,315,TM Overheat
+6378,502,TM Ally Switch
+6379,411,TM Focus Blast
+6380,412,TM Energy Ball
+6381,206,TM False Swipe
+6382,503,TM Scald
+6383,374,TM Fling
+6384,451,TM Charge Beam
+6385,507,TM Sky Drop
+6386,510,TM Incinerate
+6387,511,TM Quash
+6388,261,TM Will-O-Wisp
+6389,512,TM Acrobatics
+6390,373,TM Embargo
+6391,153,TM Explosion
+6392,421,TM Shadow Claw
+6393,371,TM Payback
+6394,514,TM Retaliate
+6395,416,TM Giga Impact
+6396,397,TM Rock Polish
+6397,148,TM Flash
+6398,444,TM Stone Edge
+6399,521,TM Volt Switch
+6400,86,TM Thunder Wave
+6401,360,TM Gyro Ball
+6402,14,TM Swords Dance
+6403,522,TM Struggle Bug
+6404,244,TM Psych Up
+6405,523,TM Bulldoze
+6406,524,TM Frost Breath
+6407,157,TM Rock Slide
+6408,404,TM X-Scissor
+6409,525,TM Dragon Tail
+6410,526,TM Work Up
+6411,398,TM Poison Jab
+6412,138,TM Dream Eater
+6413,447,TM Grass Knot
+6414,207,TM Swagger
+6415,365,TM Pluck
+6416,369,TM U-turn
+6417,164,TM Substitute
+6418,430,TM Flash Cannon
+6419,433,TM Trick Room
+6618,528,TM Wild Charge
+6619,249,TM Rock Smash
+6620,555,TM Snarl
+7600,264,Unknown Item
+7601,352,Unknown Item
+7602,331,Unknown Item
+7603,202,Unknown Item
+7604,231,Unknown Item
+7605,351,Unknown Item
+7606,290,Unknown Item
+7607,211,Unknown Item
+7608,285,Unknown Item
+7609,289,Unknown Item
+7610,355,Unknown Item
+7611,362,Unknown Item
+7612,203,Unknown Item
+7613,406,Unknown Item
+7614,409,Unknown Item
+7615,318,Unknown Item
+7616,278,Unknown Item
+7617,419,Unknown Item
+7618,446,Unknown Item
+7619,445,Unknown Item
+7620,399,Unknown Item
+7621,214,Unknown Item
+7622,363,Unknown Item
+7623,141,Unknown Item
+7624,267,Unknown Item
+7625,403,Unknown Item
+7626,405,Unknown Item
+7627,408,Unknown Item
+7628,13,Unknown Item
+7629,413,Unknown Item
+7630,18,Unknown Item
+7631,417,Unknown Item
+7632,422,Unknown Item
+7633,423,Unknown Item
+7634,424,Unknown Item
+7635,427,Unknown Item
+7636,32,Unknown Item
+7637,36,Unknown Item
+7638,437,Unknown Item
+7639,438,Unknown Item
+7640,42,Unknown Item
+7641,440,Unknown Item
+7642,55,Unknown Item
+7643,56,Unknown Item
+7644,61,Unknown Item
+7645,66,Unknown Item
+7646,72,Unknown Item
+7647,82,Unknown Item
+7648,83,Unknown Item
+7649,484,Unknown Item
+7650,486,Unknown Item
+7651,90,Unknown Item
+7652,97,Unknown Item
+7653,99,Unknown Item
+7654,100,Unknown Item
+7655,500,Unknown Item
+7656,506,Unknown Item
+7657,116,Unknown Item
+7658,117,Unknown Item
+7659,121,Unknown Item
+7660,130,Unknown Item
+7661,133,Unknown Item
+7662,534,Unknown Item
+7663,535,Unknown Item
+7664,541,Unknown Item
+7665,542,Unknown Item
+7666,149,Unknown Item
+7667,161,Unknown Item
+7668,174,Unknown Item
+7669,179,Unknown Item
+7670,184,Unknown Item
+7671,191,Unknown Item
+7672,192,Unknown Item
+7673,197,Unknown Item
+7674,204,Unknown Item
+7675,224,Unknown Item
+7676,225,Unknown Item
+7677,226,Unknown Item
+7678,227,Unknown Item
+7679,230,Unknown Item
+7680,242,Unknown Item
+7681,248,Unknown Item
+7682,250,Unknown Item
+7683,251,Unknown Item
+7684,279,Unknown Item
+7685,286,Unknown Item
+7686,103,Unknown Item
+7687,299,Unknown Item
+7688,311,Unknown Item
+7689,313,Unknown Item
+7690,322,Unknown Item
+7691,328,Unknown Item
+7692,330,Unknown Item
+7693,333,Unknown Item
+7694,341,Unknown Item
+7695,345,Unknown Item
+7696,348,Unknown Item
+7697,349,Unknown Item
+7698,350,Unknown Item
+7699,370,Unknown Item
+7700,372,Unknown Item
+7701,384,Unknown Item
+7702,385,Unknown Item
+7703,6,Unknown Item
+7704,390,Unknown Item
+7705,394,Unknown Item
+7706,396,Unknown Item
+7707,68,Unknown Item
+7708,118,Unknown Item
+7709,25,Unknown Item
+7710,5,Unknown Item
+7711,38,Unknown Item
+7712,34,Unknown Item
+7713,135,Unknown Item
+7714,205,Unknown Item
+7715,223,Unknown Item
+7716,102,Unknown Item
+7717,210,Unknown Item
+7718,69,Unknown Item
+7719,189,Unknown Item
+7720,60,Unknown Item
+7721,109,Unknown Item
+7722,342,Unknown Item
+7723,232,Unknown Item
+7724,129,Unknown Item
+7725,196,Unknown Item
+7726,314,Unknown Item
+7727,101,Unknown Item
+7728,492,Unknown Item
+7729,402,Unknown Item
+7730,442,Unknown Item
+7731,441,Unknown Item
+7732,334,Unknown Item
+7733,529,Unknown Item
+7734,271,Unknown Item
+7735,366,Unknown Item
+7736,304,Unknown Item
+7737,257,Unknown Item
+7738,414,Unknown Item
+7739,200,Unknown Item
+7740,434,Unknown Item
+7741,7,Unknown Item
+7742,8,Unknown Item
+7743,9,Unknown Item
+7744,428,Unknown Item
+7745,270,Unknown Item
+7746,67,Unknown Item
+7747,491,Unknown Item
+7748,29,Unknown Item
+7749,120,Unknown Item
+7750,276,Unknown Item
+7751,268,Unknown Item
+7752,114,Unknown Item
+7753,180,Unknown Item
+7754,356,Unknown Item
+7755,282,Unknown Item
+7756,450,Unknown Item
+7757,162,Unknown Item
+7758,410,Unknown Item
+7759,253,Unknown Item
+7760,47,Unknown Item
+7761,377,Unknown Item
+7762,143,Unknown Item
+7763,4,Unknown Item
+7764,480,Unknown Item
+7765,47,Unknown Item
+7766,377,Unknown Item
+7767,143,Unknown Item
+7768,4,Unknown Item
+7769,480,Unknown Item
+7770,246,Unknown Item
+7771,435,Unknown Item
+7772,530,Unknown Item
+7773,252,Unknown Item
+7774,443,Unknown Item
+7775,305,Unknown Item
+7776,400,Unknown Item
+7777,325,Unknown Item
+7778,80,Unknown Item
+7779,329,Unknown Item
+7780,458,Unknown Item
+7781,509,Unknown Item
+7782,466,Unknown Item
+8420,15,HM
+8421,19,HM Fly
+8422,57,HM Surf
+8423,70,HM Strength
+8424,432,HM Defog
+8425,249,HM Rock Smash
+8426,127,HM Waterfall
+8427,431,HM Rock Climb
+9420,15,HM
+9421,19,HM Fly
+9422,57,HM Surf
+9423,70,HM Strength
+9424,250,HM Whirlpool
+9425,249,HM Rock Smash
+9426,127,HM Waterfall
+9427,431,HM Rock Climb
+20010,20,TM Bind
+20035,81,TM String Shot
+20054,111,TM Defense Curl
+20081,171,TM Nightmare
+20082,173,TM Snore
+20106,215,TM Heal Bell
+20119,235,TM Synthesis
+20121,239,TM Twister
+20144,272,TM Role Play
+20146,277,TM Magic Coat
+20159,301,TM Ice Ball
+20161,307,TM Blast Burn
+20162,308,TM Hydro Cannon
+20171,324,TM Signal Beam
+20178,335,TM Block
+20180,338,TM Frenzy Plant
+20182,340,TM Bounce
+20185,343,TM Covet
+20186,344,TM Volt Tackle
+20207,380,TM Gastro Acid
+20210,387,TM Last Resort
+20211,388,TM Worry Seed
+20212,389,TM Sucker Punch
+20214,393,TM Magnet Rise
+20220,401,TM Aqua Tail
+20260,472,TM Wonder Room
+20264,478,TM Magic Room
+20273,495,TM After You
+20285,518,TM Water Pledge
+20286,519,TM Fire Pledge
+20287,520,TM Grass Pledge
+20302,547,TM Relic Song
+20303,548,TM Secret Sword
+20305,566,TM Phantom Force
+20306,572,TM Petal Blizzard
+20307,574,TM Disarming Voice
+20308,577,TM Draining Kiss
+20309,580,TM Grassy Terrain
+20310,581,TM Misty Terrain
+20311,583,TM Play Rough
+20312,590,TM Confide
+20313,595,TM Mystical Fire
+20314,598,TM Eerie Impulse
+20315,599,TM Venom Drench
+20316,604,TM Electric Terrain
+20317,605,TM Dazzling Gleam
+20318,608,TM Baby-Doll Eyes
+20319,611,TM Infestation
+20320,612,TM Power-Up Punch
+20321,620,TM Dragon Ascent
+20322,626,TM Darkest Lariat
+20323,630,TM High Horsepower
+20324,632,TM Solar Blade
+20325,636,TM Laser Focus
+20326,638,TM Throat Chop
+20327,639,TM Pollen Puff
+20328,641,TM Psychic Terrain
+20329,642,TM Lunge
+20330,646,TM Speed Swap
+20331,647,TM Smart Strike
+20332,656,TM Brutal Swing
+20333,657,TM Aurora Veil
+20334,660,TM Psychic Fangs
+20335,661,TM Stomping Tantrum
+20336,664,TM Liquidation
+20337,704,TM Body Press
+20338,712,TM Breaking Swipe
+20339,724,TM Steel Beam
+20340,725,TM Expanding Force
+20341,726,TM Steel Roller
+20342,727,TM Scale Shot
+20343,728,TM Meteor Beam
+20344,730,TM Misty Explosion
+20345,731,TM Grassy Glide
+20346,732,TM Rising Voltage
+20347,733,TM Terrain Pulse
+20348,734,TM Skitter Smack
+20349,735,TM Burning Jealousy
+20350,736,TM Lash Out
+20351,737,TM Poltergeist
+20352,738,TM Corrosive Gas
+20353,739,TM Coaching
+20354,740,TM Flip Turn
+20355,741,TM Triple Axel
+20356,742,TM Dual Wingbeat
+20357,743,TM Scorching Sands
+20358,757,TM Power Shift
+20359,779,TM Tera Blast
+20360,789,TM Ice Spinner
+20361,810,TM Pounce
+20362,811,TM Trailblaze
+20363,812,TM Chilling Water
+20364,840,TM Hard Press
+20365,841,TM Dragon Cheer
+20366,842,TM Alluring Voice
+20367,843,TM Temper Flare
+20368,844,TM Supercell Slam
+20369,845,TM Psychic Noise
+20370,846,TM Upper Hand

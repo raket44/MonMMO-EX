@@ -29,6 +29,15 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /** Resolve a cardinal Gen-3 ledge hop to its tile two spaces away. */
+/** How far a client claim may run ahead of the server and still be walked, not reset. */
+private const val CATCH_UP_TILES = 6
+
+/** Committed tiles remembered per map for phantom-step rewinds. */
+private const val RECENT_TILES = 8
+
+/** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
+private const val RESET_ECHO_MILLIS = 600L
+
 internal fun ledgeLanding(
     map: MapDef,
     fromX: Int,
@@ -345,31 +354,9 @@ constructor(
     }
 
     if (msg.x != fromX || msg.y != fromY) {
-      // The one-tile heal. The client is the emulator running the real ROM's collision and it
-      // resolves movement the server cannot fully observe: the emergence walk plays on its own
-      // schedule (queued behind a loading map, never echoed back as a report), it bonks on
-      // things the server does not model, and quick input reversals cancel steps the server
-      // already committed. Every one of those leaves the truth exactly one tile from the
-      // server's guess - so an adjacent claim onto a walkable tile IS the truth: resync and
-      // process the move. Fighting it desync-reset the very press that should have fired the
-      // door warp. A claim further than one tile (or into a wall) is still a real desync.
-      val adjacent =
-          Math.abs(msg.x - fromX) + Math.abs(msg.y - fromY) == 1 &&
-              isWalkable(currentMap, msg.x, msg.y, state.surfing, state.tileOverrides)
-      if (!adjacent) {
-        log.info {
-          "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
-              "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
-        }
-        sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
-        return
-      }
-      log.info { "One-tile heal: char=$charId resynced to (${msg.x}, ${msg.y})" }
-      fromX = msg.x
-      fromY = msg.y
-      characterStore.updatePosition(charId, fromX.toShort(), fromY.toShort())
-      state.x = fromX.toShort()
-      state.y = fromY.toShort()
+      if (!reconcileClaim(ctx, charId, state, currentMap, fromX, fromY, msg)) return
+      fromX = state.x.toInt()
+      fromY = state.y.toInt()
     }
 
     // Only once the step is accepted, so a locked player keeps the facing its script left.
@@ -484,6 +471,7 @@ constructor(
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
     state.x = toX.toShort()
     state.y = toY.toShort()
+    rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
 
     // The client already walked itself there, so only the observers need telling.
@@ -645,6 +633,202 @@ constructor(
     log.info { "Strength: char=$charId pushed boulder ${boulder.entityIdx} to ($beyondX, $beyondY)" }
     return true
   }
+
+  /**
+   * The client says it stands on a tile other than the server's. Free movement is the client's:
+   * at bike speed with a round trip in between, the two drift by a tile or three through steps the
+   * client announced and cancelled, packets in flight after a reset, and bonks the server does not
+   * model. The rules, in order, and each one is the cartridge's outcome for the walk it describes:
+   *
+   * 1. Inside the window after a desync reset, a claim that still describes the old position is
+   *    dropped: the client has not seen the reset yet, and answering again only snaps it twice.
+   * 2. A claim naming a tile the server itself committed just now is a phantom-step rewind: the
+   *    server goes back there without hooks - it ran that tile's hooks once already.
+   * 3. A claim a few walkable tiles away is a walk the server missed: it walks the shortest path
+   *    itself, tile by tile, through the same hooks a reported step runs - fixture warps, custom
+   *    warps, coordinate triggers, trainer sight, encounters. The first hook that fires stops the
+   *    walk there, and the client is put back on that tile: the only reset free movement gets,
+   *    because a script really did stop the player.
+   * 4. Anything else - out of bounds, through a wall, too far - is a real desync and is reset.
+   *
+   * True when the caller may go on processing the step from the server's (possibly moved)
+   * position; false when the packet is consumed (dropped, reset, or a hook took over).
+   */
+  private fun reconcileClaim(
+      ctx: SessionContext,
+      charId: Long,
+      state: PlayerState,
+      map: MapDef,
+      fromX: Int,
+      fromY: Int,
+      msg: MovementPacket,
+  ): Boolean {
+    val now = System.currentTimeMillis()
+    if (now < state.claimIgnoreUntil) {
+      val nearReset = Math.abs(msg.x - state.lastResetX) + Math.abs(msg.y - state.lastResetY) <= 1
+      if (!nearReset) {
+        log.debug { "Dropping pre-reset claim (${msg.x}, ${msg.y}) from char=$charId" }
+        return false
+      }
+    }
+    if (msg.x !in 0 until map.width || msg.y !in 0 until map.height) {
+      desyncReset(ctx, charId, state, map, fromX, fromY, msg)
+      return false
+    }
+    val claim = packTile(msg.x, msg.y)
+    if (state.recentTilesMapKey == mapKey(map)) {
+      val index = state.recentTiles.indexOf(claim)
+      if (index >= 0) {
+        while (state.recentTiles.size > index + 1) state.recentTiles.removeLast()
+        log.info { "Rewind: char=$charId from ($fromX, $fromY) back to (${msg.x}, ${msg.y})" }
+        characterStore.updatePosition(charId, msg.x.toShort(), msg.y.toShort())
+        state.x = msg.x.toShort()
+        state.y = msg.y.toShort()
+        presenceService.broadcastToObservers(ctx, gbaMovePacket(charId, map, msg.x, msg.y, state.facingDirection))
+        return true
+      }
+    }
+    val path = walkablePath(map, state, fromX, fromY, msg.x, msg.y)
+    if (path == null) {
+      desyncReset(ctx, charId, state, map, fromX, fromY, msg)
+      return false
+    }
+    log.info { "Catch-up: char=$charId walks ${path.size} tile(s) from ($fromX, $fromY) to (${msg.x}, ${msg.y})" }
+    var x = fromX
+    var y = fromY
+    for ((nx, ny, dir) in path) {
+      // A fixture warp on the way fires the way a reported step into it would (STEP with the
+      // press, CONTACT on any walkable entry); the warp takes over from here.
+      val region = map.regionId.toInt()
+      val behavior = map.tileAt(nx, ny)?.behavior
+      val rule =
+          warpRules.forTile(region, map.bankId.toInt(), map.mapId.toInt(), nx, ny)
+              ?: behavior?.let { warpRules.forName(region, it.name) }
+      val stepsIntoWarp =
+          when (rule?.fire) {
+            WarpRules.Fire.STEP -> rule.press == dir
+            WarpRules.Fire.CONTACT -> true
+            else -> false
+          }
+      val warp = if (!stepsIntoWarp) null else map.warps.find { it.x == nx && it.y == ny }
+      if (warp != null) {
+        log.info { "WARP at ($nx, $ny) facing $dir (catch-up)" }
+        warpService.executeWarp(ctx, charId, warp)
+        return false
+      }
+      x = nx
+      y = ny
+      state.facingDirection = dir
+      characterStore.updatePosition(charId, x.toShort(), y.toShort(), facing = dir)
+      state.x = x.toShort()
+      state.y = y.toShort()
+      rememberTile(state, map, x, y)
+      dismountIfAshore(ctx, charId, state, map, x, y)
+      presenceService.broadcastToObservers(ctx, gbaMovePacket(charId, map, x, y, dir))
+      if (executeCustomWarp(ctx, charId, state.regionId, state.bankId, state.mapId, x, y)) return false
+      if (state.creative) continue
+      val stopped =
+          mapScriptService.onStep(ctx, state, map, x, y) ||
+              trainerSight.onStep(ctx, state, map, x, y) ||
+              run {
+                encounterService.onStep(ctx, charId, map, x, y)
+                state.encounterHold
+              }
+      if (stopped) {
+        // The encounter freeze places the player itself; a script or a trainer only removes
+        // input, so the client is put back on the tile the hook fired on.
+        if (!state.encounterHold) sendPositionReset(ctx, charId, map, x, y, dir)
+        log.info { "Catch-up stopped at ($x, $y) for char=$charId: a hook took the player" }
+        return false
+      }
+    }
+    return true
+  }
+
+  /** A real desync: the server's tile is re-asserted and the echo window opens. */
+  private fun desyncReset(
+      ctx: SessionContext,
+      charId: Long,
+      state: PlayerState,
+      map: MapDef,
+      fromX: Int,
+      fromY: Int,
+      msg: MovementPacket,
+  ) {
+    log.info {
+      "DESYNC: char=$charId claims (${msg.x}, ${msg.y}), server has ($fromX, $fromY) on " +
+          "${state.regionId}:${state.bankId}:${state.mapId}, resetting"
+    }
+    state.claimIgnoreUntil = System.currentTimeMillis() + RESET_ECHO_MILLIS
+    state.lastResetX = fromX
+    state.lastResetY = fromY
+    sendPositionReset(ctx, charId, map, fromX, fromY, msg.direction)
+  }
+
+  /**
+   * The shortest walkable path from (fromX, fromY) to (toX, toY) as (x, y, direction) steps,
+   * ledge hops included, or null when none exists within [CATCH_UP_TILES] steps.
+   */
+  private fun walkablePath(
+      map: MapDef,
+      state: PlayerState,
+      fromX: Int,
+      fromY: Int,
+      toX: Int,
+      toY: Int,
+  ): List<Triple<Int, Int, Direction>>? {
+    if (Math.abs(toX - fromX) + Math.abs(toY - fromY) > CATCH_UP_TILES) return null
+    val start = packTile(fromX, fromY)
+    val goal = packTile(toX, toY)
+    val cameFrom = HashMap<Int, Pair<Int, Direction>>()
+    val depth = HashMap<Int, Int>()
+    val queue = ArrayDeque<Int>()
+    queue.add(start)
+    depth[start] = 0
+    while (queue.isNotEmpty()) {
+      val here = queue.removeFirst()
+      if (here == goal) break
+      val d = depth.getValue(here)
+      if (d >= CATCH_UP_TILES) continue
+      val hx = here shr 16
+      val hy = here and 0xFFFF
+      for (dir in listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)) {
+        val landing = ledgeLanding(map, hx, hy, dir) ?: (hx + dir.dx to hy + dir.dy)
+        val (nx, ny) = landing
+        if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) continue
+        val key = packTile(nx, ny)
+        if (key in depth) continue
+        depth[key] = d + 1
+        cameFrom[key] = here to dir
+        queue.add(key)
+      }
+    }
+    if (goal !in depth) return null
+    val path = ArrayList<Triple<Int, Int, Direction>>()
+    var cursor = goal
+    while (cursor != start) {
+      val (prev, dir) = cameFrom.getValue(cursor)
+      path.add(Triple(cursor shr 16, cursor and 0xFFFF, dir))
+      cursor = prev
+    }
+    path.reverse()
+    return path
+  }
+
+  private fun rememberTile(state: PlayerState, map: MapDef, x: Int, y: Int) {
+    val key = mapKey(map)
+    if (state.recentTilesMapKey != key) {
+      state.recentTiles.clear()
+      state.recentTilesMapKey = key
+    }
+    state.recentTiles.addLast(packTile(x, y))
+    while (state.recentTiles.size > RECENT_TILES) state.recentTiles.removeFirst()
+  }
+
+  private fun packTile(x: Int, y: Int): Int = (x shl 16) or (y and 0xFFFF)
+
+  private fun mapKey(map: MapDef): Long =
+      (map.regionId.toLong() and 0xFF shl 40) or (map.bankId.toLong() and 0xFF shl 20) or (map.mapId.toLong() and 0xFF)
 
   private fun isWalkable(
       map: MapDef,

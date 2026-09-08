@@ -138,6 +138,22 @@ data class PlayerState(
      */
     @field:Volatile var moveIgnoreUntil: Long = 0,
     /**
+     * The tiles the server committed on the current map, oldest first (packed x shl 16 or y),
+     * a short ring. A client claim that names one of them is a phantom-step rewind - a step the
+     * client announced and then did not take (a turn-around, a bonk) that the server walked
+     * anyway - and is taken back without running that tile's hooks a second time.
+     */
+    val recentTiles: ArrayDeque<Int> = ArrayDeque(),
+    @field:Volatile var recentTilesMapKey: Long = -1,
+    /**
+     * After a desync reset, claims still describing the pre-reset position are dropped until
+     * this clock time: every packet already in flight carries the old tile, and answering each
+     * with another reset made one mismatch into a run of snaps (three in 320 ms, 2026-09-08).
+     */
+    @field:Volatile var claimIgnoreUntil: Long = 0,
+    @field:Volatile var lastResetX: Int = -1,
+    @field:Volatile var lastResetY: Int = -1,
+    /**
      * Approach tile per door, session-scoped: key packs (region, map, partner-door address), the
      * value packs the tile the player stood on when that warp fired. Any later arrival through the
      * same pairing steps to exactly that tile - the only target that is right by construction on

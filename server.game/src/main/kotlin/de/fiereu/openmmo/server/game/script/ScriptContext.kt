@@ -605,7 +605,7 @@ internal constructor(
 
   /** Flash (setflashlevel): lights the map the player stands in until its next load (s2c 0xC1). */
   fun lightMap(level: Int) {
-    session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket(level.toByte(), lit = true))
+    session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket.fromRomLevel(level))
   }
 
   /** How many party monsters can still fight - the vanilla double-battle entry gate reads it. */

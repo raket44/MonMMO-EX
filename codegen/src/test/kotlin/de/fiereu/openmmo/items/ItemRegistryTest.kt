@@ -16,6 +16,18 @@ class ItemRegistryTest :
 
       test("loads the generated catalogue") { registry().size() shouldBeGreaterThan 500 }
 
+      test("Gen 3 machine constants resolve by the move they teach") {
+        val r = registry()
+        // HM05 is Flash in FireRed and Emerald; the catalogue's own "HM05" (5424) is Gen 5's Waterfall.
+        r.idOf(r.byScriptConstant("ITEM_HM05")!!) shouldBe 343
+        r.byScriptConstant("ITEM_HM05")!!.name shouldBe "HM Flash"
+        r.idOf(r.byScriptConstant("ITEM_HM01")!!) shouldBe 339
+        // TM03 is Water Pulse (Misty), not Gen 5's Psyshock.
+        r.byScriptConstant("ITEM_TM03")!!.name shouldBe "TM Water Pulse"
+        r.byScriptConstant("ITEM_TM39")!!.name shouldBe "TM Rock Tomb"
+        r.byScriptConstant("ITEM_TM50")!!.name shouldBe "TM Overheat"
+      }
+
       test("resolves the ids the live client sends") {
         val items = registry()
 

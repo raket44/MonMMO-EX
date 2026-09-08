@@ -42,6 +42,11 @@ class ItemRegistry @Inject constructor() {
     add(2, "BICYCLE_UNOVA", 433, "Bicycle")
     add(3, "BICYCLE_SINNOH", 433, "Bicycle")
     add(4, "BICYCLE_JOHTO", 433, "Bicycle")
+    // The GBA HMs (339-346 in both FireRed and Emerald, the same eight moves): the client's
+    // own tools table lists these ids with the Gen 3 moves, so HM05 here IS Flash. The
+    // catalogue's Gen 5-numbered "HM05" (5424) is Waterfall - which is what Oak's aide handed
+    // out until byScriptConstant learned to route machine constants here (2026-09-08).
+    GEN3_HM_MOVES.forEachIndexed { index, move -> add(0, "HM%02d".format(index + 1), 339 + index, "HM $move") }
     // FireRed (region 0 table).
     add(0, "OAKS_PARCEL", 349, "Oak's Parcel")
     add(0, "POKE_FLUTE", 350, "Poké Flute")
@@ -143,6 +148,14 @@ class ItemRegistry @Inject constructor() {
   fun byScriptConstant(token: String): ItemDef? {
     if (!token.startsWith("ITEM_")) return null
     val constant = token.removePrefix("ITEM_")
+    // Machines by the Gen 3 move, never by number: TMnn is the imported "TM <move>" item, HMnn
+    // the GBA-band HM registered above.
+    MACHINE.matchEntire(constant)?.let { m ->
+      val index = m.groupValues[2].toInt() - 1
+      if (m.groupValues[1] == "HM") return byGbaConstant[constant]
+      val move = GEN3_TM_MOVES.getOrNull(index) ?: return null
+      return byConstantName.value["TM_" + mangle(move)] ?: byGbaConstant[constant]
+    }
     // The aliases run BOTH ways: FRLG scripts spell gen-3 (ITEM_PARLYZ_HEAL) against modern
     // catalogue names, while pret's Emerald uses modern constants (ITEM_PARALYZE_HEAL) against
     // catalogue entries that kept the gen-3 spelling. One direction stranded whole mart shelves.
@@ -155,18 +168,34 @@ class ItemRegistry @Inject constructor() {
 
   // The same mangling ItemDataParser.identifierOf applies, so the script constant for a retail
   // item is exactly ITEM_ plus this.
-  private val byConstantName = lazy {
-    idsByItem.keys.associateBy { item ->
-      java.text.Normalizer.normalize(item.name, java.text.Normalizer.Form.NFD)
+  private val byConstantName = lazy { idsByItem.keys.associateBy { item -> mangle(item.name) } }
+
+  private fun mangle(name: String): String =
+      java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
           .replace(Regex("\\p{Mn}+"), "")
           .uppercase(java.util.Locale.ROOT)
           .replace(Regex("[^A-Z0-9]+"), "_")
           .trim('_')
-    }
-  }
 
   private companion object {
     const val GBA_REGION_TABLE = 1000
+
+    private val MACHINE = Regex("^(TM|HM)(\\d\\d)$")
+
+    /** HM01-HM08 in FireRed and Emerald. */
+    val GEN3_HM_MOVES = listOf("Cut", "Fly", "Surf", "Strength", "Flash", "Rock Smash", "Waterfall", "Dive")
+
+    /** TM01-TM50 in FireRed and Emerald (the same list in both). */
+    val GEN3_TM_MOVES =
+        listOf(
+            "Focus Punch", "Dragon Claw", "Water Pulse", "Calm Mind", "Roar", "Toxic", "Hail", "Bulk Up",
+            "Bullet Seed", "Hidden Power", "Sunny Day", "Taunt", "Ice Beam", "Blizzard", "Hyper Beam",
+            "Light Screen", "Protect", "Rain Dance", "Giga Drain", "Safeguard", "Frustration", "Solar Beam",
+            "Iron Tail", "Thunderbolt", "Thunder", "Earthquake", "Return", "Dig", "Psychic", "Shadow Ball",
+            "Brick Break", "Double Team", "Reflect", "Shock Wave", "Flamethrower", "Sludge Bomb", "Sandstorm",
+            "Fire Blast", "Rock Tomb", "Aerial Ace", "Torment", "Facade", "Secret Power", "Rest", "Attract",
+            "Thief", "Steel Wing", "Skill Swap", "Snatch", "Overheat",
+        )
 
     /** The client's second copy of the 5000-band items: 5000-band id + 1000. */
     val MIRROR_ITEM_BAND = 6000..6999

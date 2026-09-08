@@ -90,7 +90,7 @@ constructor(
       return
     }
     if (map.lighting == de.fiereu.openmmo.common.enums.Lighting.DARK_FLASH_USABLE) {
-      session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket(0, lit = true))
+      session.send(de.fiereu.openmmo.net.game.packets.MapLightingPacket(de.fiereu.openmmo.net.game.packets.MapLightingPacket.LIT))
     }
   }
 

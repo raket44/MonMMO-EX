@@ -8,6 +8,11 @@ import de.fiereu.openmmo.net.game.codecs.SkinSet
 
 data class LoadEntityPacket(
     val entityId: Long,
+    /**
+     * 0 male, 1 female: the client's f/IL0.an0 (its debug dump calls it "gender"). Sent as a
+     * reserved zero until 2026-09-08, so every player spawned as the male body.
+     */
+    val gender: Byte = 0,
     val skin: SkinSet,
     val name: String,
     val regionId: Int,
@@ -46,7 +51,7 @@ data class LoadEntityPacket(
 object LoadEntityPacketCodec : PacketCodec<LoadEntityPacket>() {
   override fun CodecScope<LoadEntityPacket>.body(): LoadEntityPacket {
     val entityId = field(S64LE, LoadEntityPacket::entityId)
-    reserved(byte = 0)
+    val gender = field(S8, LoadEntityPacket::gender)
     val skin = field(DefaultSkinSetCodec, LoadEntityPacket::skin)
     val name = field(Utf16LeNullTerminated, LoadEntityPacket::name)
     val regionId = field(U8, LoadEntityPacket::regionId)
@@ -86,6 +91,7 @@ object LoadEntityPacketCodec : PacketCodec<LoadEntityPacket>() {
     }
     return LoadEntityPacket(
         entityId = entityId,
+        gender = gender,
         skin = skin,
         name = name,
         regionId = regionId,

@@ -117,10 +117,9 @@ constructor(
       // fresh spawn - walk through any door. "/probe ride off" clears both.
       "ride" -> {
         // INSTANT, no doors: EntitySpriteChange (0x90) applies a SkinSet to the LOCAL player
-        // live, and its trailing byte lands in E41.fZ0/IL0.an0 - the renderer's STANCE byte
-        // (the same byte LoadEntity carries at spawn, always sent 0 until now). Hypothesis:
-        // stance selects the standing vs RIDING frame set; the BIKE skin layer draws only in
-        // the riding stance. /probe ride <skinType> [stance] - stance defaults 1; "off" clears.
+        // live. Its trailing byte (E41.fZ0/IL0.an0) turned out to be the GENDER, not a stance -
+        // the client's own debug dump labels it so (f/LA0) - and the stored one is sent now.
+        // /probe ride <skinType> - "off" clears.
         val stored = characterStore.getCharacter(ctx.characterId) ?: return
         if (ctx.args.getOrNull(1) == "off") {
           characterStore.setSkin(
@@ -130,19 +129,18 @@ constructor(
           ctx.session.send(
               de.fiereu.openmmo.net.game.packets.EntitySpriteChangePacket(
                   entityId = ctx.characterId,
-                  facingFront = true,
+                  staged = false,
                   appearance =
                       de.fiereu.openmmo.net.game.codecs.SkinSet(
                           after.info.skinRegionSelectionIndex, after.skins),
-                  direction = 0,
+                  gender = after.info.rivalSex,
               ))
           ctx.reply("Ride cleared instantly.")
           return
         }
         val type = ctx.args.getOrNull(1)?.toIntOrNull()
-        val stance = ctx.args.getOrNull(2)?.toIntOrNull() ?: 1
         if (type == null || type !in 0..1023) {
-          ctx.reply("/probe ride <skinType 0-1023 | off> [stance]")
+          ctx.reply("/probe ride <skinType 0-1023 | off>")
           return
         }
         characterStore.setSkin(
@@ -155,13 +153,13 @@ constructor(
         ctx.session.send(
             de.fiereu.openmmo.net.game.packets.EntitySpriteChangePacket(
                 entityId = ctx.characterId,
-                facingFront = true,
+                staged = false,
                 appearance =
                     de.fiereu.openmmo.net.game.codecs.SkinSet(
                         after.info.skinRegionSelectionIndex, after.skins),
-                direction = stance.toByte(),
+                gender = after.info.rivalSex,
             ))
-        ctx.reply("Ride applied instantly: bike type=$type stance=$stance")
+        ctx.reply("Ride applied instantly: bike type=$type")
       }
       // s2c 0xB6 (client f/Ty0), the world-action packet: action byte (cases 0-10, 12-15, 32-35),
       // subject byte, then shorts. The field-move summon animation (ball throw, stand-in popup)

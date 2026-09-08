@@ -130,9 +130,9 @@ constructor(
           ctx.send(
               EntitySpriteChangePacket(
                   entityId = charId,
-                  facingFront = false,
+                  staged = false,
                   appearance = SkinSet(current.info.skinRegionSelectionIndex, current.skins),
-                  direction = 0,
+                  gender = current.info.rivalSex,
               ))
         }
         ctx.send(EntityTransportationPacket(charId, if (state.riding) RIDING_TRANSPORTATION else 0))

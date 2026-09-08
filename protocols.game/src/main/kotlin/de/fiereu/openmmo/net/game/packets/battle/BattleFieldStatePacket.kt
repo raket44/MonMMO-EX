@@ -2,6 +2,8 @@ package de.fiereu.openmmo.net.game.packets.battle
 
 import de.fiereu.bytecodec.*
 import de.fiereu.openmmo.common.utils.hexToBytes
+import de.fiereu.openmmo.net.game.codecs.DefaultSkinSetCodec
+import de.fiereu.openmmo.net.game.codecs.SkinSet
 
 /** Who the player is fighting. The byte rides twice, before the name and again after the id. */
 enum class OpposingSide(val wireValue: Byte) {
@@ -40,8 +42,18 @@ enum class BattleFormat(val wireValue: Byte, val playerSlots: Int, val opponentS
 data class BattleFieldStatePacket(
     val playerName: String,
     val playerId: Long,
-    /** The player's own overworld appearance, the same bytes their 0x05 spawn carries. */
-    val playerAppearance: ByteArray,
+    /**
+     * The byte after the name lands in the client's f/IL0.an0 - its own debug dump labels it
+     * "gender=" (f/LA0) and the battle scene indexes the trainer back-sprite table with it
+     * (f/Ad0 -> f/F90.ZV0(kind, outfit, gender)). 0 male, 1 female.
+     */
+    val gender: Byte,
+    /**
+     * The player's skin set (f/tK0.yF0: outfit byte, slot mask, packed slots), the same block
+     * the 0x05 spawn carries. Until 2026-09-08 this was a fixed capture of one character, so
+     * everyone fought in the captured player's clothes.
+     */
+    val appearance: SkinSet,
     /** Picks the battle backdrop. Outdoors is 0, forest 9, caves 12. */
     val background: Byte,
     val opposing: OpposingSide,
@@ -60,9 +72,6 @@ data class BattleFieldStatePacket(
     val partnerTrainerId: Short? = null,
 ) {
   init {
-    require(playerAppearance.size == APPEARANCE_SIZE) {
-      "A field state carries exactly $APPEARANCE_SIZE appearance bytes"
-    }
     require(playerActive.size == format.playerSlots) {
       "$format has ${format.playerSlots} player positions, got ${playerActive.size}"
     }
@@ -78,43 +87,6 @@ data class BattleFieldStatePacket(
   /** The opponent index on the first filled opposing position. */
   val opponentActiveSlot: Int
     get() = opponentActive.firstNotNullOf { it }
-
-  // ByteArray breaks the generated equals, and the fixtures compare whole packets.
-  override fun equals(other: Any?): Boolean =
-      this === other ||
-          (other is BattleFieldStatePacket &&
-              playerName == other.playerName &&
-              playerId == other.playerId &&
-              playerAppearance.contentEquals(other.playerAppearance) &&
-              background == other.background &&
-              opposing == other.opposing &&
-              trainerId == other.trainerId &&
-              trainerRegion == other.trainerRegion &&
-              playerParty == other.playerParty &&
-              playerActive == other.playerActive &&
-              opponentParty == other.opponentParty &&
-              opponentActive == other.opponentActive &&
-              format == other.format)
-
-  override fun hashCode(): Int =
-      listOf<Any>(
-              playerName,
-              playerId,
-              playerAppearance.contentHashCode(),
-              background,
-              opposing,
-              trainerId,
-              trainerRegion,
-              playerParty,
-              playerActive,
-              opponentParty,
-              opponentActive,
-              format)
-          .hashCode()
-
-  companion object {
-    const val APPEARANCE_SIZE = 14
-  }
 }
 
 // Two sides, then two bytes the client skips; the format byte follows, then the client's `my`
@@ -139,11 +111,13 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
             ?: throw MalformedPacketException("Unknown opposing side $opposingByte")
     constant(AFTER_OPPOSING)
     val playerName = field(Utf16LeNullTerminated) { it.playerName }
-    reserved(0)
+    val gender = field(S8) { it.gender }
     val playerId = field(S64LE) { it.playerId }
     field(S8) { it.opposing.wireValue }
-    val appearance =
-        field(fixedBytes(BattleFieldStatePacket.APPEARANCE_SIZE)) { it.playerAppearance }
+    // Player descriptor (f/TB0.l70 kind 1): a 1 here announces a rating block (enum byte, short,
+    // byte) before the skin set; nothing sent yet.
+    constant(0)
+    val appearance = field(DefaultSkinSetCodec) { it.appearance }
     padding(5)
 
     // One group of monster records, then the field positions.
@@ -235,6 +209,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     return BattleFieldStatePacket(
         playerName,
         playerId,
+        gender,
         appearance,
         background,
         opposing,

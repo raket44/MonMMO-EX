@@ -175,9 +175,9 @@ constructor(
     ctx.send(
         EntitySpriteChangePacket(
             entityId = charId,
-            facingFront = false,
+            staged = false,
             appearance = SkinSet(stored.info.skinRegionSelectionIndex, stored.skins),
-            direction = 0,
+            gender = stored.info.rivalSex,
         ))
   }
 }

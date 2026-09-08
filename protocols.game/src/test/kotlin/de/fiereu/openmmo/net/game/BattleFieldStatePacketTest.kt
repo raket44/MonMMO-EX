@@ -3,7 +3,9 @@ package de.fiereu.openmmo.net.game
 import de.fiereu.openmmo.common.test.decodeBytes
 import de.fiereu.openmmo.common.test.encodeToBytes
 import de.fiereu.openmmo.common.test.fixture
-import de.fiereu.openmmo.common.utils.hexToBytes
+import de.fiereu.openmmo.common.Skin
+import de.fiereu.openmmo.common.enums.SkinSlot
+import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.battle.BattleFieldStatePacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.net.game.packets.battle.BattleFieldStatePacketCodec
@@ -16,9 +18,18 @@ import io.kotest.matchers.shouldBe
 private const val WILD = "game/s2c/30/wild_two_party_scrubbed.bin"
 private const val TRAINER = "game/s2c/30/trainer_one_opponent_scrubbed.bin"
 
-// The appearance is a bitmask-driven variable block on the client (f/tK0.yF0); the captured bytes
-// are the only shape verified to parse.
-private val CAPTURED_APPEARANCE = "00024c031aac0f00038001a40004".hexToBytes()
+// The captured player's skin set (bytes 02 4c03 1aac 0f00 0380 01a4 0004): outfit 2, then
+// hair, eyes, top, footwear and leggings as type | color << 10.
+private val CAPTURED_APPEARANCE =
+    SkinSet(
+        2,
+        listOf(
+                Skin(SkinSlot.HAIR, 26u, 43u),
+                Skin(SkinSlot.EYES, 15u, 0u),
+                Skin(SkinSlot.TOP, 3u, 32u),
+                Skin(SkinSlot.FOOTWEAR, 1u, 41u),
+                Skin(SkinSlot.LEGGINGS, 0u, 1u))
+            .associateBy { it.slot })
 
 class BattleFieldStatePacketTest :
     FunSpec({
@@ -120,7 +131,8 @@ class BattleFieldStatePacketTest :
             BattleFieldStatePacket(
                 playerName = "Ash",
                 playerId = 0x19000L,
-                playerAppearance = ByteArray(BattleFieldStatePacket.APPEARANCE_SIZE),
+                gender = 0,
+                appearance = SkinSet(),
                 background = 0,
                 opposing = OpposingSide.WILD,
                 trainerId = 0,
@@ -158,7 +170,8 @@ class BattleFieldStateSamplesTest :
             BattleFieldStatePacket(
                 playerName = "Test",
                 playerId = 0x19000L,
-                playerAppearance = CAPTURED_APPEARANCE,
+                gender = 0,
+                appearance = CAPTURED_APPEARANCE,
                 background = 0,
                 opposing = OpposingSide.TRAINER,
                 trainerId = 0x68,
@@ -173,7 +186,8 @@ class BattleFieldStateSamplesTest :
             BattleFieldStatePacket(
                 playerName = "Test",
                 playerId = 0x19000L,
-                playerAppearance = CAPTURED_APPEARANCE,
+                gender = 0,
+                appearance = CAPTURED_APPEARANCE,
                 background = 0,
                 opposing = OpposingSide.WILD,
                 trainerId = 0,

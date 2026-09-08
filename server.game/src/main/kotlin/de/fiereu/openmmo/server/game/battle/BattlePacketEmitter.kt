@@ -3,7 +3,7 @@ package de.fiereu.openmmo.server.game.battle
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.enums.EVs
 import de.fiereu.openmmo.common.enums.PokemonContainer
-import de.fiereu.openmmo.common.utils.hexToBytes
+import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.EntityMovePpPacket
 import de.fiereu.openmmo.net.game.packets.EntityPresencePacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
@@ -52,8 +52,6 @@ private const val PLAYER_SIDE: Byte = 1
 // The side byte a switch-in carries, which is not the same numbering as BattleSidePacket.
 private const val OPPONENT_SIDE: Byte = 1
 
-private val CAPTURED_APPEARANCE = "00024c031aac0f00038001a40004".hexToBytes()
-
 // The target's outcome word: a bit set, each bit a line the client prints for that target
 // (f/O20.t20 - decompiled): 1 "avoided the attack", 2 "A critical hit!", 4 "But it failed!",
 // 8 "It doesn't affect {00}...", 0x10 "not very effective", 0x20 "super effective", 0x80
@@ -80,7 +78,7 @@ private const val NOT_VERY_EFFECTIVE_BIT = 0x10
 @Singleton
 class BattlePacketEmitter @Inject constructor(private val interestManager: InterestManager) {
 
-  fun sendStart(battle: BattleInstance, playerName: String) {
+  fun sendStart(battle: BattleInstance, playerName: String, gender: Byte, appearance: SkinSet) {
     battle.session.send(EntityPresencePacket(entityId = battle.charId, status = PRESENCE_IN_BATTLE))
     // Tell the client which side is local so the battle bag knows which monster an item targets.
     // Without it, opening the bag crashes. Opcode 0x40 is left alone here, since re-sending it
@@ -91,9 +89,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         BattleFieldStatePacket(
             playerName = playerName,
             playerId = battle.charId,
-            // TODO Send the player's own appearance and the map's battle backdrop
-            //  These are the captured values, so every player appears as the captured character.
-            playerAppearance = CAPTURED_APPEARANCE,
+            gender = gender,
+            appearance = appearance,
+            // TODO Send the map's battle backdrop (outdoors 0, forest 9, caves 12).
             background = 0,
             opposing = if (battle.trainer == null) OpposingSide.WILD else OpposingSide.TRAINER,
             // The client resolves class and name through its per-region ROM trainer table

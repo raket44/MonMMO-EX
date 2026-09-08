@@ -12,6 +12,7 @@ import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.items.ItemRegistry
 import de.fiereu.openmmo.items.generated.Items
 import de.fiereu.openmmo.moves.MoveRegistry
+import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.MapLoadedAckPacket
 import de.fiereu.openmmo.net.game.packets.SocialListEntryAddPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
@@ -521,7 +522,11 @@ constructor(
     battle.opponentSeen.addAll(battle.opponentPositions.filter { it >= 0 })
     for (mon in battle.actives()) engine.prepareIllusion(battle, mon)
     interestManager.join(session, battle.key)
-    emitter.sendStart(battle, stored.info.name)
+    emitter.sendStart(
+        battle,
+        stored.info.name,
+        stored.info.rivalSex,
+        SkinSet(stored.info.skinRegionSelectionIndex, stored.skins))
     openTurn(battle)
     // Every lead's switch-in ability fires as the battle opens, the faster ones first.
     val opening = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()

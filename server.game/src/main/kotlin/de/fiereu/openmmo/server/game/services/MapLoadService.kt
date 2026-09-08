@@ -41,6 +41,7 @@ constructor(
     val follower = party.firstOrNull { it.id == followerId } ?: party.firstOrNull()
     return LoadEntityPacket(
         entityId = info.id,
+        gender = info.rivalSex,
         skin = SkinSet(info.skinRegionSelectionIndex, skins),
         name = info.name,
         // Unsigned on purpose: NDS banks run past 127 (Cold Storage is 192). A signed widening

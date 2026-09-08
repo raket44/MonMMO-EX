@@ -293,6 +293,8 @@ private suspend fun receiveDexScene(ctx: ScriptContext) {
   ctx.sayNpc(LOCALID_PROF_OAK, PalletTown_ProfessorOaksLab.OakExplainCatching)
   ctx.sayNpc(LOCALID_PROF_OAK, PalletTown_ProfessorOaksLab.OakCompleteMonGuideWasMyDream)
   ctx.sayNpc(LOCALID_RIVAL, PalletTown_ProfessorOaksLab.RivalLeaveItToMeGramps)
+  // The ROM turns him to the player here (DexSceneRivalFacePlayer* by VAR_FACING).
+  ctx.npcFacePlayer(LOCALID_RIVAL)
   ctx.sayNpc(LOCALID_RIVAL, PalletTown_ProfessorOaksLab.RivalTellSisNotToGiveYouMap)
 
   ctx.moveNpc(LOCALID_RIVAL, *List(6) { WALK_DOWN }.toTypedArray())

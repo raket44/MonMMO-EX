@@ -573,10 +573,12 @@ class InterpretedScript(
               resolveMovementTarget(
                   ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
           if (target is MovementTarget.Npc) {
-            // GBA removeobject hides for this map visit only; a lasting removal is the script's own
-            // setflag. Persisting it here kept cut trees cut and blocked npcs blocked forever.
-            if (instruction.command == "removeobject") ctx.removeNpc(target.localId, persist = false)
-            else ctx.showNpc(target.localId)
+            // pokefirered ScrCmd_removeobject -> RemoveObjectEventByLocalIdAndMap: FlagSet on the
+            // object's own flag, then removal - so a taken starter ball stays gone across visits.
+            // Objects with no flag (cut trees, flag 0) come back with the map, as on the GBA.
+            // addobject (TrySpawnObjectEvent) spawns regardless of the flag and clears nothing.
+            if (instruction.command == "removeobject") ctx.removeNpc(target.localId, persist = true)
+            else ctx.addNpc(target.localId)
           }
           state.pc++
         }

@@ -622,6 +622,14 @@ internal constructor(
 
   /** Show a normally hidden map npc (its decomp local id) to this player, the decomp addobject. */
   /** Show a hidden npc (`addobject`). Clears its hide flag, mirroring the decomp command. */
+  /** GBA addobject: spawn the npc as it is, leaving its hide flag alone. */
+  fun addNpc(localId: Int) = movement.showNpc(session, state, localId)
+
+  /** Turn a map npc toward the player (the ROM's VAR_FACING branch ladders). */
+  fun npcFacePlayer(localId: Int) {
+    movement.npcEntityId(state, localId)?.let { movement.facePlayer(session, it, facingDirection) }
+  }
+
   fun showNpc(localId: Int) {
     movement.npcHideFlag(state, localId)?.let(::clearFlag)
     movement.showNpc(session, state, localId)

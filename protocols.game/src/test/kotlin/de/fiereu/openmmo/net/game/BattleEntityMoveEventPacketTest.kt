@@ -11,6 +11,7 @@ import de.fiereu.openmmo.net.game.packets.battle.BattleEntityMoveEventPacketCode
 import de.fiereu.openmmo.net.game.packets.battle.BattleEventBody
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 
 class BattleEntityMoveEventPacketTest :
     FunSpec({
@@ -50,6 +51,27 @@ class BattleEntityMoveEventPacketTest :
                             entityId = 60L, targetMove = 0, subEvents = emptyList())))
 
         val bytes = BattleEntityMoveEventPacketCodec.encodeToBytes(packet)
+        BattleEntityMoveEventPacketCodec.decodeBytes(bytes) shouldBe packet
+      }
+
+      test("the safari bait event rides the signed kind byte -33 with the thrower only for a toss") {
+        val packet =
+            BattleEntityMoveEventPacket(
+                sourceEntity = 1L,
+                sourceMove = 0,
+                kind = 1,
+                targets =
+                    listOf(
+                        BattleEffectTarget(
+                            entityId = 2L,
+                            targetMove = 0,
+                            subEvents =
+                                listOf(
+                                    BattleActionEvent(null, null, BattleEventBody.SafariBait(3, "RaKeT")),
+                                    BattleActionEvent(null, null, BattleEventBody.SafariBait(0))))))
+
+        val bytes = BattleEntityMoveEventPacketCodec.encodeToBytes(packet)
+        bytes.toHex() shouldContain "df"
         BattleEntityMoveEventPacketCodec.decodeBytes(bytes) shouldBe packet
       }
     })

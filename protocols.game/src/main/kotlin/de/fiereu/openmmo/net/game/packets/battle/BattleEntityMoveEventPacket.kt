@@ -425,7 +425,8 @@ data class BattleActionEvent(
 private val BattleActionEventCodec: Codec<BattleActionEvent> =
     object : PacketCodec<BattleActionEvent>() {
       override fun CodecScope<BattleActionEvent>.body(): BattleActionEvent {
-        val typeId = field(U8) { bodyId(it.body) }
+        // The client switches on a SIGNED kind byte (f/SF1 tableswitch -42..127): -33 is the bait event.
+        val typeId = field(S8) { bodyId(it.body).toByte() }.toInt()
         val aux =
             field(U8) {
               var flags = it.flags and (FLAG_ENTITY_A or FLAG_ENTITY_B).inv()

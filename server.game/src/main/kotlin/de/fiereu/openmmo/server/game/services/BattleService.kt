@@ -715,6 +715,7 @@ constructor(
       catchWild(battle, itemId)
       return
     }
+    log.info { "[catch] char=${battle.charId} threw ${item.name} at ${wild.species.name}: $shakes shake(s), missed" }
     battle.session.send(BattleListEventPacket(kind = 0, value = itemId.toShort(), subKind = shakes.toByte(), detail = null))
     if (game != null) {
       if (game.balls <= 0) {

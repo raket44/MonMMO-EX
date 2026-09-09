@@ -60,7 +60,11 @@ internal class MutableSessionContext(
     }
   }
 
-  override fun send(packet: Any): ChannelFuture = channel.writeAndFlush(packet)
+  override fun send(packet: Any): ChannelFuture =
+      channel.writeAndFlush(packet).addListener { done ->
+        // An encoder failure otherwise dies silently in the future: the packet never leaves.
+        if (!done.isSuccess && channel.isActive) log.warn(done.cause()) { "Failed to send ${packet::class.simpleName} to $remoteAddress" }
+      }
 
   override fun close(reason: () -> String) {
     val message = reason()

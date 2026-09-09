@@ -175,6 +175,37 @@ internal constructor(
     return dialog.chooseHoennStarter(session, state)
   }
 
+  /** Shows a list of client-string buttons over [line]; 1-based pick, 0 = closed unanswered. */
+  suspend fun textListMenu(line: DialogLine, stringIds: List<Int>, preselected: Int): Int {
+    holdScriptedFacing()
+    return dialog.textListMenu(session, state, line.textId, stringIds, preselected)
+  }
+
+  /**
+   * special GetElevatorFloor (src/field_specials.c): the floor index the dynamic warp names -
+   * Rocket Hideout B1F 3, B2F 2, B4F 0 - or the ROM's default 4 for any other map.
+   */
+  fun elevatorFloor(): Int =
+      when (dynamicWarpMapName()) {
+        "RocketHideout_B1F" -> 3
+        "RocketHideout_B2F" -> 2
+        "RocketHideout_B4F" -> 0
+        else -> 4
+      }
+
+  /** specialvar InitElevatorFloorSelectMenuPos: the menu row of the floor the elevator is on. */
+  fun elevatorMenuPosition(): Int =
+      when (dynamicWarpMapName()) {
+        "RocketHideout_B2F" -> 1
+        "RocketHideout_B4F" -> 2
+        else -> 0
+      }
+
+  private fun dynamicWarpMapName(): String? {
+    val warp = characterId?.let { characters?.getCharacter(it)?.info?.dynamicWarp } ?: return null
+    return maps?.getMap(warp.regionId, warp.bankId, warp.mapId)?.sourceName
+  }
+
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
   suspend fun builtinMenu(line: DialogLine, menuSet: Int): Int {
     holdScriptedFacing()

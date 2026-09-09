@@ -135,6 +135,11 @@ private constructor(
           "MB_WATER_SOUTH_ARROW_WARP" -> TileBehavior.SOUTH_ARROW_WARP
           "MB_EAST_ARROW_WARP" -> TileBehavior.EAST_ARROW_WARP
           "MB_WEST_ARROW_WARP" -> TileBehavior.WEST_ARROW_WARP
+          "MB_SPIN_RIGHT" -> TileBehavior.SPIN_RIGHT
+          "MB_SPIN_LEFT" -> TileBehavior.SPIN_LEFT
+          "MB_SPIN_UP" -> TileBehavior.SPIN_UP
+          "MB_SPIN_DOWN" -> TileBehavior.SPIN_DOWN
+          "MB_STOP_SPINNING" -> TileBehavior.STOP_SPINNING
           else -> null
         }
 

@@ -512,6 +512,8 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
+            // src/field_specials.c: the floor the elevator stands on, read from the dynamic warp.
+            "GetElevatorFloor" -> ctx.setVar(namespaced("VAR_ELEVATOR_FLOOR"), ctx.elevatorFloor())
             // Pokemon Tower's ghost: the wild battle setwildbattle named, uncatchable. FireRed's
             // CB2_EndMarowakBattle leaves VAR_RESULT FALSE only for a win; anything else keeps it
             // TRUE and the trigger walks the player back from the stairs.
@@ -580,6 +582,7 @@ class InterpretedScript(
                 val sailor = state.activeProgram.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: program.objectIds["LOCALID_VERMILION_FERRY_SAILOR"] ?: 5
                 if (ctx.isPlayerLeftOfNpc(sailor)) 1 else 0
               }
+              else if (function == "InitElevatorFloorSelectMenuPos") ctx.elevatorMenuPosition()
               else if (function == "GetPokedexCount") {
                 // src/prof_pc.c: VAR_0x8004 0 = the Kanto dex, else national; 0x8005 seen, 0x8006
                 // owned; the answer itself is IsNationalPokedexEnabled. Oak's aides read 0x8006.
@@ -1130,6 +1133,7 @@ class InterpretedScript(
     // if B was pressed (MULTI_B_PRESSED) so the script takes its cancel path instead of dying
     // at resolution time and taking the whole npc with it.
     val builtin = InterpreterSupport.BUILTIN_MENUS[menu]
+    val textList = InterpreterSupport.TEXT_LIST_MENUS[menu]
     val result =
         when {
           menu == "MULTICHOICE_YES_NO" || menu == "MULTI_YESNO" -> {
@@ -1138,6 +1142,12 @@ class InterpretedScript(
           }
           builtin != null && line != null -> {
             val pick = ctx.builtinMenu(line, builtin)
+            if (pick <= 0) MULTI_B_PRESSED else pick - 1
+          }
+          textList != null && line != null -> {
+            // multichoicedefault's fourth argument is the pre-selected row.
+            val preselected = if (instruction.command == "multichoicedefault") value(ctx, instruction.arg(3)) else 0
+            val pick = ctx.textListMenu(line, textList, preselected)
             if (pick <= 0) MULTI_B_PRESSED else pick - 1
           }
           else -> {

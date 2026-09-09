@@ -293,9 +293,7 @@ class ScriptSupportAnalyzer(
     }
     if (instruction.command == "specialvar" &&
         args[1].token !in InterpreterSupport.SPECIALVAR_RESULTS &&
-        args[1].token != "GetBattleOutcome" &&
-        args[1].token != "IsPlayerLeftOfVermilionSailor" &&
-        args[1].token != "GetPokedexCount") {
+        args[1].token !in InterpreterSupport.IMPLEMENTED_SPECIALVARS) {
       return sourceReason(instruction, "unsupported specialvar ${args[1].token}")
     }
     if (instruction.command in InterpreterSupport.ITEM_COMMANDS) {

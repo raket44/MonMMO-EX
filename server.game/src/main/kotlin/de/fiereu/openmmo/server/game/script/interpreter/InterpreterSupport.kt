@@ -89,6 +89,10 @@ internal object InterpreterSupport {
           "GetPlayerBigGuyGirlString",
           // Dex "seen" bookkeeping is the dex service's, not the script's.
           "SetSeenMon",
+          // The elevator's "Now on: nF" window and its shake: presentation the client has no box for.
+          "DrawElevatorCurrentFloorWindow",
+          "CloseElevatorCurrentFloorWindow",
+          "AnimateElevator",
           "RemoveCameraObject",
           "SpawnCameraObject",
           "AnimateTeleporterHousing",
@@ -122,6 +126,7 @@ internal object InterpreterSupport {
       setOf(
           "HealPlayerParty",
           "StartMarowakBattle",
+          "GetElevatorFloor",
           "SetVermilionTrashCans",
           "RockSmashWildEncounter",
           "ChooseMonForMoveTutor",
@@ -150,6 +155,28 @@ internal object InterpreterSupport {
               .associate { (index, name) -> "TUTOR_MOVE_$name" to index }
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
+
+  /** specialvar functions the executor answers from live state. */
+  val IMPLEMENTED_SPECIALVARS = setOf("GetBattleOutcome", "IsPlayerLeftOfVermilionSailor", "GetPokedexCount", "InitElevatorFloorSelectMenuPos")
+
+  /**
+   * ROM multichoice menus drawn as the client's text-button list (dialog kind wire 20, client
+   * f/gl0: one button per 16-bit string id). The ids are client strings: "Exit" is stock, the
+   * floor labels are staged into strings_en.xml by the launcher (ExpansionClientContentMain).
+   */
+  val TEXT_LIST_MENUS: Map<String, List<Int>> =
+      mapOf(
+          "MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR" to
+              listOf(FLOOR_B1F_STRING, FLOOR_B2F_STRING, FLOOR_B4F_STRING, EXIT_STRING),
+      )
+
+  /** Client string 1009 "Exit". */
+  const val EXIT_STRING = 1009
+
+  /** Floor labels staged by the launcher at these ids (free in the stock table, next to Fairy's 9226). */
+  const val FLOOR_B1F_STRING = 9227
+  const val FLOOR_B2F_STRING = 9228
+  const val FLOOR_B4F_STRING = 9229
 
   /**
    * specialvar functions whose answer on this server is a constant: there are no trainer tower/hill

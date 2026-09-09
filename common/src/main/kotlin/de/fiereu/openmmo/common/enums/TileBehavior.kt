@@ -31,7 +31,25 @@ enum class TileBehavior {
   /** Deep water (MB_DEEP_WATER and kin): surfable like [WATER], and a Dive spot. */
   DEEP_WATER,
   /** A waterfall (MB_WATERFALL): Waterfall climbs it upward while surfing. */
-  WATERFALL;
+  WATERFALL,
+  /** Spin tiles (MB_SPIN_RIGHT..DOWN): the player is spun along until a stop tile or a wall. */
+  SPIN_RIGHT,
+  SPIN_LEFT,
+  SPIN_UP,
+  SPIN_DOWN,
+  /** MB_STOP_SPINNING: the spin ends on this tile. */
+  STOP_SPINNING;
+
+  /** The direction a spin tile sends the player, null for any other tile. */
+  val spinDirection: Direction?
+    get() =
+        when (this) {
+          SPIN_RIGHT -> Direction.RIGHT
+          SPIN_LEFT -> Direction.LEFT
+          SPIN_UP -> Direction.UP
+          SPIN_DOWN -> Direction.DOWN
+          else -> null
+        }
 
   /** Any water a surfer rides on. */
   val isSurfable: Boolean

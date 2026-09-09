@@ -102,6 +102,28 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
           .unk
 
   /**
+   * Shows a list of text buttons over the ROM question [textId] and returns the 1-based pick, 0
+   * when closed. Dialog kind wire 20 (f/qM1 internal 16): the reader's case 16 takes a u8 count
+   * and one s16 per button (f/iq1.NQ), and the renderer f/gl0 formats each id through the string
+   * registry - so only 16-bit client string ids fit. [preselected] rides in the context value.
+   */
+  suspend fun textListMenu(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      stringIds: List<Int>,
+      preselected: Int,
+  ): Int {
+    val detail = ByteArray(1 + stringIds.size * 2)
+    detail[0] = stringIds.size.toByte()
+    stringIds.forEachIndexed { i, id ->
+      detail[1 + i * 2] = (id and 0xFF).toByte()
+      detail[2 + i * 2] = ((id shr 8) and 0xFF).toByte()
+    }
+    return showChoiceAndWait(session, state, textId, TEXT_LIST_MENU, NO_ENTITY, contextValue = preselected, detail = detail).unk
+  }
+
+  /**
    * Opens the client's daycare BREED-SELECTION window (pick two party monsters) over the ROM
    * question [textId] and returns the client's acknowledgement value. Dialog action wire 26 -
    * discovered live when the byte was mistaken for the registry menu and the breed window appeared
@@ -335,6 +357,8 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   private companion object {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
+    /** Text-button list, wire 20 -> f/qM1 internal 16, parse case 16, renderer f/gl0. */
+    const val TEXT_LIST_MENU = 20
     /**
      * A built-in client menu addressed by (category, set). Three maps stand between the wire byte
      * and the behavior (all bytecode-decoded): wire -> qM1 constant (ctor args (internal, wire)),

@@ -4,6 +4,8 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.TileBehavior
+import de.fiereu.openmmo.server.game.script.MovementStep
+import kotlinx.coroutines.launch
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.WarpTile
@@ -34,6 +36,9 @@ private const val CATCH_UP_TILES = 6
 
 /** Committed tiles remembered per map for phantom-step rewinds. */
 private const val RECENT_TILES = 8
+
+// A spin-tile slide never runs longer than this; the hideout mazes are far shorter.
+private const val MAX_SPIN_STEPS = 64
 
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
@@ -81,6 +86,7 @@ constructor(
     private val warpRules: WarpRules,
     private val trainerSight: TrainerSightService,
     private val scriptMovement: ScriptMovementService,
+    private val scope: kotlinx.coroutines.CoroutineScope,
     private val scriptRegistry: ScriptRegistry? = null,
     private val scriptRunner: Provider<ScriptRunner>? = null,
 ) {
@@ -439,7 +445,14 @@ constructor(
           WarpRules.Fire.STAND,
           null -> false
         }
-    val warp = if (!stepsIntoWarp) null else currentMap.warps.find { w -> w.x == toX && w.y == toY }
+    val warp =
+        if (stepsIntoWarp) currentMap.warps.find { w -> w.x == toX && w.y == toY }
+        else if (targetRule == null && msg.direction == Direction.UP && !isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides))
+        // The side tiles of a wide door (Rocket Hideout's elevator, three warps on an impassable
+        // row with one DOOR tile in the middle) carry the ROM's warp events too: a walk-up into
+        // any of them is the door.
+        currentMap.warps.find { w -> w.x == toX && w.y == toY }
+        else null
     if (warp != null) {
       log.info { "WARP at ($toX, $toY) facing ${msg.direction}" }
       warpService.executeWarp(ctx, charId, warp)
@@ -464,6 +477,9 @@ constructor(
     // Creative admins walk through anything; the client shows the wall, the server allows it.
     if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides)) {
       log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
+      if (currentMap.warps.any { it.x == toX && it.y == toY }) {
+        log.info { "WALL onto warp tile ($toX, $toY) behavior=$targetBehavior rule=${targetRule?.fire} dir=${msg.direction}" }
+      }
       bonk(ctx, charId, state, msg.direction)
       return
     }
@@ -473,6 +489,7 @@ constructor(
     state.y = toY.toShort()
     rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
+    if (startSpin(ctx, charId, state, currentMap, toX, toY)) return
 
     // The client already walked itself there, so only the observers need telling.
     presenceService.broadcastToObservers(
@@ -758,6 +775,56 @@ constructor(
         EntityFaceTurnPacket(entityId = charId, facing = direction.ordinal.toByte()),
     )
   }
+
+  /**
+   * Spin tiles (Rocket Hideout's arrow floor). The cartridge (field_player_avatar.c) spins the
+   * player along from a spin tile: each step goes the way the last spin tile pointed, a new spin
+   * tile turns the spin, a STOP_SPINNING tile ends it, and so does a wall. The client knows
+   * nothing of these tiles, so the server drives the slide as a scripted walk with input held,
+   * and the position commits at the end. Returns true when a slide started for this step.
+   */
+  private fun startSpin(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int): Boolean {
+    var direction = map.tileAt(x, y)?.behavior?.spinDirection ?: return false
+    if (state.spinning) return false
+    val steps = mutableListOf<MovementStep>()
+    var cx = x
+    var cy = y
+    while (steps.size < MAX_SPIN_STEPS) {
+      val nx = cx + direction.dx
+      val ny = cy + direction.dy
+      if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
+      steps += spinStep(direction)
+      cx = nx
+      cy = ny
+      val behavior = map.tileAt(cx, cy)?.behavior ?: break
+      if (behavior == TileBehavior.STOP_SPINNING) break
+      behavior.spinDirection?.let { direction = it }
+    }
+    if (steps.isEmpty()) return false
+    log.info { "[Spin] char=$charId from ($x, $y) ${steps.size} steps to ($cx, $cy)" }
+    state.spinning = true
+    scope.launch {
+      try {
+        scriptMovement.holdPlayer(ctx, state)
+        scriptMovement.moveSelf(ctx, state, steps)
+      } catch (e: Exception) {
+        log.warn(e) { "[Spin] char=$charId slide failed" }
+      } finally {
+        state.spinning = false
+        scriptMovement.releasePlayerHold(ctx, state)
+      }
+    }
+    return true
+  }
+
+  private fun spinStep(direction: Direction): MovementStep =
+      when (direction) {
+        Direction.UP -> MovementStep.FAST_UP
+        Direction.DOWN -> MovementStep.FAST_DOWN
+        Direction.LEFT -> MovementStep.FAST_LEFT
+        Direction.RIGHT -> MovementStep.FAST_RIGHT
+        else -> MovementStep.FAST_DOWN
+      }
 
   /** A real desync: the server's tile is re-asserted and the echo window opens. */
   private fun desyncReset(

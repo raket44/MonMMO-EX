@@ -203,10 +203,12 @@ internal constructor(
   /** Shows DS-bank text buttons over [line]; 1-based pick, 0 = closed unanswered. */
   internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
     holdScriptedFacing()
-    // Kind wire 49 is the one dialog kind flagged as a window (f/qM1.kL0): the manager opens it only
-    // after an EMPTY text page (f/cg.YQ), and a question text makes it show the text, then answer 0
-    // on the next press (seen live). The ROM already showed the question as the message before.
-    return dialog.dsTextListMenu(session, state, 0, list.region, list.bank, list.entries, preselected)
+    // Kind wire 49 is the one dialog kind flagged as a window (f/qM1.kL0): the manager queues an
+    // EMPTY page for such a kind and opens the window on it (f/cg.YQ); a question text shows the
+    // text and then answers 0 on the next press, and text id 0 resolves to no text at all, so no
+    // page is queued and the client answers 0 at once (both seen live). The ROM's empty text is
+    // the blank page it wants; the ROM already showed the question as the message before.
+    return dialog.dsTextListMenu(session, state, EMPTY_ROM_TEXT, list.region, list.bank, list.entries, preselected)
   }
 
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
@@ -865,6 +867,9 @@ internal constructor(
 }
 
 /** Transportation byte while surfing: bit 0x01, client f.ti.J10. */
+/** FireRed Test_Text_Empty (codegen/dialog/kanto.json id 5, text "$"): the one blank ROM page. */
+private const val EMPTY_ROM_TEXT = 5
+
 private const val SURF_TRANSPORTATION = 0x01
 
 /** The GBA wallet cap. */

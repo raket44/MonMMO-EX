@@ -446,6 +446,9 @@ class InterpretedScript(
         "dowildbattle" -> {
           check(state.wildSpecies > 0) { "Script ${program.id.stable} has no setwildbattle before `${instruction.sourceLine}`" }
           val result = tracedWait(ctx, "wild battle ${state.wildSpecies}") { ctx.wildBattle(state.wildSpecies, state.wildLevel) }
+          // The field's objects reload after a battle on the cartridge, so an npc the script hid
+          // just before (Route 12's Snorlax: setflag, then dowildbattle) is gone when the screen returns.
+          ctx.despawnHiddenNpcs()
           state.lastBattleOutcome =
               when (result) {
                 BattleResult.VICTORY -> B_OUTCOME_WON

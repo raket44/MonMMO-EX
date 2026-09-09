@@ -73,7 +73,13 @@ constructor(
     state.mapId = destination.mapId.toInt()
     state.x = destination.x
     state.y = destination.y
-    state.elevation = map.tileAt(destination.x.toInt(), destination.y.toInt())?.elevation ?: 0
+    // The arrival layer the way the door path picks it (WarpService.executeWarp): the warp event
+    // on the target tile names it; a plain tile's own floor elevation is GBA scale and the client's
+    // is one less (FlyService.landingElevation). The tile's raw value put Fuji's guest a layer up.
+    state.elevation =
+        map.warps.find { it.x == destination.x.toInt() && it.y == destination.y.toInt() }?.elevation
+            ?: map.tileAt(destination.x.toInt(), destination.y.toInt())?.let { (it.elevation - 1).coerceAtLeast(0) }
+            ?: 0
     state.facingDirection = destination.facing
 
     val loaded = CompletableDeferred<Unit>()

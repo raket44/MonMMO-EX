@@ -318,6 +318,10 @@ constructor(
   }
 
   /** Removes a cutscene NPC and its collision. */
+  /** Despawns every npc of the current map whose hide flag is set by now (the field reload after a battle). */
+  fun despawnHiddenNpcs(session: SessionContext, state: PlayerState) =
+      npcService.refreshDynamicNpcs(session, state.regionId, state.bankId, state.mapId)
+
   fun removeNpc(session: SessionContext, state: PlayerState, localId: Int) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return

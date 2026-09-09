@@ -811,6 +811,9 @@ internal constructor(
    * departed lab rival, taken starter balls, collected item balls. Without it the removal is a
    * cutscene visual and the npc comes back with the map.
    */
+  /** The cartridge reloads the field's objects after a battle: an npc a script hid before it is gone. */
+  fun despawnHiddenNpcs() = movement.despawnHiddenNpcs(session, state)
+
   fun removeNpc(localId: Int, persist: Boolean = false) {
     movement.removeNpc(session, state, localId)
     if (persist) movement.npcHideFlag(state, localId)?.let(::setFlag)

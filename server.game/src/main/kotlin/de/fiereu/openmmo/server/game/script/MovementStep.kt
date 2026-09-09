@@ -36,6 +36,12 @@ enum class MovementStep(
   FASTER_UP(Direction.UP, true, 0x36, fast = true),
   FASTER_LEFT(Direction.LEFT, true, 0x37, fast = true),
   FASTER_RIGHT(Direction.RIGHT, true, 0x38, fast = true),
+  // The GBA slides (ice, and here spin tiles): the tile moves under the sprite, which keeps the
+  // facing it has - so a face action before each slide rotates the sprite as it goes.
+  SLIDE_DOWN(Direction.DOWN, true, 0x39, changesFacing = false, fast = true),
+  SLIDE_UP(Direction.UP, true, 0x3A, changesFacing = false, fast = true),
+  SLIDE_LEFT(Direction.LEFT, true, 0x3B, changesFacing = false, fast = true),
+  SLIDE_RIGHT(Direction.RIGHT, true, 0x3C, changesFacing = false, fast = true),
   WALK_IN_PLACE_FAST_LEFT(Direction.LEFT, false, 0x23, fast = true),
   WALK_IN_PLACE_FAST_RIGHT(Direction.RIGHT, false, 0x24, fast = true),
   WALK_IN_PLACE_FASTER_DOWN(Direction.DOWN, false, 0x2D, fast = true),

@@ -467,13 +467,6 @@ constructor(
       bonk(ctx, charId, state, msg.direction)
       return
     }
-    // A standing npc is a wall to the client; it was open ground here, so the server walked
-    // through the person and rewound on the next packet, and everyone watching saw the jitter.
-    if (!state.creative && npcBlocks(state, stored, currentMap, toX, toY)) {
-      log.debug { "NPC: char=$charId blocked at ($toX, $toY)" }
-      bonk(ctx, charId, state, msg.direction)
-      return
-    }
 
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
     state.x = toX.toShort()
@@ -695,8 +688,7 @@ constructor(
         return true
       }
     }
-    val stored = characterStore.getCharacter(charId)
-    val path = walkablePath(map, state, fromX, fromY, msg.x, msg.y) { x, y -> stored != null && npcBlocks(state, stored, map, x, y) }
+    val path = walkablePath(map, state, fromX, fromY, msg.x, msg.y)
     if (path == null) {
       desyncReset(ctx, charId, state, map, fromX, fromY, msg)
       return false
@@ -767,30 +759,6 @@ constructor(
     )
   }
 
-  /**
-   * A standing npc on (x, y), as this player sees the map: story placements and xy overrides
-   * applied, hidden ones and decoration slots ignored, a scripted walk's end pose honoured.
-   * Wanderers are skipped - the client moves them on its own and the server cannot know where
-   * they stand; a bonk on one is still a phantom step and a rewind.
-   */
-  private fun npcBlocks(state: PlayerState, stored: StoredCharacter, map: MapDef, x: Int, y: Int): Boolean {
-    val region = map.regionId.toInt()
-    val bank = map.bankId.toInt()
-    val mapId = map.mapId.toInt()
-    for (npc in map.npcs) {
-      if (npc.x !in 0 until map.width || npc.y !in 0 until map.height) continue
-      if (npc.hideFlag.substringAfter('/').startsWith(NpcService.DECORATION_FLAG_PREFIX)) continue
-      if (npc.hideFlag.isNotEmpty() && npc.hideFlag in stored.storyFlags) continue
-      if (npc.movementType.wanders) continue
-      val pose = state.scriptedNpcPoses[de.fiereu.openmmo.server.game.session.scriptedNpcKey(region, bank, mapId, npc.entityIdx)]
-      val (nx, ny) =
-          if (pose != null) pose.x to pose.y
-          else npcService.effectiveNpc(region, bank, mapId, npc, stored.storyFlags, stored.storyVars).let { it.x to it.y }
-      if (nx == x && ny == y) return true
-    }
-    return false
-  }
-
   /** A real desync: the server's tile is re-asserted and the echo window opens. */
   private fun desyncReset(
       ctx: SessionContext,
@@ -822,7 +790,6 @@ constructor(
       fromY: Int,
       toX: Int,
       toY: Int,
-      blocked: (Int, Int) -> Boolean = { _, _ -> false },
   ): List<Triple<Int, Int, Direction>>? {
     if (Math.abs(toX - fromX) + Math.abs(toY - fromY) > CATCH_UP_TILES) return null
     val start = packTile(fromX, fromY)
@@ -843,7 +810,6 @@ constructor(
         val landing = ledgeLanding(map, hx, hy, dir) ?: (hx + dir.dx to hy + dir.dy)
         val (nx, ny) = landing
         if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) continue
-        if (blocked(nx, ny)) continue
         val key = packTile(nx, ny)
         if (key in depth) continue
         depth[key] = d + 1

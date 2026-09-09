@@ -207,6 +207,7 @@ class ScriptSupportAnalyzer(
           "setobjectxy",
           "setobjectxyperm",
           "warp" -> args.size == 3
+          "setdynamicwarp" -> args.size == 4
           "multichoice" -> args.size == 4
           "multichoicedefault",
           "multichoicegrid" -> args.size == 5
@@ -362,6 +363,7 @@ class ScriptSupportAnalyzer(
           // interpreter rebuilds the ObjectArg from the token (as copyobjectxytoperm does).
           "setobjectmovementtype" -> args.size == 2
           "warp" -> args.all { it is IntArg }
+          "setdynamicwarp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])

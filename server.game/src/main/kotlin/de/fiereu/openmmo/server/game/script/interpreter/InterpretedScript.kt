@@ -1153,6 +1153,7 @@ class InterpretedScript(
     // if B was pressed (MULTI_B_PRESSED) so the script takes its cancel path instead of dying
     // at resolution time and taking the whole npc with it.
     val builtin = InterpreterSupport.BUILTIN_MENUS[menu]
+    val dsList = InterpreterSupport.DS_TEXT_LIST_MENUS[menu]
     val result =
         when {
           menu == "MULTICHOICE_YES_NO" || menu == "MULTI_YESNO" -> {
@@ -1161,6 +1162,12 @@ class InterpretedScript(
           }
           builtin != null && line != null -> {
             val pick = ctx.builtinMenu(line, builtin)
+            if (pick <= 0) MULTI_B_PRESSED else pick - 1
+          }
+          dsList != null && line != null -> {
+            // multichoicedefault's fourth argument is the pre-selected row.
+            val preselected = if (instruction.command == "multichoicedefault") value(ctx, instruction.arg(3)) else 0
+            val pick = ctx.dsTextListMenu(line, dsList, preselected)
             if (pick <= 0) MULTI_B_PRESSED else pick - 1
           }
           else -> {

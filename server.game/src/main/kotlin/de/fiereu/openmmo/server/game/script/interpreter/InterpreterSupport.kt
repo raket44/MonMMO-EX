@@ -156,6 +156,21 @@ internal object InterpreterSupport {
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
 
+  /** A multichoice drawn as the client's text-button list: entries of one DS text bank. */
+  data class DsTextList(val region: Int, val bank: Int, val entries: List<Int>)
+
+  /**
+   * ROM multichoice menus the client draws with its text-button list (dialog kind wire 49,
+   * client f/gl0), whose buttons are entries of one DS message bank: f/EO.oG1(region, bank,
+   * entry). Platinum's TEXT_BANK_MENU_ENTRIES (bank 361, region 3) holds B1F 121, B2F 122,
+   * LOOKOUT 123, EXIT 124 and 1F..5F at 116..120. No bank on the client says "B4F", so the
+   * hideout's third floor shows as "4F" until a text of its own exists.
+   */
+  val DS_TEXT_LIST_MENUS: Map<String, DsTextList> =
+      mapOf(
+          "MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR" to DsTextList(region = 3, bank = 361, entries = listOf(121, 122, 119, 124)),
+      )
+
   /** specialvar functions the executor answers from live state. */
   val IMPLEMENTED_SPECIALVARS = setOf("GetBattleOutcome", "IsPlayerLeftOfVermilionSailor", "GetPokedexCount", "InitElevatorFloorSelectMenuPos")
 

@@ -102,6 +102,37 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
           .unk
 
   /**
+   * Shows a list of text buttons over the ROM question [textId] and returns the 1-based pick, 0
+   * when closed. Dialog kind wire 49 = f/qM1.b (internal 40): parse case 9 reads a byte the
+   * renderer ignores, the DS region byte, the message bank as s16, then a u8 count and one s16
+   * entry per button; renderer f/gl0 draws each through f/EO.oG1(region, bank, entry), the DS
+   * message-bank table - so the buttons can only be entries of one DS bank. Tables parsed by
+   * constant name from f/qM1, f/XN1.kW and f/UX.bV (2026-09-09); the earlier wire-20 guess was a
+   * plain message and held the player.
+   */
+  suspend fun dsTextListMenu(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      region: Int,
+      bank: Int,
+      entries: List<Int>,
+      preselected: Int,
+  ): Int {
+    val detail = ByteArray(5 + entries.size * 2)
+    detail[0] = 0
+    detail[1] = region.toByte()
+    detail[2] = (bank and 0xFF).toByte()
+    detail[3] = ((bank shr 8) and 0xFF).toByte()
+    detail[4] = entries.size.toByte()
+    entries.forEachIndexed { i, entry ->
+      detail[5 + i * 2] = (entry and 0xFF).toByte()
+      detail[6 + i * 2] = ((entry shr 8) and 0xFF).toByte()
+    }
+    return showChoiceAndWait(session, state, textId, DS_TEXT_LIST, NO_ENTITY, contextValue = preselected, detail = detail).unk
+  }
+
+  /**
    * Opens the client's daycare BREED-SELECTION window (pick two party monsters) over the ROM
    * question [textId] and returns the client's acknowledgement value. Dialog action wire 26 -
    * discovered live when the byte was mistaken for the registry menu and the breed window appeared
@@ -335,6 +366,8 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   private companion object {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
+    /** Text-button list of DS-bank entries: wire 49 = f/qM1.b, parse case 9, renderer f/gl0. */
+    const val DS_TEXT_LIST = 49
     /**
      * A built-in client menu addressed by (category, set). Three maps stand between the wire byte
      * and the behavior (all bytecode-decoded): wire -> qM1 constant (ctor args (internal, wire)),

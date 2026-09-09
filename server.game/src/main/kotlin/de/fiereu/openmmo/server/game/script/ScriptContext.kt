@@ -200,6 +200,12 @@ internal constructor(
     return maps?.getMap(warp.regionId, warp.bankId, warp.mapId)?.sourceName
   }
 
+  /** Shows DS-bank text buttons over [line]; 1-based pick, 0 = closed unanswered. */
+  internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
+    holdScriptedFacing()
+    return dialog.dsTextListMenu(session, state, line.textId, list.region, list.bank, list.entries, preselected)
+  }
+
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
   suspend fun builtinMenu(line: DialogLine, menuSet: Int): Int {
     holdScriptedFacing()

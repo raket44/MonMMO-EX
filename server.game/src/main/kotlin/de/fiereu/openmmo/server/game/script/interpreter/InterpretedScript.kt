@@ -517,10 +517,20 @@ class InterpretedScript(
             // TRUE and the trigger walks the player back from the stairs.
             "StartMarowakBattle" -> {
               check(state.wildSpecies > 0) { "Script ${program.id.stable} has no setwildbattle before `${instruction.sourceLine}`" }
-              val result = tracedWait(ctx, "ghost battle ${state.wildSpecies}") { ctx.ghostBattle(state.wildSpecies, state.wildLevel) }
-              state.lastBattleOutcome = if (result == BattleResult.VICTORY) B_OUTCOME_WON else B_OUTCOME_RAN
-              if (result == BattleResult.DEFEAT || result == BattleResult.DISCONNECTED) return
-              ctx.setVar(namespaced("VAR_RESULT"), if (result == BattleResult.VICTORY) 0 else 1)
+              // Without the Silph Scope the cartridge lets the unidentified ghost scare every
+              // attack off until the player runs; here the fight is skipped outright - the grey
+              // box says "Haunted by the ghosts." and VAR_RESULT stays TRUE, so the trigger walks
+              // the player back from the stairs.
+              val scope = ctx.itemByScriptConstant("ITEM_SILPH_SCOPE")
+              if (scope == null || ctx.itemCount(scope) == 0) {
+                ctx.send(de.fiereu.openmmo.net.game.packets.ServerMessagePacket(HAUNTED_BY_GHOSTS_STRING, emptyList(), showOnMap = true, mode = null))
+                ctx.setVar(namespaced("VAR_RESULT"), 1)
+              } else {
+                val result = tracedWait(ctx, "ghost battle ${state.wildSpecies}") { ctx.ghostBattle(state.wildSpecies, state.wildLevel) }
+                state.lastBattleOutcome = if (result == BattleResult.VICTORY) B_OUTCOME_WON else B_OUTCOME_RAN
+                if (result == BattleResult.DEFEAT || result == BattleResult.DISCONNECTED) return
+                ctx.setVar(namespaced("VAR_RESULT"), if (result == BattleResult.VICTORY) 0 else 1)
+              }
             }
             // Rock Smash encounters: the retail tables carry no Rock Smash entries, so no monster
             // ever hides under a rock here - the truthful answer, not a shortcut.
@@ -1724,6 +1734,9 @@ internal object TrainerStoryState {
 private const val MULTI_B_PRESSED = 127
 
 private const val B_OUTCOME_WON = 1
+
+// Client string 11204, "Haunted by the ghosts.": the grey box shown when the Silph Scope is missing.
+private const val HAUNTED_BY_GHOSTS_STRING = 11204
 private const val B_OUTCOME_LOST = 2
 private const val B_OUTCOME_RAN = 4
 private const val B_OUTCOME_CAUGHT = 7

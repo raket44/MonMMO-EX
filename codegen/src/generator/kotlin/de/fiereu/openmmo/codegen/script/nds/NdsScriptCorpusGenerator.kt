@@ -64,6 +64,12 @@ class NdsScriptCorpusGenerator {
 
     /** Dialects without source files (Unova, from the ROM disassembly): name -> parsed file. */
     fun preparsed(): Map<String, ParsedFile>? = null
+
+    /** Elevator floor by map header NAME: the game's GetFloorsAbove (Platinum) / MapNumToFloorNo (HeartGold). */
+    fun elevatorFloors(): Map<String, Int> = emptyMap()
+
+    /** The header's warp tiles whose destination is the dynamic (elevator) header, as (x, y). */
+    fun dynamicExits(header: MapHeader): List<Pair<Int, Int>> = emptyList()
   }
 
   class Macro(val params: List<String>, val body: List<String>)
@@ -94,6 +100,12 @@ class NdsScriptCorpusGenerator {
 
     val headers = dialect.mapHeaders()
     val headersByScript = headers.filter { it.scriptFile != null }.groupBy { it.scriptFile!! }
+    // Elevators: the doors that lead "back where you came from" and the floor each map is.
+    val dynamicExits = headers.flatMap { h -> dialect.dynamicExits(h).map { (x, y) -> "${h.id and 0xFF};${h.id shr 8};$x;$y" } }
+    val headerFloors =
+        dialect.elevatorFloors().mapNotNull { (name, floor) ->
+          (constants[name] ?: headers.firstOrNull { it.name == name }?.id)?.let { it.toString() to floor }
+        }.toMap()
 
     val programs = mutableListOf<ScriptCorpusProgramRecord>()
     val movements = mutableListOf<ScriptCorpusMovementRecord>()
@@ -229,6 +241,8 @@ class NdsScriptCorpusGenerator {
         unavailableDirectLabels = emptySet(),
         parseFailureCategories = failures,
         parseFailureSamples = samples.mapValues { it.value.toList() },
+        dynamicExits = dynamicExits,
+        headerFloors = headerFloors,
     )
   }
 
@@ -318,6 +332,12 @@ class NdsScriptCorpusGenerator {
     // shows an entry of it; folded here into the same ROM text ids as every other message.
     val stdMsg = HashMap<String, Int>()
     var lastVar8004: Int? = null
+    // A scripted menu builds up item by item: Platinum Init*TextMenu / AddMenuEntry* / ShowMenu,
+    // HeartGold MenuInit(StdGmm) / MenuItemAdd / MenuExec. Emitted as one ds_menu.
+    var menuVar: String? = null
+    var menuCursor = "0"
+    var menuStdBank = false
+    val menuItems = mutableListOf<Pair<String, String>>()
     var i = 0
     while (i < lines.size) {
       val line = lines[i]
@@ -554,6 +574,37 @@ class NdsScriptCorpusGenerator {
           resultCopy(out, a.getOrNull(2))
         }
         "RestartCurrentScript" -> out += "end"
+        // -- scripted menus -> the client's text-button list over the current message; the
+        // chosen entry's value lands in the menu's var (the games' entryIndex / MenuItemAdd value).
+        "InitGlobalTextMenu", "InitLocalTextMenu", "InitGlobalTextListMenu", "InitLocalTextListMenu" -> {
+          menuVar = a.getOrNull(3); menuCursor = a.getOrElse(2) { "0" }; menuStdBank = false; menuItems.clear()
+        }
+        "MenuInitStdGmm", "MenuInit" -> {
+          menuVar = a.getOrNull(4); menuCursor = a.getOrElse(2) { "0" }; menuStdBank = name == "MenuInitStdGmm"; menuItems.clear()
+        }
+        "AddMenuEntryImm", "AddMenuEntry", "AddListMenuEntry" -> {
+          val id = a.getOrNull(0)?.let(dialect::textId)
+          if (id != null && a.size >= 2) menuItems += id.toString() to a[1]
+        }
+        "MenuItemAdd" -> {
+          // entry of the standard menu bank (HeartGold msg_0191: 1F..6F, B1F, ROOF, EXIT) or of the map's own bank.
+          val bank = if (menuStdBank) HEARTGOLD_STD_MENU_BANK else msgBank
+          val entry = a.getOrNull(0)?.toIntOrNull()
+          val id = if (bank != null && entry != null) dialect.textId("msg_%04d_STD_%05d".format(bank, entry)) else null
+          if (id != null && a.size >= 3) menuItems += id.toString() to a[2]
+        }
+        "ShowMenu", "ShowListMenu", "ShowMenuMultiColumn", "MenuExec" -> {
+          val target = menuVar
+          if (target != null && menuItems.isNotEmpty()) out += "ds_menu $target, $menuCursor, " + menuItems.joinToString(", ") { "${it.first}, ${it.second}" }
+          else if (target != null) out += "setvar $target, 127"
+          menuItems.clear()
+        }
+        // -- elevators: the dynamic warp is the door the player came in by (SetDynamicWarp /
+        // SetSpecialLocation: header, warpId, x, y|z, dir); the floor comes from the game's table.
+        "GetFloorsAbove", "GetDynamicWarpFloorNo" -> out += "ds_dynamicwarpfloor ${a[0]}"
+        "SetSpecialLocation", "SetDynamicWarp" -> if (a.size >= 4) out += "ds_setdynamicwarp ${a[0]}, ${a[2]}, ${a[3]}"
+        // The "Now on nF" window and the shaking-cab animation: presentation only.
+        "ShowCurrentFloor", "ElevatorCurFloorBox", "PlayElevatorAnimation", "ElevatorAnim" -> {}
         "Warp" -> {
           // Platinum: header, x, z, dir. HeartGold: header, 0, x, y, dir. The header id is the
           // client's bank/map pair; the interpreter raw-warps to it.
@@ -715,6 +766,28 @@ class NdsScriptCorpusGenerator {
 
     override fun textId(token: String): Int? = textIds[token]
 
+    /** src/overlay005/field_menu.c FieldMenu_GetFloorsAbove: `case MAP_HEADER_X: floorsAbove = n;`. */
+    override fun elevatorFloors(): Map<String, Int> {
+      val file = File(root, "src/overlay005/field_menu.c")
+      if (!file.isFile) return emptyMap()
+      val body = Regex("FieldMenu_GetFloorsAbove\\(int location\\)(.*?)\\n}", RegexOption.DOT_MATCHES_ALL).find(file.readText())?.groupValues?.get(1) ?: return emptyMap()
+      return Regex("case (MAP_HEADER_\\w+):\\s*floorsAbove = (\\d+);").findAll(body).associate { it.groupValues[1] to it.groupValues[2].toInt() }
+    }
+
+    /** res/field/events/<map>.json warp_events with dest_header_id MAP_HEADER_DYNAMIC, as (x, z). */
+    override fun dynamicExits(header: MapHeader): List<Pair<Int, Int>> {
+      val file = header.eventsFile?.let { File(root, "res/field/events/$it") } ?: return emptyList()
+      if (!file.isFile) return emptyList()
+      val warps = runCatching { json.parseToJsonElement(file.readText()).jsonObject["warp_events"]?.jsonArray }.getOrNull() ?: return emptyList()
+      return warps.mapNotNull { w ->
+        val o = w.jsonObject
+        if (o["dest_header_id"]?.jsonPrimitive?.content != "MAP_HEADER_DYNAMIC") return@mapNotNull null
+        val x = o["x"]?.jsonPrimitive?.content?.toIntOrNull() ?: return@mapNotNull null
+        val z = o["z"]?.jsonPrimitive?.content?.toIntOrNull() ?: return@mapNotNull null
+        x to z
+      }
+    }
+
     override fun constants(): Map<String, Int> {
       val out = HashMap(ConstantsIndex.build(root))
       File(root, "generated").listFiles { f -> f.extension == "txt" }?.sortedBy { it.name }?.forEach { out += enumFile(it, out) }
@@ -814,6 +887,40 @@ class NdsScriptCorpusGenerator {
     override fun textId(token: String): Int? {
       val m = MSG_TOKEN.matchEntire(token) ?: return null
       return (region shl 28) or (m.groupValues[1].toInt() shl 16) or m.groupValues[2].toInt()
+    }
+
+    /**
+     * MapNumToFloorNo, read off asm/overlay_01_021EDAFC.s (0x021EE81C): the jump table and the
+     * compare chains land on `mov r0, #n` returns. Every other map asserts and answers 0.
+     */
+    override fun elevatorFloors(): Map<String, Int> =
+        mapOf(
+            "MAP_GOLDENROD_RADIO_TOWER_5F" to 0, "MAP_GOLDENROD_RADIO_TOWER_OBSERVATION_DECK" to 1,
+            "MAP_GOLDENROD_DEPARTMENT_STORE_BASEMENT" to 0, "MAP_GOLDENROD_DEPARTMENT_STORE_1F" to 1,
+            "MAP_GOLDENROD_DEPARTMENT_STORE_2F" to 2, "MAP_GOLDENROD_DEPARTMENT_STORE_3F" to 3,
+            "MAP_GOLDENROD_DEPARTMENT_STORE_4F" to 4, "MAP_GOLDENROD_DEPARTMENT_STORE_5F" to 5,
+            "MAP_GOLDENROD_DEPARTMENT_STORE_6F" to 6,
+            "MAP_OLIVINE_LIGHTHOUSE_1F" to 0, "MAP_OLIVINE_LIGHTHOUSE_LIGHT_ROOM" to 1,
+            "MAP_CELADON_DEPARTMENT_STORE_1F" to 0, "MAP_CELADON_DEPARTMENT_STORE_2F" to 1,
+            "MAP_CELADON_DEPARTMENT_STORE_3F" to 2, "MAP_CELADON_DEPARTMENT_STORE_4F" to 3,
+            "MAP_CELADON_DEPARTMENT_STORE_5F" to 4, "MAP_CELADON_DEPARTMENT_STORE_ROOF" to 5,
+            "MAP_CELADON_CONDOMINIUMS_1F" to 0, "MAP_CELADON_CONDOMINIUMS_2F" to 1,
+            "MAP_CELADON_CONDOMINIUMS_3F" to 2, "MAP_CELADON_CONDOMINIUMS_ROOF" to 3,
+            "MAP_SAFFRON_SILPH_CO_HQ" to 0, "MAP_SAFFRON_SILPH_CO_ROTOM_ROOM" to 1,
+        )
+
+    /** files/fielddata/eventdata/zone_event/<map>.json warps with header 4095 (dynamic), as (x, z). */
+    override fun dynamicExits(header: MapHeader): List<Pair<Int, Int>> {
+      val file = header.eventsFile?.let { File(root, "files/fielddata/eventdata/zone_event/$it") } ?: return emptyList()
+      if (!file.isFile) return emptyList()
+      val warps = runCatching { json.parseToJsonElement(file.readText()).jsonObject["warps"]?.jsonArray }.getOrNull() ?: return emptyList()
+      return warps.mapNotNull { w ->
+        val o = w.jsonObject
+        if (o["header"]?.jsonPrimitive?.content?.toIntOrNull() != HEARTGOLD_DYNAMIC_HEADER) return@mapNotNull null
+        val x = o["x"]?.jsonPrimitive?.content?.toIntOrNull() ?: return@mapNotNull null
+        val z = o["z"]?.jsonPrimitive?.content?.toIntOrNull() ?: return@mapNotNull null
+        x to z
+      }
     }
 
     /**
@@ -1136,6 +1243,10 @@ class NdsScriptCorpusGenerator {
     val LABEL_LINE = Regex("^(\\w+):\\s*$")
     val LOCAL_LABEL = Regex("^_[0-9A-Fa-f]{3,5}$")
     val MSG_TOKEN = Regex("^msg_(\\d+)(?:_\\w+?)?_(\\d{5})$")
+    /** HeartGold's standard menu bank (files/msgdata/msg/msg_0191.gmm): floors, ROOF, EXIT, ... */
+    const val HEARTGOLD_STD_MENU_BANK = 191
+    /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
+    const val HEARTGOLD_DYNAMIC_HEADER = 4095
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
     val TERMINAL = setOf("End", "Return", "GoTo", "EndMovement")
     /** ov01_022067C8 in pokeheartgold src/field/scrcmd_message.c. */

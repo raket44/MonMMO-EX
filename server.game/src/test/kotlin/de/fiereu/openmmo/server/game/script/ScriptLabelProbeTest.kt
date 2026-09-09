@@ -37,7 +37,14 @@ class ScriptLabelProbeTest :
         val analyzer = ScriptSupportAnalyzer()
         println("[probe] DS menu-entry bank: ${de.fiereu.openmmo.script.GeneratedScriptCorpus.dsMenuEntries.size} labels")
         InterpretedScripts.sources.forEach { registration ->
-          println("[probe] ${registration.corpus.source} menus=${registration.corpus.menus.size}")
+          println("[probe] ${registration.corpus.source} menus=${registration.corpus.menus.size} dynamicExits=${registration.corpus.dynamicExits.size} headerFloors=${registration.corpus.headerFloors.size}")
+          registration.scriptsByLabel.values
+              .filter { it.program.id.label.contains("Elevator", ignoreCase = true) || it.program.sourceFile.contains("T07R0206") || it.program.sourceFile.contains("T25R1007") || it.program.sourceFile.contains("veilstone_store_elevator") }
+              .forEach { script ->
+                val support = analyzer.analyze(script)
+                println("[probe] ${registration.corpus.source} ${script.program.id.label} (${script.program.sourceFile.substringAfterLast('/')}) complete=${support.complete} reason=${support.reason}")
+                script.program.instructions.filter { it.command.startsWith("ds_menu") || it.command.startsWith("ds_setdynamicwarp") || it.command.startsWith("ds_dynamicwarpfloor") || it.command == "message" }.forEach { println("[probe]     ${it.sourceLine}") }
+              }
           listOf("MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR", "MULTICHOICE_DEPT_STORE_ELEVATOR", "LISTMENU_SILPHCO_FLOORS", "LISTMENU#1", "MULTI_PC", "MULTICHOICE_YES_NO").forEach { menu ->
             val options = registration.corpus.menus[menu] ?: return@forEach
             println("[probe] ${registration.corpus.source} $menu options=$options ds=${de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.dsTextList(options)}")

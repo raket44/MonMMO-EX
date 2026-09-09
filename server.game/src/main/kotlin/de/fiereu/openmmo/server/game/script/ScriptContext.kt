@@ -204,6 +204,17 @@ internal constructor(
     }
   }
 
+  /**
+   * The DS elevator floor of the dynamic warp's map: [floors] is the game's own table by header id
+   * (bank | map << 8), [fallback] what the game answers for a map outside it.
+   */
+  fun dsDynamicWarpFloor(regionId: Int, floors: Map<String, Int>, fallback: Int): Int {
+    val warp = characterId?.let { characters?.getCharacter(it)?.info?.dynamicWarp } ?: return fallback
+    if (warp.regionId.toInt() != regionId) return fallback
+    val header = (warp.bankId.toInt() and 0xFF) or ((warp.mapId.toInt() and 0xFF) shl 8)
+    return floors[header.toString()] ?: fallback
+  }
+
   private fun dynamicWarpMapName(): String? {
     val warp = characterId?.let { characters?.getCharacter(it)?.info?.dynamicWarp } ?: return null
     return maps?.getMap(warp.regionId, warp.bankId, warp.mapId)?.sourceName

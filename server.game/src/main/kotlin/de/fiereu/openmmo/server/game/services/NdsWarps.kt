@@ -55,6 +55,29 @@ class NdsWarps @Inject constructor() {
    * client reports riding (movement state bits 2-5; 0 = unknown/not on a rail): a tile shared by
    * several rail lines picks the matching line's warp, an ordinary tile warp matches regardless.
    */
+  /**
+   * The DS maps' MAP_DYNAMIC exits (elevator doors) and the maps that have one, from the corpus
+   * (the games' event files: Platinum dest MAP_HEADER_DYNAMIC, HeartGold header 4095). The warp
+   * tool drops those rows since their destination is no header; the player's own dynamic warp is.
+   */
+  private val dynamicExits: Set<Long> by lazy { dynamicRows().map { (r, b, m, x, y) -> tileKey(r, b, m, x, y) }.toSet() }
+  private val dynamicMaps: Set<Long> by lazy { dynamicRows().map { (r, b, m, _, _) -> mapKey(r, b, m) }.toSet() }
+
+  private data class DynamicRow(val region: Int, val bank: Int, val map: Int, val x: Int, val y: Int)
+
+  private fun dynamicRows(): List<DynamicRow> =
+      de.fiereu.openmmo.script.GeneratedScriptCorpus.sources.flatMap { source ->
+        val region = when (source.source) { "platinum" -> 3; "heartgold" -> 4; "white" -> 2; else -> return@flatMap emptyList() }
+        source.dynamicExits.mapNotNull { row ->
+          val p = row.split(';').mapNotNull { it.toIntOrNull() }
+          if (p.size == 4) DynamicRow(region, p[0], p[1], p[2], p[3]) else null
+        }
+      }
+
+  fun isDynamicExit(region: Int, bank: Int, map: Int, x: Int, y: Int): Boolean = tileKey(region, bank, map, x, y) in dynamicExits
+
+  fun hasDynamicExit(region: Int, bank: Int, map: Int): Boolean = mapKey(region, bank, map) in dynamicMaps
+
   fun warpAt(region: Int, bank: Int, map: Int, x: Int, y: Int, railLine: Int = 0): Destination? {
     refresh()
     return pick(warps[tileKey(region, bank, map, x, y)], railLine)

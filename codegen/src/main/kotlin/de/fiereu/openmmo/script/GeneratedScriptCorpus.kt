@@ -25,6 +25,10 @@ data class ScriptSourceCorpus(
     val diagnostics: ScriptCorpusDiagnostics,
     /** The game's scripted menus (MULTICHOICE_*, MULTI_*, LISTMENU_*) as option texts. */
     val menus: Map<String, List<String>> = emptyMap(),
+    /** DS maps' MAP_DYNAMIC exit tiles, "bank;map;x;y" (the elevator doors). */
+    val dynamicExits: List<String> = emptyList(),
+    /** DS elevator floor of a map header id (decimal key), from the games' own tables. */
+    val headerFloors: Map<String, Int> = emptyMap(),
 )
 
 /** [dsMenuEntries]: the client's DS menu-entry bank (Platinum bank 361), option text -> entry. */
@@ -41,7 +45,7 @@ object GeneratedScriptCorpus {
 }
 
 private object ScriptCorpusDecoder {
-  private const val FORMAT_VERSION = 4
+  private const val FORMAT_VERSION = 5
 
   fun decode(encoded: String): DecodedScriptCorpus {
     val bytes = Base64.getDecoder().decode(encoded)
@@ -61,6 +65,8 @@ private object ScriptCorpusDecoder {
         val textIds = input.readStringIntMap()
         val constants = input.readStringIntMap()
         val menus = input.readStringListMap()
+        val dynamicExits = input.readStringList()
+        val headerFloors = input.readStringIntMap()
 
         val programCount = input.readInt()
         val programs =
@@ -111,6 +117,8 @@ private object ScriptCorpusDecoder {
             interactableLabels = interactable,
             mapEntryLabels = mapEntries,
             menus = menus,
+            dynamicExits = dynamicExits,
+            headerFloors = headerFloors,
             diagnostics =
                 ScriptCorpusDiagnostics(
                     indexedLabels = indexed,

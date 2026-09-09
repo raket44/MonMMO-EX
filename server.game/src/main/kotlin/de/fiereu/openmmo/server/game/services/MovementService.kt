@@ -152,9 +152,18 @@ constructor(
       // on a rail or unpatched); rail warp rows are picked by it, so Castelia's overlapping
       // street mouths route to the street the player is actually riding toward.
       val railLine = (msg.stateRaw shr 2) and 0x0F
+      // An elevator's door (a MAP_DYNAMIC exit) leads to the player's own dynamic warp: the door
+      // they came in by, or the floor the elevator script set (the cartridge's SetDynamicWarp).
+      fun dynamicDoorAt(x: Int, y: Int): NdsWarps.Destination? {
+        if (!ndsWarps.isDynamicExit(state.regionId, state.bankId, state.mapId, x, y)) return null
+        val dyn = stored.info.dynamicWarp ?: return null
+        if (dyn.regionId.toInt() != state.regionId) return null
+        return NdsWarps.Destination(dyn.bankId.toInt() and 0xFF, dyn.mapId.toInt() and 0xFF, -1, dyn.x.toInt(), dyn.y.toInt())
+      }
       fun doorAt(x: Int, y: Int) =
           ndsWarps.warpAt(state.regionId, state.bankId, state.mapId, x, y, railLine)
               ?: ndsWarps.warpAtMatrix(state.regionId, state.bankId, state.mapId, x, y, railLine)
+              ?: dynamicDoorAt(x, y)
       // After an arrival the player stands on the partner warp (often a wide box). Only the
       // DIRECTION-LESS boundary warps are held back until the player has stood on one warp-free
       // tile - those fire on any step and bounced the player straight back. Facing-gated doors
@@ -289,6 +298,18 @@ constructor(
           "NDS warp: char=$charId ${state.bankId}:${state.mapId} ($toX, $toY) -> " +
               "${door.bank}:${door.map} ($ax, $ay) destLine=${door.destLine} " +
               "arriveDir=$arriveDir landingDir=${landing?.direction}"
+        }
+        // Into a room whose exits are dynamic (an elevator): the door just used is where walking
+        // straight back out lands - the cartridge's SetDynamicWarp on the way in.
+        val firedX = if (door === stepped) toX else msg.x
+        val firedY = if (door === stepped) toY else msg.y
+        if (ndsWarps.hasDynamicExit(state.regionId, door.bank, door.map) &&
+            !ndsWarps.isDynamicExit(state.regionId, state.bankId, state.mapId, firedX, firedY)) {
+          characterStore.setDynamicWarp(
+              charId,
+              de.fiereu.openmmo.common.DynamicWarp(
+                  state.regionId.toByte(), state.bankId.toByte(), state.mapId.toByte(), firedX.toShort(), firedY.toShort(), Direction.DOWN))
+          log.info { "Dynamic warp set to the door just used: ($firedX, $firedY) on ${state.bankId}:${state.mapId}" }
         }
         warpService.executeRawWarp(
             ctx, charId, state.regionId, door.bank, door.map, ax, ay, door.destLine)

@@ -54,6 +54,8 @@ class InterpretedScript(
     internal val programLibrary: Map<String, ScriptProgram> = emptyMap(),
     /** The game's scripted menus as option texts, by constant (corpus MenuIndex). */
     internal val menus: Map<String, List<String>> = emptyMap(),
+    /** DS elevator floor by map header id (decimal key), from the game's own table (corpus). */
+    internal val headerFloors: Map<String, Int> = emptyMap(),
 ) : Script {
   override suspend fun run(ctx: ScriptContext) {
     log.info { "[Interpreter] Running ${program.id.stable}" }
@@ -246,6 +248,24 @@ class InterpretedScript(
           state.pc++
         }
         // A DS map header id is the client's bank (low byte) and map (high byte).
+        // ds_menu VAR, cursor, (textId, value)+: a DS scripted menu as the client's text-button list.
+        "ds_menu" -> {
+          tracedWait(ctx, "dialog choice") { runDsMenu(ctx, state, instruction) }
+          state.pc++
+        }
+        // ds_setdynamicwarp header, x, y: SetDynamicWarp / SetSpecialLocation - where the elevator lets out.
+        "ds_setdynamicwarp" -> {
+          val header = value(ctx, instruction.arg(0))
+          ctx.setDynamicWarp(dsRegion(), header and 0xFF, header shr 8, value(ctx, instruction.arg(1)), value(ctx, instruction.arg(2)), de.fiereu.openmmo.common.enums.Direction.DOWN)
+          state.pc++
+        }
+        // ds_dynamicwarpfloor VAR: GetFloorsAbove / GetDynamicWarpFloorNo - the floor the dynamic warp names.
+        "ds_dynamicwarpfloor" -> {
+          // Platinum answers 1 for a map outside its table (the macro's own doc); HeartGold asserts and gives 0.
+          val fallback = if (program.id.source == "platinum") 1 else 0
+          ctx.setVar(namespaced(instruction.arg(0).token), ctx.dsDynamicWarpFloor(dsRegion(), headerFloors, fallback))
+          state.pc++
+        }
         "ds_warp" -> {
           val header = (instruction.arg(0) as IntArg).value
           val region = if (program.id.source == "heartgold") 4 else 3
@@ -1161,6 +1181,36 @@ class InterpretedScript(
     ctx.setVar(namespaced("VAR_RESULT"), pick)
   }
 
+  /** The client's wire region of this DS script's game (ds_warp's convention). */
+  private fun dsRegion(): Int =
+      when (program.id.source) {
+        "heartgold" -> 4
+        "white" -> 2
+        else -> 3
+      }
+
+  /**
+   * ds_menu VAR, cursor, (textId, value)+: the entries are DS text ids (region << 28 | bank << 16 |
+   * entry) of one bank, exactly what the client's text-button list draws from; the pick's value
+   * goes to VAR, as the games' ShowMenu / MenuExec write the chosen entry's index there.
+   */
+  private suspend fun runDsMenu(ctx: ScriptContext, state: RuntimeState, instruction: ScriptInstruction) {
+    val target = namespaced(instruction.arg(0).token)
+    val cursor = value(ctx, instruction.arg(1))
+    val items = (2 until instruction.args.size step 2).map { value(ctx, instruction.arg(it)) to value(ctx, instruction.arg(it + 1)) }
+    val region = items.first().first ushr 28
+    val bank = (items.first().first shr 16) and 0xFFF
+    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0xFFF) != bank }) {
+      log.warn { "Script ${program.id.stable}: menu entries span text banks, answering 127 - `${instruction.sourceLine}`" }
+      ctx.setVar(target, MULTI_B_PRESSED)
+      return
+    }
+    val line = checkNotNull(state.currentMessage) { "Script ${program.id.stable} has no current message for `${instruction.sourceLine}`" }
+    val list = InterpreterSupport.DsTextList(region, bank, items.map { it.first and 0xFFFF })
+    val pick = ctx.dsTextListMenu(line, list, cursor).coerceIn(0, items.size - 1)
+    ctx.setVar(target, items[pick].second)
+  }
+
   /** Only the yes/no menu is modeled; the analyzer admits no other multichoice. */
   private suspend fun runMultichoice(
       ctx: ScriptContext,
@@ -1219,7 +1269,7 @@ class InterpretedScript(
       val instruction = program.instructions[pc]
       when (instruction.command) {
         "waitmessage", "setvar", "copyvar", "specialvar", "compare" -> pc++
-        "multichoice", "multichoicedefault", "multichoicegrid" -> return true
+        "multichoice", "multichoicedefault", "multichoicegrid", "ds_menu" -> return true
         "special" -> return if (instruction.arg(0).token == "ListMenu") true else caseTargets > 0
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
           val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false

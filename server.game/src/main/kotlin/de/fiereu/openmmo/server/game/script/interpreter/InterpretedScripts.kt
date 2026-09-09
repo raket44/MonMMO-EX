@@ -22,6 +22,7 @@ internal object InterpretedScripts {
                   movementPrograms = corpus.movements,
                   programLibrary = corpus.programs,
                   menus = corpus.menus,
+                  headerFloors = corpus.headerFloors,
               )
             }
         InterpretedSourceRegistration(corpus, scripts)

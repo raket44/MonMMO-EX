@@ -45,6 +45,10 @@ data class BuiltScriptCorpus(
     val parseFailureSamples: Map<String, List<String>>,
     /** Scripted menus by constant name -> option texts (MenuIndex); empty for the DS sources. */
     val menus: Map<String, List<String>> = emptyMap(),
+    /** DS maps' MAP_DYNAMIC exits (an elevator's door), "bank;map;x;y" rows; empty for the GBA sources. */
+    val dynamicExits: List<String> = emptyList(),
+    /** DS elevator floors by map header id (decimal key): the games' GetFloorsAbove / MapNumToFloorNo tables. */
+    val headerFloors: Map<String, Int> = emptyMap(),
 )
 
 class ScriptCorpusGenerator(private val dialogDataDir: File) {
@@ -163,7 +167,7 @@ class ScriptCorpusGenerator(private val dialogDataDir: File) {
 }
 
 object ScriptCorpusBinary {
-  private const val FORMAT_VERSION = 4
+  private const val FORMAT_VERSION = 5
 
   /** [dsMenuEntries]: the client's DS menu-entry bank, option text -> entry (MenuIndex.dsMenuEntries). */
   fun encode(corpora: List<BuiltScriptCorpus>, dsMenuEntries: Map<String, Int>): String {
@@ -185,6 +189,8 @@ object ScriptCorpusBinary {
         output.writeStringIntMap(corpus.textIds)
         output.writeStringIntMap(corpus.constants)
         output.writeStringListMap(corpus.menus)
+        output.writeStringList(corpus.dynamicExits)
+        output.writeStringIntMap(corpus.headerFloors)
         output.writeInt(corpus.programs.size)
         corpus.programs.forEach { program ->
           output.writeUTF(program.label)

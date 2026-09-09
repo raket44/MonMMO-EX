@@ -264,6 +264,10 @@ class ScriptSupportAnalyzer(
           "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
           "ds_flagtovar" -> args.size == 2
           "ds_warp" -> args.size == 3
+          // ds_menu VAR, cursor, (textId, value)+ ; ds_setdynamicwarp header, x, y ; ds_dynamicwarpfloor VAR
+          "ds_menu" -> args.size >= 4 && args.size % 2 == 0
+          "ds_setdynamicwarp" -> args.size == 3
+          "ds_dynamicwarpfloor" -> args.size == 1
           "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
           "ds_checktrainerflag", "ds_trainermsg" -> args.size == 2
           "ds_trainermsgtypes", "ds_trainermsgtypes_rematch" -> args.size == 3
@@ -543,6 +547,9 @@ class ScriptSupportAnalyzer(
             "ds_getweekday",
             "ds_flagtovar",
             "ds_warp",
+            "ds_menu",
+            "ds_setdynamicwarp",
+            "ds_dynamicwarpfloor",
             "ds_trainerbattle",
             "ds_trainermsg",
             "ds_trainermsgtypes",

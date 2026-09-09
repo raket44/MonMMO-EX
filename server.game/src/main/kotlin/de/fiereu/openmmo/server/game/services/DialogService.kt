@@ -102,19 +102,20 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
           .unk
 
   /**
-   * Shows a list of text buttons over the ROM question [textId] and returns the 1-based pick, 0
-   * when closed. Dialog kind wire 49 = f/qM1.b (internal 40): parse case 9 reads a byte the
-   * renderer ignores, the DS region byte, the message bank as s16, then a u8 count and one s16
-   * entry per button; renderer f/gl0 draws each through f/EO.oG1(region, bank, entry), the DS
-   * message-bank table - so the buttons can only be entries of one DS bank. Tables parsed by
-   * constant name from f/qM1, f/XN1.kW and f/UX.bV (2026-09-09); the earlier wire-20 guess was a
-   * plain message and held the player. [textId] must be 0: this kind is flagged kL0 and its
-   * window opens only after an empty text page; a question text made the client answer 0 itself.
+   * Turns the dialog currently open on the client into a list of text buttons and returns the
+   * 0-BASED index of the pressed button. Dialog kind wire 49 = f/qM1.b (internal 40): parse case
+   * 9 reads a byte the renderer ignores, the DS region byte, the message bank as s16, then a u8
+   * count and one s16 entry per button; renderer f/gl0 draws each through f/EO.oG1(region, bank,
+   * entry), the DS message-bank table - so the buttons can only be entries of one DS bank, and
+   * each button answers with its own index (f/gl0 -> f/dh1.KO(i)), no +1 and no close code.
+   * Wire 49 is an update kind (f/h4.Mq1 = 3): the client applies it to the open dialog
+   * (f/A11.IT0 -> f/cg.h80) and, with no dialog open, answers 0 immediately - so the caller must
+   * have a message showing. After the pick the box stays (kL0: KO re-renders instead of closing)
+   * until the dialog state goes off. The text id is unused on this path and rides as 0.
    */
   suspend fun dsTextListMenu(
       session: SessionContext,
       state: PlayerState,
-      textId: Int,
       region: Int,
       bank: Int,
       entries: List<Int>,
@@ -130,7 +131,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
       detail[5 + i * 2] = (entry and 0xFF).toByte()
       detail[6 + i * 2] = ((entry shr 8) and 0xFF).toByte()
     }
-    return showChoiceAndWait(session, state, textId, DS_TEXT_LIST, NO_ENTITY, contextValue = preselected, detail = detail).unk
+    return showChoiceAndWait(session, state, 0, DS_TEXT_LIST, NO_ENTITY, contextValue = preselected, detail = detail).unk
   }
 
   /**

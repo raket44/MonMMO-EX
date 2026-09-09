@@ -200,15 +200,18 @@ internal constructor(
     return maps?.getMap(warp.regionId, warp.bankId, warp.mapId)?.sourceName
   }
 
-  /** Shows DS-bank text buttons over [line]; 1-based pick, 0 = closed unanswered. */
+  /**
+   * Shows DS-bank text buttons over the question [line]; returns the 0-based button index.
+   *
+   * Wire 49 is an UPDATE kind (f/h4.Mq1 = 3, with wires 47 and 48): the client's packet handler
+   * (f/A11.IT0) never opens a dialog for it - it hands the packet to the dialog currently open
+   * (f/cg.h80 builds the button window f/gl0 from it), and with nothing open it answers 0 to the
+   * server at once. So the question goes out first as a plain message, unwaited, and the list
+   * follows on the same stream; the buttons appear once the text has finished printing (f/cg.nG1).
+   */
   internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
-    holdScriptedFacing()
-    // Kind wire 49 is the one dialog kind flagged as a window (f/qM1.kL0): the manager queues an
-    // EMPTY page for such a kind and opens the window on it (f/cg.YQ); a question text shows the
-    // text and then answers 0 on the next press, and text id 0 resolves to no text at all, so no
-    // page is queued and the client answers 0 at once (both seen live). The ROM's empty text is
-    // the blank page it wants; the ROM already showed the question as the message before.
-    return dialog.dsTextListMenu(session, state, EMPTY_ROM_TEXT, list.region, list.bank, list.entries, preselected)
+    showMessage(line)
+    return dialog.dsTextListMenu(session, state, list.region, list.bank, list.entries, preselected)
   }
 
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
@@ -867,9 +870,6 @@ internal constructor(
 }
 
 /** Transportation byte while surfing: bit 0x01, client f.ti.J10. */
-/** FireRed Test_Text_Empty (codegen/dialog/kanto.json id 5, text "$"): the one blank ROM page. */
-private const val EMPTY_ROM_TEXT = 5
-
 private const val SURF_TRANSPORTATION = 0x01
 
 /** The GBA wallet cap. */

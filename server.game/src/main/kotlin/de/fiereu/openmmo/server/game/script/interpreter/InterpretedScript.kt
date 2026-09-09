@@ -1165,10 +1165,10 @@ class InterpretedScript(
             if (pick <= 0) MULTI_B_PRESSED else pick - 1
           }
           dsList != null && line != null -> {
-            // multichoicedefault's fourth argument is the pre-selected row.
+            // multichoicedefault's fourth argument is the pre-selected row. The client's text-button
+            // list answers with the 0-based index of the button, which is the multichoice result.
             val preselected = if (instruction.command == "multichoicedefault") value(ctx, instruction.arg(3)) else 0
-            val pick = ctx.dsTextListMenu(line, dsList, preselected)
-            if (pick <= 0) MULTI_B_PRESSED else pick - 1
+            ctx.dsTextListMenu(line, dsList, preselected)
           }
           else -> {
             log.warn { "Script ${program.id.stable}: no client menu for $menu, answering as B pressed" }
@@ -1178,15 +1178,35 @@ class InterpretedScript(
     ctx.setVar(namespaced("VAR_RESULT"), result)
   }
 
-  private fun multichoiceFollows(state: RuntimeState): Boolean {
-    var pc = state.pc + 1
-    while (pc in state.activeProgram.instructions.indices) {
-      val command = state.activeProgram.instructions[pc].command
-      if (command == "waitmessage") {
-        pc++
-        continue
+  /**
+   * Whether the next thing shown after this `message` is a multichoice over the same text. Looks
+   * past commands that touch no dialog (waits, variable moves, a switch), and through a switch's
+   * cases when every case target leads to a multichoice - the elevators pick their menu's
+   * preselected row that way (message, waitmessage, specialvar, switch, case x3).
+   */
+  private fun multichoiceFollows(state: RuntimeState): Boolean =
+      multichoiceFollows(state.activeProgram, state.pc + 1, HashSet())
+
+  private fun multichoiceFollows(program: ScriptProgram, start: Int, visited: MutableSet<Int>): Boolean {
+    var pc = start
+    var caseTargets = 0
+    while (pc in program.instructions.indices && visited.add(pc)) {
+      val instruction = program.instructions[pc]
+      when (instruction.command) {
+        "waitmessage", "setvar", "copyvar", "specialvar", "switch" -> pc++
+        "multichoice", "multichoicedefault", "multichoicegrid" -> return true
+        "case" -> {
+          val target = program.labels[instruction.arg(1).token] ?: return false
+          if (!multichoiceFollows(program, target, visited)) return false
+          caseTargets++
+          pc++
+        }
+        "goto" -> {
+          val target = program.labels[instruction.arg(0).token] ?: return false
+          return multichoiceFollows(program, target, visited)
+        }
+        else -> return caseTargets > 0
       }
-      return command == "multichoice" || command == "multichoicedefault" || command == "multichoicegrid"
     }
     return false
   }

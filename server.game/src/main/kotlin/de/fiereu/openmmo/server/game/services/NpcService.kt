@@ -120,11 +120,17 @@ constructor(
     val storyFlags = stored?.storyFlags.orEmpty()
     val storyVars = stored?.storyVars.orEmpty()
     for (npc in map.npcs) {
+      if (npc.hideFlag.substringAfter('/').startsWith(DECORATION_FLAG_PREFIX)) continue
+      // ON_TRANSITION also sets hide flags (Vermilion hides Oak's aide once he has been talked
+      // to; the cartridge runs it before objects load, we run it after the spawn), so an npc the
+      // fresh flags hide leaves now instead of standing there until the next visit.
+      if (shouldHideNpc(bankId, mapId, npc, storyFlags)) {
+        despawnNpc(ctx, regionId, bankId, mapId, npc.entityIdx)
+        continue
+      }
       val dynamicGfx = npc.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3
       val hasOverride = xyOverrideKey(regionId, bankId, mapId, npc.entityIdx) in storyVars
       if (!dynamicGfx && !hasOverride) continue
-      if (npc.hideFlag.substringAfter('/').startsWith(DECORATION_FLAG_PREFIX)) continue
-      if (shouldHideNpc(bankId, mapId, npc, storyFlags)) continue
       val resolved =
           resolveDynamicGraphics(
               ctx,

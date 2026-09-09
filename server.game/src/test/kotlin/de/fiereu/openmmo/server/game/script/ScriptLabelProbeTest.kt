@@ -21,6 +21,8 @@ class ScriptLabelProbeTest :
                 "PewterCity_Gym_EventScript_Brock",
                 "CeruleanCity_Gym_EventScript_Misty",
                 "VermilionCity_Gym_EventScript_LtSurge",
+                "CeladonCity_Gym_EventScript_Erika",
+                "CeladonCity_GameCorner_OnLoad",
                 "PewterCity_Gym_EventScript_JrTrainer",
                 "Route2_EastBuilding_EventScript_Aide",
                 "EventScript_FldEffFlash",

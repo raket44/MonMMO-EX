@@ -76,6 +76,7 @@ fun movementService(
           battles,
       ),
       ScriptMovementService(mapManager, npcs, store),
+      kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined),
   )
 }
 

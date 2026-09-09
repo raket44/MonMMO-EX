@@ -52,6 +52,8 @@ class InterpretedScript(
     internal val textBindings: Map<String, DialogLine>,
     internal val movementPrograms: Map<String, MovementProgram> = emptyMap(),
     internal val programLibrary: Map<String, ScriptProgram> = emptyMap(),
+    /** The game's scripted menus as option texts, by constant (corpus MenuIndex). */
+    internal val menus: Map<String, List<String>> = emptyMap(),
 ) : Script {
   override suspend fun run(ctx: ScriptContext) {
     log.info { "[Interpreter] Running ${program.id.stable}" }
@@ -512,6 +514,7 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
+            "ListMenu" -> runListMenu(ctx, state)
             // src/field_specials.c: the floor the elevator stands on, read from the dynamic warp.
             "GetElevatorFloor" -> ctx.setVar(namespaced("VAR_ELEVATOR_FLOOR"), ctx.elevatorFloor())
             // Pokemon Tower's ghost: the wild battle setwildbattle named, uncatchable. FireRed's
@@ -1140,6 +1143,24 @@ class InterpretedScript(
       quantity: Int,
   ) = ctx.announceItem(item, quantity)
 
+  /**
+   * special ListMenu (src/field_specials.c): the scrolling list VAR_0x8004 names (LISTMENU_*),
+   * drawn as the client's text-button list over the current message; VAR_RESULT takes the
+   * 0-based pick, as the cartridge's list returns it. Silph Co's elevator is the story use; the
+   * waitstate that follows is a no-op here since the pick is already in.
+   */
+  private suspend fun runListMenu(ctx: ScriptContext, state: RuntimeState) {
+    val id = ctx.getVar(namespaced("VAR_0x8004"))
+    val line = checkNotNull(state.currentMessage) { "Script ${program.id.stable} has no current message for special ListMenu" }
+    val list = menus["LISTMENU#$id"]?.let(InterpreterSupport::dsTextList)
+    val pick =
+        if (list == null) {
+          log.warn { "Script ${program.id.stable}: list menu $id has no client labels, answering B" }
+          MULTI_B_PRESSED
+        } else ctx.dsTextListMenu(line, list, preselected = ctx.getVar(namespaced("VAR_RESULT")))
+    ctx.setVar(namespaced("VAR_RESULT"), pick)
+  }
+
   /** Only the yes/no menu is modeled; the analyzer admits no other multichoice. */
   private suspend fun runMultichoice(
       ctx: ScriptContext,
@@ -1153,7 +1174,7 @@ class InterpretedScript(
     // if B was pressed (MULTI_B_PRESSED) so the script takes its cancel path instead of dying
     // at resolution time and taking the whole npc with it.
     val builtin = InterpreterSupport.BUILTIN_MENUS[menu]
-    val dsList = InterpreterSupport.DS_TEXT_LIST_MENUS[menu]
+    val dsList = menus[menu]?.let(InterpreterSupport::dsTextList)
     val result =
         when {
           menu == "MULTICHOICE_YES_NO" || menu == "MULTI_YESNO" -> {
@@ -1199,6 +1220,7 @@ class InterpretedScript(
       when (instruction.command) {
         "waitmessage", "setvar", "copyvar", "specialvar", "compare" -> pc++
         "multichoice", "multichoicedefault", "multichoicegrid" -> return true
+        "special" -> return if (instruction.arg(0).token == "ListMenu") true else caseTargets > 0
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
           val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false
           if (!multichoiceFollows(targetProgram, target, visited)) return false

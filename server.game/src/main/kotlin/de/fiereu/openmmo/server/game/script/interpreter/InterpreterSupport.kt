@@ -127,6 +127,7 @@ internal object InterpreterSupport {
           "HealPlayerParty",
           "StartMarowakBattle",
           "GetElevatorFloor",
+          "ListMenu",
           "SetVermilionTrashCans",
           "RockSmashWildEncounter",
           "ChooseMonForMoveTutor",
@@ -160,16 +161,23 @@ internal object InterpreterSupport {
   data class DsTextList(val region: Int, val bank: Int, val entries: List<Int>)
 
   /**
-   * ROM multichoice menus the client draws with its text-button list (dialog kind wire 49,
-   * client f/gl0), whose buttons are entries of one DS message bank: f/EO.oG1(region, bank,
-   * entry). Platinum's TEXT_BANK_MENU_ENTRIES (bank 361, region 3) holds B1F 121, B2F 122,
-   * LOOKOUT 123, EXIT 124 and 1F..5F at 116..120. No bank on the client says "B4F", so the
-   * hideout's third floor shows as "4F" until a text of its own exists.
+   * The client draws a ROM menu with its text-button list (dialog kind wire 49, f/gl0) when every
+   * option is an entry of one DS message bank (f/EO.oG1(region, bank, entry)): the DS menu-entry
+   * bank (Platinum bank 361, region 3) carries floor labels 1F..5F, B1F, B2F, LOOKOUT and EXIT,
+   * matched here by text against the game's own option strings (corpus MenuIndex). No client
+   * text says "B4F", so the hideout's third floor shows as "4F" until a text of its own exists.
+   * Null when a label has no entry: the menu then answers B so the script takes its cancel path.
    */
-  val DS_TEXT_LIST_MENUS: Map<String, DsTextList> =
-      mapOf(
-          "MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR" to DsTextList(region = 3, bank = 361, entries = listOf(121, 122, 119, 124)),
-      )
+  fun dsTextList(options: List<String>): DsTextList? {
+    val bank = de.fiereu.openmmo.script.GeneratedScriptCorpus.dsMenuEntries
+    val entries = options.map { label -> bank[label] ?: bank[MENU_LABEL_STAND_INS[label]] ?: return null }
+    return DsTextList(DS_MENU_REGION, DS_MENU_BANK, entries)
+  }
+
+  /** Labels no client text carries, shown by their nearest entry. */
+  private val MENU_LABEL_STAND_INS = mapOf("B4F" to "4F")
+  const val DS_MENU_REGION = 3
+  const val DS_MENU_BANK = 361
 
   /** specialvar functions the executor answers from live state. */
   val IMPLEMENTED_SPECIALVARS = setOf("GetBattleOutcome", "IsPlayerLeftOfVermilionSailor", "GetPokedexCount", "InitElevatorFloorSelectMenuPos")

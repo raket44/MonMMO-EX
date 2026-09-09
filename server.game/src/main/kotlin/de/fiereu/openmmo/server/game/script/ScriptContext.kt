@@ -176,24 +176,33 @@ internal constructor(
   }
 
   /**
-   * special GetElevatorFloor (src/field_specials.c): the floor index the dynamic warp names -
-   * Rocket Hideout B1F 3, B2F 2, B4F 0 - or the ROM's default 4 for any other map.
+   * special GetElevatorFloor (src/field_specials.c): the floor index the dynamic warp names, for
+   * every FireRed elevator - Silph Co and the Department Store nF = n + 3, Rocket Hideout BnF =
+   * 4 - n (B1F 3, B2F 2, B4F 0), Trainer Tower floors 15 and its lobby 3 - or 4 anywhere else.
    */
-  fun elevatorFloor(): Int =
-      when (dynamicWarpMapName()) {
-        "RocketHideout_B1F" -> 3
-        "RocketHideout_B2F" -> 2
-        "RocketHideout_B4F" -> 0
-        else -> 4
-      }
+  fun elevatorFloor(): Int {
+    val name = dynamicWarpMapName() ?: return 4
+    if (name.startsWith("TrainerTower_")) return if (name == "TrainerTower_Lobby") 3 else 15
+    val floor = FLOOR_SUFFIX.find(name) ?: return 4
+    val n = floor.groupValues[2].toInt()
+    return if (floor.groupValues[1].isEmpty()) n + 3 else 4 - n
+  }
 
-  /** specialvar InitElevatorFloorSelectMenuPos: the menu row of the floor the elevator is on. */
-  fun elevatorMenuPosition(): Int =
-      when (dynamicWarpMapName()) {
-        "RocketHideout_B2F" -> 1
-        "RocketHideout_B4F" -> 2
-        else -> 0
-      }
+  /**
+   * specialvar InitElevatorFloorSelectMenuPos: the row of the elevator's own floor in its menu
+   * (the ROM's scroll + cursor): Silph Co lists 11F..1F, the Department Store 5F..1F, the Rocket
+   * Hideout B1F, B2F, B4F; anything else starts at the top.
+   */
+  fun elevatorMenuPosition(): Int {
+    val name = dynamicWarpMapName() ?: return 0
+    val n = FLOOR_SUFFIX.find(name)?.groupValues?.get(2)?.toInt() ?: return 0
+    return when {
+      name.startsWith("SilphCo_") -> 11 - n
+      name.startsWith("CeladonCity_DepartmentStore_") -> 5 - n
+      name.startsWith("RocketHideout_B") -> if (n == 4) 2 else n - 1
+      else -> 0
+    }
+  }
 
   private fun dynamicWarpMapName(): String? {
     val warp = characterId?.let { characters?.getCharacter(it)?.info?.dynamicWarp } ?: return null
@@ -876,6 +885,9 @@ internal constructor(
 }
 
 /** Transportation byte while surfing: bit 0x01, client f.ti.J10. */
+/** A map name's floor: `SilphCo_11F`, `RocketHideout_B2F` (group 1 = the basement B, group 2 = n). */
+private val FLOOR_SUFFIX = Regex("_(B?)(\\d+)F$")
+
 private const val SURF_TRANSPORTATION = 0x01
 
 /** The GBA wallet cap. */

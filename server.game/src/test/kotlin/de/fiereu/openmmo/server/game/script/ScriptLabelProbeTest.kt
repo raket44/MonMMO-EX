@@ -23,6 +23,9 @@ class ScriptLabelProbeTest :
                 "VermilionCity_Gym_EventScript_LtSurge",
                 "CeladonCity_Gym_EventScript_Erika",
                 "CeladonCity_GameCorner_OnLoad",
+                "RocketHideout_Elevator_EventScript_FloorSelect",
+                "CeladonCity_DepartmentStore_Elevator_EventScript_FloorSelect",
+                "SilphCo_Elevator_EventScript_FloorSelect",
                 "PewterCity_Gym_EventScript_JrTrainer",
                 "Route2_EastBuilding_EventScript_Aide",
                 "EventScript_FldEffFlash",
@@ -32,7 +35,13 @@ class ScriptLabelProbeTest :
                 "NDS_CHUNK_3043",
             )
         val analyzer = ScriptSupportAnalyzer()
+        println("[probe] DS menu-entry bank: ${de.fiereu.openmmo.script.GeneratedScriptCorpus.dsMenuEntries.size} labels")
         InterpretedScripts.sources.forEach { registration ->
+          println("[probe] ${registration.corpus.source} menus=${registration.corpus.menus.size}")
+          listOf("MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR", "MULTICHOICE_DEPT_STORE_ELEVATOR", "LISTMENU_SILPHCO_FLOORS", "LISTMENU#1", "MULTI_PC", "MULTICHOICE_YES_NO").forEach { menu ->
+            val options = registration.corpus.menus[menu] ?: return@forEach
+            println("[probe] ${registration.corpus.source} $menu options=$options ds=${de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.dsTextList(options)}")
+          }
           labels.forEach { label ->
             val script = registration.scriptsByLabel[label] ?: return@forEach
             val support = analyzer.analyze(script)

@@ -23,22 +23,32 @@ data class ScriptSourceCorpus(
     val interactableLabels: Set<String>,
     val mapEntryLabels: Set<String>,
     val diagnostics: ScriptCorpusDiagnostics,
+    /** The game's scripted menus (MULTICHOICE_*, MULTI_*, LISTMENU_*) as option texts. */
+    val menus: Map<String, List<String>> = emptyMap(),
 )
 
+/** [dsMenuEntries]: the client's DS menu-entry bank (Platinum bank 361), option text -> entry. */
+data class DecodedScriptCorpus(val sources: List<ScriptSourceCorpus>, val dsMenuEntries: Map<String, Int>)
+
 object GeneratedScriptCorpus {
-  val sources: List<ScriptSourceCorpus> by lazy {
+  private val decoded: DecodedScriptCorpus by lazy {
     ScriptCorpusDecoder.decode(GeneratedScriptCorpusData.chunks.joinToString(separator = ""))
   }
+  val sources: List<ScriptSourceCorpus>
+    get() = decoded.sources
+  val dsMenuEntries: Map<String, Int>
+    get() = decoded.dsMenuEntries
 }
 
 private object ScriptCorpusDecoder {
-  private const val FORMAT_VERSION = 3
+  private const val FORMAT_VERSION = 4
 
-  fun decode(encoded: String): List<ScriptSourceCorpus> {
+  fun decode(encoded: String): DecodedScriptCorpus {
     val bytes = Base64.getDecoder().decode(encoded)
     DataInputStream(GZIPInputStream(ByteArrayInputStream(bytes))).use { input ->
       check(input.readInt() == FORMAT_VERSION) { "Unsupported generated script corpus format" }
-      return List(input.readInt()) {
+      val dsMenuEntries = input.readStringIntMap()
+      val sources = List(input.readInt()) {
         val storyNamespace = input.readUTF()
         val source = input.readUTF()
         val gameCode = input.readUTF()
@@ -50,6 +60,7 @@ private object ScriptCorpusDecoder {
         val unavailableDirectLabels = input.readStringSet()
         val textIds = input.readStringIntMap()
         val constants = input.readStringIntMap()
+        val menus = input.readStringListMap()
 
         val programCount = input.readInt()
         val programs =
@@ -99,6 +110,7 @@ private object ScriptCorpusDecoder {
             textIds = textIds,
             interactableLabels = interactable,
             mapEntryLabels = mapEntries,
+            menus = menus,
             diagnostics =
                 ScriptCorpusDiagnostics(
                     indexedLabels = indexed,
@@ -109,6 +121,7 @@ private object ScriptCorpusDecoder {
                 ),
         )
       }
+      return DecodedScriptCorpus(sources, dsMenuEntries)
     }
   }
 

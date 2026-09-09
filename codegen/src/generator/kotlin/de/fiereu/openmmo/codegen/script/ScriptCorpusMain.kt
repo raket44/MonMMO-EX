@@ -42,7 +42,13 @@ fun main(args: Array<String>) {
     }
   }
 
-  val encoded = ScriptCorpusBinary.encode(corpora)
+  // The text-button dialog draws its labels from Platinum's menu-entry bank (client bank 361).
+  val dsMenuEntries =
+      corpora.firstOrNull { it.spec.source == "platinum" }?.spec?.decompDir?.let {
+        MenuIndex.dsMenuEntries(File(it, "res/text/menu_entries.json"))
+      } ?: emptyMap()
+  println("[script-corpus] DS menu-entry bank: ${dsMenuEntries.size} labels")
+  val encoded = ScriptCorpusBinary.encode(corpora, dsMenuEntries)
   val chunks = encoded.chunked(12_000)
   val target =
       File(

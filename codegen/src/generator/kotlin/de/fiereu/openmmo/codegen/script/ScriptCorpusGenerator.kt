@@ -43,6 +43,8 @@ data class BuiltScriptCorpus(
     val unavailableDirectLabels: Set<String>,
     val parseFailureCategories: Map<String, Int>,
     val parseFailureSamples: Map<String, List<String>>,
+    /** Scripted menus by constant name -> option texts (MenuIndex); empty for the DS sources. */
+    val menus: Map<String, List<String>> = emptyMap(),
 )
 
 class ScriptCorpusGenerator(private val dialogDataDir: File) {
@@ -130,6 +132,7 @@ class ScriptCorpusGenerator(private val dialogDataDir: File) {
         movements = movements,
         textIds = textIds,
         constants = constants.filterKeys { it in referencedTokens },
+        menus = MenuIndex.build(spec.decompDir, constants),
         interactableLabels = events.interactableLabels,
         mapEntryLabels = events.mapEntryLabels,
         unavailableDirectLabels = unavailableDirectLabels,
@@ -160,12 +163,14 @@ class ScriptCorpusGenerator(private val dialogDataDir: File) {
 }
 
 object ScriptCorpusBinary {
-  private const val FORMAT_VERSION = 3
+  private const val FORMAT_VERSION = 4
 
-  fun encode(corpora: List<BuiltScriptCorpus>): String {
+  /** [dsMenuEntries]: the client's DS menu-entry bank, option text -> entry (MenuIndex.dsMenuEntries). */
+  fun encode(corpora: List<BuiltScriptCorpus>, dsMenuEntries: Map<String, Int>): String {
     val bytes = ByteArrayOutputStream()
     DataOutputStream(GZIPOutputStream(bytes)).use { output ->
       output.writeInt(FORMAT_VERSION)
+      output.writeStringIntMap(dsMenuEntries)
       output.writeInt(corpora.size)
       corpora.forEach { corpus ->
         output.writeUTF(corpus.spec.storyNamespace)
@@ -179,6 +184,7 @@ object ScriptCorpusBinary {
         output.writeStringSet(corpus.unavailableDirectLabels)
         output.writeStringIntMap(corpus.textIds)
         output.writeStringIntMap(corpus.constants)
+        output.writeStringListMap(corpus.menus)
         output.writeInt(corpus.programs.size)
         corpus.programs.forEach { program ->
           output.writeUTF(program.label)

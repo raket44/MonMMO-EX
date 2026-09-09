@@ -1180,9 +1180,9 @@ class InterpretedScript(
 
   /**
    * Whether the next thing shown after this `message` is a multichoice over the same text. Looks
-   * past commands that touch no dialog (waits, variable moves, a switch), and through a switch's
-   * cases when every case target leads to a multichoice - the elevators pick their menu's
-   * preselected row that way (message, waitmessage, specialvar, switch, case x3).
+   * past commands that touch no dialog (waits, variable moves, compares) and through a switch when
+   * every case leads to a multichoice - the elevators pick their menu's preselected row that way.
+   * The parser lowers `switch` to copyvar and `case` to compare + goto_if_eq (PretScriptParser).
    */
   private fun multichoiceFollows(state: RuntimeState): Boolean =
       multichoiceFollows(state.activeProgram, state.pc + 1, HashSet())
@@ -1193,10 +1193,10 @@ class InterpretedScript(
     while (pc in program.instructions.indices && visited.add(pc)) {
       val instruction = program.instructions[pc]
       when (instruction.command) {
-        "waitmessage", "setvar", "copyvar", "specialvar", "switch" -> pc++
+        "waitmessage", "setvar", "copyvar", "specialvar", "compare" -> pc++
         "multichoice", "multichoicedefault", "multichoicegrid" -> return true
-        "case" -> {
-          val target = program.labels[instruction.arg(1).token] ?: return false
+        "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
+          val target = program.labels[instruction.arg(0).token] ?: return false
           if (!multichoiceFollows(program, target, visited)) return false
           caseTargets++
           pc++

@@ -217,12 +217,12 @@ internal constructor(
   }
 
   /** special EnterSafariMode: the flag, 30 balls and 600 steps, the client's counters told. */
-  fun enterSafari() {
+  suspend fun enterSafari() {
     characterId?.let { safari?.enter(session, it) }
   }
 
   /** special ExitSafariMode. */
-  fun exitSafari() {
+  suspend fun exitSafari() {
     characterId?.let { safari?.exit(session, it) }
   }
 

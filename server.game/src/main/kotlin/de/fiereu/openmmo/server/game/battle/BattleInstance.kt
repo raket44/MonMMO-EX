@@ -46,6 +46,8 @@ data class ChosenAction(
     val targetPosition: Int = 0,
     /** SWITCH: the party slot coming in. */
     val partyIndex: Int = -1,
+    /** ITEM: the ball thrown (client item id). */
+    val itemId: Int = 0,
 ) {
   enum class Kind {
     MOVE,

@@ -40,26 +40,35 @@ constructor(
     private val story: StoryService,
     private val mapManager: MapManager,
     private val scriptRunner: Provider<ScriptRunner>,
+    private val items: de.fiereu.openmmo.items.ItemRegistry,
 ) {
+  private val safariBallItemId: Int by lazy { items.idOf(de.fiereu.openmmo.items.generated.Items.SAFARI_BALL) }
   fun isActive(charId: Long): Boolean = story.isFlagSet(charId, KantoFlags.FLAG_SYS_SAFARI_MODE)
 
-  /** special EnterSafariMode. */
-  fun enter(session: SessionContext, charId: Long) {
+  /** special EnterSafariMode: the flag, 30 Safari Balls into the bag, the counters told. */
+  suspend fun enter(session: SessionContext, charId: Long) {
     story.setFlag(charId, KantoFlags.FLAG_SYS_SAFARI_MODE)
+    characterStore.addItem(charId, safariBallItemId, BALLS)
+    characterStore.getCharacter(charId)?.let { session.send(storyItemStacksPacket(it.items)) }
     set(session, charId, STEPS, BALLS)
     log.info { "[safari] char=$charId enters: $BALLS balls, $STEPS steps" }
   }
 
-  /** special ExitSafariMode. */
-  fun exit(session: SessionContext, charId: Long) {
+  /** special ExitSafariMode: the flag off, the Safari Balls taken back, the counters zeroed. */
+  suspend fun exit(session: SessionContext, charId: Long) {
     story.clearFlag(charId, KantoFlags.FLAG_SYS_SAFARI_MODE)
+    val left = characterStore.getCharacter(charId)?.items?.get(safariBallItemId) ?: 0
+    if (left > 0) {
+      characterStore.addItem(charId, safariBallItemId, -left)
+      characterStore.getCharacter(charId)?.let { session.send(storyItemStacksPacket(it.items)) }
+    }
     set(session, charId, 0, 0)
     log.info { "[safari] char=$charId leaves" }
   }
 
   fun ballsLeft(charId: Long): Int = characterStore.getCharacter(charId)?.info?.remainingSafariBalls?.toInt() ?: 0
 
-  /** A Safari Ball thrown: one fewer, the client's counter told. */
+  /** A Safari Ball thrown (the bag item leaves in BattleService.throwBall): the counter follows. */
   fun consumeBall(session: SessionContext, charId: Long): Int {
     val info = characterStore.getCharacter(charId)?.info ?: return 0
     val balls = (info.remainingSafariBalls - 1).coerceAtLeast(0)

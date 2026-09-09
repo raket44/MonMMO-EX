@@ -50,6 +50,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kind.SAFARI_BAIT, ChosenAction.Kind.SAFARI_ROCK)
+/** The Safari Game's bait lines (client kind -33): the toss, "is eating!", "can't eat more!". */
+private const val SAFARI_BAIT_EATING = 0
+private const val SAFARI_BAIT_CANT_EAT_MORE = 2
+private const val SAFARI_BAIT_TOSSED = 3
+/** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
+private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
 
 private val log = KotlinLogging.logger {}
 
@@ -153,7 +159,7 @@ constructor(
                   action.moveOrItemId,
                   targetSide = action.extraFlag.toInt() and 0x0F,
                   targetPosition = (action.extraFlag.toInt() ushr 4) and 0x0F)
-          BattleAction.ITEM -> ChosenAction(position, ChosenAction.Kind.ITEM)
+          BattleAction.ITEM -> ChosenAction(position, ChosenAction.Kind.ITEM, itemId = action.moveOrItemId.toInt() and 0xFFFF)
           BattleAction.SWITCH -> ChosenAction(position, ChosenAction.Kind.SWITCH, partyIndex = action.moveOrItemId.toInt())
           BattleAction.RUN -> ChosenAction(position, ChosenAction.Kind.RUN)
           BattleAction.BALL -> ChosenAction(position, ChosenAction.Kind.SAFARI_BALL)
@@ -185,8 +191,8 @@ constructor(
       flee(battle)
       return
     }
-    if (actions.any { it.kind == ChosenAction.Kind.ITEM }) {
-      catchWild(battle)
+    actions.firstOrNull { it.kind == ChosenAction.Kind.ITEM }?.let { action ->
+      throwBall(battle, action.itemId)
       return
     }
     for (switch in actions.filter { it.kind == ChosenAction.Kind.SWITCH }) {
@@ -665,100 +671,90 @@ constructor(
   }
 
   /**
-   * One Safari Game turn (src/battle_main.c HandleAction_SafariZoneBallThrow / ThrowBait /
-   * ThrowRock, then the wild monster's HandleAction_WatchesCarefully and the AI's
-   * if_random_safari_flee). The client's own catch shows through catchWild; a miss, and
-   * the bait, rock and watching lines, come as notices in FireRed's words.
+   * A ball thrown from the bag or the safari panel (src/battle_script_commands.c
+   * Cmd_handleballthrow): the ball leaves the bag, the odds come from the target's catch rate, hp
+   * and status and the ball's bonus, and the client plays the throw with the shakes (0x37 kind 0,
+   * sub-kind = shakes 0..3, 4 = caught: f/Am prints bank 15 lines 61..64 or "Gotcha!"). A miss in
+   * a normal battle hands the turn to the wild monster; in the Safari Game it is the wild's
+   * watching turn instead.
    */
-  private suspend fun safariTurn(battle: BattleInstance, kind: ChosenAction.Kind) {
-    val s = battle.safari ?: return
-    val wild = battle.opponentMon()
-    val name = wild.species.name.uppercase()
-    when (kind) {
-      ChosenAction.Kind.SAFARI_BALL -> {
-        if (s.balls <= 0) {
-          emitter.sendNotice(battle, "PA: You have no SAFARI BALLS left!")
-          prompt(battle)
-          return
-        }
-        s.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (s.balls - 1)
-        val shakes = safariShakes(battle, s)
-        if (shakes >= 4) {
-          catchWild(battle)
-          return
-        }
-        emitter.sendNotice(
-            battle,
-            when (shakes) {
-              0 -> "Oh, no!\nThe POKéMON broke free!"
-              1 -> "Aww!\nIt appeared to be caught!"
-              2 -> "Aargh!\nAlmost had it!"
-              else -> "Shoot!\nIt was so close, too!"
-            })
-        if (s.balls <= 0) {
-          // B_OUTCOME_NO_SAFARI_BALLS: the battle is over, the PA walks the player out after it.
-          emitter.sendNotice(battle, "PA: Ding-dong!\nYou are out of SAFARI BALLS!")
-          emitter.sendFled(battle)
-          persistParty(battle)
-          battle.pendingResult = BattleResult.FLED
-          return
-        }
-      }
-      ChosenAction.Kind.SAFARI_BAIT -> {
-        s.baitTurns = (s.baitTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
-        s.rockTurns = 0
-        s.catchFactor = (s.catchFactor shr 1).let { if (it <= 2) 3 else it }
-        emitter.sendNotice(battle, "${characterStore.getCharacter(battle.charId)?.info?.name ?: "You"} threw some BAIT at the $name!")
-      }
-      ChosenAction.Kind.SAFARI_ROCK -> {
-        s.rockTurns = (s.rockTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
-        s.baitTurns = 0
-        s.catchFactor = (s.catchFactor shl 1).coerceAtMost(20)
-        emitter.sendNotice(battle, "${characterStore.getCharacter(battle.charId)?.info?.name ?: "You"} threw a ROCK at the $name!")
-      }
-      else -> {}
-    }
-    // The wild monster's turn: the last throw wears off, then it may bolt.
-    val mood =
-        when {
-          s.rockTurns > 0 -> {
-            s.rockTurns--
-            if (s.rockTurns == 0) { s.catchFactor = s.baseCatchFactor; "is watching carefully!" } else "is angry!"
-          }
-          s.baitTurns > 0 -> {
-            s.baitTurns--
-            if (s.baitTurns == 0) "is watching carefully!" else "is eating!"
-          }
-          else -> "is watching carefully!"
-        }
-    emitter.sendNotice(battle, "$name $mood")
-    val fleeRate =
-        when {
-          s.rockTurns > 0 -> (s.escapeFactor * 2).coerceAtMost(20)
-          s.baitTurns > 0 -> (s.escapeFactor / 4).coerceAtLeast(1)
-          else -> s.escapeFactor
-        } * 5
-    if (battle.rng.pick(100) < fleeRate) {
-      emitter.sendNotice(battle, "$name fled!")
-      emitter.sendFled(battle)
-      persistParty(battle)
-      battle.pendingResult = BattleResult.FLED
+  private suspend fun throwBall(battle: BattleInstance, itemId: Int) {
+    if (!battle.catchable) {
+      emitter.sendNotice(battle, "You can't catch this monster.")
+      prompt(battle)
       return
     }
-    prompt(battle)
+    // A ball only flies at a lone monster: a horde has to be thinned to one first.
+    if (battle.opponentActives().count { !it.fainted } > 1) {
+      emitter.sendNotice(battle, "You can't throw a ball while more than one wild monster is out.")
+      prompt(battle)
+      return
+    }
+    val stored = characterStore.getCharacter(battle.charId) ?: return
+    val item = items.get(itemId)
+    if (item == null || (stored.items[itemId] ?: 0) <= 0) {
+      emitter.sendNotice(battle, "You have no ${item?.name ?: "ball"} left.")
+      prompt(battle)
+      return
+    }
+    // The ball is spent on the throw, caught or not.
+    if (!characterStore.addItem(battle.charId, itemId, -1)) return
+    characterStore.getCharacter(battle.charId)?.let { battle.session.send(storyItemStacksPacket(it.items)) }
+    val game = battle.safari
+    if (game != null && item == Items.SAFARI_BALL) {
+      game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)
+    }
+    val wild = battle.opponentMon()
+    val shakes =
+        when {
+          item == Items.MASTER_BALL -> 4
+          game != null && item == Items.SAFARI_BALL -> shakesFor(battle, wild, (game.catchFactor * 1275 / 100).coerceIn(0, 255), 15)
+          else -> shakesFor(battle, wild, wild.species.catchRate, ballMultiplier(battle, item, wild))
+        }
+    if (shakes >= 4) {
+      catchWild(battle, itemId)
+      return
+    }
+    battle.session.send(BattleListEventPacket(kind = 0, value = itemId.toShort(), subKind = shakes.toByte(), detail = null))
+    if (game != null) {
+      if (game.balls <= 0) {
+        // B_OUTCOME_NO_SAFARI_BALLS: the fight is over; the PA walks the player out after it.
+        emitter.sendSafariOutOfBalls(battle, SAFARI_OUT_OF_BALLS_TEXT)
+        persistParty(battle)
+        battle.pendingResult = BattleResult.FLED
+        return
+      }
+      safariWildTurn(battle)
+      return
+    }
+    // The wild monster gets its move after a failed throw.
+    emitter.sendEvents(battle, engine.resolveSwitchTurn(battle))
+    afterTurn(battle)
   }
 
+  /** sBallCatchBonuses and the special balls, in tenths; a Master Ball never rolls. */
+  private fun ballMultiplier(battle: BattleInstance, item: de.fiereu.openmmo.items.ItemDef, wild: BattleMonState): Int =
+      when (item) {
+        Items.ULTRA_BALL -> 20
+        Items.GREAT_BALL, Items.SAFARI_BALL -> 15
+        Items.NET_BALL -> if (wild.species.types.any { it == de.fiereu.openmmo.common.enums.PokemonType.WATER || it == de.fiereu.openmmo.common.enums.PokemonType.BUG }) 30 else 10
+        Items.NEST_BALL -> if (wild.level < 40) (40 - wild.level).coerceAtLeast(10) else 10
+        Items.TIMER_BALL -> (battle.turn + 10).coerceAtMost(40)
+        else -> 10
+      }
+
   /**
-   * The Safari Ball's shakes, 4 = caught (src/battle_script_commands.c Cmd_handleballthrow with
-   * ITEM_SAFARI_BALL): catch rate = catch factor * 1275 / 100, ball bonus 15/10, the wild at full
-   * hp and no status; odds >= 255 catches outright, else each shake rolls under
-   * 1048560 / sqrt(sqrt(16711680 / odds)).
+   * The ball's shakes, 4 = caught: odds = catch rate * bonus / 10 * (3 max hp - 2 hp) / (3 max hp),
+   * doubled asleep or frozen, * 1.5 with any other status; 255 catches outright, else each of
+   * four shakes rolls under 1048560 / sqrt(sqrt(16711680 / odds)).
    */
-  private fun safariShakes(battle: BattleInstance, s: de.fiereu.openmmo.server.game.battle.SafariBattleState): Int {
-    val wild = battle.opponentMon()
-    val catchRate = (s.catchFactor * 1275 / 100).coerceIn(0, 255)
+  private fun shakesFor(battle: BattleInstance, wild: BattleMonState, catchRate: Int, multiplier: Int): Int {
     val maxHp = wild.maxHp.coerceAtLeast(1)
-    val odds = ((catchRate * 15 / 10) * (maxHp * 3 - wild.currentHp * 2) / (maxHp * 3)).coerceAtLeast(1)
+    var odds = (catchRate * multiplier / 10) * (maxHp * 3 - wild.currentHp * 2) / (maxHp * 3)
+    val status = wild.status
+    if (status and de.fiereu.openmmo.common.StatusCondition.SLEEP_MASK != 0 || status and de.fiereu.openmmo.common.StatusCondition.FREEZE != 0) odds *= 2
+    else if (status != 0) odds = odds * 15 / 10
+    odds = odds.coerceAtLeast(1)
     if (odds >= 255) return 4
     val shakeOdds = 1048560 / isqrt(isqrt(16711680 / odds))
     var shakes = 0
@@ -771,6 +767,73 @@ constructor(
     while (r * r > value) r--
     while ((r + 1) * (r + 1) <= value) r++
     return r
+  }
+
+  /**
+   * One Safari Game action other than the ball (src/battle_main.c HandleAction_ThrowBait /
+   * ThrowRock). Bait shows through the client's own bait event (kind -33: the toss, then "is
+   * eating!" on the wild's turns). The client has no rock or watching line at all - a rock still
+   * changes the odds, it just says nothing.
+   */
+  private suspend fun safariTurn(battle: BattleInstance, kind: ChosenAction.Kind) {
+    val s = battle.safari ?: return
+    val wild = battle.opponentMon()
+    when (kind) {
+      ChosenAction.Kind.SAFARI_BALL -> {
+        throwBall(battle, safariBallItemId.toInt())
+        return
+      }
+      ChosenAction.Kind.SAFARI_BAIT -> {
+        val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
+        val line = if (s.baitTurns >= 6) SAFARI_BAIT_CANT_EAT_MORE else SAFARI_BAIT_TOSSED
+        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, line, thrower)))
+        s.baitTurns = (s.baitTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
+        s.rockTurns = 0
+        s.catchFactor = (s.catchFactor shr 1).let { if (it <= 2) 3 else it }
+      }
+      ChosenAction.Kind.SAFARI_ROCK -> {
+        s.rockTurns = (s.rockTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
+        s.baitTurns = 0
+        s.catchFactor = (s.catchFactor shl 1).coerceAtMost(20)
+        log.info { "[safari] char=${battle.charId} threw a rock at ${wild.species.name}: catch ${s.catchFactor}, angry for ${s.rockTurns}" }
+      }
+      else -> {}
+    }
+    safariWildTurn(battle)
+  }
+
+  /**
+   * The wild monster's safari turn (HandleAction_WatchesCarefully, then the AI's
+   * if_random_safari_flee): the last throw wears off one step, an eating monster says so, and it
+   * may bolt at escape factor * 5 % (doubled while angry, quartered while eating).
+   */
+  private suspend fun safariWildTurn(battle: BattleInstance) {
+    val s = battle.safari ?: return
+    val wild = battle.opponentMon()
+    when {
+      s.rockTurns > 0 -> {
+        s.rockTurns--
+        if (s.rockTurns == 0) s.catchFactor = s.baseCatchFactor
+      }
+      s.baitTurns > 0 -> {
+        s.baitTurns--
+        if (s.baitTurns > 0) emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_BAIT_EATING)))
+      }
+    }
+    val fleeRate =
+        when {
+          s.rockTurns > 0 -> (s.escapeFactor * 2).coerceAtMost(20)
+          s.baitTurns > 0 -> (s.escapeFactor / 4).coerceAtLeast(1)
+          else -> s.escapeFactor
+        } * 5
+    if (battle.rng.pick(100) < fleeRate) {
+      log.info { "[safari] ${wild.species.name} fled from char=${battle.charId} (rate $fleeRate%)" }
+      emitter.sendWildFled(battle)
+      persistParty(battle)
+      battle.pendingResult = BattleResult.FLED
+      return
+    }
+    prompt(battle)
   }
 
   private suspend fun flee(battle: BattleInstance) {
@@ -801,18 +864,7 @@ constructor(
     battle.pendingResult = BattleResult.FLED
   }
 
-  private suspend fun catchWild(battle: BattleInstance) {
-    if (!battle.catchable) {
-      emitter.sendNotice(battle, "You can't catch this monster.")
-      prompt(battle)
-      return
-    }
-    // A ball only flies at a lone monster: a horde has to be thinned to one first.
-    if (battle.opponentActives().count { !it.fainted } > 1) {
-      emitter.sendNotice(battle, "You can't throw a ball while more than one wild monster is out.")
-      prompt(battle)
-      return
-    }
+  private suspend fun catchWild(battle: BattleInstance, ballItemId: Int = pokeBallItemId.toInt()) {
     val stored = characterStore.getCharacter(battle.charId) ?: return
     // A seventh party member corrupts the character - the client refuses the whole character
     // list. With a full party the catch goes to PC storage instead, like the real games.
@@ -843,7 +895,7 @@ constructor(
     battle.session.send(
         BattleListEventPacket(
             kind = 0,
-            value = if (battle.safari != null) safariBallItemId else pokeBallItemId,
+            value = ballItemId.toShort(),
             subKind = 4,
             detail = BattleListEventDetail(listType = 1, value = 1),
         ),

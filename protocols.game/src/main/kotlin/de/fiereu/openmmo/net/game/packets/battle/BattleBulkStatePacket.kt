@@ -199,6 +199,26 @@ data class BattleBulkStatePacket(
             thirdGroup = emptyList(),
         )
 
+    /**
+     * The wild monster fled (a safari battle): the client's own "The wild {00} fled!" (ROM slot 2,
+     * bank 15, line 75 - a bank-line entry, f/n1) in the message group, no "Got away safely".
+     */
+    fun wildFled(): BattleBulkStatePacket = endWith(listOf(TextCreatureEntry(2, 0, 15, 75)))
+
+    /** Out of Safari Balls after a miss: the PA's ROM line ([textId], a FireRed text offset) ends the fight. */
+    fun safariOutOfBalls(textId: Int): BattleBulkStatePacket = endWith(listOf(CreatureDataEntry(textId, emptyList())))
+
+    private fun endWith(lines: List<BattleSerializedEntry>): BattleBulkStatePacket =
+        BattleBulkStatePacket(
+            phase = 0,
+            firstGroup = lines,
+            secondGroup = listOf(NullSerializedEntry),
+            prizeMoney = 0,
+            valueB = 0,
+            flag = 2,
+            thirdGroup = emptyList(),
+        )
+
     /** Terminal marker sent when the player flees. */
     fun fled(): BattleBulkStatePacket =
         BattleBulkStatePacket(

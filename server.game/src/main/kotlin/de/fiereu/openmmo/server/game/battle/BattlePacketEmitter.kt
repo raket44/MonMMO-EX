@@ -197,6 +197,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                     species = de.fiereu.openmmo.net.game.packets.battle.Species(event.wireSpecies.toShort(), 0)))
         is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
         is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
+        is BattleEvent.SafariBait ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.SafariBait(event.kind.toByte(), event.thrower))
         is BattleEvent.Line ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.Line(event.line, event.values))
@@ -347,6 +350,18 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
   /** Confirms the forced replacement choice just before its switch-in. */
   fun sendSwitchConfirm(battle: BattleInstance, position: Int = 0) {
     broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = true))
+  }
+
+  /** A safari battle the wild monster ended: the client's "The wild {00} fled!" and the exit, no flee line of the player's. */
+  fun sendWildFled(battle: BattleInstance) {
+    broadcast(battle, BattleBulkStatePacket.wildFled())
+    battle.session.send(EntityPresencePacket(entityId = battle.charId, status = PRESENCE_OVERWORLD))
+  }
+
+  /** The last Safari Ball missed: the PA's out-of-balls ROM line ends the fight. */
+  fun sendSafariOutOfBalls(battle: BattleInstance, textId: Int) {
+    broadcast(battle, BattleBulkStatePacket.safariOutOfBalls(textId))
+    battle.session.send(EntityPresencePacket(entityId = battle.charId, status = PRESENCE_OVERWORLD))
   }
 
   fun sendFled(battle: BattleInstance) {

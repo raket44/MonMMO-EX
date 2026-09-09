@@ -91,6 +91,9 @@ sealed interface BattleEvent {
       val moveId: Int = 0,
       val itemId: Int = 0,
   ) : BattleEvent
+
+  /** The Safari Zone's bait line on the wild (client kind -33): see BattleEventBody.SafariBait. */
+  data class SafariBait(val targetId: Long, val kind: Int, val thrower: String? = null) : BattleEvent
 }
 
 enum class CantMoveReason {

@@ -95,19 +95,6 @@ fun main(args: Array<String>) {
     val newRegions = NEW_POKEDEX_REGIONS
     val totalRegions = PokedexRegionPatch.STOCK_REGIONS + newRegions.size
 
-    /** Like applyOne, for a patch that belongs on every class matching [matches]. */
-    fun applyEach(label: String, matches: (ByteArray) -> Boolean, apply: (ByteArray) -> ByteArray) {
-      var count = 0
-      for (candidate in classes) {
-        val bytes = patched[candidate.name] ?: archive.getInputStream(candidate).use { it.readBytes() }
-        if (!runCatching { matches(bytes) }.getOrDefault(false)) continue
-        patched[candidate.name] = apply(bytes)
-        println("[fairy-type] $label patched in ${candidate.name}")
-        count++
-      }
-      if (count == 0) println("[fairy-type] $label not found")
-    }
-
     fun applyOne(label: String, matches: (ByteArray) -> Boolean, apply: (ByteArray) -> ByteArray) {
       val entry =
           classes.firstOrNull { candidate ->
@@ -195,7 +182,7 @@ fun main(args: Array<String>) {
 
     // The in-game wardrobe opened in preview mode (nothing sent, free addons unlisted) and its
     // addon rows applied by bag stack, which a free addon does not have.
-    applyEach(
+    applyOne(
         "Wardrobe opener sends",
         WardrobePatch::isOpener,
         WardrobePatch::patchOpener,

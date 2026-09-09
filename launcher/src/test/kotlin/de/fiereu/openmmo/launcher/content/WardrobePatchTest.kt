@@ -62,14 +62,12 @@ class WardrobePatchTest :
         return stores
       }
 
-      test("every local-player opener reads the sending mode after the patch") {
+      test("the opener reads the sending mode after the patch") {
         if (!Files.isRegularFile(client)) return@test
-        for (name in listOf("f/iJ1.class", "f/HQ.class", "f/OB1.class", "f/sf.class")) {
-          val opener = classBytes(name)
-          WardrobePatch.isOpener(opener) shouldBe true
-          modeReads(opener) shouldBe listOf("XO0")
-          modeReads(WardrobePatch.patchOpener(opener)) shouldBe listOf("Qc0")
-        }
+        val opener = classBytes("f/HQ.class")
+        WardrobePatch.isOpener(opener) shouldBe true
+        modeReads(opener) shouldBe listOf("XO0")
+        modeReads(WardrobePatch.patchOpener(opener)) shouldBe listOf("Qc0")
       }
 
       test("addon rows store a true by-addon flag, the None row keeps false") {

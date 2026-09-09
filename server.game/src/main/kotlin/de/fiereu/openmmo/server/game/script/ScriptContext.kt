@@ -203,7 +203,10 @@ internal constructor(
   /** Shows DS-bank text buttons over [line]; 1-based pick, 0 = closed unanswered. */
   internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
     holdScriptedFacing()
-    return dialog.dsTextListMenu(session, state, line.textId, list.region, list.bank, list.entries, preselected)
+    // Kind wire 49 is the one dialog kind flagged as a window (f/qM1.kL0): the manager opens it only
+    // after an EMPTY text page (f/cg.YQ), and a question text makes it show the text, then answer 0
+    // on the next press (seen live). The ROM already showed the question as the message before.
+    return dialog.dsTextListMenu(session, state, 0, list.region, list.bank, list.entries, preselected)
   }
 
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */

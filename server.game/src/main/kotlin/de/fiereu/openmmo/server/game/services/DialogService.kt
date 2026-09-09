@@ -108,7 +108,8 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
    * entry per button; renderer f/gl0 draws each through f/EO.oG1(region, bank, entry), the DS
    * message-bank table - so the buttons can only be entries of one DS bank. Tables parsed by
    * constant name from f/qM1, f/XN1.kW and f/UX.bV (2026-09-09); the earlier wire-20 guess was a
-   * plain message and held the player.
+   * plain message and held the player. [textId] must be 0: this kind is flagged kL0 and its
+   * window opens only after an empty text page; a question text made the client answer 0 itself.
    */
   suspend fun dsTextListMenu(
       session: SessionContext,

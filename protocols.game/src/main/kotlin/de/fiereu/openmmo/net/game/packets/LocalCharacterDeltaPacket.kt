@@ -3,7 +3,7 @@ package de.fiereu.openmmo.net.game.packets
 import de.fiereu.bytecodec.*
 
 private const val MONEY = 0x1
-private const val MAP = 0x2
+private const val SAFARI = 0x2
 private const val VALUE_4 = 0x4
 private const val VALUE_8 = 0x8
 private const val VALUE_16 = 0x10
@@ -12,7 +12,11 @@ private const val VALUE_64 = 0x40
 private const val STATUS_CONDITIONS = 0x80
 private const val VALUE_256 = 0x100
 
-data class MapLocation(val mapId: Short, val mapFlag: Byte)
+/**
+ * The Safari Game's remaining steps and balls: client f/cd1 bit 2 -> f/ZZ.Iq1 / FJ1, then the battle
+ * panel's ball count refreshes (f/h60.vI0). Read as a map location before 2026-09-09.
+ */
+data class SafariStatus(val steps: Short, val balls: Byte)
 
 data class Value8Group(val a: Byte, val b: Byte, val c: Byte)
 
@@ -24,7 +28,7 @@ data class Value64Group(val kind: Byte, val a: Short?, val b: Short?)
 /** A partial update to the player's own character. A null group is left off the wire. */
 data class LocalCharacterDeltaPacket(
     val money: Int? = null,
-    val map: MapLocation? = null,
+    val safari: SafariStatus? = null,
     val value4: Short? = null,
     val value8: Value8Group? = null,
     val value16: Value16Group? = null,
@@ -37,7 +41,7 @@ data class LocalCharacterDeltaPacket(
 private fun LocalCharacterDeltaPacket.mask(): Short {
   var m = 0
   if (money != null) m = m or MONEY
-  if (map != null) m = m or MAP
+  if (safari != null) m = m or SAFARI
   if (value4 != null) m = m or VALUE_4
   if (value8 != null) m = m or VALUE_8
   if (value16 != null) m = m or VALUE_16
@@ -53,9 +57,9 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
     val m = field(S16LE) { it.mask() }.toInt()
 
     val money = optionalField(m and MONEY != 0, S32LE) { it.money }
-    val map =
-        if (m and MAP != 0)
-            MapLocation(field(S16LE) { it.map!!.mapId }, field(S8) { it.map!!.mapFlag })
+    val safari =
+        if (m and SAFARI != 0)
+            SafariStatus(field(S16LE) { it.safari!!.steps }, field(S8) { it.safari!!.balls })
         else null
     val value4 = optionalField(m and VALUE_4 != 0, S16LE) { it.value4 }
     val value8 =
@@ -88,7 +92,7 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
 
     return LocalCharacterDeltaPacket(
         money = money,
-        map = map,
+        safari = safari,
         value4 = value4,
         value8 = value8,
         value16 = value16,

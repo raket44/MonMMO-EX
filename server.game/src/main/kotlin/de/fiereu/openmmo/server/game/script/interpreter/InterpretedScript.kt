@@ -538,6 +538,13 @@ class InterpretedScript(
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
             "ListMenu" -> runListMenu(ctx, state)
+            // src/safari_zone.c: the Safari Game on the client's own safari counters.
+            "EnterSafariMode" -> ctx.enterSafari()
+            "ExitSafariMode" -> ctx.exitSafari()
+            // src/field_specials.c ChoosePartyMon: VAR_0x8004 = the party slot, PARTY_SIZE when closed.
+            "ChoosePartyMon" -> ctx.setVar(namespaced("VAR_0x8004"), tracedWait(ctx, "party pick") { ctx.choosePartyMember() })
+            "GetMagikarpSizeRecordInfo" -> ctx.bufferMagikarpRecord()
+            "CompareMagikarpSize" -> ctx.setVar(namespaced("VAR_RESULT"), ctx.compareMagikarpSize(ctx.getVar(namespaced("VAR_RESULT"))))
             // src/field_specials.c: the floor the elevator stands on, read from the dynamic warp.
             "GetElevatorFloor" -> ctx.setVar(namespaced("VAR_ELEVATOR_FLOOR"), ctx.elevatorFloor())
             // Pokemon Tower's ghost: the wild battle setwildbattle named, uncatchable. FireRed's
@@ -609,6 +616,8 @@ class InterpretedScript(
                 if (ctx.isPlayerLeftOfNpc(sailor)) 1 else 0
               }
               else if (function == "InitElevatorFloorSelectMenuPos") ctx.elevatorMenuPosition()
+              else if (function == "IsThereRoomInAnyBoxForMorePokemon") (if (ctx.pcHasRoom()) 1 else 0)
+              else if (function == "DoesPlayerPartyContainSpecies") (if (ctx.partyContainsSpecies(ctx.getVar(namespaced("VAR_0x8004")))) 1 else 0)
               else if (function == "GetPokedexCount") {
                 // src/prof_pc.c: VAR_0x8004 0 = the Kanto dex, else national; 0x8005 seen, 0x8006
                 // owned; the answer itself is IsNationalPokedexEnabled. Oak's aides read 0x8006.
@@ -664,6 +673,12 @@ class InterpretedScript(
         }
         "giveitem_msg" -> {
           runGiveItemMsg(ctx, state, instruction)
+          state.pc++
+        }
+        // msgreceiveditem TEXT, ITEM: the "received" line alone (STD_RECEIVED_ITEM buffers the item
+        // name into STR_VAR_2); the fishing gurus add the rod with additem first.
+        "msgreceiveditem" -> {
+          runReceivedItemMsg(ctx, state, instruction)
           state.pc++
         }
         "setobjectxy" -> {
@@ -734,8 +749,9 @@ class InterpretedScript(
                 region,
                 packed shr 8,
                 packed and 0xFF,
-                (instruction.arg(1) as IntArg).value,
-                (instruction.arg(2) as IntArg).value,
+                // `warp map, x, y` or `warp map, warpId, x, y` (asm/macros/event.inc: map, a, b, c).
+                value(ctx, instruction.arg(instruction.args.size - 2)),
+                value(ctx, instruction.arg(instruction.args.size - 1)),
                 de.fiereu.openmmo.common.enums.Direction.DOWN,
             )
           }
@@ -1057,6 +1073,8 @@ class InterpretedScript(
         when (instruction.command) {
           "giveitem" ->
               ctx.giveItem(item, quantity).also { if (it) announceItem(ctx, item, quantity) }
+          // additem: into the bag without the "received" fanfare; the script announces it itself.
+          "additem" -> ctx.giveItem(item, quantity)
           "removeitem" -> ctx.takeItem(item, quantity)
           "checkitem" -> ctx.itemCount(item) >= quantity
           // The server bag has no slot cap for scripts to overflow.
@@ -1096,6 +1114,15 @@ class InterpretedScript(
     tracedWait(ctx, "dialog") { ctx.say(line) }
     state.currentMessage = line
     ctx.setVar(namespaced("VAR_RESULT"), if (obtained) 1 else 0)
+  }
+
+  private suspend fun runReceivedItemMsg(ctx: ScriptContext, state: RuntimeState, instruction: ScriptInstruction) {
+    val line = textLine(textArg(instruction, 0).token, instruction)
+    val token = instruction.arg(1).token
+    val item = ctx.resolveItem(token) ?: error("Script ${program.id.stable} references unknown item $token from `${instruction.sourceLine}`")
+    ctx.bufferText(2, item.name)
+    tracedWait(ctx, "dialog") { ctx.say(line) }
+    state.currentMessage = line
   }
 
   private fun runDefeatedBranch(

@@ -203,10 +203,10 @@ class ScriptSupportAnalyzer(
           "hideobjectat",
           "setobjectmovementtype" -> args.size == 2
           in InterpreterSupport.DEFEATED_BRANCHES -> args.size == 2
-          "giveitem_msg" -> args.size in 2..4
+          "giveitem_msg", "msgreceiveditem" -> args.size in 2..4
           "setobjectxy",
           "setobjectxyperm",
-          "warp" -> args.size == 3
+          "warp" -> args.size in 3..4
           "setdynamicwarp" -> args.size == 4
           "multichoice" -> args.size == 4
           "multichoicedefault",
@@ -310,7 +310,7 @@ class ScriptSupportAnalyzer(
         return sourceReason(instruction, "unsupported item count ${args[1].token}")
       }
     }
-    if (instruction.command == "giveitem_msg") {
+    if (instruction.command == "giveitem_msg" || instruction.command == "msgreceiveditem") {
       if (items.byScriptConstant(args[1].token) == null) {
         return sourceReason(instruction, "unresolved item ${args[1].token}")
       }
@@ -623,6 +623,7 @@ class ScriptSupportAnalyzer(
             "getplayerxy",
             "random",
             "giveitem_msg",
+            "msgreceiveditem",
             "setobjectxy",
             "setobjectxyperm",
             "setobjectmovementtype",

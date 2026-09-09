@@ -128,6 +128,11 @@ internal object InterpreterSupport {
           "StartMarowakBattle",
           "GetElevatorFloor",
           "ListMenu",
+          "EnterSafariMode",
+          "ExitSafariMode",
+          "ChoosePartyMon",
+          "GetMagikarpSizeRecordInfo",
+          "CompareMagikarpSize",
           "SetVermilionTrashCans",
           "RockSmashWildEncounter",
           "ChooseMonForMoveTutor",
@@ -204,7 +209,15 @@ internal object InterpreterSupport {
   const val RAW_TEXT_ARG: Byte = 5
 
   /** specialvar functions the executor answers from live state. */
-  val IMPLEMENTED_SPECIALVARS = setOf("GetBattleOutcome", "IsPlayerLeftOfVermilionSailor", "GetPokedexCount", "InitElevatorFloorSelectMenuPos")
+  val IMPLEMENTED_SPECIALVARS =
+      setOf(
+          "GetBattleOutcome",
+          "IsPlayerLeftOfVermilionSailor",
+          "GetPokedexCount",
+          "InitElevatorFloorSelectMenuPos",
+          "IsThereRoomInAnyBoxForMorePokemon",
+          "DoesPlayerPartyContainSpecies",
+      )
 
 
   /**
@@ -256,5 +269,5 @@ internal object InterpreterSupport {
       mapOf("Text_NoMoreRoomForPokemon" to 2305, "gText_NoMoreRoomForPokemon" to 2305)
 
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */
-  val ITEM_COMMANDS = setOf("giveitem", "checkitem", "removeitem", "checkitemspace", "finditem")
+  val ITEM_COMMANDS = setOf("giveitem", "additem", "checkitem", "removeitem", "checkitemspace", "finditem")
 }

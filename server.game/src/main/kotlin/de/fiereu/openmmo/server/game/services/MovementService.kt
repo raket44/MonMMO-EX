@@ -89,6 +89,7 @@ constructor(
     private val scope: kotlinx.coroutines.CoroutineScope,
     private val scriptRegistry: ScriptRegistry? = null,
     private val scriptRunner: Provider<ScriptRunner>? = null,
+    private val safariService: SafariService? = null,
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -529,6 +530,8 @@ constructor(
       // A trainer whose gaze crosses the landing tile approaches and battles; the encounter
       // roll is skipped for that step, like vanilla.
       if (trainerSight.onStep(ctx, state, currentMap, toX, toY)) return
+      // The Safari Game counts this step; at zero the PA's times-up script takes the player.
+      if (safariService?.onStep(ctx, state) == true) return
       encounterService.onStep(ctx, charId, currentMap, toX, toY)
     }
   }
@@ -768,6 +771,7 @@ constructor(
       val stopped =
           mapScriptService.onStep(ctx, state, map, x, y) ||
               trainerSight.onStep(ctx, state, map, x, y) ||
+              safariService?.onStep(ctx, state) == true ||
               run {
                 encounterService.onStep(ctx, charId, map, x, y)
                 state.encounterHold

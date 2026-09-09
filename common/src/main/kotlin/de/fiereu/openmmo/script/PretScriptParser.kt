@@ -136,7 +136,7 @@ object PretScriptParser {
                 "setobjectxyperm",
                 "showobjectat",
                 "hideobjectat") && index == 0 -> ObjectArg(token)
-        command == "giveitem_msg" && index == 0 -> TextArg(token)
+        (command == "giveitem_msg" || command == "msgreceiveditem") && index == 0 -> TextArg(token)
         command in defeatedBranches && index == 0 -> TrainerArg(token)
         command in defeatedBranches && index == 1 -> LabelArg(token)
         command in TRAINER_BATTLE_COMMANDS && index == 0 -> TrainerArg(token)

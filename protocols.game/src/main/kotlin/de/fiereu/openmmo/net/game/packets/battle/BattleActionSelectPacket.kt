@@ -35,7 +35,8 @@ private val BattleActionSelectBody: Codec<BattleActionSelectPacket> =
             val partyIndex = S16LE.read(buf)
             BattleActionSelectPacket(slotRefPacked, action, partyIndex, 0, 0)
           }
-          BattleAction.RUN -> BattleActionSelectPacket(slotRefPacked, action, 0, 0, 0)
+          BattleAction.RUN, BattleAction.BALL, BattleAction.BAIT, BattleAction.ROCK ->
+              BattleActionSelectPacket(slotRefPacked, action, 0, 0, 0)
         }
       }
 
@@ -53,8 +54,8 @@ private val BattleActionSelectBody: Codec<BattleActionSelectPacket> =
             S8.write(buf, value.extraFlag)
           }
           BattleAction.SWITCH -> S16LE.write(buf, value.moveOrItemId)
-          BattleAction.RUN -> {
-            // RUN carries no tail bytes.
+          BattleAction.RUN, BattleAction.BALL, BattleAction.BAIT, BattleAction.ROCK -> {
+            // RUN and the Safari Game's three actions carry no tail bytes (client f/z30.d02).
           }
         }
       }

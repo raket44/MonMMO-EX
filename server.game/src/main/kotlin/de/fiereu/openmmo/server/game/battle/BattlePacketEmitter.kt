@@ -93,6 +93,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             appearance = appearance,
             // TODO Send the map's battle backdrop (outdoors 0, forest 9, caves 12).
             background = 0,
+            // Mode byte after the format (f/my): 1 opens the Safari Game panel, Ball / Bait / Rock.
+            mode = if (battle.safari != null) de.fiereu.openmmo.server.game.services.SafariService.BATTLE_MODE else 0,
             opposing = if (battle.trainer == null) OpposingSide.WILD else OpposingSide.TRAINER,
             // The client resolves class and name through its per-region ROM trainer table
             // (f/W9.io(region, id)); the id alone lands in the Kanto table.

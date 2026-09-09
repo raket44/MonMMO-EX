@@ -51,6 +51,9 @@ data class ChosenAction(
     MOVE,
     SWITCH,
     ITEM,
+    SAFARI_BALL,
+    SAFARI_BAIT,
+    SAFARI_ROCK,
     RUN,
   }
 }
@@ -123,6 +126,8 @@ class BattleInstance(
 
   /** Result held until the client confirms that its battle-to-map transition has finished. */
   var pendingResult: BattleResult? = null
+  /** The Safari Game's counters when this is a safari battle (SafariService), else null. */
+  var safari: SafariBattleState? = null
 
   var weather: Weather? = null
   var weatherTurns: Int = 0
@@ -182,4 +187,20 @@ class BattleInstance(
     foesOf(mon).firstOrNull()?.let { return it }
     return if (onPlayerSide) opponent[opponentPositions.firstOrNull { it >= 0 } ?: 0] else party[playerPositions.firstOrNull { it >= 0 } ?: 0]
   }
+}
+
+/**
+ * FireRed's safari battle counters (src/battle_main.c): the catch factor starts at the species'
+ * catch rate * 100 / 1275, the escape factor at its safari flee rate * 100 / 1275 (at least 2);
+ * bait halves the catch factor (floor 3) and rock doubles it (cap 20), each for 2..6 of the wild
+ * monster's turns, while it watches, eats or is angry, and may flee.
+ */
+class SafariBattleState(
+    var balls: Int,
+    val baseCatchFactor: Int,
+    val escapeFactor: Int,
+) {
+  var catchFactor: Int = baseCatchFactor
+  var baitTurns: Int = 0
+  var rockTurns: Int = 0
 }

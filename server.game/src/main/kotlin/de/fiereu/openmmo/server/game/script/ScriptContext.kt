@@ -57,6 +57,7 @@ internal constructor(
     private val layoutVariants: de.fiereu.openmmo.server.game.services.LayoutVariants? = null,
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
     private val tutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
+    private val safari: de.fiereu.openmmo.server.game.services.SafariService? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -213,6 +214,72 @@ internal constructor(
     if (warp.regionId.toInt() != regionId) return fallback
     val header = (warp.bankId.toInt() and 0xFF) or ((warp.mapId.toInt() and 0xFF) shl 8)
     return floors[header.toString()] ?: fallback
+  }
+
+  /** special EnterSafariMode: the flag, 30 balls and 600 steps, the client's counters told. */
+  fun enterSafari() {
+    characterId?.let { safari?.enter(session, it) }
+  }
+
+  /** special ExitSafariMode. */
+  fun exitSafari() {
+    characterId?.let { safari?.exit(session, it) }
+  }
+
+  /** specialvar IsThereRoomInAnyBoxForMorePokemon. */
+  fun pcHasRoom(): Boolean =
+      (characterId?.let { characters?.getCharacter(it)?.pcStorage?.size } ?: 0) < de.fiereu.openmmo.server.game.storage.PC_CAPACITY
+
+  /** specialvar DoesPlayerPartyContainSpecies: VAR_0x8004 names the species (MON_DATA_SPECIES_OR_EGG). */
+  fun partyContainsSpecies(species: Int): Boolean =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.any { mon -> mon.dexId == species } } ?: false
+
+  /**
+   * special ChoosePartyMon: the party in the client's species-list picker (the stand-in for the
+   * party menu); the 0-based slot picked, PARTY_SIZE when the window was closed.
+   */
+  suspend fun choosePartyMember(): Int {
+    val party = characterId?.let { characters?.getCharacter(it)?.pokemon } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    if (party.isEmpty()) return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    holdScriptedFacing()
+    val pick =
+        dialog.chooseFromSpecies(
+            session,
+            state,
+            WHICH_MON_TEXT,
+            party.map { if (it.isEgg) 0 else de.fiereu.openmmo.common.clientSpeciesId(it.dexId) })
+    return if (pick in 1..party.size) pick - 1 else de.fiereu.openmmo.common.MAX_PARTY_SIZE
+  }
+
+  /** special GetMagikarpSizeRecordInfo: STR_VAR_3 = the record's size, STR_VAR_1 = the species. */
+  fun bufferMagikarpRecord() {
+    bufferText(3, formatMonSize(monSize(MAGIKARP_HEIGHT, getVar(de.fiereu.openmmo.story.generated.kanto.KantoVars.VAR_MAGIKARP_SIZE_RECORD))))
+    bufferText(1, speciesName(MAGIKARP) ?: "MAGIKARP")
+  }
+
+  /**
+   * special CompareMagikarpSize (src/pokemon_size_record.c CompareMonSize): the party [slot] from
+   * VAR_RESULT; 0 no pick, 1 not a Magikarp, 2 smaller than the record, 3 a new record (kept in
+   * VAR_MAGIKARP_SIZE_RECORD as the size hash, 0 = the game's default), 4 a tie. STR_VAR_3 gets
+   * the old size, STR_VAR_2 the new one.
+   */
+  fun compareMagikarpSize(slot: Int): Int {
+    if (slot >= de.fiereu.openmmo.common.MAX_PARTY_SIZE) return 0
+    val mon = characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) } ?: return 0
+    if (mon.isEgg || mon.dexId != MAGIKARP) return 1
+    val hash = monSizeHash(mon)
+    val newSize = monSize(MAGIKARP_HEIGHT, hash)
+    val oldSize = monSize(MAGIKARP_HEIGHT, getVar(de.fiereu.openmmo.story.generated.kanto.KantoVars.VAR_MAGIKARP_SIZE_RECORD))
+    bufferText(3, formatMonSize(oldSize))
+    bufferText(2, formatMonSize(newSize))
+    return when {
+      newSize == oldSize -> 4
+      newSize < oldSize -> 2
+      else -> {
+        setVar(de.fiereu.openmmo.story.generated.kanto.KantoVars.VAR_MAGIKARP_SIZE_RECORD, hash)
+        3
+      }
+    }
   }
 
   private fun dynamicWarpMapName(): String? {
@@ -906,3 +973,52 @@ private const val SURF_TRANSPORTATION = 0x01
 
 /** The GBA wallet cap. */
 private const val MAX_MONEY = 999_999
+
+/** The tutor's "which one?" ROM line, the party picker's question (MoveTutorService). */
+private const val WHICH_MON_TEXT = 16779003
+
+private const val MAGIKARP = 129
+/** Magikarp's Pokedex height in decimeters (GetPokedexHeightWeight). */
+private const val MAGIKARP_HEIGHT = 9
+
+/** src/pokemon_size_record.c GetMonSizeHash: low IV nibbles and the personality's two bytes. */
+private fun monSizeHash(mon: de.fiereu.openmmo.common.Pokemon): Int {
+  val personality = mon.seed and 0xFFFF
+  val hp = mon.iVs.hp and 0xF
+  val atk = mon.iVs.atk and 0xF
+  val def = mon.iVs.def and 0xF
+  val spd = mon.iVs.spd and 0xF
+  val spAtk = mon.iVs.spAtk and 0xF
+  val spDef = mon.iVs.spDef and 0xF
+  val hi = (((atk xor def) * hp) xor (personality and 0xFF)) and 0xFF
+  val lo = (((spAtk xor spDef) * spd) xor (personality shr 8)) and 0xFF
+  return (hi shl 8) + lo
+}
+
+/** sBigMonSizeTable: (unk0, unk2, unk4) rows. */
+private val BIG_MON_SIZE_TABLE =
+    listOf(
+        Triple(290, 1, 0), Triple(300, 1, 10), Triple(400, 2, 110), Triple(500, 4, 310),
+        Triple(600, 20, 710), Triple(700, 50, 2710), Triple(800, 100, 7710), Triple(900, 150, 17710),
+        Triple(1000, 150, 32710), Triple(1100, 100, 47710), Triple(1200, 50, 57710), Triple(1300, 20, 62710),
+        Triple(1400, 5, 64710), Triple(1500, 2, 65210), Triple(1600, 1, 65410), Triple(1700, 1, 65510))
+
+/** src/pokemon_size_record.c GetMonSize, in millimetres. */
+private fun monSize(height: Int, hash: Int): Int {
+  val b = hash and 0xFFFF
+  var index = 15
+  for (i in 1 until 15) {
+    if (b < BIG_MON_SIZE_TABLE[i].third) {
+      index = i - 1
+      break
+    }
+  }
+  val (unk0, unk2, unk4) = BIG_MON_SIZE_TABLE[index]
+  return height * (unk0 + (b - unk4) / unk2) / 10
+}
+
+/** FormatMonSizeRecord, the US game's inches (UNITS_IMPERIAL): "35.4". */
+private fun formatMonSize(size: Int): String {
+  val inches = size * 100 / 254
+  return "${inches / 10}.${inches % 10}"
+}

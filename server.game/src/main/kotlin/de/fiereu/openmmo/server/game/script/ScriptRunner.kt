@@ -54,6 +54,7 @@ constructor(
     private val layoutVariants: de.fiereu.openmmo.server.game.services.LayoutVariants? = null,
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
     private val moveTutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
+    private val safariService: de.fiereu.openmmo.server.game.services.SafariService? = null,
 ) {
   fun run(session: SessionContext, state: PlayerState, script: Script, entityId: Long) =
       runAll(session, state, listOf(script), entityId)
@@ -118,6 +119,7 @@ constructor(
             layoutVariants,
             banners,
             moveTutor,
+            safariService,
         )
     scope.launch {
       var finished = false

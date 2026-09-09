@@ -70,6 +70,8 @@ data class BattleFieldStatePacket(
     val format: BattleFormat = BattleFormat.SINGLES,
     /** A second trainer on the opposing side (double sighting): the header names both. */
     val partnerTrainerId: Short? = null,
+    /** The client's mode byte (f/my): 0 a normal battle, 1 the Safari Game (Ball / Bait / Rock panel). */
+    val mode: Byte = 0,
 ) {
   init {
     require(playerActive.size == format.playerSlots) {
@@ -102,7 +104,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     val format =
         BattleFormat.byWireValue(formatByte)
             ?: throw MalformedPacketException("Unknown battle format $formatByte")
-    constant(0)
+    val mode = field(S8) { it.mode }
     val background = field(S8) { it.background }
     constant(AFTER_BACKGROUND)
     val opposingByte = field(S8) { it.opposing.wireValue }
@@ -221,6 +223,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         opponentActive,
         format,
         partnerTrainerId = partnerTrainerId,
+        mode = mode,
     )
   }
 }

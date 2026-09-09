@@ -71,6 +71,12 @@ private const val MACH_BIKE_ITEM_ID = 259
  */
 private val BIKE_SKIN_ITEM_RANGE = 4816..4827
 
+/** Catalog flag bit 4 (client J61.q4): wearable without an item. */
+private const val DEFAULT_ADDON_FLAG = 0x10
+
+/** The default bit and the two gender bits - a starting garment carries nothing else. */
+private const val STARTER_FLAGS = 0x13
+
 /** Client-generated cosmetic item ids. */
 private val COSMETIC_BAND = 2000..4887
 
@@ -321,6 +327,20 @@ constructor(
         granted++
       }
     }
+    // The starting clothes ride along the same way: the seven addons whose only catalog flag is
+    // the default bit (plus a gender bit) - Boots, Shoes, Pants, Skirt, Sleeveless Shirt,
+    // T-Shirt, Long Sleeve Top. Retail lists them without any item drop because they ARE bag
+    // items there; without them a default top taken off is gone from the wardrobe for good
+    // (2026-09-08). A gender-flagged one goes only to that gender.
+    for (addon in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.itemBacked()) {
+      if (addon.flags and DEFAULT_ADDON_FLAG == 0 || addon.flags and STARTER_FLAGS.inv() != 0) continue
+      val gender = if (addon.flags and 1 != 0) 0 else if (addon.flags and 2 != 0) 1 else -1
+      if (gender >= 0 && gender != stored.info.rivalSex.toInt()) continue
+      if (addon.itemId !in stored.items) {
+        characterStore.addItem(charId, addon.itemId, 1)
+        granted++
+      }
+    }
     // Variant-alt cosmetics (Ur0.AL1's table: Noble Steed (Alt), Flaming Skull's alt, ...) are
     // chosen through the BASE item's variant window - holding the alt item makes it show as a
     // separate standalone entry, which retail never does. Reclaim them, and collapse cosmetic
@@ -337,7 +357,7 @@ constructor(
     }
     if (granted > 0 || cleaned > 0) {
       characterStore.flushCharacterAsync(charId)
-      log.info { "Cosmetics: granted $granted bike colors, cleaned $cleaned stacks ($charId)" }
+      log.info { "Cosmetics: granted $granted bike colors and starting clothes, cleaned $cleaned stacks ($charId)" }
     }
     // Take back the Hoenn-exclusive Mach Bike an earlier build handed out by mistake.
     val machBikes = stored.items[MACH_BIKE_ITEM_ID] ?: 0

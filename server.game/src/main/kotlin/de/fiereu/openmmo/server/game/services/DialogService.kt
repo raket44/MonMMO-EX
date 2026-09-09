@@ -120,6 +120,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
       bank: Int,
       entries: List<Int>,
       preselected: Int,
+      args: List<DialogMessageArg> = emptyList(),
   ): Int {
     val detail = ByteArray(5 + entries.size * 2)
     detail[0] = 0
@@ -131,7 +132,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
       detail[5 + i * 2] = (entry and 0xFF).toByte()
       detail[6 + i * 2] = ((entry shr 8) and 0xFF).toByte()
     }
-    return showChoiceAndWait(session, state, 0, DS_TEXT_LIST, NO_ENTITY, contextValue = preselected, detail = detail).unk
+    return showChoiceAndWait(session, state, 0, DS_TEXT_LIST, NO_ENTITY, contextValue = preselected, detail = detail, messageArgs = args).unk
   }
 
   /**

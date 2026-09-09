@@ -157,27 +157,51 @@ internal object InterpreterSupport {
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
 
-  /** A multichoice drawn as the client's text-button list: entries of one DS text bank. */
-  data class DsTextList(val region: Int, val bank: Int, val entries: List<Int>)
+  /**
+   * A multichoice drawn as the client's text-button list: entries of one DS text bank, plus the
+   * dialog arguments those entries read (the raw label route).
+   */
+  data class DsTextList(
+      val region: Int,
+      val bank: Int,
+      val entries: List<Int>,
+      val args: List<de.fiereu.openmmo.net.game.packets.dialog.DialogMessageArg> = emptyList(),
+  )
 
   /**
-   * The client draws a ROM menu with its text-button list (dialog kind wire 49, f/gl0) when every
-   * option is an entry of one DS message bank (f/EO.oG1(region, bank, entry)): the DS menu-entry
-   * bank (Platinum bank 361, region 3) carries floor labels 1F..5F, B1F, B2F, LOOKOUT and EXIT,
-   * matched here by text against the game's own option strings (corpus MenuIndex). No client
-   * text says "B4F", so the hideout's third floor shows as "4F" until a text of its own exists.
-   * Null when a label has no entry: the menu then answers B so the script takes its cancel path.
+   * The client draws a ROM menu with its text-button list (dialog kind wire 49, f/gl0) whose
+   * buttons are entries of one DS message bank (f/EO.oG1(region, bank, entry)), formatted with
+   * the dialog's arguments (f/nV0.CoM5 -> Tu1). Two routes, both from the game's own option
+   * strings (corpus MenuIndex):
+   * - every label is an entry of the DS menu-entry bank (Platinum bank 361: 1F..5F, B1F, B2F,
+   *   LOOKOUT, EXIT, ...) -> those entries;
+   * - otherwise bank 354's entries 1..12 are bare placeholders: the client's DS decoder (f/EO)
+   *   turns a STRVAR tag into "{index:02X}" ({00}..{0B}) and Tu1 replaces each with the dialog
+   *   argument of that slot, so every button shows the ROM's own text sent as a raw string
+   *   argument - B4F, 11F, anything, up to twelve buttons.
+   * Null only past twelve options: the menu then answers B so the script takes its cancel path.
    */
   fun dsTextList(options: List<String>): DsTextList? {
     val bank = de.fiereu.openmmo.script.GeneratedScriptCorpus.dsMenuEntries
-    val entries = options.map { label -> bank[label] ?: bank[MENU_LABEL_STAND_INS[label]] ?: return null }
-    return DsTextList(DS_MENU_REGION, DS_MENU_BANK, entries)
+    val entries = options.map { bank[it] }
+    if (entries.all { it != null }) return DsTextList(DS_MENU_REGION, DS_MENU_BANK, entries.map { it!! })
+    if (options.size > RAW_LABEL_SLOTS) return null
+    return DsTextList(
+        DS_MENU_REGION,
+        DS_RAW_LABEL_BANK,
+        (1..options.size).toList(),
+        options.mapIndexed { slot, text ->
+          de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(slot = slot.toByte(), kind = RAW_TEXT_ARG, text = text)
+        })
   }
 
-  /** Labels no client text carries, shown by their nearest entry. */
-  private val MENU_LABEL_STAND_INS = mapOf("B4F" to "4F")
   const val DS_MENU_REGION = 3
   const val DS_MENU_BANK = 361
+  /** Platinum unk_0354.json: entries 1..12 are `{STRVAR_1 t, 0..11, 0}`, one placeholder each. */
+  const val DS_RAW_LABEL_BANK = 354
+  const val RAW_LABEL_SLOTS = 12
+  /** Dialog argument kind 5: a raw UTF-16 string (DialogActionPacket codec). */
+  const val RAW_TEXT_ARG: Byte = 5
 
   /** specialvar functions the executor answers from live state. */
   val IMPLEMENTED_SPECIALVARS = setOf("GetBattleOutcome", "IsPlayerLeftOfVermilionSailor", "GetPokedexCount", "InitElevatorFloorSelectMenuPos")

@@ -220,7 +220,7 @@ internal constructor(
    */
   internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
     showMessage(line)
-    return dialog.dsTextListMenu(session, state, list.region, list.bank, list.entries, preselected)
+    return dialog.dsTextListMenu(session, state, list.region, list.bank, list.entries, preselected, list.args)
   }
 
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */

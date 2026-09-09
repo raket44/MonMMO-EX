@@ -180,19 +180,6 @@ fun main(args: Array<String>) {
         DexMoveRowLabelPatch::patch,
     )
 
-    // The in-game wardrobe opened in preview mode (nothing sent, free addons unlisted) and its
-    // addon rows applied by bag stack, which a free addon does not have.
-    applyOne(
-        "Wardrobe opener sends",
-        WardrobePatch::isOpener,
-        WardrobePatch::patchOpener,
-    )
-    applyOne(
-        "Wardrobe rows apply by addon id",
-        WardrobePatch::isOptionRow,
-        WardrobePatch::patchOptionRow,
-    )
-
     // The menu header names the day and time but never the season; the hook appends it.
     applyOne(
         "Menu header season",

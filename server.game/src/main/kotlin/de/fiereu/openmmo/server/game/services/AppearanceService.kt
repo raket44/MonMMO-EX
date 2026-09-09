@@ -16,10 +16,6 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /** Body-feature slots with no backing items (client f.ne0.F71 false): always customizable. */
-// The slots the client's dialog gives a "None" row (f.ne0 constructor flag xZ0).
-private val OPTIONAL_SLOTS =
-    setOf(SkinSlot.FOREHEAD, SkinSlot.HAT, SkinSlot.FACIAL_HAIR, SkinSlot.BACK, SkinSlot.GLOVES)
-
 private val INNATE_SLOTS =
     setOf(SkinSlot.FOREHEAD, SkinSlot.HAIR, SkinSlot.EYES, SkinSlot.FACIAL_HAIR)
 
@@ -113,32 +109,12 @@ constructor(
           if (packet.addonId < 0) null // explicit "None"
           else CosmeticsRegistry.get(slot, packet.addonId.toInt())
         } else {
-          if (packet.stackObjectId == 0L) {
-            // A zero stack id is what the dialog sends for an entry with no bag row behind it:
-            // the "None" row (client f.ce(Te, String)) on the slots that offer one (f.ne0 xZ0:
-            // forehead, hat, facial hair, back, gloves) means "take the overlay off, the base
-            // shows through". A free addon's row sent the same zero until the client patch
-            // (tools/clientpatch/PatchCe) made those rows send their addon id; on a slot with no
-            // None row a zero can only be that, and clearing it would undress the player (the
-            // base body is bare, and a zero on the bike once stripped the stored bike skin).
-            if (slot !in OPTIONAL_SLOTS) {
-              log.info { "[Appearance] char=$charId slot=$slot zero stack ignored (no None row)" }
-              return
-            }
-            characters.setSkin(charId, slot, null)
-            characters.flushCharacterAsync(charId)
-            log.info { "[Appearance] char=$charId slot=$slot -> none" }
-            resend(ctx, charId)
-            return
-          }
           val itemId = (packet.stackObjectId ushr 16).toInt() and 0xFFFF
           val resolved = CosmeticsRegistry.byItemId(itemId)
           if (resolved == null) {
             // A stack reference that resolves to nothing must NOT fall through to the clear
             // path - one such click silently stripped the stored bike skin.
-            log.info {
-              "[Appearance] char=$charId slot=$slot unresolved stack item $itemId (stack id 0x${packet.stackObjectId.toString(16)}, addon ${packet.addonId}, variant ${packet.variant})"
-            }
+            log.info { "[Appearance] char=$charId slot=$slot unresolved stack item $itemId" }
             return
           }
           resolved

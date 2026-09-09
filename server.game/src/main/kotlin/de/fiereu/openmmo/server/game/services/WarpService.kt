@@ -58,6 +58,18 @@ constructor(
       return
     }
 
+    if (!tile.dynamic && destMap.warps.any { it.dynamic && it.x == warp.targetX && it.y == warp.targetY }) {
+      characterStore.setDynamicWarp(
+          charId,
+          de.fiereu.openmmo.common.DynamicWarp(
+              stored.info.positionRegionId,
+              stored.info.positionBankId,
+              stored.info.positionMapId,
+              tile.x.toShort(),
+              tile.y.toShort(),
+              de.fiereu.openmmo.common.enums.Direction.DOWN))
+      log.info { "Dynamic warp set to the door just used: (${tile.x}, ${tile.y}) on ${stored.info.positionBankId}:${stored.info.positionMapId}" }
+    }
     state?.justWarped = true
     state?.pendingStepDir = null
     state?.pendingStepX = -1

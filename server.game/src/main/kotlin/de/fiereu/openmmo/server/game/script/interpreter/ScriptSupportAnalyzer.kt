@@ -621,6 +621,7 @@ class ScriptSupportAnalyzer(
             "hideobjectat",
             "trainerbattle_no_intro",
             "warp",
+            "setdynamicwarp",
         ) +
             InterpreterSupport.DEFEATED_BRANCHES +
             COMPARISON_BRANCHES +

@@ -718,6 +718,26 @@ class InterpretedScript(
         "trainerbattle_no_intro" -> {
           if (!runTrainerBattleNoIntro(ctx, state, instruction)) return
         }
+        // setdynamicwarp MAP, warpId, x, y: where the map's MAP_DYNAMIC warps (an elevator's exit)
+        // send the player. The map constant packs num | group << 8 like `warp`.
+        "setdynamicwarp" -> {
+          val packed = (instruction.arg(0) as IntArg).value
+          val region =
+              when (program.id.source) {
+                "firered" -> 0
+                "emerald" -> 1
+                else -> error("Script ${program.id.stable} cannot set a dynamic warp for source " + program.id.source)
+              }
+          ctx.setDynamicWarp(
+              region,
+              packed shr 8,
+              packed and 0xFF,
+              value(ctx, instruction.arg(2)),
+              value(ctx, instruction.arg(3)),
+              de.fiereu.openmmo.common.enums.Direction.DOWN,
+          )
+          state.pc++
+        }
         else ->
             throw UnsupportedScriptCommandException(
                 program.id.stable, instruction.command, instruction.sourceLine)

@@ -10,8 +10,9 @@ import org.objectweb.asm.Opcodes
  * Makes the in-game wardrobe (client f/Te) apply what the player picks.
  *
  * Two things stand between a click and the server:
- * - The in-game opener (f/HQ) hard-codes mode f/r4.XO0, the PREVIEW mode: the floppy applies the
- *   set locally and sends nothing, and the option list skips every free addon (f/Te.sf1 lists
+ * - Every opener that shows the dialog for the local player (the main menu entry f/iJ1.LR,
+ *   f/HQ, and the deferred openers f/OB1 and f/sf) hard-codes mode f/r4.XO0, the PREVIEW
+ *   mode: the floppy applies the set locally and sends nothing, and the option list skips every free addon (f/Te.sf1 lists
  *   them only when f/r4.gB(), which is "any mode but XO0"). Mode Qc0 sends the full set (c2s
  *   0x29) on the floppy and lists the free addons. This was once a hand-made byte patch
  *   (tools/clientpatch/PatchHQ) that fell out of the overlay when the jar was regenerated.
@@ -34,7 +35,7 @@ object WardrobePatch {
   private const val NONE_ENTRY_DESCRIPTOR = "(Lf/Te;Ljava/lang/String;)V"
   private const val BY_ADDON_FLAG = "HO"
 
-  /** True for the in-game opener: it reads the preview mode and hands it to the dialog opener. */
+  /** True for an opener: it reads the preview mode and hands it to the dialog manager. */
   fun isOpener(classBytes: ByteArray): Boolean {
     var readsPreviewMode = false
     var opensDialog = false
@@ -101,7 +102,7 @@ object WardrobePatch {
               }
         },
         0)
-    check(rewritten == 1) { "Expected one preview-mode read in the wardrobe opener, found $rewritten" }
+    check(rewritten >= 1) { "No preview-mode read found in the wardrobe opener" }
     return writer.toByteArray()
   }
 

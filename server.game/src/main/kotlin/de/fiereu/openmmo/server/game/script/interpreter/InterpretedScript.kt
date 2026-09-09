@@ -1187,23 +1187,27 @@ class InterpretedScript(
   private fun multichoiceFollows(state: RuntimeState): Boolean =
       multichoiceFollows(state.activeProgram, state.pc + 1, HashSet())
 
-  private fun multichoiceFollows(program: ScriptProgram, start: Int, visited: MutableSet<Int>): Boolean {
+  /** A branch target: a label of [program] itself, or another program of the corpus at its start. */
+  private fun branchTarget(program: ScriptProgram, label: String): Pair<ScriptProgram, Int>? =
+      program.labels[label]?.let { program to it } ?: programLibrary[label]?.let { it to 0 }
+
+  private fun multichoiceFollows(program: ScriptProgram, start: Int, visited: MutableSet<String>): Boolean {
     var pc = start
     var caseTargets = 0
-    while (pc in program.instructions.indices && visited.add(pc)) {
+    while (pc in program.instructions.indices && visited.add("${program.id.stable}:$pc")) {
       val instruction = program.instructions[pc]
       when (instruction.command) {
         "waitmessage", "setvar", "copyvar", "specialvar", "compare" -> pc++
         "multichoice", "multichoicedefault", "multichoicegrid" -> return true
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
-          val target = program.labels[instruction.arg(0).token] ?: return false
-          if (!multichoiceFollows(program, target, visited)) return false
+          val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false
+          if (!multichoiceFollows(targetProgram, target, visited)) return false
           caseTargets++
           pc++
         }
         "goto" -> {
-          val target = program.labels[instruction.arg(0).token] ?: return false
-          return multichoiceFollows(program, target, visited)
+          val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false
+          return multichoiceFollows(targetProgram, target, visited)
         }
         else -> return caseTargets > 0
       }

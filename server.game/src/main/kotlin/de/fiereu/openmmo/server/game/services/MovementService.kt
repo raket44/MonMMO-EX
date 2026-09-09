@@ -40,9 +40,6 @@ private const val RECENT_TILES = 8
 // A spin-tile slide never runs longer than this; the hideout mazes are far shorter.
 private const val MAX_SPIN_STEPS = 64
 
-// The order the spinning sprite turns through (the GBA spin animation: south, west, north, east).
-private val SPIN_FACINGS = listOf(Direction.DOWN, Direction.LEFT, Direction.UP, Direction.RIGHT)
-
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
 
@@ -792,15 +789,10 @@ constructor(
     val steps = mutableListOf<MovementStep>()
     var cx = x
     var cy = y
-    // The spin is the sprite turning through the four facings while the tile slides under it:
-    // a face action, then a slide (which keeps the facing) for every tile.
-    var spin = SPIN_FACINGS.indexOf(state.facingDirection).coerceAtLeast(0)
-    while (steps.size < MAX_SPIN_STEPS * 2) {
+    while (steps.size < MAX_SPIN_STEPS) {
       val nx = cx + direction.dx
       val ny = cy + direction.dy
       if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
-      spin = (spin + 1) % SPIN_FACINGS.size
-      steps += faceStep(SPIN_FACINGS[spin])
       steps += spinStep(direction)
       cx = nx
       cy = ny
@@ -809,8 +801,7 @@ constructor(
       behavior.spinDirection?.let { direction = it }
     }
     if (steps.isEmpty()) return false
-    steps += faceStep(direction)
-    log.info { "[Spin] char=$charId from ($x, $y) ${steps.size / 2} tiles to ($cx, $cy)" }
+    log.info { "[Spin] char=$charId from ($x, $y) ${steps.size} steps to ($cx, $cy)" }
     state.spinning = true
     scope.launch {
       try {
@@ -828,20 +819,11 @@ constructor(
 
   private fun spinStep(direction: Direction): MovementStep =
       when (direction) {
-        Direction.UP -> MovementStep.SLIDE_UP
-        Direction.DOWN -> MovementStep.SLIDE_DOWN
-        Direction.LEFT -> MovementStep.SLIDE_LEFT
-        Direction.RIGHT -> MovementStep.SLIDE_RIGHT
-        else -> MovementStep.SLIDE_DOWN
-      }
-
-  private fun faceStep(direction: Direction): MovementStep =
-      when (direction) {
-        Direction.UP -> MovementStep.FACE_UP
-        Direction.DOWN -> MovementStep.FACE_DOWN
-        Direction.LEFT -> MovementStep.FACE_LEFT
-        Direction.RIGHT -> MovementStep.FACE_RIGHT
-        else -> MovementStep.FACE_DOWN
+        Direction.UP -> MovementStep.FAST_UP
+        Direction.DOWN -> MovementStep.FAST_DOWN
+        Direction.LEFT -> MovementStep.FAST_LEFT
+        Direction.RIGHT -> MovementStep.FAST_RIGHT
+        else -> MovementStep.FAST_DOWN
       }
 
   /** A real desync: the server's tile is re-asserted and the echo window opens. */

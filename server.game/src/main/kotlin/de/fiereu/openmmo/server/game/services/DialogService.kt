@@ -271,6 +271,23 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
     session.attributes.remove(PENDING_DIALOG)
     session.attributes.remove(PENDING_DIALOG_RESPONSE)
     if (state.dialogVisible) {
+      // A box the client keeps after its answer (the text-button list: KO re-renders a kL0 kind
+      // instead of closing it) only goes away on an explicit close: dialog action wire 100
+      // (f/qM1.qD0) makes the client close the dialog currently open (f/iq1.X91 ->
+      // f/A11.fn0().gq1()), sends nothing back, and does nothing with none open - the boxes
+      // the player already dismissed with A are gone by then.
+      val seq = state.dialogSeqId
+      state.dialogSeqId = seq + 1
+      session.send(
+          DialogActionPacket(
+              flags = seq.toByte(),
+              actionType = CLOSE_OPEN_DIALOG,
+              textId = 0,
+              entityId = NO_ENTITY,
+              contextValue = 0,
+              messageArgs = emptyList(),
+              detail = byteArrayOf(0),
+          ))
       // The dialog-state OFF also clears the client's scripted-input-removal flag (ln1.A70) -
       // while a script still owns the player it must NOT be sent; the runner sends the one
       // definitive OFF after the script's final walks have played out.
@@ -368,6 +385,8 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   private companion object {
     const val NO_ENTITY = -1L
     const val YES_NO = 0x05
+    /** Closes whatever dialog is open: wire 100 = f/qM1.qD0, handled before any parse in f/iq1.X91. */
+    const val CLOSE_OPEN_DIALOG: Byte = 100
     /** Text-button list of DS-bank entries: wire 49 = f/qM1.b, parse case 9, renderer f/gl0. */
     const val DS_TEXT_LIST = 49
     /**

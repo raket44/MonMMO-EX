@@ -50,10 +50,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kind.SAFARI_BAIT, ChosenAction.Kind.SAFARI_ROCK)
-/** The Safari Game's bait lines (client kind -33): the toss, "is eating!", "can't eat more!". */
+/**
+ * The Safari Game's bait event kinds (client kind -33): 0 "{00} is eating!" (client string 16780708,
+ * eating animation), 2 "{00} can't eat more!", and the toss kinds 3/4 whose line the launcher
+ * stages as FireRed's "{player} threw some BAIT / a ROCK at the {mon}!" (strings 200532, 101734,
+ * 101736; launcher ExpansionClientContentMain). 5 is kept for the DS games' Mud.
+ */
 private const val SAFARI_BAIT_EATING = 0
 private const val SAFARI_BAIT_CANT_EAT_MORE = 2
-private const val SAFARI_BAIT_TOSSED = 3
+private const val SAFARI_THREW_BAIT = 3
+private const val SAFARI_THREW_ROCK = 4
+/** FireRed's "{00} is watching carefully!" / "{00} is angry!", staged into strings_en.xml by the launcher. */
+private const val SAFARI_WATCHING_STRING = 5130
+private const val SAFARI_ANGRY_STRING = 5131
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
 
@@ -772,9 +781,9 @@ constructor(
 
   /**
    * One Safari Game action other than the ball (src/battle_main.c HandleAction_ThrowBait /
-   * ThrowRock). Bait shows through the client's own bait event (kind -33: the toss, then "is
-   * eating!" on the wild's turns). The client has no rock or watching line at all - a rock still
-   * changes the odds, it just says nothing.
+   * ThrowRock). Both show through the client's bait event (kind -33, thrower name + toss
+   * animation): its template and bait names are staged as FireRed's own lines by the launcher
+   * ("{player} threw some BAIT / a ROCK at the {mon}!"), so kind 3 is the bait and kind 4 the rock.
    */
   private suspend fun safariTurn(battle: BattleInstance, kind: ChosenAction.Kind) {
     val s = battle.safari ?: return
@@ -786,13 +795,15 @@ constructor(
       }
       ChosenAction.Kind.SAFARI_BAIT -> {
         val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
-        val line = if (s.baitTurns >= 6) SAFARI_BAIT_CANT_EAT_MORE else SAFARI_BAIT_TOSSED
+        val line = if (s.baitTurns >= 6) SAFARI_BAIT_CANT_EAT_MORE else SAFARI_THREW_BAIT
         emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, line, thrower)))
         s.baitTurns = (s.baitTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
         s.rockTurns = 0
         s.catchFactor = (s.catchFactor shr 1).let { if (it <= 2) 3 else it }
       }
       ChosenAction.Kind.SAFARI_ROCK -> {
+        val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
+        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_THREW_ROCK, thrower)))
         s.rockTurns = (s.rockTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
         s.baitTurns = 0
         s.catchFactor = (s.catchFactor shl 1).coerceAtMost(20)
@@ -805,22 +816,31 @@ constructor(
 
   /**
    * The wild monster's safari turn (HandleAction_WatchesCarefully, then the AI's
-   * if_random_safari_flee): the last throw wears off one step, an eating monster says so, and it
-   * may bolt at escape factor * 5 % (doubled while angry, quartered while eating).
+   * if_random_safari_flee): the last throw wears off one step and the monster says what it is
+   * doing - FireRed's "is watching carefully!" / "is angry!" (launcher-staged client strings,
+   * kind 76) or the client's own "is eating!" event with its animation - then it may bolt at
+   * escape factor * 5 % (doubled while angry, quartered while eating).
    */
   private suspend fun safariWildTurn(battle: BattleInstance) {
     val s = battle.safari ?: return
     val wild = battle.opponentMon()
-    when {
-      s.rockTurns > 0 -> {
-        s.rockTurns--
-        if (s.rockTurns == 0) s.catchFactor = s.baseCatchFactor
-      }
-      s.baitTurns > 0 -> {
-        s.baitTurns--
-        if (s.baitTurns > 0) emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_BAIT_EATING)))
-      }
-    }
+    val mood: de.fiereu.openmmo.server.game.battle.BattleEvent =
+        when {
+          s.rockTurns > 0 -> {
+            s.rockTurns--
+            if (s.rockTurns == 0) {
+              s.catchFactor = s.baseCatchFactor
+              de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
+            } else de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_ANGRY_STRING)
+          }
+          s.baitTurns > 0 -> {
+            s.baitTurns--
+            if (s.baitTurns == 0) de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
+            else de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_BAIT_EATING)
+          }
+          else -> de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
+        }
+    emitter.sendEvents(battle, listOf(mood))
     val fleeRate =
         when {
           s.rockTurns > 0 -> (s.escapeFactor * 2).coerceAtMost(20)

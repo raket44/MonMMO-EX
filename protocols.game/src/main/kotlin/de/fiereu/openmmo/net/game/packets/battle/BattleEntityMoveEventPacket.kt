@@ -80,6 +80,15 @@ sealed interface BattleEventBody {
   data class SafariBait(val kind: Byte, val thrower: String? = null) : BattleEventBody
 
   /**
+   * Kind 76 (f/lW1) printing one of the client's own strings_en.xml strings by id: [shape u8]
+   * [1 u8][id s32]. Shape 1 fills {00} with the name of the monster the event is attached to
+   * (the same parameter the bait event names), shape 2 with the other side's, 3/7 both, 0 none.
+   * The kind's other form ([shape][0][bank s16][index s16]) reads a text bank, but with the ROM
+   * byte hard-coded to the Unova game in all 272 call sites, so only the string form is modelled.
+   */
+  data class ClientLine(val shape: Byte, val stringId: Int) : BattleEventBody
+
+  /**
    * One of the client's fixed-shape battle lines, by sub-event id. Decoded from the client's
    * event factory (f/SF1) and each renderer's message bases against the ROM text bank the client
    * itself dumped (reference/client-31914/battle-strings.tsv). [values] are the body fields in
@@ -344,6 +353,17 @@ private val SafariBaitBodyCodec: Codec<BattleEventBody> =
       }
     }
 
+private val ClientLineBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val shape = field(S8) { (it as BattleEventBody.ClientLine).shape }
+        val form = field(S8) { 1 }
+        require(form.toInt() == 1) { "kind 76 bank-line form is not modelled" }
+        val id = field(S32LE) { (it as BattleEventBody.ClientLine).stringId }
+        return BattleEventBody.ClientLine(shape, id)
+      }
+    }
+
 enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   HP_UPDATE(id = 0, codec = HpUpdateBodyCodec),
   STAT_CHANGE(id = 1, codec = StatChangeBodyCodec),
@@ -355,7 +375,8 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
   MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
   EVOLUTION(id = 107, codec = EvolutionBodyCodec),
-  SAFARI_BAIT(id = -33, codec = SafariBaitBodyCodec);
+  SAFARI_BAIT(id = -33, codec = SafariBaitBodyCodec),
+  CLIENT_LINE(id = 76, codec = ClientLineBodyCodec);
 
   companion object {
     fun ofId(id: Int): BattleEventType = entries.first { it.id == id }
@@ -373,6 +394,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.Visibility -> VISIBILITY
           is BattleEventBody.AbilityPopup -> ABILITY_POPUP
           is BattleEventBody.SafariBait -> SAFARI_BAIT
+          is BattleEventBody.ClientLine -> CLIENT_LINE
           is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }

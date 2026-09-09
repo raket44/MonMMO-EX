@@ -68,7 +68,8 @@ class BattleEntityMoveEventPacketTest :
                             subEvents =
                                 listOf(
                                     BattleActionEvent(null, null, BattleEventBody.SafariBait(3, "RaKeT")),
-                                    BattleActionEvent(null, null, BattleEventBody.SafariBait(0))))))
+                                    BattleActionEvent(null, null, BattleEventBody.SafariBait(0)),
+                                    BattleActionEvent(null, null, BattleEventBody.ClientLine(1, 5130))))))
 
         val bytes = BattleEntityMoveEventPacketCodec.encodeToBytes(packet)
         bytes.toHex() shouldContain "df"

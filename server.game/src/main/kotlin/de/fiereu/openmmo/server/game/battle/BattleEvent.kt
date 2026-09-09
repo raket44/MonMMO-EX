@@ -94,6 +94,9 @@ sealed interface BattleEvent {
 
   /** The Safari Zone's bait line on the wild (client kind -33): see BattleEventBody.SafariBait. */
   data class SafariBait(val targetId: Long, val kind: Int, val thrower: String? = null) : BattleEvent
+
+  /** One of the client's own strings printed in the battle box (kind 76): shape 1 = {00} is the target's name. */
+  data class ClientLine(val targetId: Long, val stringId: Int, val shape: Int = 1) : BattleEvent
 }
 
 enum class CantMoveReason {

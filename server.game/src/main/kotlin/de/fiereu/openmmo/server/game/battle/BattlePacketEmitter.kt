@@ -200,6 +200,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         is BattleEvent.SafariBait ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.SafariBait(event.kind.toByte(), event.thrower))
+        is BattleEvent.ClientLine ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.ClientLine(event.shape.toByte(), event.stringId))
         is BattleEvent.Line ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.Line(event.line, event.values))

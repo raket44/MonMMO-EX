@@ -71,6 +71,12 @@ data class ItemStack(
      * this check - and off every bag page.
      */
     val region: Byte = -1,
+    /**
+     * The stack's cosmetic color (client f/zG.D91, read from the slot byte). The wardrobe enables
+     * a color swatch for an addon only when one of its bag stacks carries that color (f/ce.Kb1),
+     * so a garment that may be dyed freely is sent as one hidden stack per color.
+     */
+    val color: Byte = 0,
 )
 
 /**
@@ -88,7 +94,7 @@ fun itemStacksPacket(stacks: List<ItemStack>): BattleSidePartyPacket =
                   frontSpriteId = stack.itemId,
                   backSpriteId = stack.quantity,
                   side = 1,
-                  slot = 0,
+                  slot = stack.color,
                   partyIndex = stack.region,
                   statusEffect = null,
               )

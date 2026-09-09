@@ -167,9 +167,15 @@ constructor(
     if (type < 0) {
       characters.setSkin(charId, slot, null)
     } else {
-      // The click's trailing byte is the VARIANT (alternate form); the color survives from
-      // whatever this slot already wears - colors commit through the full-set save (0x29).
-      val color = if (stored.skins[slot]?.type?.toInt() == type) stored.skins[slot]?.color else 0u
+      // The click's trailing byte is the VARIANT (alternate form). A dyeable garment's stack
+      // reference carries the chosen color in its low byte (one hidden stack per color); any
+      // other click keeps the color this slot already wears - those commit through the
+      // full-set save (0x29).
+      val color: UByte? =
+          if (!packet.byAddonId && addon != null && addon.itemId in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.starterGarments.map { it.itemId })
+              (packet.stackObjectId and 0xFF).toUByte()
+          else if (stored.skins[slot]?.type?.toInt() == type) stored.skins[slot]?.color
+          else 0u
       characters.setSkin(
           charId,
           slot,

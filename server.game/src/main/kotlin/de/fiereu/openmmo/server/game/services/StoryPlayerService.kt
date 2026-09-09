@@ -186,14 +186,38 @@ fun storyItemStacksPacket(items: Map<Int, Int>) =
     itemStacksPacket(
         items.entries
             .sortedBy { it.key }
-            .map { (itemId, quantity) ->
-              ItemStack(
-                  objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG,
-                  itemId = itemId.toShort(),
-                  quantity = quantity.toShort(),
-                  region = bagRegion(itemId),
-              )
+            .flatMap { (itemId, quantity) ->
+              if (itemId in dyeableGarments) {
+                // One hidden stack per color: the wardrobe's picker (f/Te, in-game mode) enables
+                // only the colors some bag stack of the addon carries in its color byte, and the
+                // creation screen's free palette is not offered in game. The color rides in the
+                // low byte of the stack id, so the click's stack reference names it.
+                (0 until GARMENT_COLORS).map { color ->
+                  ItemStack(
+                      objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG or color.toLong(),
+                      itemId = itemId.toShort(),
+                      quantity = 1,
+                      region = bagRegion(itemId),
+                      color = color.toByte(),
+                  )
+                }
+              } else {
+                listOf(
+                    ItemStack(
+                        objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG,
+                        itemId = itemId.toShort(),
+                        quantity = quantity.toShort(),
+                        region = bagRegion(itemId),
+                    ))
+              }
             })
+
+/** The starting garments, dyeable to any of the skin short's 64 colors. */
+private val dyeableGarments: Set<Int>
+  get() = de.fiereu.openmmo.server.game.services.CosmeticsRegistry.starterGarments.map { it.itemId }.toSet()
+
+/** The skin short carries the color in six bits. */
+const val GARMENT_COLORS = 64
 
 /**
  * A bag stack, not a monster. The open shop window only refreshes its count when the update arrives

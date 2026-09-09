@@ -377,8 +377,8 @@ constructor(
       createBattle(session, specs, catchable = true, escapable = true)
 
   /** A scripted wild battle (setwildbattle/dowildbattle: legendaries, Snorlax) awaited by the script. */
-  suspend fun startScriptedWildBattle(session: SessionContext, dexId: Int, level: Int): BattleResult {
-    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true) ?: return BattleResult.FAILED
+  suspend fun startScriptedWildBattle(session: SessionContext, dexId: Int, level: Int, catchable: Boolean = true): BattleResult {
+    val battle = createWildBattle(session, dexId, level, catchable = catchable, escapable = true) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
 

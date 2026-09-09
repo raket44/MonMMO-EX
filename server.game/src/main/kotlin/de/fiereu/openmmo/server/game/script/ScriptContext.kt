@@ -416,6 +416,10 @@ internal constructor(
   internal suspend fun wildBattle(dexId: Int, level: Int): BattleResult =
       checkNotNull(battles) { "Battle service is unavailable" }.startScriptedWildBattle(session, dexId, level)
 
+  /** special StartMarowakBattle: the scripted wild battle, but the ghost cannot be caught. */
+  internal suspend fun ghostBattle(dexId: Int, level: Int): BattleResult =
+      checkNotNull(battles) { "Battle service is unavailable" }.startScriptedWildBattle(session, dexId, level, catchable = false)
+
   /**
    * copyobjectxytoperm: an npc's current tile becomes its permanent one. The live tile is the
    * override a script already wrote, else the map's own placement.

@@ -121,6 +121,7 @@ internal object InterpreterSupport {
   val IMPLEMENTED_SPECIALS =
       setOf(
           "HealPlayerParty",
+          "StartMarowakBattle",
           "SetVermilionTrashCans",
           "RockSmashWildEncounter",
           "ChooseMonForMoveTutor",

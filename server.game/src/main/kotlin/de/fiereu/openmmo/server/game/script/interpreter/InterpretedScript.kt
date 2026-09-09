@@ -512,6 +512,16 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
+            // Pokemon Tower's ghost: the wild battle setwildbattle named, uncatchable. FireRed's
+            // CB2_EndMarowakBattle leaves VAR_RESULT FALSE only for a win; anything else keeps it
+            // TRUE and the trigger walks the player back from the stairs.
+            "StartMarowakBattle" -> {
+              check(state.wildSpecies > 0) { "Script ${program.id.stable} has no setwildbattle before `${instruction.sourceLine}`" }
+              val result = tracedWait(ctx, "ghost battle ${state.wildSpecies}") { ctx.ghostBattle(state.wildSpecies, state.wildLevel) }
+              state.lastBattleOutcome = if (result == BattleResult.VICTORY) B_OUTCOME_WON else B_OUTCOME_RAN
+              if (result == BattleResult.DEFEAT || result == BattleResult.DISCONNECTED) return
+              ctx.setVar(namespaced("VAR_RESULT"), if (result == BattleResult.VICTORY) 0 else 1)
+            }
             // Rock Smash encounters: the retail tables carry no Rock Smash entries, so no monster
             // ever hides under a rock here - the truthful answer, not a shortcut.
             "RockSmashWildEncounter" -> ctx.setVar(namespaced("VAR_RESULT"), 0)

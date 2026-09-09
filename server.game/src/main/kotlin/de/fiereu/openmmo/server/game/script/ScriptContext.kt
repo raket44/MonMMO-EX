@@ -600,8 +600,14 @@ internal constructor(
     val map = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     val existing = state.tileOverrides[key] ?: map?.tileAt(x, y)
     val collision: Byte = (((existing?.collision?.toInt() ?: 0x10) and 0xFC) or (if (impassable) 1 else 0)).toByte()
-    state.tileOverrides[key] =
-        de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, existing?.behavior ?: de.fiereu.openmmo.common.enums.TileBehavior.NORMAL)
+    // Behavior is a tileset attribute of the metatile: any tile of this map built from the same
+    // metatile shows it (floor over a staircase is no warp any more). A metatile the map does not
+    // use anywhere keeps the tile's previous behavior, the best guess without the tileset.
+    val behavior =
+        map?.tiles?.firstOrNull { it.material == metatileId.toShort() }?.behavior
+            ?: existing?.behavior
+            ?: de.fiereu.openmmo.common.enums.TileBehavior.NORMAL
+    state.tileOverrides[key] = de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, behavior)
     // The client's own setmetatile: one tile packet with the ROM's metatile id and the GBA upper
     // byte (collision bits + the tile's existing elevation), drawn from the ROM tileset.
     session.send(

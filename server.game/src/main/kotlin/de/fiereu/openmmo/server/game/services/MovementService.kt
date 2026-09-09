@@ -380,7 +380,7 @@ constructor(
     // Stairs and arrow warps fire from the tile the player stands on - routed through the same
     // per-region rulebook as the NDS regions (warp-rules.txt overrides without a recompile).
     val gbaRegion = currentMap.regionId.toInt()
-    val standingBehavior = currentMap.tileAt(fromX, fromY)?.behavior
+    val standingBehavior = behaviorAt(currentMap, fromX, fromY, state.tileOverrides)
     val standingRule =
         warpRules.forTile(
             gbaRegion, currentMap.bankId.toInt(), currentMap.mapId.toInt(), fromX, fromY)
@@ -433,7 +433,7 @@ constructor(
     // warp logic runs, so a sideways step toward a door tile can never fire it). Animated
     // doors are the one exception - their tiles are impassable and vanilla's door sequence
     // deliberately bypasses collision for the up-press entry.
-    val targetBehavior = currentMap.tileAt(toX, toY)?.behavior
+    val targetBehavior = behaviorAt(currentMap, toX, toY, state.tileOverrides)
     val targetRule =
         warpRules.forTile(gbaRegion, currentMap.bankId.toInt(), currentMap.mapId.toInt(), toX, toY)
             ?: targetBehavior?.let { warpRules.forName(gbaRegion, it.name) }
@@ -910,6 +910,14 @@ constructor(
 
   private fun mapKey(map: MapDef): Long =
       (map.regionId.toLong() and 0xFF shl 40) or (map.bankId.toLong() and 0xFF shl 20) or (map.mapId.toLong() and 0xFF)
+
+  /**
+   * The behavior of (x, y) as the player's map shows it: a setmetatile override first. The ROM
+   * checks warp events against the metatile behavior at the position, so a staircase a script
+   * covered with floor (the Game Corner's hideout stairs before the switch) is no warp.
+   */
+  private fun behaviorAt(map: MapDef, x: Int, y: Int, overrides: Map<Int, de.fiereu.openmmo.common.Tile2D>) =
+      (overrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y))?.behavior
 
   private fun isWalkable(
       map: MapDef,

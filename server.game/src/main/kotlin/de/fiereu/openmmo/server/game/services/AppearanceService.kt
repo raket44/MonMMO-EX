@@ -220,6 +220,10 @@ object CosmeticsRegistry {
       val flags: Int,
       val name: String,
   ) {
+    /** 0 male-only, 1 female-only (catalog flag bits 0 and 1), -1 for either. */
+    val gender: Int
+      get() = if (flags and 1 != 0) 0 else if (flags and 2 != 0) 1 else -1
+
     val free: Boolean
       get() = itemId < 0 || (flags and 16) != 0 || alwaysSelectable
 
@@ -264,6 +268,24 @@ object CosmeticsRegistry {
 
   /** The addon a cosmetic bag item unlocks, or null for a non-cosmetic id. */
   fun byItemId(itemId: Int): Addon? = byItem[itemId]
+
+  /**
+   * The starting garments: the addons whose only catalog flag is the default bit (client
+   * J61.q4, 0x10) plus at most a gender bit - Boots, Shoes, Pants, Skirt, Sleeveless Shirt,
+   * T-Shirt, Long Sleeve Top. [Addon.gender] is 0 male, 1 female, -1 either.
+   */
+  val starterGarments: List<Addon> by lazy {
+    itemBacked().filter { (it.flags and DEFAULT_FLAG) != 0 && (it.flags and STARTER_FLAGS.inv()) == 0 }
+  }
+
+  /** The twelve bicycle colors, cosmetic-pocket items the dialog offers as bike skins. */
+  val bikeColorItems: IntRange = 4816..4827
+
+  /** Bag items that exist only for the wardrobe: granted at login, never drawn in the bag. */
+  val wardrobeStock: Set<Int> by lazy { bikeColorItems.toSet() + starterGarments.map { it.itemId } }
+
+  private const val DEFAULT_FLAG = 0x10
+  private const val STARTER_FLAGS = 0x13
 
   /**
    * Items whose addon is a VARIANT ALT in the client's hardcoded table (f.Ur0.AL1): HAT addons

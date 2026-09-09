@@ -191,6 +191,7 @@ fun storyItemStacksPacket(items: Map<Int, Int>) =
                   objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG,
                   itemId = itemId.toShort(),
                   quantity = quantity.toShort(),
+                  region = bagRegion(itemId),
               )
             })
 
@@ -198,6 +199,17 @@ fun storyItemStacksPacket(items: Map<Int, Int>) =
  * A bag stack, not a monster. The open shop window only refreshes its count when the update arrives
  * as this single stack rather than as a whole new bag.
  */
+/**
+ * The region tag a bag stack is filed under. The wardrobe's own stock - the bike colors and the
+ * starting garments - is granted as bag items because the dialog lists from the bag, but retail
+ * never shows them in the bag: a tag no region has keeps them off every page (2026-09-08).
+ */
+fun bagRegion(itemId: Int): Byte =
+    if (itemId in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.wardrobeStock) HIDDEN_BAG_REGION else -1
+
+/** A region id the player is never in, so a stack tagged with it is on no bag page. */
+const val HIDDEN_BAG_REGION: Byte = 100
+
 fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
     BattleSideAddPokemonPacket(
         side = 1,
@@ -208,7 +220,7 @@ fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
                 backSpriteId = quantity.toShort(),
                 side = 1,
                 slot = 0,
-                partyIndex = -1,
+                partyIndex = bagRegion(itemId),
                 statusEffect = null,
             ),
     )

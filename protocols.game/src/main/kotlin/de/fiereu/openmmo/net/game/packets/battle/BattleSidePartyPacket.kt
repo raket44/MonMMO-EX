@@ -60,7 +60,18 @@ data class BattleSidePartyPacket(
  * monster and decodes through the same codec. Item object ids end in 0x5000 where monster uids end
  * in 0xC000.
  */
-data class ItemStack(val objectId: Long, val itemId: Short, val quantity: Short)
+data class ItemStack(
+    val objectId: Long,
+    val itemId: Short,
+    val quantity: Short,
+    /**
+     * The region the stack belongs to (client f/zG.KX0, read from the party-index byte): the bag
+     * list (f/kY1) draws a row only when this is -1 or the region the player stands in. A region
+     * that does not exist keeps the stack in the pocket - the wardrobe reads the pocket without
+     * this check - and off every bag page.
+     */
+    val region: Byte = -1,
+)
 
 /**
  * Builds the opcode 0x40 item snapshot from bag stacks. The monster fields carry item data: entity
@@ -78,7 +89,7 @@ fun itemStacksPacket(stacks: List<ItemStack>): BattleSidePartyPacket =
                   backSpriteId = stack.quantity,
                   side = 1,
                   slot = 0,
-                  partyIndex = -1,
+                  partyIndex = stack.region,
                   statusEffect = null,
               )
             },

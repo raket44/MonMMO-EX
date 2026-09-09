@@ -71,12 +71,6 @@ private const val MACH_BIKE_ITEM_ID = 259
  */
 private val BIKE_SKIN_ITEM_RANGE = 4816..4827
 
-/** Catalog flag bit 4 (client J61.q4): wearable without an item. */
-private const val DEFAULT_ADDON_FLAG = 0x10
-
-/** The default bit and the two gender bits - a starting garment carries nothing else. */
-private const val STARTER_FLAGS = 0x13
-
 /** Client-generated cosmetic item ids. */
 private val COSMETIC_BAND = 2000..4887
 
@@ -332,10 +326,8 @@ constructor(
     // T-Shirt, Long Sleeve Top. Retail lists them without any item drop because they ARE bag
     // items there; without them a default top taken off is gone from the wardrobe for good
     // (2026-09-08). A gender-flagged one goes only to that gender.
-    for (addon in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.itemBacked()) {
-      if (addon.flags and DEFAULT_ADDON_FLAG == 0 || addon.flags and STARTER_FLAGS.inv() != 0) continue
-      val gender = if (addon.flags and 1 != 0) 0 else if (addon.flags and 2 != 0) 1 else -1
-      if (gender >= 0 && gender != stored.info.rivalSex.toInt()) continue
+    for (addon in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.starterGarments) {
+      if (addon.gender >= 0 && addon.gender != stored.info.rivalSex.toInt()) continue
       if (addon.itemId !in stored.items) {
         characterStore.addItem(charId, addon.itemId, 1)
         granted++

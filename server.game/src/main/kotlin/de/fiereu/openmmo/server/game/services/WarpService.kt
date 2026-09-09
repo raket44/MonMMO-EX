@@ -58,18 +58,19 @@ constructor(
       return
     }
 
-    if (!tile.dynamic && destMap.warps.any { it.dynamic && it.x == warp.targetX && it.y == warp.targetY }) {
-      characterStore.setDynamicWarp(
-          charId,
+    // Carried into the position write below - a separate store write here was overwritten by
+    // that write's stale copy of the info (seen live: set, then gone three seconds later).
+    val doorWarp =
+        if (!tile.dynamic && destMap.warps.any { it.dynamic && it.x == warp.targetX && it.y == warp.targetY }) {
+          log.info { "Dynamic warp set to the door just used: (${tile.x}, ${tile.y}) on ${stored.info.positionBankId}:${stored.info.positionMapId}" }
           de.fiereu.openmmo.common.DynamicWarp(
               stored.info.positionRegionId,
               stored.info.positionBankId,
               stored.info.positionMapId,
               tile.x.toShort(),
               tile.y.toShort(),
-              de.fiereu.openmmo.common.enums.Direction.DOWN))
-      log.info { "Dynamic warp set to the door just used: (${tile.x}, ${tile.y}) on ${stored.info.positionBankId}:${stored.info.positionMapId}" }
-    }
+              de.fiereu.openmmo.common.enums.Direction.DOWN)
+        } else stored.info.dynamicWarp
     state?.justWarped = true
     state?.pendingStepDir = null
     state?.pendingStepX = -1
@@ -157,6 +158,7 @@ constructor(
             positionX = offsetX.toShort(),
             positionY = offsetY.toShort(),
             positionFacing = warpFacing,
+            dynamicWarp = doorWarp,
         )
     characterStore.updateCharacter(newInfo)
     characterStore.flushCharacterAsync(charId)

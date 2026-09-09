@@ -175,12 +175,6 @@ internal constructor(
     return dialog.chooseHoennStarter(session, state)
   }
 
-  /** Shows a list of client-string buttons over [line]; 1-based pick, 0 = closed unanswered. */
-  suspend fun textListMenu(line: DialogLine, stringIds: List<Int>, preselected: Int): Int {
-    holdScriptedFacing()
-    return dialog.textListMenu(session, state, line.textId, stringIds, preselected)
-  }
-
   /**
    * special GetElevatorFloor (src/field_specials.c): the floor index the dynamic warp names -
    * Rocket Hideout B1F 3, B2F 2, B4F 0 - or the ROM's default 4 for any other map.

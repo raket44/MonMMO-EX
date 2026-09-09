@@ -631,17 +631,6 @@ private fun patchNames(
         textContent = "Fairy"
       })
 
-  // The Rocket Hideout elevator lists its floors as text buttons, which take client string ids;
-  // the stock table has no floor labels, so these three ride along (server: InterpreterSupport).
-  listOf(9227 to "B1F", 9228 to "B2F", 9229 to "B4F").forEach { (id, label) ->
-    require(id !in occupied) { "Client string $id is taken; pick another for the elevator floor $label" }
-    root.appendChild(
-        document.createElement("string").apply {
-          setAttribute("id", id.toString())
-          textContent = label
-        })
-  }
-
   // A move with no name renders blank in a learnset, so every imported move gets its name and
   // description. The client reads both from the string table, which is how PokeMMO renames Hail.
   importedMoves.forEach { move ->

@@ -17,7 +17,7 @@ import io.kotest.matchers.shouldBe
 import java.time.LocalDateTime
 
 private val species = SpeciesRegistry()
-private val rewards = BattleRewards()
+private val rewards = BattleRewards(de.fiereu.openmmo.items.ItemRegistry())
 
 private const val BULBASAUR = 1
 private const val RATTATA = 19

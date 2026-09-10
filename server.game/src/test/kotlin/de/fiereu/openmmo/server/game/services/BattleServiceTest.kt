@@ -100,7 +100,7 @@ private class Fixture(scope: CoroutineScope) {
               WildMonFactory(
                   SpeciesRegistry(), MoveRegistry(), LearnsetRegistry(), EntityIdService()),
           emitter = BattlePacketEmitter(interestManager),
-          rewards = BattleRewards(),
+          rewards = BattleRewards(de.fiereu.openmmo.items.ItemRegistry()),
           moveLearner = MoveLearner(LearnsetRegistry(), MoveRegistry()),
           interestManager = interestManager,
           speciesRegistry = SpeciesRegistry(),

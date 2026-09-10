@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.openmmo.common.enums.EVs
+import de.fiereu.openmmo.items.generated.Items
 import de.fiereu.openmmo.common.enums.PokemonStat
 import de.fiereu.openmmo.pokemon.SpeciesDef
 import de.fiereu.openmmo.trainer.TrainerDef
@@ -25,7 +26,7 @@ data class RewardResult(
 
 /** Experience and EV rewards for a won wild battle. */
 @Singleton
-class BattleRewards @Inject constructor() {
+class BattleRewards @Inject constructor(private val items: de.fiereu.openmmo.items.ItemRegistry) {
 
   /**
    * The Gen 3 wild battle experience. The live server is on a later formula and pays more, and
@@ -41,20 +42,29 @@ class BattleRewards @Inject constructor() {
   fun trainerXp(defeated: SpeciesDef, defeatedLevel: Int): Int =
       wildXp(defeated, defeatedLevel) * 3 / 2
 
+  /**
+   * [viaExpShare]: the monster did not take part and is paid through a held Exp. Share - half the
+   * experience (Gen 3). A held Lucky Egg raises what its holder gets by half; a Macho Brace doubles
+   * the EV yield; a Power item adds four EVs of its own stat (Gen 4 rule).
+   */
   fun apply(
       winner: BattleMonState,
       defeated: SpeciesDef,
       defeatedLevel: Int,
       fromTrainer: Boolean = false,
+      viaExpShare: Boolean = false,
   ): RewardResult {
-    val gained =
+    val held = items.get(winner.source.heldItem)
+    var gained =
         if (fromTrainer) trainerXp(defeated, defeatedLevel) else wildXp(defeated, defeatedLevel)
+    if (viaExpShare) gained /= 2
+    if (held == Items.LUCKY_EGG) gained = gained * 3 / 2
     val rate = winner.species.growthRate
     val cap = ExpCurves.totalXpFor(rate, ExpCurves.MAX_LEVEL)
     val newXp = minOf(winner.source.xp + gained, cap)
     val newLevel = maxOf(winner.level, ExpCurves.levelFor(rate, newXp))
     val leveled = newLevel > winner.level
-    val newEvs = addYields(winner.source.eVs, defeated)
+    val newEvs = addYields(winner.source.eVs, defeated, machoBrace = held == Items.MACHO_BRACE, powerStat = POWER_ITEM_STATS[held])
     val grown = winner.source.copy(level = newLevel.toByte(), eVs = newEvs)
     // Stats only move on a level up. New EVs are banked until then, as Gen 3 does, and the client
     // is only told about stats when it is told about the level, so moving them apart desyncs it.
@@ -65,7 +75,7 @@ class BattleRewards @Inject constructor() {
     return RewardResult(gained, newXp, newLevel, leveled, newStats, newCurrentHp, newEvs)
   }
 
-  private fun addYields(current: EVs, defeated: SpeciesDef): EVs {
+  private fun addYields(current: EVs, defeated: SpeciesDef, machoBrace: Boolean = false, powerStat: PokemonStat? = null): EVs {
     val result = EVs()
     for (stat in PokemonStat.entries) {
       result.assign(stat, current.value(stat))
@@ -79,7 +89,9 @@ class BattleRewards @Inject constructor() {
             PokemonStat.SP_DEFENSE to defeated.evYieldSpDefense,
             PokemonStat.SPEED to defeated.evYieldSpeed,
         )
-    for ((stat, yield) in yields) {
+    for ((stat, base) in yields) {
+      var yield = if (machoBrace) base * 2 else base
+      if (stat == powerStat) yield += POWER_ITEM_EVS
       if (yield <= 0) continue
       val value = result.value(stat)
       val room = minOf(EV_STAT_CAP - value, EV_TOTAL_CAP - result.total)
@@ -89,6 +101,19 @@ class BattleRewards @Inject constructor() {
     return result
   }
 }
+
+/** The Power items each train one stat: four EVs of it per knockout, on top of the yield. */
+private val POWER_ITEM_STATS: Map<de.fiereu.openmmo.items.ItemDef, PokemonStat> =
+    mapOf(
+        Items.POWER_WEIGHT to PokemonStat.HP,
+        Items.POWER_BRACER to PokemonStat.ATTACK,
+        Items.POWER_BELT to PokemonStat.DEFENSE,
+        Items.POWER_LENS to PokemonStat.SP_ATTACK,
+        Items.POWER_BAND to PokemonStat.SP_DEFENSE,
+        Items.POWER_ANKLET to PokemonStat.SPEED,
+    )
+
+private const val POWER_ITEM_EVS = 4
 
 private fun EVs.value(stat: PokemonStat): Int =
     when (stat) {

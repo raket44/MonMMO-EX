@@ -130,7 +130,7 @@ fun battleService(store: CharacterStore, interest: InterestManager): BattleServi
       engine = TurnEngine(moves, TypeChart()),
       wildMons = WildMonFactory(species, moves, LearnsetRegistry(), EntityIdService()),
       emitter = BattlePacketEmitter(interest),
-      rewards = BattleRewards(),
+      rewards = BattleRewards(de.fiereu.openmmo.items.ItemRegistry()),
       moveLearner = MoveLearner(LearnsetRegistry(), moves),
       interestManager = interest,
       speciesRegistry = species,

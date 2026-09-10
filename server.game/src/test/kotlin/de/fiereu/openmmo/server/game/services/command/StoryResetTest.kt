@@ -97,7 +97,7 @@ class StoryResetTest :
                     wildMons =
                         WildMonFactory(species, moves, LearnsetRegistry(), EntityIdService()),
                     emitter = BattlePacketEmitter(interest),
-                    rewards = BattleRewards(),
+                    rewards = BattleRewards(de.fiereu.openmmo.items.ItemRegistry()),
                     moveLearner = MoveLearner(LearnsetRegistry(), moves),
                     interestManager = interest,
                     speciesRegistry = species,

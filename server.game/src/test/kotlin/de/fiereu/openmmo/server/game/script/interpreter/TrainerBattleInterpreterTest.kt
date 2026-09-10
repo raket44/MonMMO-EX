@@ -87,7 +87,7 @@ private class TrainerBattleFixture private constructor(scope: CoroutineScope) {
               WildMonFactory(
                   SpeciesRegistry(), MoveRegistry(), LearnsetRegistry(), EntityIdService()),
           emitter = BattlePacketEmitter(interest),
-          rewards = BattleRewards(),
+          rewards = BattleRewards(de.fiereu.openmmo.items.ItemRegistry()),
           moveLearner = MoveLearner(LearnsetRegistry(), MoveRegistry()),
           interestManager = interest,
           speciesRegistry = SpeciesRegistry(),

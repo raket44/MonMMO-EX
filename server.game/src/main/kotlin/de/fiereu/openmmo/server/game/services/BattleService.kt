@@ -983,11 +983,18 @@ constructor(
     // mutual knockout) still pays the lead.
     val winners = battle.playerActives().filter { !it.fainted }.ifEmpty { listOf(battle.activeMon()) }
     for (winner in winners) awardXpTo(battle, winner, defeated)
+    // An Exp. Share on a monster that sat out pays it half the experience (Gen 3); a fainted
+    // holder gets nothing.
+    for (holder in battle.party) {
+      if (holder in winners || holder.fainted) continue
+      if (items.get(holder.heldItem) != Items.EXP_SHARE) continue
+      awardXpTo(battle, holder, defeated, viaExpShare = true)
+    }
   }
 
-  private fun awardXpTo(battle: BattleInstance, winner: BattleMonState, defeated: BattleMonState) {
+  private fun awardXpTo(battle: BattleInstance, winner: BattleMonState, defeated: BattleMonState, viaExpShare: Boolean = false) {
     battle.rewardedWinners += winner.entityId
-    val reward = rewards.apply(winner, defeated.species, defeated.level, battle.trainer != null)
+    val reward = rewards.apply(winner, defeated.species, defeated.level, battle.trainer != null, viaExpShare)
     log.info {
       "char=${battle.charId} won: +${reward.xpGained} xp, level ${winner.level} -> ${reward.newLevel}"
     }

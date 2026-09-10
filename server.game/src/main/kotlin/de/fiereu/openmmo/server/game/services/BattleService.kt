@@ -694,9 +694,11 @@ constructor(
       prompt(battle)
       return
     }
-    // The ball is spent on the throw, caught or not.
+    // The ball is spent on the throw, caught or not. The bag learns the new count as a single
+    // merged stack: a whole-bag snapshot (opcode 0x40 replace) swaps the list out from under the open battle bag,
+    // which then shows nothing until the battle ends (Argeno, Snorlax, 2026-09-10).
     if (!characterStore.addItem(battle.charId, itemId, -1)) return
-    characterStore.getCharacter(battle.charId)?.let { battle.session.send(storyItemStacksPacket(it.items)) }
+    battle.session.send(itemStackUpdatePacket(itemId, characterStore.getCharacter(battle.charId)?.items?.get(itemId) ?: 0))
     val game = battle.safari
     if (game != null && item == Items.SAFARI_BALL) {
       game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)

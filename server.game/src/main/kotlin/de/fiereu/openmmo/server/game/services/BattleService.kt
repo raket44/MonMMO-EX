@@ -726,6 +726,10 @@ constructor(
     // throw stays silent ahead of the ball: the throw, the shakes and the result, as before.
     if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
       battle.session.send(SafariEventPacket.rock())
+    } else {
+      // The engine's own item line, "{actor} used {item}!" (Unova bank, no animation): the actor
+      // is the active monster, so the client names it rather than the player.
+      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.ItemUsed(battle.activeMon().entityId, itemId)))
     }
     val shakes =
         when {

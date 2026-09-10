@@ -52,6 +52,8 @@ enum class MovementStep(
   DELAY_16(Direction.DOWN, false, 0x1C, changesFacing = false, holdMs = 268),
   // Hides the entity in place, used at the end of a walk into a door (decomp set_invisible).
   SET_INVISIBLE(Direction.DOWN, false, 0x60, changesFacing = false),
+  /** The GBA set_visible; the client row is 0x61 (f/l31, 100 ms, no facing). */
+  SET_VISIBLE(Direction.DOWN, false, 0x61, changesFacing = false),
   // Bytecode-verified (f/l31 G5 -> f/yy.CG -> balloon model 50 + spot SFX): the "!" bubble,
   // 750ms. 0x63 is the silent "?" bubble. Emerald ids 0x56/0x57 shifted +12 like set_invisible.
   EMOTE_EXCLAMATION(Direction.DOWN, false, 0x62, changesFacing = false, holdMs = 750),
@@ -87,6 +89,7 @@ enum class MovementStep(
           "delay_8" -> DELAY_8
           "delay_16" -> DELAY_16
           "set_invisible" -> SET_INVISIBLE
+          "set_visible" -> SET_VISIBLE
           // The felled Cut tree vanishes in place; the script removes the object right after.
           "cut_tree" -> SET_INVISIBLE
           "rock_smash_break" -> SET_INVISIBLE

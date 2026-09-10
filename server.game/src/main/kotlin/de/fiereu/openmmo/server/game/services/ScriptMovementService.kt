@@ -526,6 +526,12 @@ constructor(
     return pose
   }
 
+  /** The client's set_visible on the player's own sprite - a door entry it started hides it. */
+  fun showSelf(session: SessionContext, state: PlayerState) {
+    val charId = state.characterId ?: return
+    sendActions(session, charId, listOf(MovementStep.SET_VISIBLE))
+  }
+
   /** A single facing re-assert with no hold - the scripted-state flag does the actual locking. */
   fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return

@@ -43,6 +43,9 @@ private const val MAX_SPIN_STEPS = 64
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
 
+/** After a muted door step: past the client's door open + walk-in (~750 ms), so the second un-fade lands last. */
+private const val DOOR_UNFADE_RETRY_MS = 900L
+
 internal fun ledgeLanding(
     map: MapDef,
     fromX: Int,
@@ -372,7 +375,15 @@ constructor(
         val doorY = msg.y + msg.direction.dy
         if (currentMap.warps.any { it.x == doorX && it.y == doorY }) {
           log.info { "Door step into ($doorX, $doorY) muted by a script lock for char=$charId: re-rendering the screen" }
-          ctx.send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(true))
+          // The door entry also hides the player's sprite as it walks in, and that hide can land
+          // after this reply, so the un-fade and set_visible go out now and once more after the
+          // door walk has surely ended (play-verified: the first reply alone left the sprite
+          // invisible until the next warp).
+          unfadeSelf(ctx, state)
+          scope.launch {
+            kotlinx.coroutines.delay(DOOR_UNFADE_RETRY_MS)
+            if (ctx.channel.isActive) unfadeSelf(ctx, state)
+          }
         }
         return
       }
@@ -805,6 +816,11 @@ constructor(
    * is sent back to it - the self-move packet it used to receive was the hitch on every wall,
    * worst on a bike (2026-09-08). Observers see the turn toward the obstacle.
    */
+  private fun unfadeSelf(ctx: SessionContext, state: PlayerState) {
+    ctx.send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(true))
+    scriptMovement.showSelf(ctx, state)
+  }
+
   private fun bonk(ctx: SessionContext, charId: Long, state: PlayerState, direction: Direction) {
     state.facingDirection = direction
     presenceService.broadcastToObservers(

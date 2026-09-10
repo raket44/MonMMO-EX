@@ -90,6 +90,9 @@ class BattleInstance(
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1
 
+  /** Bag items spent during the battle (balls thrown): their counts are synced to the client once it is back in the overworld. */
+  val consumedItems = LinkedHashSet<Int>()
+
   /** The party index standing on each of the player's field positions, -1 for an empty one. Position 0 opens on slot 0, as a bare instance always did. */
   val playerPositions: IntArray = IntArray(format.playerSlots) { if (it == 0) 0 else -1 }
   /** The opponent index standing on each opposing field position, -1 for an empty one. */

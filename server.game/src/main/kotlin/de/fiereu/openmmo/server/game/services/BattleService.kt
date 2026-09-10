@@ -316,6 +316,10 @@ constructor(
     val battle = battles.byChar(charId) ?: return null
     val result = battle.pendingResult ?: return null
     finishBattle(battle, result)
+    // Back in the overworld the bag can be told what the battle spent (see throwBall).
+    for (itemId in battle.consumedItems) {
+      event.session.send(itemStackUpdatePacket(itemId, characterStore.getCharacter(charId)?.items?.get(itemId) ?: 0))
+    }
     afterWildBattle(event.session, battle, result)
     // A scripted loss without whiteout (early rival) is the script's to handle.
     return if (result == BattleResult.DEFEAT && !battle.whiteoutOnDefeat) null else result
@@ -694,11 +698,13 @@ constructor(
       prompt(battle)
       return
     }
-    // The ball is spent on the throw, caught or not. The bag learns the new count as a single
-    // merged stack: a whole-bag snapshot (opcode 0x40 replace) swaps the list out from under the open battle bag,
-    // which then shows nothing until the battle ends (Argeno, Snorlax, 2026-09-10).
+    // The ball is spent on the throw, caught or not. The client is told the new count only once it
+    // is back in the overworld (onClientReady): any container packet during a battle - the whole-bag
+    // snapshot (0x40 replace) and the single-stack merge (0x42) alike - makes the client rebuild its
+    // bag views and the open battle bag comes up empty (Argeno with the Snorlax, Turk with a Weedle,
+    // 2026-09-10). The server's count is the one that is checked, so the stale display is harmless.
     if (!characterStore.addItem(battle.charId, itemId, -1)) return
-    battle.session.send(itemStackUpdatePacket(itemId, characterStore.getCharacter(battle.charId)?.items?.get(itemId) ?: 0))
+    battle.consumedItems += itemId
     val game = battle.safari
     if (game != null && item == Items.SAFARI_BALL) {
       game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)

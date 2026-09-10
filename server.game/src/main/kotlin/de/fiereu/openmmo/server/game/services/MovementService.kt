@@ -93,6 +93,7 @@ constructor(
     private val scriptRegistry: ScriptRegistry? = null,
     private val scriptRunner: Provider<ScriptRunner>? = null,
     private val safariService: SafariService? = null,
+    private val ndsLand: NdsLand = NdsLand(),
 ) {
 
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
@@ -143,6 +144,7 @@ constructor(
       if (executeCustomWarp(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)) {
         return
       }
+      crossNdsSeam(ctx, charId, state, toX, toY)
       // The ROM's own doors, so NDS maps connect the way they do in the source game instead of
       // black-screening. A warp fires when the player moves in the direction it faces, either
       // stepping onto it (walking up into a shop door) or standing on it (walking down off the
@@ -878,6 +880,33 @@ constructor(
         Direction.RIGHT -> MovementStep.FAST_RIGHT
         else -> MovementStep.FAST_DOWN
       }
+
+  /**
+   * Matrix seams on DS maps: the client walks from one ROM header into the next (Goldenrod into
+   * Route 34) without any warp, and the server kept tracking the header the player arrived on -
+   * so the new route's npcs never spawned and its encounter table never rolled (the land table
+   * of the stale header has no tile there). When the step lands on a tile the tracked header
+   * does not own and another header on the same matrix does, the tracking moves: position,
+   * presence group, that header's npcs (once per session, like a map load) and its entry scripts.
+   */
+  private fun crossNdsSeam(ctx: SessionContext, charId: Long, state: PlayerState, x: Int, y: Int) {
+    val region = state.regionId
+    if (!ndsLand.has(region, state.bankId, state.mapId)) return
+    if (ndsLand.typeAt(region, state.bankId, state.mapId, x, y) != null) return
+    val matrix = ndsWarps.matrixOf(region, state.bankId, state.mapId) ?: return
+    val (bank, map) =
+        ndsLand.headerAt(region, x, y) { b, m -> ndsWarps.matrixOf(region, b, m) == matrix } ?: return
+    if (bank == state.bankId && map == state.mapId) return
+    log.info { "NDS seam: char=$charId ${state.bankId}:${state.mapId} -> $bank:$map at ($x, $y)" }
+    state.bankId = bank
+    state.mapId = map
+    characterStore.updatePosition(charId, x.toShort(), y.toShort(), bankId = bank.toByte(), mapId = map.toByte())
+    presenceService.refresh(ctx)
+    if (state.spawnedNpcMaps.add(de.fiereu.openmmo.server.game.session.mapCacheKey(region, bank, map))) {
+      npcService.spawnNpcsForMap(ctx, bank, map, region)
+    }
+    mapScriptService.onNdsEnter(ctx, state, region, bank, map)
+  }
 
   /** A real desync: the server's tile is re-asserted and the echo window opens. */
   private fun desyncReset(

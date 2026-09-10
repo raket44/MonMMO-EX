@@ -41,6 +41,20 @@ class NdsLand @Inject constructor() {
     return tiles.type[i].toInt() and 0xFF
   }
 
+  /**
+   * The map header whose land table holds matrix tile (x, y) and passes [accept] - the seam
+   * question: the client walks from one ROM header into the next on the same matrix without a
+   * warp, and the server has to follow. Null when no accepted header covers the tile.
+   */
+  fun headerAt(region: Int, x: Int, y: Int, accept: (bank: Int, map: Int) -> Boolean): Pair<Int, Int>? {
+    for ((key, tiles) in maps) {
+      if (key.first != region) continue
+      if (tiles.index(x, y) == null) continue
+      if (accept(key.second, key.third)) return key.second to key.third
+    }
+    return null
+  }
+
   fun blocked(region: Int, bank: Int, map: Int, x: Int, y: Int): Boolean? {
     val tiles = maps[Triple(region, bank, map)] ?: return null
     val i = tiles.index(x, y) ?: return true

@@ -56,9 +56,9 @@ rem The zzz- name makes this file load after main.properties, so it wins.
 echo client.mods.enabled_mods=monmmo-lost-knights.zip> "%OUT%\config\main.properties"
 copy /y "%~dp0README-player.txt" "%OUT%\README.txt" >nul
 
-if exist "%OUT%nfigsavedcredentials.properties" (
-  echo ERROR: %OUT%nfigsavedcredentials.properties exists - not zipping. & exit /b 1
-  echo ERROR: %OUT%nfigsavedcredentials.properties exists - not zipping. & exit /b 1
+rem Hard stop: no login may ever leave this machine inside the package.
+if exist "%OUT%\config\savedcredentials.properties" (
+  echo ERROR: %OUT%\config\savedcredentials.properties exists - not zipping. & exit /b 1
 )
 echo Zipping...
 if exist "%OUT%.zip" del "%OUT%.zip"

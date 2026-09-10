@@ -41,6 +41,7 @@ constructor(
     private val characterStore: CharacterStore,
     private val presenceService: PresenceService,
     private val warpRules: WarpRules,
+    private val safari: javax.inject.Provider<SafariService>? = null,
 ) {
 
   fun executeWarp(ctx: SessionContext, charId: Long, tile: WarpTile) {
@@ -171,6 +172,9 @@ constructor(
       state.y = offsetY.toShort()
       state.elevation = playerZ
     }
+
+    // Leaving the Safari Zone's maps by any warp but the gate ends the Safari Game.
+    safari?.get()?.onWarp(ctx, charId, destMap.sourceName)
 
     // Vanilla kicks you off the bike at the doorway: warps are doors/stairs/cave mouths, so
     // riding never survives one. The arrival spawn already carries transportation 0; clearing

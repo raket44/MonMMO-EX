@@ -84,6 +84,9 @@ constructor(
     val pool = RetailEncounters.wildPool(map.sourceName, map.regionId.toInt(), types, season, time)
     if (pool.isNotEmpty()) {
       val rate = decompTable?.encounterRate ?: if (waterStep) DEFAULT_WATER_RATE else DEFAULT_ENCOUNTER_RATE
+      // Water rates are low by design (FireRed's 4 against grass's 21), which reads as "no water
+      // encounters"; every surfed step says what it rolled against.
+      if (waterStep) log.info { "[Encounter] char=$charId surf step at ($x, $y): rate $rate, pool ${pool.size}" }
       if (random.nextInt(ENCOUNTER_ROLL_MAX) >= (rate * ENCOUNTER_RATE_SCALE)) return
       val slot = pickRetailSlot(pool) ?: return
       val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
@@ -211,7 +214,13 @@ constructor(
     val pools: (Int) -> List<RetailEncounters.Slot>
     if (map != null) {
       val tile = map.tileAt(state.x.toInt(), state.y.toInt())
-      val types = if (tile != null && isLandEncounterTile(tile.behavior)) setOf("Grass", "Dark Grass") else FLOOR_TYPES
+      // Surfing scents the Water table (it never did: a scent on the water was refused, 2026-09-10).
+      val types =
+          when {
+            state.surfing && tile?.behavior?.isSurfable == true -> setOf("Water")
+            tile != null && isLandEncounterTile(tile.behavior) -> setOf("Grass", "Dark Grass")
+            else -> FLOOR_TYPES
+          }
       pools = { n -> RetailEncounters.hordePool(map.sourceName, map.regionId.toInt(), types, season, time, n) }
     } else {
       val type = ndsLand.typeAt(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt())

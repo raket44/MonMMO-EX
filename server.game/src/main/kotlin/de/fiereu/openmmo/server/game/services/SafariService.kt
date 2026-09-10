@@ -8,12 +8,17 @@ import de.fiereu.openmmo.server.game.battle.BattleInstance
 import de.fiereu.openmmo.server.game.battle.BattleResult
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRunner
+import de.fiereu.openmmo.server.game.script.gbaScriptSource
 import de.fiereu.openmmo.server.game.script.interpreter.InterpretedScripts
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 import de.fiereu.openmmo.story.generated.kanto.KantoVars
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -43,7 +48,29 @@ constructor(
     private val items: de.fiereu.openmmo.items.ItemRegistry,
 ) {
   private val safariBallItemId: Int by lazy { items.idOf(de.fiereu.openmmo.items.generated.Items.SAFARI_BALL) }
+  private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
   fun isActive(charId: Long): Boolean = story.isFlagSet(charId, KantoFlags.FLAG_SYS_SAFARI_MODE)
+
+  /**
+   * The region's own copy of a safari script. FireRed and Emerald both define these labels, so
+   * the bare-label alias table has neither (that left a player at zero steps with no PA line,
+   * 2026-09-10).
+   */
+  private fun script(label: String, regionId: Int) =
+      InterpretedScripts.candidatesByBareLabel[label]?.firstOrNull { it.program.id.source == gbaScriptSource(regionId) }
+
+  /**
+   * A warp out of the Safari Zone that is not the gate - Fly, a scripted warp - ends the game
+   * the way leaving the zone's maps does on the cartridge; the gate's own scripts handle the
+   * walk-out prompt themselves.
+   */
+  fun onWarp(session: SessionContext, charId: Long, destinationMap: String) {
+    if (!isActive(charId)) return
+    if (destinationMap.startsWith(SAFARI_MAP_PREFIX) || destinationMap == GATE_MAP) return
+    log.info { "[safari] char=$charId warped out to $destinationMap; the game ends" }
+    scope.launch { exit(session, charId) }
+  }
 
   /** special EnterSafariMode: the flag, 30 Safari Balls into the bag, the counters told. */
   suspend fun enter(session: SessionContext, charId: Long) {
@@ -90,12 +117,12 @@ constructor(
     characterStore.flushCharacterAsync(charId)
     if (steps % 100 == 0) log.info { "[safari] char=$charId has $steps steps left" }
     if (steps > 0) return false
-    val timesUp = InterpretedScripts.byBareLabel[TIMES_UP]
+    val timesUp = script(TIMES_UP, state.regionId)
     if (timesUp == null) {
       log.error { "[safari] char=$charId is out of steps but $TIMES_UP is not registered" }
       return false
     }
-    log.info { "[safari] char= is out of steps" }
+    log.info { "[safari] char=$charId is out of steps" }
     scriptRunner.get().run(session, state, timesUp, entityId = -1)
     return true
   }
@@ -110,7 +137,7 @@ constructor(
     if (safari.balls > 0 || result == BattleResult.DISCONNECTED) return
     val charId = battle.charId
     if (result == BattleResult.CAUGHT) {
-      InterpretedScripts.byBareLabel[OUT_OF_BALLS]?.let { scriptRunner.get().run(session, state, it, entityId = -1) }
+      script(OUT_OF_BALLS, state.regionId)?.let { scriptRunner.get().run(session, state, it, entityId = -1) }
       return
     }
     val gate = mapManager.getMapsByName(GATE_MAP).firstOrNull { it.regionId.toInt() == 0 }
@@ -146,6 +173,8 @@ constructor(
     private const val TIMES_UP = "SafariZone_EventScript_TimesUp"
     private const val OUT_OF_BALLS = "SafariZone_EventScript_OutOfBalls"
     private const val GATE_MAP = "FuchsiaCity_SafariZone_Entrance"
+    /** Every Safari Zone area and rest house: SafariZone_Center, _East, _North, _West, _SecretHouse, ... */
+    private const val SAFARI_MAP_PREFIX = "SafariZone_"
     /** SafariZone_EventScript_Exit: `warp MAP_FUCHSIA_CITY_SAFARI_ZONE_ENTRANCE, 4, 1`. */
     private const val GATE_X = 4
     private const val GATE_Y = 1

@@ -700,7 +700,7 @@ private fun patchNames(
   (0 until root.childNodes.length)
       .map(root.childNodes::item)
       .forEach { node ->
-        val reworded = (PC_MENU_REWORDS + FREE_LINE_REWORDS)[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
+        val reworded = (PC_MENU_REWORDS + BALL_LINE_REWORDS)[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
         node.textContent = reworded
       }
 
@@ -735,12 +735,12 @@ private val SAFARI_STRINGS =
 private val PC_MENU_REWORDS = mapOf(2351 to "Storage System")
 
 /**
- * Battle event kind -22 (f/wl) prints string 16804143 with {00} = a string sent by the server, and
- * it is the only battle-box printer that takes free text. Stock 16804143 is a seasonal event line
- * ("{00}'s {01} is being controlled by the {02}!", unused here); as a bare "{00}" it lets the
- * server print FireRed's "{player} used {ball}!" before a throw (BattleEvent.FreeLine).
+ * The bait event's toss template (kind -33, kinds 3..5: "{00} tossed a {01} to {02}!", {00} = the
+ * thrower string from the packet). As a bare "{00}" the server prints any sentence through it -
+ * FireRed's "{player} used {ball}!" before a throw. The bait throws themselves go through the
+ * safari packet, so nothing else reads this template.
  */
-private val FREE_LINE_REWORDS = mapOf(16804143 to "{00}")
+private val BALL_LINE_REWORDS = mapOf(200532 to "{00}")
 
 /** The dex category line sits 5000 above the species name in the string table. */
 private const val CATEGORY_STRING_BASE = 155000

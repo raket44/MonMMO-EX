@@ -51,6 +51,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kind.SAFARI_BAIT, ChosenAction.Kind.SAFARI_ROCK)
+/** The bait event's toss kind whose template (200532) the launcher stages as "{00}": prints the thrower string as-is. */
+private const val BALL_LINE_TOSS_KIND = 3
+
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
 
@@ -712,10 +715,11 @@ constructor(
       game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)
     }
     val wild = battle.opponentMon()
-    // FireRed's "{player} used {ball}!" ahead of the throw, in the battle box (kind -22 on the
-    // player's active monster; the client has no ball line of its own before the shakes).
+    // FireRed's "{player} used {ball}!" ahead of the throw. It rides the client's bait event (kind
+    // -33, toss kind 3) whose thrower string is the sentence and whose template 200532 the launcher
+    // stages as a bare "{00}"; the free-text kind -22 never rendered in play (2026-09-10).
     val thrower = stored.info.name
-    emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.FreeLine(battle.activeMon().entityId, "$thrower used ${item.name}!")))
+    emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, BALL_LINE_TOSS_KIND, "$thrower used ${item.name}!")))
     val shakes =
         when {
           item == Items.MASTER_BALL -> 4

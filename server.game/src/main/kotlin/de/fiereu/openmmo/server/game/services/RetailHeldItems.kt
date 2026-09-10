@@ -48,16 +48,21 @@ class RetailHeldItems @Inject constructor() {
    * Rolls a wild monster's held item the cartridge way: 50% for the common item, 5% for the rare
    * one (a species with a single listed item uses the common rate). 0 = nothing.
    */
-  fun roll(species: Int, percent: Int): Int {
+  /** The wild held item for a 0..99 roll; Compound Eyes on the lead raises the odds to 60% / 20%. */
+  fun roll(species: Int, percent: Int, compoundEyes: Boolean = false): Int {
     val items = of(species)
     if (items.isEmpty()) return 0
-    if (percent < COMMON_PERCENT) return items[0]
-    if (items.size > 1 && percent < COMMON_PERCENT + RARE_PERCENT) return items[1]
+    val common = if (compoundEyes) COMPOUND_EYES_COMMON_PERCENT else COMMON_PERCENT
+    val rare = if (compoundEyes) COMPOUND_EYES_RARE_PERCENT else RARE_PERCENT
+    if (percent < common) return items[0]
+    if (items.size > 1 && percent < common + rare) return items[1]
     return 0
   }
 
   private companion object {
     const val COMMON_PERCENT = 50
     const val RARE_PERCENT = 5
+    const val COMPOUND_EYES_COMMON_PERCENT = 60
+    const val COMPOUND_EYES_RARE_PERCENT = 20
   }
 }

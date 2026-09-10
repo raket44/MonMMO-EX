@@ -16,6 +16,9 @@ import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Seed rerolls for a nature-and-gender match: 25 natures x at most 2 genders, so a few hundred never misses in practice. */
+private const val SEED_TRIES = 512
+
 private const val TACKLE_ID = 33
 
 private const val LAST_RETAIL_DEX = 649
@@ -38,7 +41,7 @@ constructor(
         de.fiereu.openmmo.server.game.services.RetailHeldItems(),
 ) {
 
-  fun create(requestedDexId: Int, level: Int, rng: BattleRng, shinyDenominator: Int = 0): Pokemon? {
+  fun create(requestedDexId: Int, level: Int, rng: BattleRng, shinyDenominator: Int = 0, hints: WildRollHints? = null): Pokemon? {
     // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
     // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
     // are the same monster server-side. Ids for genuinely new species (650+) keep the offset.
@@ -81,7 +84,7 @@ constructor(
             container = PokemonContainer.PARTY,
             containerSlot = 0,
             dexId = dexId,
-            seed = rng.natureSeed(),
+            seed = seedFor(def, rng, hints),
             ot = "",
             nickname = "",
             level = level.toByte(),
@@ -97,9 +100,29 @@ constructor(
             isFatefulEncounter = false,
             isRaidEncounter = false,
             caughtAt = LocalDateTime.now(),
-            // The dex's wild held items: 50% the common one, 5% the rare one.
-            heldItem = heldItems.roll(dexId, rng.pick(100)),
+            // The dex's wild held items: 50% the common one, 5% the rare one (60 / 20 under Compound Eyes).
+            heldItem = heldItems.roll(dexId, rng.pick(100), hints?.compoundEyes == true),
         )
     return mon.copy(hp = StatCalculator.computeAll(def, mon).hp.toShort())
   }
+
+  /**
+   * A seed that lands on the nature Synchronize asks for and the gender Cute Charm asks for
+   * (src/wild_encounter.c CreateWildMon), by rerolling: the seed decides both, so a matching one
+   * turns up within a few dozen tries and every other seed-borne trait stays random.
+   */
+  private fun seedFor(def: de.fiereu.openmmo.pokemon.SpeciesDef, rng: BattleRng, hints: WildRollHints?): Int {
+    var seed = rng.natureSeed()
+    if (hints == null || (hints.nature == null && hints.gender == null)) return seed
+    repeat(SEED_TRIES) {
+      val natureOk = hints.nature == null || natureOf(seed) == hints.nature
+      val genderOk = hints.gender == null || Gender.of(def.genderRatio, seed) == hints.gender
+      if (natureOk && genderOk) return seed
+      seed = rng.natureSeed()
+    }
+    return seed
+  }
+
+  private fun natureOf(seed: Int) =
+      de.fiereu.openmmo.common.enums.PokemonNature.entries[((seed.toLong() and 0xFFFFFFFFL) % de.fiereu.openmmo.common.enums.PokemonNature.entries.size).toInt()]
 }

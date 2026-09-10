@@ -336,7 +336,7 @@ constructor(
   /** True while the character has a battle running, so callers can skip starting another. */
   fun inBattle(charId: Long): Boolean = battles.byChar(charId) != null
 
-  fun startWildBattle(session: SessionContext, dexId: Int, level: Int) {
+  fun startWildBattle(session: SessionContext, dexId: Int, level: Int, hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null) {
     // Inside the Safari Game every wild encounter is a safari battle: no moves, Ball / Bait / Rock.
     val charId = session.attributes[PLAYER_STATE]?.characterId
     val game = safari?.get()?.takeIf { charId != null && it.isActive(charId) }
@@ -349,7 +349,7 @@ constructor(
                 escapeFactor = (def.safariZoneFleeRate * 100 / 1275).coerceAtLeast(2),
             )
         else null
-    createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState)
+    createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints)
   }
 
   /** Runs a story battle and waits for its scene. */
@@ -436,6 +436,8 @@ constructor(
       val level: Int,
       val moveIds: List<Int>,
       val iv: Int? = null,
+      /** The lead's Synchronize / Cute Charm / Compound Eyes (OverworldAbilities). */
+      val hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
   )
 
   private fun createWildBattle(
@@ -446,8 +448,9 @@ constructor(
       escapable: Boolean,
       moveIds: List<Int> = emptyList(),
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
+      hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
   ): BattleInstance? =
-      createBattle(session, listOf(OpponentSpec(dexId, level, moveIds)), catchable, escapable, safari = safari)
+      createBattle(session, listOf(OpponentSpec(dexId, level, moveIds, hints = hints)), catchable, escapable, safari = safari)
 
   private fun createBattle(
       session: SessionContext,
@@ -495,7 +498,7 @@ constructor(
     // Only the wild roll for shiny; a trainer's monsters never do.
     val shinyDenominator = if (trainer == null) wildShinyDenominator else 0
     for (spec in opponents) {
-      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator)
+      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints)
       if (rolled == null) {
         session.send(notice("Unknown species ${spec.dexId}."))
         return null

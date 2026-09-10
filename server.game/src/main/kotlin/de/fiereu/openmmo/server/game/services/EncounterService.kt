@@ -38,10 +38,15 @@ class EncounterService
 constructor(
     private val characterStore: CharacterStore,
     private val battleService: BattleService,
+    private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
+    private val items: de.fiereu.openmmo.items.ItemRegistry,
     private val ndsLand: NdsLand = NdsLand(),
 ) {
 
   private val random: Random = Random.Default
+
+  /** The lead monster's ability and held item, FireRed's wild_encounter.c rules (see OverworldAbilities). */
+  private val abilities by lazy { OverworldAbilities(speciesRegistry, items.idOf(de.fiereu.openmmo.items.generated.Items.CLEANSE_TAG)) }
 
   /** Called after a completed step. Starts a wild battle if the tile and roll call for one. */
   fun onStep(session: SessionContext, charId: Long, map: MapDef, x: Int, y: Int) {
@@ -70,6 +75,7 @@ constructor(
     }
 
     val decompTable = map.encounterTable(if (waterStep) EncounterMethod.WATER else EncounterMethod.LAND)
+    val lead = abilities.leadOf(characterStore, charId)
 
     // Retail tables first: they carry season, time of day and retail-accurate rarity. The decomp
     // table stays as the fallback for maps the retail dump does not know.
@@ -87,15 +93,15 @@ constructor(
       // Water rates are low by design (FireRed's 4 against grass's 21), which reads as "no water
       // encounters"; every surfed step says what it rolled against.
       if (waterStep) log.info { "[Encounter] char=$charId surf step at ($x, $y): rate $rate, pool ${pool.size}" }
-      if (random.nextInt(ENCOUNTER_ROLL_MAX) >= (rate * ENCOUNTER_RATE_SCALE)) return
-      val slot = pickRetailSlot(pool) ?: return
-      val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
+      if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(rate, lead)) return
+      val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
+      val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
       log.info {
         "Wild encounter for char=$charId at ($x, $y) [$season/$time]: " +
             "species ${slot.dexId} level $level"
       }
       freeze(session, charId, map, x, y)
-      battleService.startWildBattle(session, slot.dexId, level)
+      battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
       return
     }
 
@@ -105,14 +111,14 @@ constructor(
       log.info { "[Encounter] grass at ($x, $y) but map ${map.sourceName} has no table at all" }
       return
     }
-    if (!rollsEncounter(decompTable)) return
+    if (!rollsEncounter(decompTable, lead)) return
     val slot = pickSlot(decompTable) ?: return
-    val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
+    val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
     log.info {
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
     freeze(session, charId, map, x, y)
-    battleService.startWildBattle(session, slot.speciesId, level)
+    battleService.startWildBattle(session, slot.speciesId, level, abilities.hints(lead, slot.speciesId, random))
   }
 
   /**
@@ -160,12 +166,13 @@ constructor(
       log.debug { "[Encounter] DS map $region:$bank:$map '$name' has no ${types.first()} table" }
       return
     }
-    if (random.nextInt(ENCOUNTER_ROLL_MAX) >= DEFAULT_ENCOUNTER_RATE * ENCOUNTER_RATE_SCALE) return
-    val slot = pickRetailSlot(pool) ?: return
-    val level = random.nextInt(slot.minLevel, slot.maxLevel + 1)
+    val lead = abilities.leadOf(characterStore, charId)
+    if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(DEFAULT_ENCOUNTER_RATE, lead)) return
+    val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
+    val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
-    battleService.startWildBattle(session, slot.dexId, level)
+    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
   }
 
   /**
@@ -191,9 +198,10 @@ constructor(
     if (plan is HordePlan.Blocked) return plan.reason
     val ready = plan as HordePlan.Ready
     val slot = pickRetailSlot(ready.pool) ?: return "Nothing here answers the scent."
+    val lead = abilities.leadOf(characterStore, charId)
     val specs =
         List(ready.count) {
-          BattleService.OpponentSpec(slot.dexId, random.nextInt(slot.minLevel, slot.maxLevel + 1), emptyList())
+          BattleService.OpponentSpec(slot.dexId, random.nextInt(slot.minLevel, slot.maxLevel + 1), emptyList(), hints = abilities.hints(lead, slot.dexId, random))
         }
     log.info { "Horde of ${ready.count} x ${slot.dexId} for char=$charId: levels ${specs.joinToString { it.level.toString() }}" }
     battleService.startHordeBattle(session, specs)
@@ -253,8 +261,8 @@ constructor(
   private fun hasUsablePartyMon(charId: Long): Boolean =
       characterStore.getCharacter(charId)?.pokemon?.any { it.hp > 0 } ?: false
 
-  private fun rollsEncounter(table: WildEncounterTable): Boolean {
-    val chance = (table.encounterRate * ENCOUNTER_RATE_SCALE).coerceAtMost(ENCOUNTER_ROLL_MAX)
+  private fun rollsEncounter(table: WildEncounterTable, lead: OverworldAbilities.Lead?): Boolean {
+    val chance = abilities.scaledRate(table.encounterRate, lead).coerceAtMost(ENCOUNTER_ROLL_MAX)
     return random.nextInt(ENCOUNTER_ROLL_MAX) < chance
   }
 

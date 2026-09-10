@@ -727,9 +727,10 @@ constructor(
     if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
       battle.session.send(SafariEventPacket.rock())
     } else {
-      // The engine's own item line, "{actor} used {item}!" (Unova bank, no animation): the actor
-      // is the active monster, so the client names it rather than the player.
-      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.ItemUsed(battle.activeMon().entityId, itemId)))
+      // The free-text kind (-22) on the WILD, the subject the client's own use of that kind
+      // describes: "{player} used {ball}!" composed here, printed as-is, no animation. (Sent on
+      // the player's monster it printed nothing, 2026-09-10; this is the other half of that test.)
+      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.FreeLine(wild.entityId, "$thrower used ${item.name}!")))
     }
     val shakes =
         when {

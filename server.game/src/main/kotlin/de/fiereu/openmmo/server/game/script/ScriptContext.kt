@@ -111,6 +111,9 @@ internal constructor(
    */
   private val messageArgs = java.util.TreeMap<Int, DialogMessageArg>()
 
+  /** Set by GetInGameTradeSpeciesInfo so the next ChoosePartyMon window asks which monster to trade. */
+  private var tradePickPending = false
+
   fun setMessageArg(slot: Int, arg: DialogMessageArg) {
     messageArgs[slot] = arg
   }
@@ -250,6 +253,8 @@ internal constructor(
    */
   fun inGameTradeInfo(index: Int): Int {
     val trade = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED.getOrNull(index) ?: return 0
+    // The party pick that follows is a trade: its window says so instead of the tutor line.
+    tradePickPending = true
     speciesName(trade.requestedDexId)?.let { bufferText(1, it) }
     speciesName(trade.dexId)?.let { bufferText(2, it) }
     return trade.requestedDexId
@@ -275,11 +280,13 @@ internal constructor(
     val party = characterId?.let { characters?.getCharacter(it)?.pokemon } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
     if (party.isEmpty()) return de.fiereu.openmmo.common.MAX_PARTY_SIZE
     holdScriptedFacing()
+    val prompt = if (tradePickPending) WHICH_MON_TO_TRADE_TEXT else WHICH_MON_TEXT
+    tradePickPending = false
     val pick =
         dialog.chooseFromSpecies(
             session,
             state,
-            WHICH_MON_TEXT,
+            prompt,
             party.map { if (it.isEgg) 0 else de.fiereu.openmmo.common.clientSpeciesId(it.dexId) })
     return if (pick in 1..party.size) pick - 1 else de.fiereu.openmmo.common.MAX_PARTY_SIZE
   }
@@ -736,9 +743,15 @@ internal constructor(
             x.toShort(), y.toShort(), collision.toShort(), metatileId.toShort()))
   }
 
-  /** A ROM string variable (STR_VAR_n) for the next dialogs of this script: a raw text argument. */
+  /**
+   * A ROM string variable (STR_VAR_n) for the next dialogs of this script: a raw text argument.
+   * The client addresses ROM placeholders by their text code: {PLAYER} is slot 1, STR_VAR_1..3
+   * are slots 2..4 (play-verified 2026-09-10 on the Cinnabar trade NPCs: a name in slot 2 showed
+   * as STR_VAR_1 and slot 1 showed nowhere).
+   */
   fun bufferText(variable: Int, text: String) {
-    setMessageArg(variable, de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(slot = variable.toByte(), kind = 5, text = text))
+    val slot = variable + STR_VAR_SLOT_OFFSET
+    setMessageArg(slot, de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(slot = slot.toByte(), kind = 5, text = text))
   }
 
   fun partyNickname(slot: Int): String? {
@@ -1009,6 +1022,13 @@ private const val MAX_MONEY = 999_999
 
 /** The tutor's "which one?" ROM line, the party picker's question (MoveTutorService). */
 private const val WHICH_MON_TEXT = 16779003
+
+/** Client string "Which one do you want to trade?
+You won't get it back." */
+private const val WHICH_MON_TO_TRADE_TEXT = 16805088
+
+/** ROM text codes: {PLAYER} = 1, STR_VAR_1 = 2, STR_VAR_2 = 3, STR_VAR_3 = 4 - the slot the client substitutes. */
+private const val STR_VAR_SLOT_OFFSET = 1
 
 private const val MAGIKARP = 129
 /** Magikarp's Pokedex height in decimeters (GetPokedexHeightWeight). */

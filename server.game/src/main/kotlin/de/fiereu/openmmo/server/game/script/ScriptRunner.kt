@@ -82,14 +82,19 @@ constructor(
       entityId: Long,
   ) {
     if (scripts.isEmpty()) return
-    if (state.scriptRunning) return
     val scope =
         session.attributes.getOrPut(SCRIPT_SCOPE) {
           CoroutineScope(SupervisorJob() + Dispatchers.Default)
         }
     // A cancelled scope cannot launch, so bail before claiming script ownership.
     if (!scope.isActive) return
-    state.scriptRunning = true
+    // Check-and-claim under the state's lock: two interaction packets from a mashed A button land
+    // on two workers at once, and both passed a bare check before either had claimed the flag -
+    // an item ball then paid out twice (two Quick Claws, 2026-09-10).
+    synchronized(state) {
+      if (state.scriptRunning) return
+      state.scriptRunning = true
+    }
     // Existing Kotlin scripts rely on the runner's historical whole-script player lock.
     state.lockLocal(entityId)
     // Seize the client's movement controller IMMEDIATELY, on the packet thread - this is what

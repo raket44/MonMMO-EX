@@ -88,9 +88,14 @@ constructor(
     val steps = info.remainingSafariSteps - 1
     characterStore.updateCharacter(info.copy(remainingSafariSteps = steps.toShort()))
     characterStore.flushCharacterAsync(charId)
+    if (steps % 100 == 0) log.info { "[safari] char=$charId has $steps steps left" }
     if (steps > 0) return false
-    val timesUp = InterpretedScripts.byBareLabel[TIMES_UP] ?: return false
-    log.info { "[safari] char=$charId is out of steps" }
+    val timesUp = InterpretedScripts.byBareLabel[TIMES_UP]
+    if (timesUp == null) {
+      log.error { "[safari] char=$charId is out of steps but $TIMES_UP is not registered" }
+      return false
+    }
+    log.info { "[safari] char= is out of steps" }
     scriptRunner.get().run(session, state, timesUp, entityId = -1)
     return true
   }

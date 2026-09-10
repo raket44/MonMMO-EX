@@ -194,6 +194,8 @@ class DialogInterpreterTest :
           fixture.session.sent
               .filterIsInstance<DialogActionPacket>()
               .map { it.actionType.toInt() }
+              // The close of each waited message (wire 100) rides between the frames.
+              .filter { it != 100 }
               .shouldBe(listOf(3, 4))
           fixture.ctx.state.dialogMessageMode shouldBe DialogMessageMode.NORMAL
         }

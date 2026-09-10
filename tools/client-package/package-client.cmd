@@ -33,7 +33,12 @@ echo Copying the bundled Java runtime and game data (this takes a minute)...
 robocopy "%CLIENT%\jre" "%OUT%\jre" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%CLIENT%\data" "%OUT%\data" /E /XD mods /NFL /NDL /NJH /NJS /NP >nul
 if not exist "%OUT%\data\mods" mkdir "%OUT%\data\mods"
-if not exist "%OUT%\config" mkdir "%OUT%\config"
+rem The config folder is rebuilt from scratch every run. The operator plays from this very folder,
+rem so the client writes savedcredentials.properties (the account login) and the per-character
+rem settings into it; zipping them shipped the admin login with the package (2026-09-09). Only the
+rem two files written below may exist here.
+if exist "%OUT%\config" rd /s /q "%OUT%\config"
+mkdir "%OUT%\config"
 if not exist "%OUT%\roms" mkdir "%OUT%\roms"
 copy /y "%CLIENT%\data\mods\monmmo-lost-knights.zip" "%OUT%\data\mods\" >nul
 

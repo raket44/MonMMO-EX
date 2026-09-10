@@ -54,6 +54,9 @@ private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kin
 /** The bait event's toss kind whose template (200532) the launcher stages as "{00}": prints the thrower string as-is. */
 private const val BALL_LINE_TOSS_KIND = 3
 
+/** Kanto and Hoenn: the regions whose safari packet strings are the launcher's own (the DS regions read their ROM). */
+private val GBA_REGIONS = setOf(0, 1)
+
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
 
@@ -715,11 +718,18 @@ constructor(
       game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)
     }
     val wild = battle.opponentMon()
-    // FireRed's "{player} used {ball}!" ahead of the throw. It rides the client's bait event (kind
-    // -33, toss kind 3) whose thrower string is the sentence and whose template 200532 the launcher
-    // stages as a bare "{00}"; the free-text kind -22 never rendered in play (2026-09-10).
+    // FireRed's "{player} used {ball}!" ahead of the throw. In the Safari Game of a GBA region it
+    // rides the safari packet's rock slot, whose Kanto string the launcher stages as "{23} used
+    // Safari Ball!" - text only, the player's name filled by the client (the rock itself moved to
+    // the bait event's toss, operator's call 2026-09-10). Anywhere else it rides the bait event's
+    // toss kind: the thrower string is the whole sentence, template 200532 staged as "{00}", and
+    // the toss's zoom and whistle come with it. The free-text kind -22 never rendered in play.
     val thrower = stored.info.name
-    emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, BALL_LINE_TOSS_KIND, "$thrower used ${item.name}!")))
+    if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
+      battle.session.send(SafariEventPacket.rock())
+    } else {
+      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, BALL_LINE_TOSS_KIND, "$thrower used ${item.name}!")))
+    }
     val shakes =
         when {
           item == Items.MASTER_BALL -> 4
@@ -806,7 +816,10 @@ constructor(
         s.catchFactor = (s.catchFactor shr 1).let { if (it <= 2) 3 else it }
       }
       ChosenAction.Kind.SAFARI_ROCK -> {
-        battle.session.send(SafariEventPacket.rock())
+        // FireRed's "{player} threw a ROCK at the {mon}!" through the bait event's toss (zoom and
+        // whistle included): the safari packet's rock slot now carries the ball line in Kanto.
+        val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
+        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, BALL_LINE_TOSS_KIND, "$thrower threw a ROCK at the ${wild.species.name}!")))
         s.rockTurns = (s.rockTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
         s.baitTurns = 0
         s.catchFactor = (s.catchFactor shl 1).coerceAtMost(20)

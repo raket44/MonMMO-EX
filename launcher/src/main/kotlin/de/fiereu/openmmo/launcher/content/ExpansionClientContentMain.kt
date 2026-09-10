@@ -723,7 +723,8 @@ private val DEFEATED_STRING_IDS = setOf(5017, 5018)
  */
 private val SAFARI_STRINGS =
     mapOf(
-        200271 to "{23} threw a ROCK\\nat the {06}!",
+        // The rock slot carries the Safari Ball throw: the rock itself goes through the bait toss.
+        200271 to "{23} used\\nSafari Ball!",
         200272 to "{23} threw some BAIT\\nat the {06}!",
         200273 to "{06} is watching\\ncarefully!",
         200274 to "{06} is angry!",

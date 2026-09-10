@@ -19,6 +19,7 @@ import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.net.game.packets.battle.BattleListEventDetail
 import de.fiereu.openmmo.net.game.packets.battle.BattleListEventPacket
+import de.fiereu.openmmo.net.game.packets.battle.SafariEventPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnReplyPacket
 import de.fiereu.openmmo.pokemon.SpeciesRegistry
@@ -50,19 +51,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kind.SAFARI_BAIT, ChosenAction.Kind.SAFARI_ROCK)
-/**
- * The Safari Game's bait event kinds (client kind -33): 0 "{00} is eating!" (client string 16780708,
- * eating animation), 2 "{00} can't eat more!", and the toss kinds 3/4 whose line the launcher
- * stages as FireRed's "{player} threw some BAIT / a ROCK at the {mon}!" (strings 200532, 101734,
- * 101736; launcher ExpansionClientContentMain). 5 is kept for the DS games' Mud.
- */
-private const val SAFARI_BAIT_EATING = 0
-private const val SAFARI_BAIT_CANT_EAT_MORE = 2
-private const val SAFARI_THREW_BAIT = 3
-private const val SAFARI_THREW_ROCK = 4
-/** FireRed's "{00} is watching carefully!" / "{00} is angry!", staged into strings_en.xml by the launcher. */
-private const val SAFARI_WATCHING_STRING = 5130
-private const val SAFARI_ANGRY_STRING = 5131
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
 
@@ -781,9 +769,9 @@ constructor(
 
   /**
    * One Safari Game action other than the ball (src/battle_main.c HandleAction_ThrowBait /
-   * ThrowRock). Both show through the client's bait event (kind -33, thrower name + toss
-   * animation): its template and bait names are staged as FireRed's own lines by the launcher
-   * ("{player} threw some BAIT / a ROCK at the {mon}!"), so kind 3 is the bait and kind 4 the rock.
+   * ThrowRock), told through the client's own safari packet (0x3A): the client prints "{player}
+   * threw some BAIT / a ROCK at the {mon}!" from the ROM in the DS regions and from its string
+   * table in Kanto (staged by the launcher in FireRed's words).
    */
   private suspend fun safariTurn(battle: BattleInstance, kind: ChosenAction.Kind) {
     val s = battle.safari ?: return
@@ -794,16 +782,13 @@ constructor(
         return
       }
       ChosenAction.Kind.SAFARI_BAIT -> {
-        val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
-        val line = if (s.baitTurns >= 6) SAFARI_BAIT_CANT_EAT_MORE else SAFARI_THREW_BAIT
-        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, line, thrower)))
+        battle.session.send(SafariEventPacket.bait())
         s.baitTurns = (s.baitTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
         s.rockTurns = 0
         s.catchFactor = (s.catchFactor shr 1).let { if (it <= 2) 3 else it }
       }
       ChosenAction.Kind.SAFARI_ROCK -> {
-        val thrower = characterStore.getCharacter(battle.charId)?.info?.name ?: "You"
-        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_THREW_ROCK, thrower)))
+        battle.session.send(SafariEventPacket.rock())
         s.rockTurns = (s.rockTurns + battle.rng.pick(5) + 2).coerceAtMost(6)
         s.baitTurns = 0
         s.catchFactor = (s.catchFactor shl 1).coerceAtMost(20)
@@ -817,30 +802,29 @@ constructor(
   /**
    * The wild monster's safari turn (HandleAction_WatchesCarefully, then the AI's
    * if_random_safari_flee): the last throw wears off one step and the monster says what it is
-   * doing - FireRed's "is watching carefully!" / "is angry!" (launcher-staged client strings,
-   * kind 76) or the client's own "is eating!" event with its animation - then it may bolt at
-   * escape factor * 5 % (doubled while angry, quartered while eating).
+   * doing through the client's safari packet - "is watching carefully!", "is angry!", "is
+   * eating!" - then it may bolt at escape factor * 5 % (doubled while angry, quartered while
+   * eating), which the same packet tells as "Wild {mon} fled!" before a silent battle end.
    */
   private suspend fun safariWildTurn(battle: BattleInstance) {
     val s = battle.safari ?: return
     val wild = battle.opponentMon()
-    val mood: de.fiereu.openmmo.server.game.battle.BattleEvent =
+    val mood: Byte =
         when {
           s.rockTurns > 0 -> {
             s.rockTurns--
             if (s.rockTurns == 0) {
               s.catchFactor = s.baseCatchFactor
-              de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
-            } else de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_ANGRY_STRING)
+              SafariEventPacket.MOOD_WATCHING
+            } else SafariEventPacket.MOOD_ANGRY
           }
           s.baitTurns > 0 -> {
             s.baitTurns--
-            if (s.baitTurns == 0) de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
-            else de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, SAFARI_BAIT_EATING)
+            if (s.baitTurns == 0) SafariEventPacket.MOOD_WATCHING else SafariEventPacket.MOOD_EATING
           }
-          else -> de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(wild.entityId, SAFARI_WATCHING_STRING)
+          else -> SafariEventPacket.MOOD_WATCHING
         }
-    emitter.sendEvents(battle, listOf(mood))
+    battle.session.send(SafariEventPacket.mood(mood))
     val fleeRate =
         when {
           s.rockTurns > 0 -> (s.escapeFactor * 2).coerceAtMost(20)
@@ -849,7 +833,8 @@ constructor(
         } * 5
     if (battle.rng.pick(100) < fleeRate) {
       log.info { "[safari] ${wild.species.name} fled from char=${battle.charId} (rate $fleeRate%)" }
-      emitter.sendWildFled(battle)
+      battle.session.send(SafariEventPacket.mood(SafariEventPacket.MOOD_FLED))
+      emitter.sendSilentEnd(battle)
       persistParty(battle)
       battle.pendingResult = BattleResult.FLED
       return

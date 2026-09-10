@@ -684,13 +684,11 @@ private fun patchNames(
       .filter { it.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull() in DEFEATED_STRING_IDS }
       .forEach { it.textContent = it.textContent.replace("have defeated", "defeated").replace("has defeated", "defeated").replace("\\n\\n", " ") }
 
-  // The Safari Game's lines. The client shows mid-battle text only from the Unova text bank or
-  // its own string table (every one of the 272 bank-line calls in the battle event classes
-  // hard-codes the Unova ROM), and neither has FireRed's Safari lines, so they are staged here in
-  // FireRed's words (src/battle_message.c). The bait event (kind -33) prints string 200532 with
-  // {00} the thrower, {01} the bait name (101734/101736/101738) and {02} the monster; reworded, its
-  // three kinds become FireRed's bait and rock throws and the DS games' Mud, animation included.
-  // The three bait items those names belong to are PokeMMO's own and do not exist here.
+  // The Safari Game's lines. The client's safari packet (s2c 0x3A, f/L6) prints the ROM's lines
+  // in the DS regions and, in the GBA regions, six strings of its own table that this build's
+  // strings_en.xml no longer carries - so they are staged here in FireRed's words
+  // (src/battle_message.c), with the placeholders the client fills: {06} the monster, {23} the
+  // trainer, {0F} the monster that fled.
   SAFARI_STRINGS.forEach { (stringId, value) ->
     require(stringId !in occupied) { "Client string $stringId is taken; pick another for the Safari line" }
     root.appendChild(
@@ -702,7 +700,7 @@ private fun patchNames(
   (0 until root.childNodes.length)
       .map(root.childNodes::item)
       .forEach { node ->
-        val reworded = (SAFARI_REWORDS + PC_MENU_REWORDS)[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
+        val reworded = PC_MENU_REWORDS[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
         node.textContent = reworded
       }
 
@@ -719,24 +717,22 @@ private fun patchNames(
 /** "{00} have defeated {01}!" (single line and boxed): reworded to "{00} defeated {01}!". */
 private val DEFEATED_STRING_IDS = setOf(5017, 5018)
 
-/** FireRed's Safari lines the client lacks, printed by battle event kind 76 with {00} = the monster (server SAFARI_WATCHING_STRING / SAFARI_ANGRY_STRING). */
+/**
+ * The GBA-region strings of the client's safari packet (f/L6 fallbacks; see SafariEventPacket),
+ * in FireRed's words: {23} = the trainer, {06} = the monster, {0F} = the monster that fled.
+ */
 private val SAFARI_STRINGS =
     mapOf(
-        5130 to "{00} is watching\\ncarefully!",
-        5131 to "{00} is angry!",
+        200271 to "{23} threw a ROCK\\nat the {06}!",
+        200272 to "{23} threw some BAIT\\nat the {06}!",
+        200273 to "{06} is watching\\ncarefully!",
+        200274 to "{06} is angry!",
+        200275 to "{06} is eating!",
+        200148 to "Wild {0F} fled!",
     )
 
-/** The bait event's template and bait names, reworded into FireRed's throw lines (see the staging comment). */
 /** The PC menu's first entry: stock "{01}'s PC" reads oddly beside GTL and Mail; MonMMO names the function (was hand-edited in the client before 2026-09-09). */
 private val PC_MENU_REWORDS = mapOf(2351 to "Storage System")
-
-private val SAFARI_REWORDS =
-    mapOf(
-        200532 to "{00} threw {01}\\nat the {02}!",
-        101734 to "some BAIT",
-        101736 to "a ROCK",
-        101738 to "Mud",
-    )
 
 /** The dex category line sits 5000 above the species name in the string table. */
 private const val CATEGORY_STRING_BASE = 155000

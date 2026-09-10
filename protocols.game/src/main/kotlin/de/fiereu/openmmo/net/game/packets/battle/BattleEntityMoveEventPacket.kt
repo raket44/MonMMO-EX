@@ -81,7 +81,7 @@ sealed interface BattleEventBody {
 
   /**
    * Kind 76 (f/lW1) printing one of the client's own strings_en.xml strings by id: [shape u8]
-   * [1 u8][id s32]. Shape 1 fills {00} with the name of the monster the event is attached to
+   * [1 u8][flag u8][id s32] (the flag is f/lW1.Ff1, an index remap used by the bank form only). Shape 1 fills {00} with the name of the monster the event is attached to
    * (the same parameter the bait event names), shape 2 with the other side's, 3/7 both, 0 none.
    * The kind's other form ([shape][0][bank s16][index s16]) reads a text bank, but with the ROM
    * byte hard-coded to the Unova game in all 272 call sites, so only the string form is modelled.
@@ -359,6 +359,8 @@ private val ClientLineBodyCodec: Codec<BattleEventBody> =
         val shape = field(S8) { (it as BattleEventBody.ClientLine).shape }
         val form = field(S8) { 1 }
         require(form.toInt() == 1) { "kind 76 bank-line form is not modelled" }
+        field(S8) { 1 }
+        field(S8) { 1 }
         val id = field(S32LE) { (it as BattleEventBody.ClientLine).stringId }
         return BattleEventBody.ClientLine(shape, id)
       }

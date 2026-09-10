@@ -193,7 +193,7 @@ object GameProtocol : Protocol() {
     s2c<BattleLabeledMoveEventPacket>(0x39u, BattleLabeledMoveEventPacketCodec)
 
     c2s<BattleAppearancePacket>(0x3Au, BattleAppearancePacketCodec)
-    s2c<BattleEnumPairEventPacket>(0x3Au, BattleEnumPairEventPacketCodec)
+    s2c<SafariEventPacket>(0x3Au, SafariEventPacketCodec)
 
     c2s<PrismaticPearlTransferPacket>(0x3Bu, PrismaticPearlTransferPacketCodec)
     s2c<BattleEmptyEventPacket>(0x3Bu, BattleEmptyEventPacketCodec)

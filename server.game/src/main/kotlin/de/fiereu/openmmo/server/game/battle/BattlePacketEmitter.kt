@@ -355,6 +355,12 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = true))
   }
 
+  /** The battle simply ends - no prize, no line of the client's own (the safari packet said "Wild {mon} fled!" already). */
+  fun sendSilentEnd(battle: BattleInstance) {
+    broadcast(battle, BattleBulkStatePacket.battleEnd())
+    battle.session.send(EntityPresencePacket(entityId = battle.charId, status = PRESENCE_OVERWORLD))
+  }
+
   /** A safari battle the wild monster ended: the client's "The wild {00} fled!" and the exit, no flee line of the player's. */
   fun sendWildFled(battle: BattleInstance) {
     broadcast(battle, BattleBulkStatePacket.wildFled())

@@ -244,6 +244,26 @@ internal constructor(
       (characterId?.let { characters?.getCharacter(it)?.pcStorage?.size } ?: 0) < de.fiereu.openmmo.server.game.storage.PC_CAPACITY
 
   /** specialvar DoesPlayerPartyContainSpecies: VAR_0x8004 names the species (MON_DATA_SPECIES_OR_EGG). */
+  /**
+   * specialvar GetInGameTradeSpeciesInfo: VAR_0x8004 names the trade; STR_VAR_1 = the species the
+   * NPC asks for, STR_VAR_2 = the one they offer; the answer is the requested species.
+   */
+  fun inGameTradeInfo(index: Int): Int {
+    val trade = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED.getOrNull(index) ?: return 0
+    speciesName(trade.requestedDexId)?.let { bufferText(1, it) }
+    speciesName(trade.dexId)?.let { bufferText(2, it) }
+    return trade.requestedDexId
+  }
+
+  /** specialvar GetTradeSpecies: the species in party slot VAR_0x8005, SPECIES_NONE for an egg. */
+  fun partySpecies(slot: Int): Int = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.partySpecies(state, slot)
+
+  /** special DoInGameTradeScene: party slot [slot] goes to the NPC, the NPC's monster takes its place. */
+  suspend fun inGameTrade(index: Int, slot: Int): Boolean {
+    val trade = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED.getOrNull(index) ?: return false
+    return checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.tradeWithNpc(session, state, slot, trade)
+  }
+
   fun partyContainsSpecies(species: Int): Boolean =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.any { mon -> mon.dexId == species } } ?: false
 

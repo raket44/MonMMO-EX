@@ -132,6 +132,8 @@ internal object InterpreterSupport {
           "SetHiddenItemFlag",
           "ExitSafariMode",
           "ChoosePartyMon",
+          "CreateInGameTradePokemon",
+          "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",
           "CompareMagikarpSize",
           "SetVermilionTrashCans",
@@ -218,6 +220,8 @@ internal object InterpreterSupport {
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",
           "DoesPlayerPartyContainSpecies",
+          "GetInGameTradeSpeciesInfo",
+          "GetTradeSpecies",
       )
 
 

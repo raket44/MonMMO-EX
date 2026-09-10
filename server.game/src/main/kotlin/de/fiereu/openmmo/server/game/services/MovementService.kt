@@ -362,6 +362,18 @@ constructor(
       state.blocksPlayerInput -> {
         sendPositionReset(ctx, charId, currentMap, fromX, fromY, state.facingDirection)
         scriptMovement.reassertScriptedFacing(ctx, state)
+        // The client plays its door animation and fades to black the moment the player presses
+        // into a door, then waits for the warp. A door step that started before the script's
+        // lock landed (a player holding UP at Cinnabar's locked gym door: the trigger tile sits
+        // right below the door) gets no warp here, and a muted door step is a permanent black
+        // screen. The client's render-screen packet re-renders and clears its movement wait
+        // timers (f/AM0.X91 -> f/CK1), so the muted door step is answered with it.
+        val doorX = msg.x + msg.direction.dx
+        val doorY = msg.y + msg.direction.dy
+        if (currentMap.warps.any { it.x == doorX && it.y == doorY }) {
+          log.info { "Door step into ($doorX, $doorY) muted by a script lock for char=$charId: re-rendering the screen" }
+          ctx.send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(true))
+        }
         return
       }
     }

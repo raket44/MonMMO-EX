@@ -80,6 +80,63 @@ constructor(
     return pokemon
   }
 
+  /** The species in party [slot], 0 for an egg or an empty slot (GetTradeSpecies). */
+  fun partySpecies(state: PlayerState, slot: Int): Int {
+    val mon = state.characterId?.let { characters.getCharacter(it)?.pokemon?.getOrNull(slot) } ?: return 0
+    return if (mon.isEgg) 0 else mon.dexId
+  }
+
+  /**
+   * An in-game trade: the monster in party [slot] goes to the NPC and the NPC's monster takes its
+   * place at the same level, with the NPC as its original trainer, its table nickname, IVs,
+   * personality and held item (CreateInGameTradePokemonInternal in src/trade_scene.c). False when
+   * nothing was swapped.
+   */
+  suspend fun tradeWithNpc(session: SessionContext, state: PlayerState, slot: Int, trade: InGameTrade): Boolean {
+    val characterId = state.characterId ?: return false
+    val stored = characters.getCharacter(characterId) ?: return false
+    val given = stored.pokemon.getOrNull(slot) ?: return false
+    val definition = species.get(trade.dexId) ?: return false
+    val rolled = pokemonFactory.create(trade.dexId, given.level.toInt(), BattleRng()) ?: return false
+    val ivs = de.fiereu.openmmo.common.enums.IVs()
+    ivs.hp = trade.ivs[0]
+    ivs.atk = trade.ivs[1]
+    ivs.def = trade.ivs[2]
+    ivs.spd = trade.ivs[3]
+    ivs.spAtk = trade.ivs[4]
+    ivs.spDef = trade.ivs[5]
+    val received =
+        rolled.copy(
+            ownerId = characterId,
+            container = PokemonContainer.PARTY,
+            containerSlot = slot.toShort(),
+            ot = trade.otName,
+            nickname = trade.nickname,
+            seed = trade.personality,
+            iVs = ivs,
+            heldItem = trade.heldItem?.let { items.byScriptConstant(it) }?.let { items.idOf(it) } ?: 0,
+            isShiny = false,
+        )
+    val healed = received.copy(hp = StatCalculator.computeAll(definition, received).hp.toShort())
+    if (!characters.removePokemon(characterId, given.id)) return false
+    if (!characters.addPokemon(characterId, healed)) {
+      // Put the player's monster back rather than lose it.
+      characters.addPokemon(characterId, given)
+      return false
+    }
+    // addPokemon appends; move the newcomer back into the slot the traded monster held.
+    val last = (characters.getCharacter(characterId)?.pokemon?.size ?: 1) - 1
+    if (last != slot) characters.swapPartySlots(characterId, last, slot)
+    characters.flushCharacterAsync(characterId)
+    val party = characters.getCharacter(characterId)?.pokemon ?: return false
+    val inParty = party.firstOrNull { it.id == healed.id } ?: healed
+    session.send(SocialListEntryAddPacket(inParty))
+    session.send(acquiredMonsterDelta(inParty, definition))
+    session.send(PokemonContainerPacket(container = PokemonContainer.PARTY, hasChange = true, delete = false, pokemon = party))
+    dexProgress.refresh(session, characterId)
+    return true
+  }
+
   fun healParty(session: SessionContext, state: PlayerState) {
     val characterId = state.characterId ?: return
     val stored = characters.getCharacter(characterId) ?: return

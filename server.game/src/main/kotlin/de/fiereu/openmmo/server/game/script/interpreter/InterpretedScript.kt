@@ -554,6 +554,13 @@ class InterpretedScript(
             "ExitSafariMode" -> ctx.exitSafari()
             // src/field_specials.c ChoosePartyMon: VAR_0x8004 = the party slot, PARTY_SIZE when closed.
             "ChoosePartyMon" -> ctx.setVar(namespaced("VAR_0x8004"), tracedWait(ctx, "party pick") { ctx.choosePartyMember() })
+            // The in-game trade: VAR_0x8004 = the trade, VAR_0x8005 = the party slot given away. The
+            // monster is built and swapped in one go at the scene; the create step has nothing left to do.
+            "CreateInGameTradePokemon" -> {}
+            "DoInGameTradeScene" -> {
+              val done = tracedWait(ctx, "npc trade") { ctx.inGameTrade(ctx.getVar(namespaced("VAR_0x8004")), ctx.getVar(namespaced("VAR_0x8005"))) }
+              check(done) { "Script ${program.id.stable} could not complete its in-game trade" }
+            }
             "GetMagikarpSizeRecordInfo" -> ctx.bufferMagikarpRecord()
             "CompareMagikarpSize" -> ctx.setVar(namespaced("VAR_RESULT"), ctx.compareMagikarpSize(ctx.getVar(namespaced("VAR_RESULT"))))
             // src/field_specials.c: the floor the elevator stands on, read from the dynamic warp.
@@ -638,6 +645,9 @@ class InterpretedScript(
                 ctx.setVar(namespaced("VAR_0x8006"), owned)
                 0
               }
+              // src/trade_scene.c: the in-game trade NPCs of the Pokemon Lab lounge and friends.
+              else if (function == "GetInGameTradeSpeciesInfo") ctx.inGameTradeInfo(ctx.getVar(namespaced("VAR_0x8004")))
+              else if (function == "GetTradeSpecies") ctx.partySpecies(ctx.getVar(namespaced("VAR_0x8005")))
               else InterpreterSupport.SPECIALVAR_RESULTS[function]
                   ?: throw UnsupportedScriptCommandException(
                       program.id.stable, "specialvar $function", instruction.sourceLine)

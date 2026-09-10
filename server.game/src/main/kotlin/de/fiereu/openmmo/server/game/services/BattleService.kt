@@ -724,6 +724,7 @@ constructor(
     // the bait event's toss, operator's call 2026-09-10). No other printer names the ball without
     // the toss's zoom and whistle (the free-text kind -22 never rendered in play), so every other
     // throw stays silent ahead of the ball: the throw, the shakes and the result, as before.
+    val thrower = stored.info.name
     if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
       battle.session.send(SafariEventPacket.rock())
     } else {

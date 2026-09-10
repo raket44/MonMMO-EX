@@ -727,13 +727,10 @@ constructor(
     val thrower = stored.info.name
     if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
       battle.session.send(SafariEventPacket.rock())
-    } else {
-      // The engine's own item line, "{actor} used {item}!" (Unova bank 8/52, no animation); the
-      // actor is the active monster, so the client names it. The free-text kind -22 printed
-      // nothing whether anchored on the player's monster or on the wild (tested 2026-09-10) - it is
-      // dead for us, do not retry it.
-      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.ItemUsed(battle.activeMon().entityId, itemId)))
     }
+    // Outside the Safari Game a throw announces nothing (operator's call, 2026-09-10): the
+    // free-text kind -22 printed nothing on either anchor - dead, do not retry - and the engine's
+    // own item line (BattleEvent.ItemUsed) names the monster, not the player.
     val shakes =
         when {
           item == Items.MASTER_BALL -> 4

@@ -73,6 +73,10 @@ constructor(
               de.fiereu.openmmo.common.enums.Direction.DOWN)
         } else stored.info.dynamicWarp
     state?.justWarped = true
+    // A warp is a fresh map load even when it lands on the same map (Silph Co's teleporter
+    // pads): the client redraws the ROM's tiles, and the cartridge runs ON_LOAD / ON_TRANSITION
+    // again - so the entry scripts must run again too, or a barrier they closed vanishes.
+    state?.entryScriptsMapKey = -1
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1
@@ -246,6 +250,10 @@ constructor(
     val state = ctx.attributes[PLAYER_STATE]
     val stored = characterStore.getCharacter(charId) ?: return
     state?.justWarped = true
+    // A warp is a fresh map load even when it lands on the same map (Silph Co's teleporter
+    // pads): the client redraws the ROM's tiles, and the cartridge runs ON_LOAD / ON_TRANSITION
+    // again - so the entry scripts must run again too, or a barrier they closed vanishes.
+    state?.entryScriptsMapKey = -1
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1

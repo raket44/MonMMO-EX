@@ -129,6 +129,7 @@ internal object InterpreterSupport {
           "GetElevatorFloor",
           "ListMenu",
           "EnterSafariMode",
+          "SetHiddenItemFlag",
           "ExitSafariMode",
           "ChoosePartyMon",
           "GetMagikarpSizeRecordInfo",

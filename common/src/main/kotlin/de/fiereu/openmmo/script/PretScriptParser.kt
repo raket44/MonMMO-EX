@@ -2,7 +2,10 @@ package de.fiereu.openmmo.script
 
 /** Minimal parser for the human-readable pret GBA script assembly used by FireRed/Emerald. */
 object PretScriptParser {
-  private val labelLine = Regex("^(\\w+)::?\\s*$")
+  // `Label::` or `Label:` alone on its line, with or without a trailing `@ comment` (pokefirered
+  // silphco_doors.inc puts one on EventScript_Close5FDoor1, which left Silph 5F's on-load script
+  // unresolvable and its doors open).
+  private val labelLine = Regex("^(\\w+)::?\\s*(@.*)?$")
   private val comparisonBranches =
       setOf(
           "goto_if_eq",

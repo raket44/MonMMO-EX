@@ -226,6 +226,19 @@ internal constructor(
     characterId?.let { safari?.exit(session, it) }
   }
 
+  /** Flags parked in vars by `setvar VAR, FLAG_X` (FireRed stores the flag id; ours are named), keyed by the namespaced var. */
+  private val flagsInVars = mutableMapOf<String, String>()
+
+  fun rememberFlagInVar(namespacedVar: String, namespacedFlag: String) {
+    flagsInVars[namespacedVar] = namespacedFlag
+  }
+
+  /** `special SetHiddenItemFlag`: FlagSet(gSpecialVar_0x8004) - sets the flag the var was loaded with. */
+  fun setFlagRememberedInVar(namespacedVar: String) {
+    val flag = flagsInVars[namespacedVar] ?: return
+    setFlag(flag)
+  }
+
   /** specialvar IsThereRoomInAnyBoxForMorePokemon. */
   fun pcHasRoom(): Boolean =
       (characterId?.let { characters?.getCharacter(it)?.pcStorage?.size } ?: 0) < de.fiereu.openmmo.server.game.storage.PC_CAPACITY

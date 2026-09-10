@@ -123,10 +123,13 @@ private constructor(
         }
         val raw = if (aliases.isEmpty()) rawLine else applyAliases(rawLine, aliases)
         val line = raw.trim()
-        val match = labelLine.matchEntire(line)
+        // A label may carry a trailing `@ comment` (silphco_doors.inc: EventScript_Close5FDoor1);
+        // the comment is not part of the label.
+        val labelText = raw.substringBefore('@').trim()
+        val match = labelLine.matchEntire(labelText)
         if (match != null) {
           dataLabel = null
-          if (line.endsWith("::")) {
+          if (labelText.endsWith("::")) {
             val label = match.groupValues[1]
             out.getOrPut(label) { ScriptBody(file.path, mutableListOf()) }
             pending.add(label)

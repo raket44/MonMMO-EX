@@ -339,7 +339,16 @@ class InterpretedScript(
           state.pc++
         }
         "setvar" -> {
-          ctx.setVar(namespaced(varArg(instruction, 0).token), value(ctx, instruction.arg(1)))
+          val target = namespaced(varArg(instruction, 0).token)
+          val source = instruction.arg(1)
+          if (source is FlagArg) {
+            // The var carries a flag for a special that sets it by id (SetHiddenItemFlag): our
+            // flags are named, so the name rides beside the var and the var reads non-zero.
+            ctx.rememberFlagInVar(target, namespaced(source.token))
+            ctx.setVar(target, 1)
+          } else {
+            ctx.setVar(target, value(ctx, source))
+          }
           state.pc++
         }
         "copyvar" -> {
@@ -539,6 +548,8 @@ class InterpretedScript(
             "HealPlayerParty" -> ctx.healParty()
             "ListMenu" -> runListMenu(ctx, state)
             // src/safari_zone.c: the Safari Game on the client's own safari counters.
+            // FlagSet(gSpecialVar_0x8004): the Silph Co. doors after the Card Key opens them.
+            "SetHiddenItemFlag" -> ctx.setFlagRememberedInVar(namespaced("VAR_0x8004"))
             "EnterSafariMode" -> ctx.enterSafari()
             "ExitSafariMode" -> ctx.exitSafari()
             // src/field_specials.c ChoosePartyMon: VAR_0x8004 = the party slot, PARTY_SIZE when closed.

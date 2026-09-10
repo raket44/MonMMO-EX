@@ -378,8 +378,10 @@ class ScriptSupportAnalyzer(
           "removemoney" -> isValue(args[0])
           "setwildbattle" -> isValue(args[0]) && isValue(args[1]) && (args.size < 3 || isValue(args[2]))
           in InterpreterSupport.DEFEATED_BRANCHES -> args[0] is TrainerArg && args[1] is LabelArg
+          // A flag symbol is a value too: FireRed's Silph doors park the door's flag in VAR_0x8004
+          // for `special SetHiddenItemFlag` (silphco_doors.inc).
           "setvar",
-          "setorcopyvar",
+          "setorcopyvar" -> args[0] is VarArg && (isValue(args[1]) || args[1] is FlagArg)
           "subvar" -> args[0] is VarArg && isValue(args[1])
           "copyvar" -> args.all { it is VarArg }
           "addvar" -> args[0] is VarArg && isImmediate(args[1])

@@ -93,6 +93,14 @@ class BattleInstance(
   /** Bag items spent during the battle (balls thrown): their counts are synced to the client once it is back in the overworld. */
   val consumedItems = LinkedHashSet<Int>()
 
+  /**
+   * Deltas for monsters caught in this battle, sent once the client is back in the overworld: a
+   * 0x16 delta with an experience field received DURING a battle makes the client print
+   * "{mon} gained 0 Exp. Points!" at once (f/Y9 -> f/L71), before the throw animation has even
+   * played - which told the player the catch was in.
+   */
+  val acquiredDeltas = mutableListOf<de.fiereu.openmmo.net.game.packets.battle.BattleEntityDeltaPacket>()
+
   /** The party index standing on each of the player's field positions, -1 for an empty one. Position 0 opens on slot 0, as a bare instance always did. */
   val playerPositions: IntArray = IntArray(format.playerSlots) { if (it == 0) 0 else -1 }
   /** The opponent index standing on each opposing field position, -1 for an empty one. */

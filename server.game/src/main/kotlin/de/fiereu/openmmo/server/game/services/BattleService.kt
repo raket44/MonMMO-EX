@@ -316,7 +316,9 @@ constructor(
     val battle = battles.byChar(charId) ?: return null
     val result = battle.pendingResult ?: return null
     finishBattle(battle, result)
-    // Back in the overworld the bag can be told what the battle spent (see throwBall).
+    // Back in the overworld the bag can be told what the battle spent (see throwBall) and the
+    // caught monster's delta can go out without printing an exp line into the fight.
+    for (delta in battle.acquiredDeltas) event.session.send(delta)
     for (itemId in battle.consumedItems) {
       event.session.send(itemStackUpdatePacket(itemId, characterStore.getCharacter(charId)?.items?.get(itemId) ?: 0))
     }
@@ -904,7 +906,8 @@ constructor(
     // The caught monster is sent as a full 148-byte record on opcode 0x14 before the ball-throw
     // event, so the client can resolve the monster when the throw lands.
     battle.session.send(SocialListEntryAddPacket(caught))
-    battle.session.send(acquiredMonsterDelta(caught, battle.opponentMon().species))
+    // The delta waits for the overworld (BattleInstance.acquiredDeltas): sent now it spoils the catch.
+    battle.acquiredDeltas += acquiredMonsterDelta(caught, battle.opponentMon().species)
     // "Player threw a Poke Ball" event.
     battle.session.send(
         BattleListEventPacket(

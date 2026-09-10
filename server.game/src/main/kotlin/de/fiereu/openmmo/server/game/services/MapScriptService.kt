@@ -49,12 +49,10 @@ constructor(
     }
     val entry = entryScripts.onEntry(state, map)
     val hasArrivalTrigger = entryScripts.hasCoordinate(map, state.x.toInt(), state.y.toInt())
-    val polish = MapEntryPolish.touchFor(map)
-    if (entry.isEmpty() && !hasArrivalTrigger && polish == null) return
+    if (entry.isEmpty() && !hasArrivalTrigger) return
 
     // Entry scripts may trigger their landing coordinate.
     val entrySequence = Script { ctx ->
-      polish?.apply(ctx)
       entry.forEach { it.run(ctx) }
       // ON_TRANSITION just wrote the vars that dynamic npc sprites and positions read (the
       // decomp runs it before objects load); re-send the affected npcs with the fresh values.

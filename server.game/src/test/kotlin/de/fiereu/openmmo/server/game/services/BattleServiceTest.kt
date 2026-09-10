@@ -315,18 +315,23 @@ class BattleServiceTest :
         }
       }
 
-      test("the ball throw names the Poke Ball by the id the client knows") {
+      test("the ball throw names the thrown ball by the id the client knows") {
         runTest {
           val fx = Fixture(this)
-          val (session, _) = fx.playerWithParty()
+          val (session, charId) = fx.playerWithParty()
+          // A Master Ball never rolls, so the catch is certain and the caught event carries its id.
+          val masterBall = de.fiereu.openmmo.items.ItemRegistry().idOf(de.fiereu.openmmo.items.generated.Items.MASTER_BALL)
+          fx.store.addItem(charId, masterBall, 1)
           session.startBattle(fx.service)
 
-          session.act(fx.service, BattleAction.ITEM)
+          session.act(fx.service, BattleAction.ITEM, masterBall.toShort())
 
           session.sent
               .filterIsInstance<BattleListEventPacket>()
               .single { it.subKind == 4.toByte() }
-              .value shouldBe 5004.toShort()
+              .value shouldBe masterBall.toShort()
+          // The ball left the bag.
+          fx.store.getCharacter(charId)!!.items[masterBall] shouldBe null
         }
       }
 

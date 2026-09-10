@@ -110,7 +110,7 @@ public class Land4 {
           if (lf >= land.length) continue;
           byte[] ch = Arrays.copyOfRange(rom, land[lf][0], land[lf][1]);
           if (!isLandChunk(ch)) continue;
-          int po = region == 3 ? 16 : bestPermOffset(ch);
+          int po = permOffset(region, ch);
           for (int ty = 0; ty < 32; ty++) {
             for (int tx = 0; tx < 32; tx++) {
               int oo = po + (ty * 32 + tx) * 2;
@@ -125,6 +125,18 @@ public class Land4 {
     }
     out.close();
     System.err.println("# headers=" + headersOut + " tiles=" + tiles);
+  }
+
+  /**
+   * Where the permission grid starts. Platinum: right after the four section sizes (0x10).
+   * HG/SS put a variable section first - u16 magic 0x1234 at 0x10, u16 length at 0x12, then
+   * that many bytes - so the grid starts at 0x14 + length (Route 34's road chunk carries 0x38
+   * bytes there: read at a fixed 0x14, every chunk's first tile row was that section, and
+   * Pidgeys spawned on the road).
+   */
+  static int permOffset(int region, byte[] ch) {
+    if (region == 3) return 16;
+    return u16(ch, 16) == 0x1234 ? 20 + u16(ch, 18) : 16;
   }
 
   /** Score both candidate headers by how bimodal (0x00/0x80) the collision plane looks. */

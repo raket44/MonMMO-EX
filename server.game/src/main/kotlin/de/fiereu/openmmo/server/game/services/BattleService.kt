@@ -712,6 +712,10 @@ constructor(
       game.balls = safari?.get()?.consumeBall(battle.session, battle.charId) ?: (game.balls - 1)
     }
     val wild = battle.opponentMon()
+    // FireRed's "{player} used {ball}!" ahead of the throw, in the battle box (kind -22 on the
+    // player's active monster; the client has no ball line of its own before the shakes).
+    val thrower = stored.info.name
+    emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.FreeLine(battle.activeMon().entityId, "$thrower used ${item.name}!")))
     val shakes =
         when {
           item == Items.MASTER_BALL -> 4

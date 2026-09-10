@@ -700,7 +700,7 @@ private fun patchNames(
   (0 until root.childNodes.length)
       .map(root.childNodes::item)
       .forEach { node ->
-        val reworded = PC_MENU_REWORDS[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
+        val reworded = (PC_MENU_REWORDS + FREE_LINE_REWORDS)[node.attributes?.getNamedItem("id")?.nodeValue?.toIntOrNull()] ?: return@forEach
         node.textContent = reworded
       }
 
@@ -733,6 +733,14 @@ private val SAFARI_STRINGS =
 
 /** The PC menu's first entry: stock "{01}'s PC" reads oddly beside GTL and Mail; MonMMO names the function (was hand-edited in the client before 2026-09-09). */
 private val PC_MENU_REWORDS = mapOf(2351 to "Storage System")
+
+/**
+ * Battle event kind -22 (f/wl) prints string 16804143 with {00} = a string sent by the server, and
+ * it is the only battle-box printer that takes free text. Stock 16804143 is a seasonal event line
+ * ("{00}'s {01} is being controlled by the {02}!", unused here); as a bare "{00}" it lets the
+ * server print FireRed's "{player} used {ball}!" before a throw (BattleEvent.FreeLine).
+ */
+private val FREE_LINE_REWORDS = mapOf(16804143 to "{00}")
 
 /** The dex category line sits 5000 above the species name in the string table. */
 private const val CATEGORY_STRING_BASE = 155000

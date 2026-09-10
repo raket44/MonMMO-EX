@@ -89,6 +89,17 @@ sealed interface BattleEventBody {
   data class ClientLine(val shape: Byte, val stringId: Int) : BattleEventBody
 
   /**
+   * Kind -22 (f/wl, bytecode-verified 2026-09-10): [text UTF-16][entity s64]. The client prints its
+   * string 16804143 with {00} = [text] straight from the packet, {01} = the entity's trainer's
+   * monster and {02} = the first monster on that side, with no animation. Stock 16804143 is a
+   * seasonal event line ("{00}'s {01} is being controlled by the {02}!"); the launcher restages it
+   * as a bare "{00}" so the server can print any sentence with the player's name - FireRed's
+   * "{player} used {ball}!" before a throw. [entityId] must be a monster on the field (the
+   * client looks its side up and returns silently otherwise).
+   */
+  data class FreeLine(val text: String, val entityId: Long) : BattleEventBody
+
+  /**
    * One of the client's fixed-shape battle lines, by sub-event id. Decoded from the client's
    * event factory (f/SF1) and each renderer's message bases against the ROM text bank the client
    * itself dumped (reference/client-31914/battle-strings.tsv). [values] are the body fields in
@@ -353,6 +364,15 @@ private val SafariBaitBodyCodec: Codec<BattleEventBody> =
       }
     }
 
+private val FreeLineBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val text = field(Utf16LeNullTerminated) { (it as BattleEventBody.FreeLine).text }
+        val entityId = field(S64LE) { (it as BattleEventBody.FreeLine).entityId }
+        return BattleEventBody.FreeLine(text, entityId)
+      }
+    }
+
 private val ClientLineBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
@@ -378,7 +398,8 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   MOVE_FAILED(id = 0x40, codec = MoveFailedBodyCodec),
   EVOLUTION(id = 107, codec = EvolutionBodyCodec),
   SAFARI_BAIT(id = -33, codec = SafariBaitBodyCodec),
-  CLIENT_LINE(id = 76, codec = ClientLineBodyCodec);
+  CLIENT_LINE(id = 76, codec = ClientLineBodyCodec),
+  FREE_LINE(id = -22, codec = FreeLineBodyCodec);
 
   companion object {
     fun ofId(id: Int): BattleEventType = entries.first { it.id == id }
@@ -397,6 +418,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.AbilityPopup -> ABILITY_POPUP
           is BattleEventBody.SafariBait -> SAFARI_BAIT
           is BattleEventBody.ClientLine -> CLIENT_LINE
+          is BattleEventBody.FreeLine -> FREE_LINE
           is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }

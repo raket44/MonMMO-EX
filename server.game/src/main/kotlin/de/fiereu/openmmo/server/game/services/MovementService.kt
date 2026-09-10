@@ -391,6 +391,11 @@ constructor(
       }
     }
 
+    if (state.tileOverridesPendingResend) {
+      state.tileOverridesPendingResend = false
+      resendTileOverrides(ctx, state, currentMap)
+    }
+
     if (state.acceptNextMoveSource &&
         msg.x in 0 until currentMap.width &&
         msg.y in 0 until currentMap.height) {
@@ -818,6 +823,22 @@ constructor(
    * is sent back to it - the self-move packet it used to receive was the hitch on every wall,
    * worst on a bike (2026-09-08). Observers see the turn toward the obstacle.
    */
+  /**
+   * The map's scripted tile changes again, now that a reported step proves the client has the map
+   * loaded (Silph Co 8F: the ON_LOAD barrier closing at arrival never showed - the client drew
+   * the ROM's open door and the server blocked the way, play-verified 2026-09-10).
+   */
+  private fun resendTileOverrides(ctx: SessionContext, state: PlayerState, map: MapDef) {
+    if (state.tileOverrides.isEmpty()) return
+    for ((key, tile) in state.tileOverrides) {
+      ctx.send(
+          de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
+              map.regionId, map.bankId, map.mapId,
+              (key shr 16).toShort(), (key and 0xFFFF).toShort(), tile.collision.toShort(), tile.material))
+    }
+    log.info { "Re-sent ${state.tileOverrides.size} scripted tile(s) on ${map.regionId}:${map.bankId}:${map.mapId} for char=${state.characterId}" }
+  }
+
   private fun unfadeSelf(ctx: SessionContext, state: PlayerState) {
     ctx.send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(true))
     scriptMovement.showSelf(ctx, state)

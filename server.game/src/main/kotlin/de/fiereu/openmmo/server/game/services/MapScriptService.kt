@@ -54,6 +54,9 @@ constructor(
     // Entry scripts may trigger their landing coordinate.
     val entrySequence = Script { ctx ->
       entry.forEach { it.run(ctx) }
+      // Silph Co's barriers and every other ON_LOAD setmetatile: the client can still be loading
+      // the map when these went out, so the first step on the map re-sends them.
+      if (state.tileOverrides.isNotEmpty()) state.tileOverridesPendingResend = true
       // ON_TRANSITION just wrote the vars that dynamic npc sprites and positions read (the
       // decomp runs it before objects load); re-send the affected npcs with the fresh values.
       npcService.refreshDynamicNpcs(

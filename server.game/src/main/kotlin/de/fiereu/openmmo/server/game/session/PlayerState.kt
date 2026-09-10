@@ -109,6 +109,12 @@ data class PlayerState(
     /** Tiles a script replaced on the current map (setmetatile): key (x shl 16 or y). Cleared on arrival. */
     val tileOverrides: java.util.concurrent.ConcurrentHashMap<Int, de.fiereu.openmmo.common.Tile2D> = java.util.concurrent.ConcurrentHashMap(),
     /**
+     * The entry scripts set tiles while the client was still loading the map (its map load is
+     * asynchronous; a tile packet for a map it has not registered yet is dropped). The first step
+     * the client reports on the map proves it is loaded, and the overrides go out again then.
+     */
+    @field:Volatile var tileOverridesPendingResend: Boolean = false,
+    /**
      * The emergence step: after this arrival's LoadEntity, the server sends an EntityMove one tile
      * in this direction and the CLIENT walks it - the client's 0xE4 handler routes any entity, the
      * local player included, through its animated movement path (f.pC -> f.NV0.AX1). This is what

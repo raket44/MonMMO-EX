@@ -163,6 +163,10 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
           flush()
           group = EventGroup(event.sourceId, 0)
         }
+        is BattleEvent.ItemUsed -> {
+          flush()
+          group = EventGroup(event.actorId, event.itemId.toShort())
+        }
         is BattleEvent.DamageDealt -> {
           val acc = target(event.targetId)
           acc.outcome =

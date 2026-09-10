@@ -12,6 +12,13 @@ sealed interface BattleEvent {
   /** Opens a packet for something that happens outside a move: poison damage, leftovers, weather. */
   data class TurnEffect(val sourceId: Long) : BattleEvent
 
+  /**
+   * The engine's own item-use line: a move event whose move slot carries an item id (1000+)
+   * prints "{actor} used {item}!" from the Unova bank (f/O20, bytecode 2026-09-10), no animation.
+   * The actor is the monster the event names; the client prints its display name.
+   */
+  data class ItemUsed(val actorId: Long, val itemId: Int) : BattleEvent
+
   sealed interface MoveWithoutTarget : BattleEvent {
     val attackerId: Long
     val moveId: Short

@@ -721,14 +721,11 @@ constructor(
     // FireRed's "{player} used {ball}!" ahead of the throw. In the Safari Game of a GBA region it
     // rides the safari packet's rock slot, whose Kanto string the launcher stages as "{23} used
     // Safari Ball!" - text only, the player's name filled by the client (the rock itself moved to
-    // the bait event's toss, operator's call 2026-09-10). Anywhere else it rides the bait event's
-    // toss kind: the thrower string is the whole sentence, template 200532 staged as "{00}", and
-    // the toss's zoom and whistle come with it. The free-text kind -22 never rendered in play.
-    val thrower = stored.info.name
+    // the bait event's toss, operator's call 2026-09-10). No other printer names the ball without
+    // the toss's zoom and whistle (the free-text kind -22 never rendered in play), so every other
+    // throw stays silent ahead of the ball: the throw, the shakes and the result, as before.
     if (game != null && item == Items.SAFARI_BALL && (battle.session.attributes[PLAYER_STATE]?.regionId ?: 0) in GBA_REGIONS) {
       battle.session.send(SafariEventPacket.rock())
-    } else {
-      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.SafariBait(wild.entityId, BALL_LINE_TOSS_KIND, "$thrower used ${item.name}!")))
     }
     val shakes =
         when {

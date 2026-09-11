@@ -545,7 +545,13 @@ class InterpretedScript(
         in InterpreterSupport.NOOP_COMMANDS -> state.pc++
         "delay" -> {
           val frames = (instruction.arg(0) as? IntArg)?.value ?: 0
-          delay((frames * FRAME_MILLIS).coerceAtMost(MAX_DELAY_MILLIS))
+          // A delay right after a music change only lets the song play out (Pewter's Jigglypuff,
+          // 455 frames); the music commands are no-ops here, so the player would just stand
+          // frozen with nothing happening (Miltank, 2026-09-11).
+          val previous = state.activeProgram.instructions.getOrNull(state.pc - 1)?.command
+          if (previous != "playbgm" && previous != "fadeoutbgm") {
+            delay((frames * FRAME_MILLIS).coerceAtMost(MAX_DELAY_MILLIS))
+          }
           state.pc++
         }
         // The screen fade, through the client's render-screen packet (the same one the warp flow
@@ -591,6 +597,13 @@ class InterpretedScript(
             "BufferBigGuyOrBigGirlString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "Big guy" else "Big girl")
             "BufferSonOrDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
             "CreateInGameTradePokemon" -> {}
+            // The easy-chat word picker has no client screen. Answer as a backed-out picker:
+            // VAR_RESULT FALSE (nothing entered) and VAR_0x8004 left non-zero so the Mystery
+            // Event Club woman takes her "decided not to" line instead of the special-profile one.
+            "ShowEasyChatScreen" -> {
+              ctx.setVar(namespaced("VAR_0x8004"), 1)
+              ctx.setVar(namespaced("VAR_RESULT"), 0)
+            }
             "DoInGameTradeScene" -> {
               val done = tracedWait(ctx, "npc trade") { ctx.inGameTrade(ctx.getVar(namespaced("VAR_0x8004")), ctx.getVar(namespaced("VAR_0x8005"))) }
               check(done) { "Script ${program.id.stable} could not complete its in-game trade" }

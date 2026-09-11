@@ -105,6 +105,8 @@ internal object InterpreterSupport {
           "DrawSeagallopDestinationMenu",
           // The GBA help-system toggles: nothing to do off a cartridge.
           "HelpSystem_Disable",
+          // Shows the easy-chat profile the club woman was given; no profile is ever entered here.
+          "ShowEasyChatMessage",
           "HelpSystem_Enable",
           // save_location.c: GameCube-link save flags, nothing off a cartridge.
           "SetPostgameFlags",
@@ -144,6 +146,7 @@ internal object InterpreterSupport {
           "DoSeagallopFerryScene",
           "BufferBigGuyOrBigGirlString",
           "BufferSonOrDaughterString",
+          "ShowEasyChatScreen",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",

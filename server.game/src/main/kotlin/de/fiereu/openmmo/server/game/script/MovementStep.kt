@@ -19,7 +19,16 @@ enum class MovementStep(
     val fast: Boolean = false,
     /** Client-side duration override in ms, for actions that hold (emote bubbles run 750ms). */
     val holdMs: Long? = null,
+    /** Tiles a walking step covers: one for a walk, two for a ledge hop. */
+    val tiles: Int = 1,
 ) {
+  // The ledge hop (GBA jump_2_*, 0x14-0x17): the client's rows 16-19 carry the same codes, kind 2,
+  // direction down/up/left/right, a jump-length duration (f/l31 static init, 2026-09-11). The
+  // locked Viridian Gym door's walk-back uses it, and a plain step left the player on the ledge.
+  JUMP_2_DOWN(Direction.DOWN, true, 0x14, holdMs = 550, tiles = 2),
+  JUMP_2_UP(Direction.UP, true, 0x15, holdMs = 550, tiles = 2),
+  JUMP_2_LEFT(Direction.LEFT, true, 0x16, holdMs = 550, tiles = 2),
+  JUMP_2_RIGHT(Direction.RIGHT, true, 0x17, holdMs = 550, tiles = 2),
   FACE_DOWN(Direction.DOWN, false, 0x04),
   FACE_UP(Direction.UP, false, 0x01),
   FACE_LEFT(Direction.LEFT, false, 0x02),
@@ -71,6 +80,10 @@ enum class MovementStep(
           "walk_up" -> WALK_UP
           "walk_left" -> WALK_LEFT
           "walk_right" -> WALK_RIGHT
+          "jump_2_down" -> JUMP_2_DOWN
+          "jump_2_up" -> JUMP_2_UP
+          "jump_2_left" -> JUMP_2_LEFT
+          "jump_2_right" -> JUMP_2_RIGHT
           "walk_fast_down" -> FAST_DOWN
           "walk_fast_up" -> FAST_UP
           "walk_fast_left" -> FAST_LEFT

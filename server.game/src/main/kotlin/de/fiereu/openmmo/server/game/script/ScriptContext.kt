@@ -338,7 +338,12 @@ internal constructor(
    */
   internal suspend fun dsTextListMenu(line: DialogLine, list: de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.DsTextList, preselected: Int): Int {
     showMessage(line)
-    return dialog.dsTextListMenu(session, state, list.region, list.bank, list.entries, preselected, list.args)
+    val pick = dialog.dsTextListMenu(session, state, list.region, list.bank, list.entries, preselected, list.args)
+    // The client keeps the text-button list up after its answer; a script that loops back to the
+    // same menu (the Trainer School's whiteboard topics) stacked one list per pick and the exit
+    // closed only the topmost. The GBA's menu window closes on selection, so close it here.
+    dialog.close(session, state)
+    return pick
   }
 
   /** Shows a built-in client choice menu over [line]; 1-based pick, 0 = closed unanswered. */
@@ -619,11 +624,15 @@ internal constructor(
    * tile the map data lists. Re-sending the template tile here snapped him back mid-walk.
    */
   fun copyNpcXyToPerm(localId: Int) {
-    movement.npcXyOverrideKey(state, localId) ?: return
+    val key = movement.npcXyOverrideKey(state, localId) ?: return
     val walked = movement.scriptedNpcPose(state, localId)
     val info = characterId?.let { characters?.getCharacter(it)?.info } ?: return
     val npc = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.npcs?.firstOrNull { it.entityIdx == localId } ?: return
-    setNpcXyOverride(localId, walked?.x ?: npc.x, walked?.y ?: npc.y)
+    // An npc nobody walked by script may still have been moved by the engine - a Strength
+    // boulder pushed onto Victory Road's floor switch - and that placement is the one to keep;
+    // writing the template here snapped the boulder back off the switch (2026-09-11).
+    val pushed = getVar(key).takeIf { it != 0 }?.let { (it shr 12) to (it and 0xFFF) }
+    setNpcXyOverride(localId, walked?.x ?: pushed?.first ?: npc.x, walked?.y ?: pushed?.second ?: npc.y)
   }
 
   /**

@@ -40,6 +40,10 @@ class ScriptSupportRegressionTest :
                 "VictoryRoad_2F_EventScript_FloorSwitch1",
                 "VictoryRoad_2F_EventScript_FloorSwitch2",
                 "VictoryRoad_3F_EventScript_FloorSwitch",
+                "MysteryEventClub_EventScript_Woman",
+                "ViridianCity_EventScript_GymDoorLocked",
+                "PewterCity_PokemonCenter_1F_EventScript_Jigglypuff",
+                "ViridianCity_School_EventScript_Blackboard",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

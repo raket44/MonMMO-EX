@@ -520,7 +520,7 @@ constructor(
     for (step in steps) {
       pose =
           if (step.walks)
-              Pose(pose.x + step.direction.dx, pose.y + step.direction.dy, step.direction)
+              Pose(pose.x + step.direction.dx * step.tiles, pose.y + step.direction.dy * step.tiles, step.direction)
           else if (step.changesFacing) pose.copy(facing = step.direction) else pose
     }
     return pose

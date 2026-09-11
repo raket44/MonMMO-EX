@@ -157,11 +157,19 @@ private constructor(
         if (dataLabel != null) {
           if (line.startsWith(".2byte")) {
             out.getOrPut(dataLabel) { ScriptBody(file.path, mutableListOf()) }.commands.add(line)
-          } else {
+            continue
+          }
+          if (line.startsWith(".")) {
             // Anything else under a data label is text or tables the server does not read.
             dataLabel = null
+            continue
           }
-          continue
+          // A single-colon label after a blank line whose block is script commands is a local
+          // script after all (mystery_event_club.inc: EventScript_AlreadyGaveProfile and the
+          // rest of the Pewter Center woman's branches); the gotos into it must resolve.
+          out.getOrPut(dataLabel) { ScriptBody(file.path, mutableListOf()) }
+          pending.add(dataLabel)
+          dataLabel = null
         }
         for (label in pending) out.getValue(label).commands.add(line)
       }

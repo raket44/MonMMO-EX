@@ -144,7 +144,7 @@ constructor(
               mapId = map.mapId.toInt() and 0xff,
               x = x,
               y = y,
-              movementMode = 2,
+              elevation = gbaElevationAt(map, x, y, state.elevationOr(DEFAULT_GBA_ELEVATION)),
               direction = state.facingDirection))
     }
   }

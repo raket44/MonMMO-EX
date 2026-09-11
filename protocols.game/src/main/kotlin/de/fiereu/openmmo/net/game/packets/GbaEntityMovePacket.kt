@@ -14,7 +14,12 @@ data class GbaEntityMovePacket(
     val mapId: Int,
     val x: Int,
     val y: Int,
-    val movementMode: Int = 2,
+    /**
+     * The ELEVATION the client gives the entity (f/pC: opcode 0xEA's flag bit 8 makes this byte
+     * Wi1.RW1, the tile elevation). FireRed water is 1, ordinary ground 3; a surfer snapped to 2
+     * cannot step onto elevation-1 water again (the post-battle "stuck on the water" bug).
+     */
+    val elevation: Int = 3,
     val direction: Direction,
 )
 
@@ -27,8 +32,8 @@ object GbaEntityMovePacketCodec : PacketCodec<GbaEntityMovePacket>() {
     val mapId = field(U8) { it.mapId }
     val x = field(U8) { it.x }
     val y = field(U8) { it.y }
-    val movementMode = field(U8) { it.movementMode }
+    val elevation = field(U8) { it.elevation }
     val direction = field(DirectionCodec) { it.direction }
-    return GbaEntityMovePacket(entityId, bankId, mapId, x, y, movementMode, direction)
+    return GbaEntityMovePacket(entityId, bankId, mapId, x, y, elevation, direction)
   }
 }

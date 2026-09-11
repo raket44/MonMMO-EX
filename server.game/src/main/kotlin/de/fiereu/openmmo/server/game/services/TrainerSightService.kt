@@ -76,7 +76,7 @@ constructor(
             mapId = map.mapId.toInt() and 0xff,
             x = playerX,
             y = playerY,
-            movementMode = 2,
+            elevation = gbaElevationAt(map, playerX, playerY, state.elevationOr(DEFAULT_GBA_ELEVATION)),
             direction = state.facingDirection))
     launchApproach(ctx, state, map, spotter)
     return true

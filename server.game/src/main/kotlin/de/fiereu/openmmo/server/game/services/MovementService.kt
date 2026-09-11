@@ -43,6 +43,22 @@ private const val MAX_SPIN_STEPS = 64
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
 
+/** FireRed's ordinary ground elevation, the fallback when a tile's own is the 0 wildcard. */
+internal const val DEFAULT_GBA_ELEVATION = 3
+
+/**
+ * The elevation a position packet must carry for (x, y): the tile's own from its block word
+ * (Tile2D.collision keeps the GBA upper byte: collision bits 0-1, elevation + 1 in bits 2-5), or
+ * [fallback] where the tile says 0 (bridges, transitions - the cartridge keeps the previous one).
+ */
+internal fun gbaElevationAt(map: MapDef, x: Int, y: Int, fallback: Int): Int {
+  val tile = map.tileAt(x, y) ?: return fallback
+  val elevation = ((tile.collision.toInt() and 0xFF) shr 2) - 1
+  return if (elevation > 0) elevation else fallback
+}
+
+internal fun PlayerState.elevationOr(default: Int): Int = if (elevation > 0) elevation else default
+
 /** After a muted door step: past the client's door open + walk-in (~750 ms), so the second un-fade lands last. */
 private const val DOOR_UNFADE_RETRY_MS = 900L
 
@@ -550,6 +566,7 @@ constructor(
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
     state.x = toX.toShort()
     state.y = toY.toShort()
+    state.elevation = gbaElevationAt(currentMap, toX, toY, state.elevationOr(DEFAULT_GBA_ELEVATION))
     rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
     if (startSpin(ctx, charId, state, currentMap, toX, toY)) return
@@ -619,7 +636,8 @@ constructor(
       y: Int,
       direction: Direction,
   ) {
-    ctx.send(gbaMovePacket(charId, map, x, y, direction))
+    val state = ctx.attributes[PLAYER_STATE]
+    ctx.send(gbaMovePacket(charId, map, x, y, direction, state?.elevationOr(DEFAULT_GBA_ELEVATION) ?: DEFAULT_GBA_ELEVATION))
   }
 
   private fun gbaMovePacket(
@@ -628,6 +646,7 @@ constructor(
       x: Int,
       y: Int,
       direction: Direction,
+      fallbackElevation: Int = DEFAULT_GBA_ELEVATION,
   ): GbaEntityMovePacket =
       GbaEntityMovePacket(
           entityId = charId,
@@ -635,7 +654,7 @@ constructor(
           mapId = map.mapId.toInt() and 0xff,
           x = x,
           y = y,
-          movementMode = 2,
+          elevation = gbaElevationAt(map, x, y, fallbackElevation),
           direction = direction,
       )
 

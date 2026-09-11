@@ -9,8 +9,8 @@ import javax.inject.Singleton
 @Singleton
 class LinkProbeCommand @Inject constructor(private val chatLinks: ChatLinkService) : ChatCommand {
   override val name = "linkprobe"
-  override val usage = "/linkprobe <0-5> (0 = shared-view container + 0x27, the real path)"
-  override val description = "chooses the reply variant for chat monster-link clicks (0 shared view, 1 GTL, 2 event, 3 rental, 5 record book)"
+  override val usage = "/linkprobe <0-5> (0 = 0xB1 summary, the real path)"
+  override val description = "chooses the reply variant for chat monster-link clicks (0 summary window 0xB1, 1 GTL, 2 event, 3 rental, 4 shared-view box, 5 record book)"
   override val permission = CharacterPermissions.DEVELOPER
 
   override suspend fun run(ctx: CommandContext) {

@@ -130,6 +130,7 @@ constructor(
     private val flyService: de.fiereu.openmmo.server.game.services.FlyService,
     private val encounterTracker: de.fiereu.openmmo.server.game.services.EncounterTrackerService,
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
+    private val chatLinkService: de.fiereu.openmmo.server.game.services.ChatLinkService,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -150,6 +151,7 @@ constructor(
     onSuspend<DialogActionResponsePacket> { event -> dialogService.onInteractive(event) }
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }
     on<de.fiereu.openmmo.net.game.packets.EncounterTrackerPinPacket> { event -> encounterTracker.onPin(event) }
+    onSuspend<de.fiereu.openmmo.net.game.packets.ChatLinkInspectRequestPacket> { event -> chatLinkService.onInspect(event) }
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
 

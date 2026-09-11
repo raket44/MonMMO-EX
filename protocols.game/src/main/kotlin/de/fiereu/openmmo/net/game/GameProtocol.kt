@@ -154,7 +154,7 @@ object GameProtocol : Protocol() {
     c2s<EntityInteractRequestPacket>(0x2Du, EntityInteractRequestPacketCodec)
     s2c<MapLayoutSwitchPacket>(0x2Du, MapLayoutSwitchPacketCodec)
 
-    c2s<SendDirectMessagePacket>(0x2Eu, SendDirectMessagePacketCodec)
+    c2s<ChatLinkInspectRequestPacket>(0x2Eu, ChatLinkInspectRequestPacketCodec)
     s2c<EntityRenamePacket>(0x2Eu, EntityRenamePacketCodec)
 
     c2s<DialogResponsePacket>(0x2Fu, DialogResponsePacketCodec)

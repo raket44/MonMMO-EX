@@ -25,21 +25,29 @@ private val log = KotlinLogging.logger {}
 @Singleton
 class EncounterTrackerService @Inject constructor(private val characterStore: CharacterStore) {
 
-  /** A wild encounter on the field: one monster, no alpha. */
-  fun onWildEncounter(session: SessionContext, charId: Long, dexId: Int, type: Int = TYPE_WILD, alpha: Boolean = false) {
+  /** A wild encounter: one monster, no alpha. */
+  fun onWildEncounter(session: SessionContext, charId: Long, dexId: Int, type: Int = TYPE_WILD) =
+      onEncounter(session, charId, listOf(dexId), type)
+
+  /** An encounter of [type] with these monsters (a Sweet Scent horde is several); every kind the type maps to counts each one. */
+  fun onEncounter(session: SessionContext, charId: Long, dexIds: List<Int>, type: Int, alpha: Boolean = false) {
+    if (dexIds.isEmpty()) return
     // Rows are keyed by the client's species id (the pin packet answers with it).
-    val species = de.fiereu.openmmo.common.clientSpeciesId(dexId)
+    val species = dexIds.map { de.fiereu.openmmo.common.clientSpeciesId(it) }
     val kinds = kindsFor(type, alpha)
     val now = (System.currentTimeMillis() / 1000L).toInt()
     for (kind in kinds) {
-      bump(charId, key(kind, "total"))
-      bump(charId, key(kind, "all"))
-      bump(charId, key(kind, species, "run"))
-      bump(charId, key(kind, species, "all"))
-      characterStore.setStoryVar(charId, key(kind, species, "last"), now)
+      bump(charId, key(kind, "total"), species.size)
+      bump(charId, key(kind, "all"), species.size)
+      for (s in species) {
+        bump(charId, key(kind, s, "run"))
+        bump(charId, key(kind, s, "all"))
+        characterStore.setStoryVar(charId, key(kind, s, "last"), now)
+      }
     }
     characterStore.flushCharacterAsync(charId)
-    session.send(EncounterTrackerUpdatePacket(type.toByte(), listOf(EncounterTrackerHit(species.toShort(), alpha)), 1))
+    session.send(EncounterTrackerUpdatePacket(type.toByte(), species.map { EncounterTrackerHit(it.toShort(), alpha) }, 1))
+    log.info { "Encounter tracker: char=$charId type=$type species=$species" }
   }
 
   /**
@@ -88,9 +96,9 @@ class EncounterTrackerService @Inject constructor(private val characterStore: Ch
     log.info { "Encounter tracker: char=$charId kind=${p.kind} species=${p.species} pinned=${p.pinned}" }
   }
 
-  private fun bump(charId: Long, key: String) {
+  private fun bump(charId: Long, key: String, by: Int = 1) {
     val current = characterStore.getCharacter(charId)?.storyVars?.get(key) ?: 0
-    characterStore.setStoryVar(charId, key, current + 1)
+    characterStore.setStoryVar(charId, key, current + by)
   }
 
   companion object {

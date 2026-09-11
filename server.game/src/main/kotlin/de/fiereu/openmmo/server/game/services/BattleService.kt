@@ -111,6 +111,7 @@ constructor(
     private val trainerSight: javax.inject.Provider<TrainerSightService>? = null,
     private val mapManager: de.fiereu.openmmo.maps.MapManager? = null,
     private val safari: javax.inject.Provider<SafariService>? = null,
+    private val encounterTracker: EncounterTrackerService? = null,
 ) {
 
   private val pokeBallItemId: Short by lazy { items.idOf(Items.POKE_BALL).toShort() }
@@ -367,7 +368,8 @@ constructor(
                 escapeFactor = (def.safariZoneFleeRate * 100 / 1275).coerceAtLeast(2),
             )
         else null
-    createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints)
+    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints)
+    if (battle != null && charId != null) encounterTracker?.onWildEncounter(session, charId, dexId)
   }
 
   /** Runs a story battle and waits for its scene. */
@@ -434,12 +436,20 @@ constructor(
   }
 
   /** A horde: several wild monsters on the opposing field at once (Sweet Scent). */
-  fun startHordeBattle(session: SessionContext, specs: List<OpponentSpec>): BattleInstance? =
-      createBattle(session, specs, catchable = true, escapable = true)
+  fun startHordeBattle(session: SessionContext, specs: List<OpponentSpec>): BattleInstance? {
+    val battle = createBattle(session, specs, catchable = true, escapable = true)
+    // Hordes are Sweet Scent's: the tracker's "Wild Sweet Scent" kind, one hit per monster.
+    val charId = session.attributes[PLAYER_STATE]?.characterId
+    if (battle != null && charId != null) {
+      encounterTracker?.onEncounter(session, charId, specs.map { it.dexId }, EncounterTrackerService.TYPE_SWEET_SCENT)
+    }
+    return battle
+  }
 
   /** A scripted wild battle (setwildbattle/dowildbattle: legendaries, Snorlax) awaited by the script. */
   suspend fun startScriptedWildBattle(session: SessionContext, dexId: Int, level: Int, catchable: Boolean = true): BattleResult {
     val battle = createWildBattle(session, dexId, level, catchable = catchable, escapable = true) ?: return BattleResult.FAILED
+    session.attributes[PLAYER_STATE]?.characterId?.let { encounterTracker?.onWildEncounter(session, it, dexId) }
     return battle.completion.await()
   }
 

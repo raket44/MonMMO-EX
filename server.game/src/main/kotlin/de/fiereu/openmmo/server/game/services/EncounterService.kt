@@ -43,7 +43,6 @@ constructor(
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
     private val items: de.fiereu.openmmo.items.ItemRegistry,
     private val ndsLand: NdsLand = NdsLand(),
-    private val tracker: EncounterTrackerService? = null,
 ) {
 
   private val random: Random = Random.Default
@@ -105,7 +104,6 @@ constructor(
             "species ${slot.dexId} level $level"
       }
       freeze(session, charId, map, x, y)
-      tracker?.onWildEncounter(session, charId, slot.dexId)
       battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
       return
     }
@@ -124,7 +122,6 @@ constructor(
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
     freeze(session, charId, map, x, y)
-    tracker?.onWildEncounter(session, charId, slot.speciesId)
     battleService.startWildBattle(session, slot.speciesId, level, abilities.hints(lead, slot.speciesId, random))
   }
 
@@ -212,7 +209,6 @@ constructor(
     if (repelBlocks(charId, lead, level)) return
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
-    tracker?.onWildEncounter(session, charId, slot.dexId)
     battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
   }
 

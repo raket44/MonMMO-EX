@@ -114,7 +114,7 @@ constructor(
    * script wrote the vars they read. The decomp runs that script before objects load; here the
    * script runs after the spawn, so these npcs are corrected in place.
    */
-  fun refreshDynamicNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+  fun refreshDynamicNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, forceEntities: Set<Int> = emptySet()) {
     val map = mapManager.getMap(regionId, bankId, mapId) ?: return
     val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
     val storyFlags = stored?.storyFlags.orEmpty()
@@ -130,7 +130,7 @@ constructor(
       }
       val dynamicGfx = npc.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3
       val hasOverride = xyOverrideKey(regionId, bankId, mapId, npc.entityIdx) in storyVars
-      if (!dynamicGfx && !hasOverride) continue
+      if (!dynamicGfx && !hasOverride && npc.entityIdx !in forceEntities) continue
       val resolved =
           resolveDynamicGraphics(
               ctx,

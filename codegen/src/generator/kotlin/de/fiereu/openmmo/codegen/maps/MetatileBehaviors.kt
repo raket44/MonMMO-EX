@@ -131,6 +131,7 @@ private constructor(
           "MB_DOWN_LEFT_STAIR_WARP" -> TileBehavior.STAIR_WARP_WEST
           // A hole: the player falls a floor, and a pushed boulder falls through to the floor below.
           "MB_FALL_WARP" -> TileBehavior.FALL_WARP
+          "MB_STRENGTH_BUTTON" -> TileBehavior.STRENGTH_BUTTON
           "MB_NORTH_ARROW_WARP" -> TileBehavior.NORTH_ARROW_WARP
           "MB_SOUTH_ARROW_WARP",
           "MB_WATER_SOUTH_ARROW_WARP" -> TileBehavior.SOUTH_ARROW_WARP

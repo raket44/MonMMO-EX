@@ -36,6 +36,10 @@ class ScriptSupportRegressionTest :
                 "ThreeIsland_DunsparceTunnel_OnTransition",
                 "SeafoamIslands_B3F_OnTransition",
                 "SeafoamIslands_B4F_OnTransition",
+                "VictoryRoad_1F_EventScript_FloorSwitch",
+                "VictoryRoad_2F_EventScript_FloorSwitch1",
+                "VictoryRoad_2F_EventScript_FloorSwitch2",
+                "VictoryRoad_3F_EventScript_FloorSwitch",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

@@ -748,6 +748,15 @@ constructor(
       characterStore.flushCharacterAsync(charId)
       log.info { "Strength: boulder ${boulder.entityIdx} fell through the hole at ($beyondX, $beyondY); revealed ${boulder.revealFlag.ifEmpty { "nothing" }}" }
     }
+    // HandleBoulderActivateVictoryRoadSwitch: a boulder landing on a floor switch runs the coord
+    // event at that tile whatever its var says - Victory Road arms the switches with the 99
+    // sentinel so the player walking over them never trips them, only a boulder does.
+    if (map.tileAt(beyondX, beyondY)?.behavior == TileBehavior.STRENGTH_BUTTON) {
+      map.coordScripts.filter { it.x == beyondX && it.y == beyondY }.forEach {
+        log.info { "Strength: boulder ${boulder.entityIdx} pressed the switch at ($beyondX, $beyondY): ${it.script}" }
+        runFieldScript(ctx, state, it.script)
+      }
+    }
     return true
   }
 

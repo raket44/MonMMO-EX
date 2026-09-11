@@ -42,8 +42,15 @@ constructor(
     // Cerulean policeman stay in front of the door after the S.S. Ticket, and cut trees cut.
     state.tileOverrides.clear()
     if (charId != null) applyFlashState(session, charId, map)
-    if (charId != null && resetMapLocalState(charId, map)) {
-      npcService.refreshDynamicNpcs(session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+    if (charId != null) {
+      val moved = resetMapLocalState(charId, map)
+      // The npcs were spawned before this reset, at their overridden tiles; a wiped override no
+      // longer marks them, so name them outright or a pushed Strength boulder stays where it was
+      // left on every later visit (Victory Road, 2026-09-11).
+      if (moved != null) {
+        npcService.refreshDynamicNpcs(
+            session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt(), forceEntities = moved)
+      }
     }
     if (charId != null && state.arrivedByFall) {
       state.arrivedByFall = false
@@ -119,14 +126,19 @@ constructor(
     }
   }
 
-  /** Clears this map's object placements and every temporary flag; true when anything was set. */
-  private fun resetMapLocalState(charId: Long, map: MapDef): Boolean {
-    val stored = characterStore.getCharacter(charId) ?: return false
+  /**
+   * Clears this map's object placements and every temporary flag. Null when nothing was set, else
+   * the entity indices whose placement was cleared (possibly empty).
+   */
+  private fun resetMapLocalState(charId: Long, map: MapDef): Set<Int>? {
+    val stored = characterStore.getCharacter(charId) ?: return null
     val prefix = npcService.xyOverridePrefix(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
     val movementPrefix = npcService.movementOverridePrefix(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
     var changed = false
+    val moved = mutableSetOf<Int>()
     stored.storyVars.keys.filter { it.startsWith(prefix) || it.startsWith(movementPrefix) }.forEach {
       characterStore.setStoryVar(charId, it, 0)
+      if (it.startsWith(prefix)) it.removePrefix(prefix).toIntOrNull()?.let(moved::add)
       changed = true
     }
     stored.storyFlags.filter { it.contains("/FLAG_TEMP_") }.forEach {
@@ -139,7 +151,7 @@ constructor(
       characterStore.setStoryVar(charId, it, 0)
       changed = true
     }
-    return changed
+    return if (changed) moved else null
   }
 
   companion object {

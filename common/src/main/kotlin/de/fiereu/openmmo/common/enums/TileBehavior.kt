@@ -40,7 +40,9 @@ enum class TileBehavior {
   /** MB_STOP_SPINNING: the spin ends on this tile. */
   STOP_SPINNING,
   /** MB_FALL_WARP: a hole. The player drops a floor; a Strength boulder pushed onto it falls through (Seafoam Islands). */
-  FALL_WARP;
+  FALL_WARP,
+  /** MB_STRENGTH_BUTTON: Victory Road's floor switch - a Strength boulder pushed onto it runs the tile's script. */
+  STRENGTH_BUTTON;
 
   /** The direction a spin tile sends the player, null for any other tile. */
   val spinDirection: Direction?

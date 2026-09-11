@@ -58,7 +58,7 @@ object GameProtocol : Protocol() {
     c2s<EvolutionPromptResponsePacket>(0x0Bu, EvolutionPromptResponsePacketCodec)
     s2c<WorldFlagSetPacket>(0x0Bu, WorldFlagSetPacketCodec)
 
-    c2s<BattlePartySwitchPacket>(0x0Cu, BattlePartySwitchPacketCodec)
+    c2s<ReleasePokemonPacket>(0x0Cu, ReleasePokemonPacketCodec)
     s2c<LocalCharacterDeltaPacket>(0x0Cu, LocalCharacterDeltaPacketCodec)
 
     bidi<DialogDataPacket>(0x0Du, DialogDataPacketCodec)

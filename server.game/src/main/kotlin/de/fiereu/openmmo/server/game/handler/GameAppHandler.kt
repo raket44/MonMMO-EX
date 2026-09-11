@@ -48,7 +48,7 @@ import de.fiereu.openmmo.net.game.packets.battle.BattleCancelRequestPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleChatMessagePacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleLeavePacket
 import de.fiereu.openmmo.net.game.packets.battle.BattlePartySlotSelectPacket
-import de.fiereu.openmmo.net.game.packets.battle.BattlePartySwitchPacket
+import de.fiereu.openmmo.net.game.packets.ReleasePokemonPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleReadyPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleRewardSelectPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleSequencePacket
@@ -131,6 +131,7 @@ constructor(
     private val encounterTracker: de.fiereu.openmmo.server.game.services.EncounterTrackerService,
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
     private val chatLinkService: de.fiereu.openmmo.server.game.services.ChatLinkService,
+    private val releaseService: de.fiereu.openmmo.server.game.services.ReleaseService,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -216,7 +217,7 @@ constructor(
     }
 
     onSuspend<MoveLearnReplyPacket> { event -> battleService.onMoveLearnReply(event) }
-    on<BattlePartySwitchPacket> { event -> battleService.onBattlePacket(event) }
+    onSuspend<ReleasePokemonPacket> { event -> releaseService.onRelease(event) }
     on<CosmeticSlotApplyPacket> { event -> appearanceService.onSlotApply(event) }
     onSuspend<BattleActionSelectPacket> { event -> battleService.onBattleAction(event) }
     on<BattleLeavePacket> { event -> battleService.onBattlePacket(event) }

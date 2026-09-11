@@ -15,6 +15,7 @@ import de.fiereu.openmmo.moves.MoveRegistry
 import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.MapLoadedAckPacket
 import de.fiereu.openmmo.net.game.packets.SocialListEntryAddPacket
+import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleActionSelectPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.openmmo.net.game.packets.battle.BattleListEventDetail
@@ -956,9 +957,16 @@ constructor(
                 caughtAt = LocalDateTime.now(),
             )
     log.info { "Caught wild ${battle.opponentMon().species.name} for char=${battle.charId}" }
-    // The caught monster is sent as a full 148-byte record on opcode 0x14 before the ball-throw
-    // event, so the client can resolve the monster when the throw lands.
-    battle.session.send(SocialListEntryAddPacket(caught))
+    // The caught monster goes out as a full record before the ball-throw event, so the client can
+    // resolve it by (container, slot) when the throw lands (f/Am). The 0x14 add (f/LF0) files a
+    // party monster at once but defers a PC one until the battle queue drains, which is after the
+    // throw resolves, so a boxed catch is delivered through the container packet without the
+    // change flag instead: f/yT0 adds it to the existing PC container immediately.
+    if (partyFull) {
+      battle.session.send(PokemonContainerPacket(PokemonContainer.PC, hasChange = false, delete = false, pokemon = listOf(caught)))
+    } else {
+      battle.session.send(SocialListEntryAddPacket(caught))
+    }
     // The delta waits for the overworld (BattleInstance.acquiredDeltas): sent now it spoils the catch.
     battle.acquiredDeltas += acquiredMonsterDelta(caught, battle.opponentMon().species)
     // "Player threw a Poke Ball" event.
@@ -967,7 +975,9 @@ constructor(
             kind = 0,
             value = ballItemId.toShort(),
             subKind = 4,
-            detail = BattleListEventDetail(listType = 1, value = 1),
+            // f/Am reads this as (container byte, slot): it shows the "transferred to Box N" line
+            // for a PC catch and opens the caught monster's summary from that slot.
+            detail = BattleListEventDetail(listType = container.ordinal.toByte(), value = nextSlot),
         ),
     )
     if (!characterStore.addPokemon(battle.charId, caught)) {

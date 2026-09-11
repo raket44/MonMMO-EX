@@ -48,12 +48,13 @@ internal const val DEFAULT_GBA_ELEVATION = 3
 
 /**
  * The elevation a position packet must carry for (x, y): the tile's own from its block word
- * (Tile2D.collision keeps the GBA upper byte: collision bits 0-1, elevation + 1 in bits 2-5), or
+ * (Tile2D.collision keeps the GBA upper byte: collision bits 0-1, elevation in bits 2-5), or
  * [fallback] where the tile says 0 (bridges, transitions - the cartridge keeps the previous one).
  */
 internal fun gbaElevationAt(map: MapDef, x: Int, y: Int, fallback: Int): Int {
   val tile = map.tileAt(x, y) ?: return fallback
-  val elevation = ((tile.collision.toInt() and 0xFF) shr 2) - 1
+  // Probed on Route 19: water (elevation 1) stores 4, ground (elevation 3) stores 12 - no +1.
+  val elevation = (tile.collision.toInt() and 0xFF) shr 2
   return if (elevation > 0) elevation else fallback
 }
 

@@ -191,11 +191,11 @@ class ScriptSupportAnalyzer(
         when (instruction.command) {
           in InterpreterSupport.NOOP_COMMANDS -> true
           in InterpreterSupport.ITEM_COMMANDS -> args.size in 1..2
-          "delay",
-          "special",
           "fadescreen",
           "fadescreenswapbuffers" -> args.size == 1 && args[0] is IntArg
           "fadescreenspeed" -> args.size == 2 && args[0] is IntArg
+          "delay",
+          "special",
           "removeobject",
           "addobject" -> args.size == 1
           "random" -> args.size == 1

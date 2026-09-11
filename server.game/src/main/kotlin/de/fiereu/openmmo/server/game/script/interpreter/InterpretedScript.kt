@@ -522,6 +522,8 @@ class InterpretedScript(
                     "bufferpartymonnick" -> ctx.partyNickname(value(ctx, instruction.arg(1)))
                     "buffermovename" -> ctx.moveName(value(ctx, instruction.arg(1)))
                     "bufferspeciesname" -> ctx.speciesName(value(ctx, instruction.arg(1)))
+                    // STDSTRING_* (badge names for the Route 23 guards, pockets, contest stats).
+                    "bufferstdstring" -> InterpreterSupport.STD_STRINGS.getOrNull(value(ctx, instruction.arg(1)))
                     // A named item (ITEM_DOME_FOSSIL); an item held in a var is a DS convention.
                     "bufferitemname" ->
                         (instruction.arg(1) as? SymbolArg)?.let { ctx.resolveItem(it.token)?.name }

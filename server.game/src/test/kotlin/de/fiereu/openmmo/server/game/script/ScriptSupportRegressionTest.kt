@@ -30,6 +30,12 @@ class ScriptSupportRegressionTest :
                 "OneIsland_PokemonCenter_1F_EventScript_Celio",
                 "OneIsland_PokemonCenter_1F_EventScript_MeetCelioScene",
                 "ThreeIsland_BerryForest_EventScript_Lostelle",
+                "Route23_EventScript_CascadeBadgeGuardTrigger",
+                "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger",
+                "ThreeIsland_BerryForest_OnTransition",
+                "ThreeIsland_DunsparceTunnel_OnTransition",
+                "SeafoamIslands_B3F_OnTransition",
+                "SeafoamIslands_B4F_OnTransition",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

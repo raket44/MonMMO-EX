@@ -33,6 +33,12 @@ internal object InterpreterSupport {
           "incrementgamestat",
           "dotimebasedevents",
           "setrespawn",
+          // The Dig / Escape Rope exit: neither is modelled, so the cave's escape target is not kept.
+          "setescapewarp",
+          // A whole-layout swap (dug-out tunnel, Seafoam with the current stopped): the client's
+          // footer switch (LayoutVariants) is the real implementation; until a variant is mapped
+          // the map keeps its default layout and the rest of the entry script still runs.
+          "setmaplayoutindex",
           "turnobject",
           "famechecker",
           // Seeds the gym-statue "trainers defeated" bookkeeping (setvar VAR_0x8008 + call).
@@ -170,6 +176,15 @@ internal object InterpreterSupport {
               .associate { (index, name) -> "TUTOR_MOVE_$name" to index }
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
+
+  /** src/script_menu.c sStdStrings, by STDSTRING_* id (include/constants/menu.h) - bufferstdstring's texts. */
+  val STD_STRINGS: List<String> =
+      listOf(
+          "COOL", "BEAUTY", "CUTE", "SMART", "TOUGH", "COOL", "BEAUTY", "CUTE", "SMART", "TOUGH",
+          "ITEMS", "KEY ITEMS", "POKé BALLS", "TMs & HMs", "BERRIES",
+          "BOULDERBADGE", "CASCADEBADGE", "THUNDERBADGE", "RAINBOWBADGE", "SOULBADGE", "MARSHBADGE", "VOLCANOBADGE", "EARTHBADGE",
+          "COINS", "ITEMS POCKET", "KEY ITEMS POCKET", "POKé BALLS POCKET", "TM CASE", "BERRY POUCH",
+      )
 
   /**
    * src/seagallop.c sSeagallopSpawnTable, by SEAGALLOP_* id: where the ferry ride ends (map source

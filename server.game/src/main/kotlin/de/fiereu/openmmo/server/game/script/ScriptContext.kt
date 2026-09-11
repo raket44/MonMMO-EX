@@ -58,6 +58,7 @@ internal constructor(
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
     private val tutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
     private val safari: de.fiereu.openmmo.server.game.services.SafariService? = null,
+    private val mapScripts: de.fiereu.openmmo.server.game.services.MapScriptService? = null,
 ) {
   private val characterId: Long?
     get() = state.characterId
@@ -1057,9 +1058,15 @@ internal constructor(
           ),
       )
       val destination = maps?.getMap(regionId, bankId, mapId) ?: return
-      val scripts = entryScripts ?: return
       // This coroutine owns the destination's entry scripts; the arrival's own player requests
-      // must not run a second copy.
+      // must not run a second copy. The full arrival (temp flags/vars wiped, placements reset,
+      // then ON_TRANSITION/ON_LOAD, the frame script, the landing trigger) runs here.
+      val arrival = mapScripts
+      if (arrival != null) {
+        arrival.onScriptedArrival(this, destination)
+        return
+      }
+      val scripts = entryScripts ?: return
       state.entryScriptsMapKey =
           de.fiereu.openmmo.server.game.services.MapScriptService.entryScriptsKey(destination)
       scripts.onEntry(state, destination).forEach { it.run(this) }

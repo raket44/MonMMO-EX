@@ -76,6 +76,10 @@
 0;SOUTH_ARROW_WARP;STAND;DOWN;STEP
 0;EAST_ARROW_WARP;STAND;RIGHT;STEP
 0;WEST_ARROW_WARP;STAND;LEFT;STEP
+# The Champion's Room entrance (1:79) is an arrow strip: its frame script walks the player 10 tiles
+# up from the landing tile, so the arrival must REST there (the cartridge steps off doors and
+# directional stairs only, field_fadetransition.c). The step put the player on the rival (2026-09-11).
+0;1;79;6;19;STAND;DOWN;REST
 
 # ---- Hoenn (1) ----
 1;DOOR;STEP;UP;STEP

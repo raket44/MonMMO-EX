@@ -55,6 +55,8 @@ constructor(
     private val banners: de.fiereu.openmmo.server.game.services.FieldMoveBanners? = null,
     private val moveTutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
     private val safariService: de.fiereu.openmmo.server.game.services.SafariService? = null,
+    // A Provider: MapScriptService itself injects this runner.
+    private val mapScripts: javax.inject.Provider<de.fiereu.openmmo.server.game.services.MapScriptService>? = null,
 ) {
   fun run(session: SessionContext, state: PlayerState, script: Script, entityId: Long) =
       runAll(session, state, listOf(script), entityId)
@@ -125,6 +127,7 @@ constructor(
             banners,
             moveTutor,
             safariService,
+            mapScripts?.get(),
         )
     scope.launch {
       var finished = false

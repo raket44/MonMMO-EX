@@ -36,6 +36,28 @@ constructor(
     val arrivalKey = entryScriptsKey(map)
     if (state.entryScriptsMapKey == arrivalKey) return
     state.entryScriptsMapKey = arrivalKey
+    arrive(session, state, map)
+    val sequence = entrySequence(session, state, map) ?: return
+    scriptRunner.run(session, state, sequence, entityId = -1)
+  }
+
+  /**
+   * A script's own `warp` (the Champion's Room into the Hall of Fame): the client's arrival
+   * request finds the warping script still running and must not start a second one, so the
+   * arrival's bookkeeping and entry scripts run here, on the warping script's coroutine. Without
+   * the bookkeeping VAR_TEMP_1 stayed at the 1 the Champion's Room set, the Hall of Fame's frame
+   * script (VAR_TEMP_1 == 0) never ran and the player stood free at the door (2026-09-11).
+   */
+  suspend fun onScriptedArrival(ctx: de.fiereu.openmmo.server.game.script.ScriptContext, map: MapDef) {
+    val state = ctx.state
+    val session = ctx.session
+    state.entryScriptsMapKey = entryScriptsKey(map)
+    arrive(session, state, map)
+    entrySequence(session, state, map)?.run(ctx)
+  }
+
+  /** The GBA's map-load bookkeeping: temp flags and vars, object placements, flash, layout. */
+  private fun arrive(session: SessionContext, state: PlayerState, map: MapDef) {
     val charId = state.characterId
     // The GBA forgets two things on every map load, and ON_TRANSITION rewrites what still
     // applies: the FLAG_TEMP_* flags and setobjectxyperm placements. Keeping them made the
@@ -71,13 +93,18 @@ constructor(
       val flags = characterStore.getCharacter(charId)?.storyFlags ?: emptySet()
       layoutVariants?.onMapEnter(session, state) { it in flags }
     }
+  }
+
+  /** The arrival's scripts as one sequence, or null when the map has nothing to run. */
+  private fun entrySequence(session: SessionContext, state: PlayerState, map: MapDef): Script? {
+    val charId = state.characterId
     val (setup, frame) = entryScripts.onEntryPhases(state, map)
     val hasArrivalTrigger = entryScripts.hasCoordinate(map, state.x.toInt(), state.y.toInt())
     val polish = MapEntryPolish.touchFor(map)
-    if (setup.isEmpty() && frame == null && !hasArrivalTrigger && polish == null) return
+    if (setup.isEmpty() && frame == null && !hasArrivalTrigger && polish == null) return null
 
     // Entry scripts may trigger their landing coordinate.
-    val entrySequence = Script { ctx ->
+    return Script { ctx ->
       polish?.apply(ctx)
       setup.forEach { it.run(ctx) }
       // ON_TRANSITION just wrote the vars that dynamic npc sprites and positions read (the
@@ -94,7 +121,6 @@ constructor(
         entryScripts.atCoordinate(charId, map, state.x.toInt(), state.y.toInt())?.run(ctx)
       }
     }
-    scriptRunner.run(session, state, entrySequence, entityId = -1)
   }
 
   /** A DS map arrival: the header's init and frame-table scripts, once per logical arrival. */

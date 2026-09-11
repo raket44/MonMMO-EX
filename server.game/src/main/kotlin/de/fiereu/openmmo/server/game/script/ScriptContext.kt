@@ -720,7 +720,7 @@ internal constructor(
    * setmetatile: the tile the player's map shows at (x, y) becomes [metatileId] with the given
    * collision, for this player, until the map reloads (s2c 0x22). Movement reads the override.
    */
-  fun setMetatile(x: Int, y: Int, metatileId: Int, impassable: Boolean) {
+  fun setMetatile(x: Int, y: Int, metatileId: Int, impassable: Boolean, elevation: Int? = null) {
     val id = characterId ?: return
     val info = characters?.getCharacter(id)?.info ?: return
     // The block's upper byte is collision (bits 0-1) plus elevation (bits 2-5, stored +1). The
@@ -730,7 +730,11 @@ internal constructor(
     val key = (x shl 16) or (y and 0xFFFF)
     val map = maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     val existing = state.tileOverrides[key] ?: map?.tileAt(x, y)
-    val collision: Byte = (((existing?.collision?.toInt() ?: 0x10) and 0xFC) or (if (impassable) 1 else 0)).toByte()
+    // [elevation] (GBA 0..15) replaces the tile's own: the client refuses steps between different
+    // non-zero elevations before it even looks for a door, which is how a locked door stays a
+    // door on screen and still stops the player (MapEntryPolish).
+    val elevationBits = if (elevation != null) (elevation shl 2) else ((existing?.collision?.toInt() ?: 0x10) and 0xFC)
+    val collision: Byte = (elevationBits or (if (impassable) 1 else 0)).toByte()
     // Behavior is a tileset attribute of the metatile: any tile of this map built from the same
     // metatile shows it (floor over a staircase is no warp any more). A metatile the map does not
     // use anywhere keeps the tile's previous behavior, the best guess without the tileset.

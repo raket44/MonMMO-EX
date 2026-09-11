@@ -48,8 +48,6 @@ class WorldStateService @Inject constructor(
     setFlags.forEach { ctx.send(it) }
     // A Hall of Fame entry keeps the encounter counter unlocked on every later login (HallOfFame).
     if (HallOfFame.FLAG in stored.storyFlags) ctx.send(HallOfFame.encounterCounterPacket())
-    // The tracker's counter sets, every kind (the client looks kinds up by id on each update).
-    tracker?.sendState(ctx, stored)
 
     val containers =
         mapOf(

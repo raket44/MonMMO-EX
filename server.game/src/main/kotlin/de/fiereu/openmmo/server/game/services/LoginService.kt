@@ -112,6 +112,7 @@ constructor(
     private val ocarinas: OcarinaService,
     private val guildService: GuildService,
     private val linkService: LinkService,
+    private val encounterTracker: EncounterTrackerService,
 ) {
 
   suspend fun onJoinGame(event: PacketEvent<JoinPacket>) {
@@ -688,6 +689,19 @@ constructor(
     presenceService.enter(ctx)
 
     ctx.send(RenderScreenPacket(true))
+
+    // The encounter counter (HallOfFame): the login-time copy of flag 770 lands before the HUD
+    // exists and creates nothing, so it goes out again here, where the HUD is up and its refresh
+    // builds the frame (2026-09-11). The tracker's sets go first so the frame reads them.
+    characterStore.getCharacter(charId)?.let { stored ->
+      if (HallOfFame.FLAG in stored.storyFlags) {
+        if (!state.trackerStateSent) {
+          state.trackerStateSent = true
+          encounterTracker.sendState(ctx, stored)
+        }
+        ctx.send(HallOfFame.encounterCounterPacket())
+      }
+    }
 
     // An entry script may fade back out, so it runs after the fade this arrival owns.
     mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)?.let { map ->

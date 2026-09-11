@@ -71,7 +71,8 @@ class EncounterTrackerService @Inject constructor(private val characterStore: Ch
           EncounterTrackerStatePacket(
               kind = kind.toByte(),
               reset = true,
-              refresh = kind == LAST_KIND,
+              // Never a redraw here: the HUD may not exist yet (f/NA0.uv null -> the client's handler dies).
+              refresh = false,
               total = vars[key(kind, "total")] ?: 0,
               allTime = vars[key(kind, "all")] ?: 0,
               entries = entries,

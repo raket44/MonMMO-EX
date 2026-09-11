@@ -120,6 +120,8 @@ data class PlayerState(
     @field:Volatile var mountResendPending: Boolean = false,
     /** The warp just taken was a hole (MB_FALL_WARP): landing on Seafoam water starts the current ride. */
     @field:Volatile var arrivedByFall: Boolean = false,
+    /** The encounter tracker's sets went out once this session (they go with the first HUD-ready arrival). */
+    @field:Volatile var trackerStateSent: Boolean = false,
     /**
      * The emergence step: after this arrival's LoadEntity, the server sends an EntityMove one tile
      * in this direction and the CLIENT walks it - the client's 0xE4 handler routes any entity, the

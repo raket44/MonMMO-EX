@@ -112,6 +112,14 @@ constructor(
     // A step that lands while the character is in a battle is one the client sent before the
     // battle froze it; committing it moved the player two tiles past the encounter (Route 19).
     if (encounterService.inBattle(charId)) return
+    if (state.mountResendPending) {
+      state.mountResendPending = false
+      val mount: Byte = if (state.surfing) 0x01 else if (state.riding) 0x02 else 0
+      if (mount != 0.toByte()) {
+        ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+        log.info { "First step after a battle for char=$charId: mount $mount sent again" }
+      }
+    }
     val stored = characterStore.getCharacter(charId) ?: return
     val currentMap =
         mapManager.getMap(

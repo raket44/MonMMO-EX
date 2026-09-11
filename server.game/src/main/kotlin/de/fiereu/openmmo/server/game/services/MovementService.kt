@@ -509,7 +509,7 @@ constructor(
         bonk(ctx, charId, state, msg.direction)
         return
       }
-      edgeTransition(ctx, charId, currentMap.regionId, connection, entryX.toByte(), entryY.toByte())
+      edgeTransition(ctx, charId, currentMap.regionId, connection, entryX, entryY)
       return
     }
 
@@ -1110,8 +1110,9 @@ constructor(
       charId: Long,
       regionId: Byte,
       connection: MapData.GbaConnection,
-      targetX: Byte,
-      targetY: Byte,
+      // Ints: Kindle Road is taller than 127 tiles and a Byte wrapped its y to -124 (2026-09-11).
+      targetX: Int,
+      targetY: Int,
   ) {
     val targetBank = connection.targetBank.toByte()
     val targetMap = connection.targetMap.toByte()

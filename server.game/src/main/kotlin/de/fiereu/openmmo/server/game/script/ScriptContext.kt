@@ -636,6 +636,27 @@ internal constructor(
   }
 
   /**
+   * special EnterHallOfFame: the client's own Hall of Fame screen (see [HallOfFame]) - record the
+   * entry, unlock the encounter counter, show the screen, wait for the player to close it, then
+   * wake them up in the bedroom the game started in. The ROM's hall-of-fame and credits never run.
+   */
+  suspend fun enterHallOfFame() {
+    val regionId = state.regionId
+    val id = characterId
+    if (id != null) {
+      characters?.setStoryFlag(id, de.fiereu.openmmo.server.game.services.HallOfFame.FLAG)
+      characters?.flushCharacterAsync(id)
+    }
+    session.send(de.fiereu.openmmo.server.game.services.HallOfFame.encounterCounterPacket())
+    val closed = dialog.expectAcknowledgement(session)
+    session.send(de.fiereu.openmmo.server.game.services.HallOfFame.showPacket(regionId))
+    closed.await()
+    val home = de.fiereu.openmmo.server.game.services.HallOfFame.home(regionId, female = playerGender() != 0) ?: return
+    val map = mapByName(home.mapName, regionId) ?: return
+    warp(regionId, map.bankId.toInt() and 0xFF, map.mapId.toInt() and 0xFF, home.x, home.y, home.facing)
+  }
+
+  /**
    * special ChooseMonForMoveTutor: the player picks the party member to teach the move the tutor
    * index (VAR_0x8005) names; true once it sits in a slot, false when they back out.
    */

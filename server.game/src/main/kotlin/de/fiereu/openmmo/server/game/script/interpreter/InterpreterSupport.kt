@@ -107,6 +107,8 @@ internal object InterpreterSupport {
           "HelpSystem_Disable",
           // Shows the easy-chat profile the club woman was given; no profile is ever entered here.
           "ShowEasyChatMessage",
+          // The Trainer Fan Club rating is not modelled; the game-clear bump has nothing to write.
+          "Script_UpdateTrainerFanClubGameClear",
           "HelpSystem_Enable",
           // save_location.c: GameCube-link save flags, nothing off a cartridge.
           "SetPostgameFlags",
@@ -147,6 +149,7 @@ internal object InterpreterSupport {
           "BufferBigGuyOrBigGirlString",
           "BufferSonOrDaughterString",
           "ShowEasyChatScreen",
+          "EnterHallOfFame",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",
@@ -265,6 +268,7 @@ internal object InterpreterSupport {
           "DoesPlayerPartyContainSpecies",
           "GetInGameTradeSpeciesInfo",
           "GetTradeSpecies",
+          "GetStarterSpecies",
       )
 
 

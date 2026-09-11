@@ -143,6 +143,7 @@ object PretScriptParser {
         command in defeatedBranches && index == 0 -> TrainerArg(token)
         command in defeatedBranches && index == 1 -> LabelArg(token)
         command in TRAINER_BATTLE_COMMANDS && index == 0 -> TrainerArg(token)
+        command in TRAINER_FLAG_COMMANDS && index == 0 -> TrainerArg(token)
         command in TRAINER_BATTLE_COMMANDS && index in 1..2 -> TextArg(token)
         command == "trainerbattle_single" && index == 3 -> LabelArg(token)
         // The double macros carry the NotEnoughMons text at 3 and the continuation at 4.
@@ -208,6 +209,9 @@ object PretScriptParser {
     out += current.toString().trim()
     return out.filter { it.isNotEmpty() }
   }
+
+  /** The GBA trainer-flag commands name a trainer too (the Hall of Fame resets the Champion). */
+  private val TRAINER_FLAG_COMMANDS = setOf("settrainerflag", "cleartrainerflag", "checktrainerflag")
 
   private val DOUBLE_BATTLE_COMMANDS = setOf("trainerbattle_double", "trainerbattle_rematch_double")
 

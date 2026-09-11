@@ -43,6 +43,8 @@ class WorldStateService @Inject constructor(private val dexProgress: DexProgress
           }
     }
     setFlags.forEach { ctx.send(it) }
+    // A Hall of Fame entry keeps the encounter counter unlocked on every later login (HallOfFame).
+    if (HallOfFame.FLAG in stored.storyFlags) ctx.send(HallOfFame.encounterCounterPacket())
 
     val containers =
         mapOf(

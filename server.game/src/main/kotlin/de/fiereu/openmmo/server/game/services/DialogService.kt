@@ -304,6 +304,16 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   }
 
   /**
+   * Arms the next dialog acknowledgement for a screen this service did not open itself: the
+   * client's Hall of Fame closes with the same 0x21 response a message box does (f/ln1.PX1).
+   */
+  fun expectAcknowledgement(session: SessionContext): CompletableDeferred<Unit> {
+    val advance = CompletableDeferred<Unit>()
+    session.attributes[PENDING_DIALOG] = advance
+    return advance
+  }
+
+  /**
    * The current client exposes one dialog acknowledgement, so this is also the closest available
    * representation of the GBA's separate A/B wait.
    */

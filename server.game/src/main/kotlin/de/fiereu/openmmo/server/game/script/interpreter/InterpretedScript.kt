@@ -201,6 +201,20 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
           state.pc++
         }
+        // The GBA trainer flags are the same defeated keys trainerbattle sets; the Hall of Fame
+        // clears the Champion's so the rematch is a fresh fight (EventScript_ResetEliteFour).
+        "settrainerflag",
+        "cleartrainerflag",
+        "checktrainerflag" -> {
+          val trainer = resolveTrainer(ctx, TrainerArg(instruction.arg(0).token), instruction)
+          val key = TrainerStoryState.defeated(program.storyNamespace, trainer.id)
+          when (instruction.command) {
+            "settrainerflag" -> ctx.setFlag(key)
+            "cleartrainerflag" -> ctx.clearFlag(key)
+            else -> ctx.setVar(namespaced("VAR_RESULT"), if (ctx.isFlagSet(key)) 1 else 0)
+          }
+          state.pc++
+        }
         "ds_settrainerflag",
         "ds_cleartrainerflag" -> {
           val arg = instruction.arg(0)
@@ -597,6 +611,7 @@ class InterpretedScript(
             "BufferBigGuyOrBigGirlString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "Big guy" else "Big girl")
             "BufferSonOrDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
             "CreateInGameTradePokemon" -> {}
+            "EnterHallOfFame" -> tracedWait(ctx, "hall of fame") { ctx.enterHallOfFame() }
             // The easy-chat word picker has no client screen. Answer as a backed-out picker:
             // VAR_RESULT FALSE (nothing entered) and VAR_0x8004 left non-zero so the Mystery
             // Event Club woman takes her "decided not to" line instead of the special-profile one.
@@ -695,6 +710,9 @@ class InterpretedScript(
               // src/trade_scene.c: the in-game trade NPCs of the Pokemon Lab lounge and friends.
               else if (function == "GetInGameTradeSpeciesInfo") ctx.inGameTradeInfo(ctx.getVar(namespaced("VAR_0x8004")))
               else if (function == "GetTradeSpecies") ctx.partySpecies(ctx.getVar(namespaced("VAR_0x8005")))
+              // src/field_specials.c sStarterSpecies by VAR_STARTER_MON: Bulbasaur, Squirtle, Charmander
+              // (the Champion's Room names the starter in Oak's congratulations).
+              else if (function == "GetStarterSpecies") KANTO_STARTER_DEX.getOrElse(ctx.getVar(namespaced("VAR_STARTER_MON"))) { 1 }
               else InterpreterSupport.SPECIALVAR_RESULTS[function]
                   ?: throw UnsupportedScriptCommandException(
                       program.id.stable, "specialvar $function", instruction.sourceLine)
@@ -1860,6 +1878,8 @@ class InterpretedScript(
     const val MAX_STEPS = 10_000
     const val GBA_VALUE_MASK = 0xFFFF
     const val FRAME_MILLIS = 17L
+    /** Dex ids of FireRed's starters in VAR_STARTER_MON order. */
+    private val KANTO_STARTER_DEX = listOf(1, 7, 4)
     const val KANTO_REGION = 0
     /** A cartridge screen fade: sixteen frames. */
     const val FADE_MILLIS = 16 * 17L

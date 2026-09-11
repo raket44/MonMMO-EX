@@ -272,6 +272,7 @@ class ScriptSupportAnalyzer(
           "ds_setdynamicwarp" -> args.size == 3
           "ds_dynamicwarpfloor" -> args.size == 1
           "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
+          "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args.size == 1
           "ds_checktrainerflag", "ds_trainermsg" -> args.size == 2
           "ds_trainermsgtypes", "ds_trainermsgtypes_rematch" -> args.size == 3
           "ds_martcommon" -> args.isEmpty()
@@ -372,6 +373,7 @@ class ScriptSupportAnalyzer(
           "warp" -> args.all { it is IntArg }
           "setdynamicwarp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
+          "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
           "braillemessage" -> args[0] is TextArg
@@ -593,6 +595,9 @@ class ScriptSupportAnalyzer(
             "ds_pokemart",
             "ds_countbadges",
             "ds_checktrainerflag",
+            "settrainerflag",
+            "cleartrainerflag",
+            "checktrainerflag",
             "ds_settrainerflag",
             "ds_cleartrainerflag",
             "msgbox",

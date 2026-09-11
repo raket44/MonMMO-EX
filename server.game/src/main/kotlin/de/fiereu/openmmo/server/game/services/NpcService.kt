@@ -110,7 +110,7 @@ constructor(
     }
     // The region-link ferry captain is not in the ROM; he stands in the harbour town.
     ferry.at(regionId, bankId, mapId)?.let { p ->
-      ctx.send(buildSpawnPacket(p.npc(), entityIdFor(regionId, bankId, mapId, FerryPlacements.LOCAL_ID), regionId, bankId, mapId))
+      ctx.send(buildSpawnPacket(p.npc(), entityIdFor(regionId, bankId, mapId, FerryPlacements.LOCAL_ID), regionId, bankId, mapId, look = p.look))
     }
   }
 
@@ -383,6 +383,7 @@ constructor(
       regionId: Int,
       bankId: Int,
       mapId: Int,
+      look: de.fiereu.openmmo.net.game.packets.NpcLook? = null,
   ): NpcSpawnPacket {
     val region = requireNotNull(Region.byId(regionId)) { "Unknown region id $regionId" }
     val movementId = npc.movementType.forRegion(region).id
@@ -420,6 +421,7 @@ constructor(
         facing = npc.facing.ordinal,
         unk5 = elevation,
         unk6 = 8,
+        look = look,
     )
   }
 

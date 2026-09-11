@@ -1,6 +1,15 @@
 package de.fiereu.openmmo.net.game.packets
 
 import de.fiereu.bytecodec.*
+import de.fiereu.openmmo.net.game.codecs.DefaultSkinSetCodec
+import de.fiereu.openmmo.net.game.codecs.SkinSet
+
+/**
+ * A player-model look for an npc (client f/p01 trailer bit 8192 -> f/iw1(gender, skin set)):
+ * the npc is drawn as a trainer wearing [skins] instead of a ROM sprite, which is how the
+ * client's own custom npcs (the ferry captain in his pirate outfit) are dressed.
+ */
+data class NpcLook(val gender: Byte, val skins: SkinSet)
 
 data class NpcSpawnPacket(
     val entityId: Long,
@@ -16,7 +25,12 @@ data class NpcSpawnPacket(
     val y: Int,
     val facing: Int,
     val unk5: Int,
+    /**
+     * f/p01's option bits: 1 (short+2 bytes), 2, 4 (2 bytes), 8, 16, 32, 64, 128, 256 (short),
+     * 512 (f/Prn record), 1024 (list), 2048, 4096 (float), 8192 ([look]). Only 8 and 8192 are used.
+     */
     val unk6: Int,
+    val look: NpcLook? = null,
 )
 
 object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
@@ -33,7 +47,13 @@ object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
     val y = field(U16LE) { it.y }
     val unk5 = field(U8) { it.unk5 }
     val facing = field(U8) { it.facing }
-    val unk6 = field(U16LE) { it.unk6 }
+    val flags = field(U16LE) { (it.unk6 and LOOK_BIT.inv()) or (if (it.look != null) LOOK_BIT else 0) }
+    val look =
+        if (flags and LOOK_BIT != 0) {
+          val gender = field(S8) { it.look!!.gender }
+          val skins = field(DefaultSkinSetCodec) { it.look!!.skins }
+          NpcLook(gender, skins)
+        } else null
     return NpcSpawnPacket(
         entityId,
         spriteRegionId,
@@ -47,6 +67,9 @@ object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
         y,
         facing,
         unk5,
-        unk6)
+        flags and LOOK_BIT.inv(),
+        look)
   }
+
+  private const val LOOK_BIT = 8192
 }

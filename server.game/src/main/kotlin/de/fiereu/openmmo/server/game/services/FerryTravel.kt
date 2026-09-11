@@ -2,6 +2,8 @@ package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
+import de.fiereu.openmmo.net.game.packets.ServerMessageArg
+import de.fiereu.openmmo.net.game.packets.ServerMessagePacket
 import de.fiereu.openmmo.common.dialog.DialogLine
 import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptContext
@@ -16,12 +18,10 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /**
- * The region-link ferry captain's talk (retail strings 16780100..16780108: "Ahoy there! Where
- * would you like to disembark?", the four-badge rule, "Please board the ferry and wait for
- * departure.", "Come back when you are ready."). A region the character has never been to is
- * entered at its new-game start, so its story begins; one already started lands at its harbour.
- * The lines are drawn through the ROM's bare "{STR_VAR_1}" text with the sentence buffered in,
- * so no client-string dialog path is needed.
+ * The region-link ferry captain's talk, in the client's own strings (16780100..16780108) with its
+ * own region list (registry set 10 + region): four badges here, pick a region, confirm, sail. A
+ * region with no badge yet is entered at its new-game start, so its story begins; one with a
+ * badge lands at its harbour (next to that region's captain, or the DS town's entry tile).
  */
 @Singleton
 class FerryTravel
@@ -38,24 +38,35 @@ constructor(
   private suspend fun talk(ctx: ScriptContext, stored: StoredCharacter, here: FerryPlacements.Placement) {
     val charId = stored.info.id
     val current = Region.byId(here.regionId) ?: return
-    val badges = badgeCount(stored, current)
-    if (badges < BADGES_NEEDED) {
-      say(ctx, current, "Sorry, the ferry service isn't\navailable at this time.\nYou need at least $BADGES_NEEDED badges\nto travel to a new region.")
+    if (badgeCount(stored, current) < BADGES_NEEDED) {
+      // "Sorry, the ferry service isn't available at this time. You need at least {00} badges..."
+      ctx.session.send(
+          ServerMessagePacket(
+              NEED_BADGES,
+              listOf(ServerMessageArg(0, RAW_STRING, false, 0, null, null, BADGES_NEEDED.toString(), null)),
+              showOnMap = true,
+              mode = null))
       return
     }
-    say(ctx, current, "Ahoy there!\nWhere would you like to disembark?")
-    for (dest in DESTINATIONS) {
-      if (dest == current) continue
-      val started = hasStarted(stored, dest)
-      val where = if (started) harbourName(dest) else startName(dest)
-      if (!ask(ctx, current, "Sail to ${dest.displayName.uppercase()}?\n($where)")) continue
-      say(ctx, current, "Please board the ferry and\nwait for departure.")
-      ctx.closeMessage()
-      log.info { "Ferry: char=$charId ${current.name} -> ${dest.name} (${if (started) "harbour" else "start"})" }
-      if (started) toHarbour(ctx, charId, dest) else toStart(ctx, stored, dest)
+    // "Ahoy there! Where would you like to disembark?" with the client's own region list under
+    // it: registry set 10 + current region = the other regions in the client's ROM order
+    // (f/xq1.CH0: Kanto, Johto, Hoenn, Sinnoh, Unova) followed by Cancel (f/Lx.R40).
+    val choices = MENU_ORDER.filter { it != current }
+    val pick = ctx.builtinMenu(line(WHERE_TO), REGION_MENU_SET_BASE + here.regionId)
+    val dest = choices.getOrNull(pick - 1)
+    if (dest == null) {
+      ctx.say(line(COME_BACK))
       return
     }
-    say(ctx, current, "Come back when you are ready.")
+    // "Please board the ferry and wait for departure." as the yes/no.
+    if (!ctx.askYesNo(line(BOARD))) {
+      ctx.say(line(COME_BACK))
+      return
+    }
+    ctx.closeMessage()
+    val started = badgeCount(stored, dest) > 0
+    log.info { "Ferry: char=$charId ${current.name} -> ${dest.name} (${if (started) "harbour" else "start"})" }
+    if (started) toHarbour(ctx, charId, dest) else toStart(ctx, stored, dest)
   }
 
   private suspend fun toHarbour(ctx: ScriptContext, charId: Long, dest: Region) {
@@ -102,50 +113,21 @@ constructor(
     return (1..8).count { stored.storyFlags.contains("${prefix}${it}_GET") }
   }
 
-  /** A region whose story has begun has flags under its prefix; DS regions never do. */
-  private fun hasStarted(stored: StoredCharacter, region: Region): Boolean =
-      stored.storyFlags.any { it.startsWith("${region.name.lowercase()}/") }
-
-  private fun startName(r: Region) =
-      when (r) {
-        Region.KANTO -> "PALLET TOWN"
-        Region.HOENN -> "LITTLEROOT TOWN"
-        Region.UNOVA -> "NUVEMA TOWN"
-        Region.SINNOH -> "TWINLEAF TOWN"
-        Region.JOHTO -> "NEW BARK TOWN"
-      }
-
-  private fun harbourName(r: Region) =
-      when (r) {
-        Region.KANTO -> "VERMILION CITY"
-        Region.HOENN -> "SLATEPORT CITY"
-        Region.UNOVA -> "CASTELIA CITY"
-        Region.SINNOH -> "CANALAVE CITY"
-        Region.JOHTO -> "OLIVINE CITY"
-      }
-
-  /** The ROM text that is only "{STR_VAR_1}", so [text] buffered into STR_VAR_1 is the whole box. */
-  private fun line(current: Region): DialogLine =
-      object : DialogLine {
-        override val textId = if (current == Region.HOENN) HOENN_STR_VAR_LINE else KANTO_STR_VAR_LINE
-      }
-
-  private suspend fun say(ctx: ScriptContext, current: Region, text: String) {
-    ctx.bufferText(1, text)
-    ctx.say(line(current))
-  }
-
-  private suspend fun ask(ctx: ScriptContext, current: Region, text: String): Boolean {
-    ctx.bufferText(1, text)
-    return ctx.askYesNo(line(current))
-  }
+  /** Client string ids are valid dialog text ids (one registry with the ROM texts, f/nV0.Id1). */
+  private fun line(stringId: Int): DialogLine = object : DialogLine { override val textId = stringId }
 
   private companion object {
     const val BADGES_NEEDED = 4
-    /** SevenIsland_House_Room1_Text_StrVar1_1 / SootopolisCity_MysteryEventsHouse_1F_Text_StrVar1Tie. */
-    const val KANTO_STR_VAR_LINE = 4313204
-    const val HOENN_STR_VAR_LINE = 274649488
-    val DESTINATIONS = listOf(Region.HOENN, Region.UNOVA, Region.SINNOH, Region.JOHTO, Region.KANTO)
+    /** strings_en.xml "REGION LINK FERRY" block. */
+    const val WHERE_TO = 16780100
+    const val BOARD = 16780103
+    const val COME_BACK = 16780104
+    const val NEED_BADGES = 16780108
+    const val RAW_STRING = 5
+    /** f/Lx.R40: category-10 sets 10..14 list the other regions for current region 0..4. */
+    const val REGION_MENU_SET_BASE = 10
+    /** f/xq1.CH0, the order the client lists regions in. */
+    val MENU_ORDER = listOf(Region.KANTO, Region.JOHTO, Region.HOENN, Region.SINNOH, Region.UNOVA)
     /** DS ROM headers (bank = low byte, map = high byte) of the start towns and harbours. */
     val NDS_STARTS = mapOf(Region.UNOVA to (133 to 1), Region.SINNOH to (155 to 1), Region.JOHTO to (60 to 0))
     val NDS_HARBOURS = mapOf(Region.UNOVA to (28 to 0), Region.SINNOH to (33 to 0), Region.JOHTO to (77 to 0))

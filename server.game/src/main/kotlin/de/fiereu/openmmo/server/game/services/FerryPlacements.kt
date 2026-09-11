@@ -5,6 +5,10 @@ import de.fiereu.openmmo.common.enums.MovementType
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.NpcDef
+import de.fiereu.openmmo.common.Skin
+import de.fiereu.openmmo.common.enums.SkinSlot
+import de.fiereu.openmmo.net.game.codecs.SkinSet
+import de.fiereu.openmmo.net.game.packets.NpcLook
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,8 +25,9 @@ class FerryPlacements @Inject constructor(private val mapManager: MapManager) {
       val mapName: String,
       val x: Int,
       val y: Int,
-      /** The region's own sailor sprite (FireRed 62, Emerald 49). */
+      /** The region's own sailor sprite (FireRed 62, Emerald 49); unused while [look] dresses him. */
       val graphicsId: Int,
+      val look: NpcLook = CAPTAIN,
   ) {
     fun npc(): NpcDef =
         NpcDef(
@@ -75,5 +80,24 @@ class FerryPlacements @Inject constructor(private val mapManager: MapManager) {
   companion object {
     /** Local npc id of the captain; ROM maps stay well under this. */
     const val LOCAL_ID = 250
+
+    /** The captain as a trainer model: the client's own Pirate Hat and Pirate Outfit over a bearded face. */
+    val CAPTAIN: NpcLook =
+        NpcLook(
+            gender = 0,
+            skins =
+                SkinSet(
+                    skins =
+                        listOf(
+                                Skin(SkinSlot.FOREHEAD, 0u, 0u),
+                                Skin(SkinSlot.HAT, 158u, 0u),
+                                Skin(SkinSlot.HAIR, 0u, 0u),
+                                Skin(SkinSlot.EYES, 1u, 0u),
+                                Skin(SkinSlot.FACIAL_HAIR, 3u, 0u),
+                                Skin(SkinSlot.TOP, 119u, 0u),
+                                Skin(SkinSlot.LEGGINGS, 0u, 0u),
+                                Skin(SkinSlot.FOOTWEAR, 0u, 0u),
+                            )
+                            .associateBy { it.slot }))
   }
 }

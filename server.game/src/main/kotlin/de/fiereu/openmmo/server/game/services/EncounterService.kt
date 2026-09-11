@@ -149,6 +149,9 @@ constructor(
     }
   }
 
+  /** True while the character has a battle running - steps that land then are stale. */
+  fun inBattle(charId: Long): Boolean = battleService.inBattle(charId)
+
   fun onNdsStep(session: SessionContext, charId: Long, region: Int, bank: Int, map: Int, x: Int, y: Int) {
     val type = ndsLand.typeAt(region, bank, map, x, y) ?: return
     val types =

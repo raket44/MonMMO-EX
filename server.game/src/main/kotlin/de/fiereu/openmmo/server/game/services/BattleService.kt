@@ -54,6 +54,10 @@ private val SAFARI_KINDS = setOf(ChosenAction.Kind.SAFARI_BALL, ChosenAction.Kin
 /** The bait event's toss kind whose template (200532) the launcher stages as "{00}": prints the thrower string as-is. */
 private const val BALL_LINE_TOSS_KIND = 3
 
+/** EntityTransportationPacket modes (client f.ti.J10): 0x01 surfing, 0x02 riding the bike. */
+private const val SURF_TRANSPORTATION: Byte = 0x01
+private const val RIDING_TRANSPORTATION: Byte = 0x02
+
 /** Kanto and Hoenn: the regions whose safari packet strings are the launcher's own (the DS regions read their ROM). */
 private val GBA_REGIONS = setOf(0, 1)
 
@@ -329,6 +333,15 @@ constructor(
       event.session.send(itemStackUpdatePacket(itemId, characterStore.getCharacter(charId)?.items?.get(itemId) ?: 0))
     }
     afterWildBattle(event.session, battle, result)
+    // The client comes back from a battle on foot: a mount held before it (surfing, the bike)
+    // is told again, or a surfer stands on the water unable to move (Route 19, 2026-09-11, the
+    // seam ping-pong that followed). A whiteout respawn owns the player from here instead.
+    if (!(result == BattleResult.DEFEAT && battle.whiteoutOnDefeat)) {
+      event.session.attributes[PLAYER_STATE]?.let { state ->
+        val mount: Byte? = if (state.surfing) SURF_TRANSPORTATION else if (state.riding) RIDING_TRANSPORTATION else null
+        if (mount != null) event.session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+      }
+    }
     // A scripted loss without whiteout (early rival) is the script's to handle.
     return if (result == BattleResult.DEFEAT && !battle.whiteoutOnDefeat) null else result
   }

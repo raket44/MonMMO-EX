@@ -109,6 +109,9 @@ constructor(
           " locked=${state.blocksPlayerInput} script=${state.scriptRunning}"
     }
 
+    // A step that lands while the character is in a battle is one the client sent before the
+    // battle froze it; committing it moved the player two tiles past the encounter (Route 19).
+    if (encounterService.inBattle(charId)) return
     val stored = characterStore.getCharacter(charId) ?: return
     val currentMap =
         mapManager.getMap(

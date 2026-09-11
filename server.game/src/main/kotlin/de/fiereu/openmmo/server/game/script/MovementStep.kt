@@ -100,6 +100,11 @@ enum class MovementStep(
           "walk_slow_up" -> WALK_UP
           "walk_slow_left" -> WALK_LEFT
           "walk_slow_right" -> WALK_RIGHT
+          // The ferry's crawl: slower walks play at normal speed too.
+          "walk_slower_down" -> WALK_DOWN
+          "walk_slower_up" -> WALK_UP
+          "walk_slower_left" -> WALK_LEFT
+          "walk_slower_right" -> WALK_RIGHT
           "walk_in_place_fast_left" -> WALK_IN_PLACE_FAST_LEFT
           "walk_in_place_fast_right" -> WALK_IN_PLACE_FAST_RIGHT
           "walk_in_place_down" -> WALK_IN_PLACE_FASTER_DOWN

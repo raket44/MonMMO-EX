@@ -24,6 +24,8 @@ class ScriptSupportRegressionTest :
                 "SilphCo_11F_EventScript_BattleGiovanni",
                 "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton",
                 "CinnabarIsland_EventScript_GymDoorLocked",
+                "CinnabarIsland_EventScript_BillScene",
+                "CinnabarIsland_EventScript_SailToOneIsland",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

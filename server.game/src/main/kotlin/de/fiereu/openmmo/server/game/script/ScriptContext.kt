@@ -643,6 +643,11 @@ internal constructor(
   suspend fun enterHallOfFame() {
     val regionId = state.regionId
     val id = characterId
+    // post_battle_event_funcs.c EnterHallOfFame: the party is healed and FLAG_SYS_GAME_CLEAR set.
+    // That flag is the client's ninth "badge" (ClientStoryWhitelist.badgeIds, Kanto 2092): with
+    // it the level cap table (LG0.cU1) reaches its last row, 100.
+    healParty()
+    Region.byId(regionId)?.name?.lowercase()?.let { setFlag("$it/FLAG_SYS_GAME_CLEAR") }
     if (id != null) {
       characters?.setStoryFlag(id, de.fiereu.openmmo.server.game.services.HallOfFame.FLAG)
       characters?.flushCharacterAsync(id)

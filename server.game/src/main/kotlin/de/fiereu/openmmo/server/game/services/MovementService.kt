@@ -1183,6 +1183,14 @@ constructor(
           )
         }
     log.info { "Whiteout: respawning $charId at ${target.targetBankId}:${target.targetMapId}" }
+    // overworld.c DoWhiteOut runs the League reset before the respawn (FireRed
+    // EventScript_ResetEliteFourEnd, Emerald EventScript_WhiteOut): the defeated-Elite-Four flags
+    // and VAR_MAP_SCENE_POKEMON_LEAGUE go back to 0, so the rooms replay their entrances. Without
+    // it a re-entered Lorelei's room closed its entry around the player (2026-09-11).
+    when (stored.info.positionRegionId.toInt()) {
+      0 -> runFieldScript(ctx, state, "EventScript_ResetEliteFourEnd")
+      1 -> runFieldScript(ctx, state, "EventScript_WhiteOut")
+    }
     // NDS regions have no hosted maps; a raw warp is how the client is moved there. This is also
     // the only exit from the Elite Four rooms besides winning, so it must work everywhere.
     val hosted =

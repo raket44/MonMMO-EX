@@ -112,6 +112,7 @@ internal object InterpreterSupport {
           "ShowEasyChatMessage",
           // The Trainer Fan Club rating is not modelled; the game-clear bump has nothing to write.
           "Script_UpdateTrainerFanClubGameClear",
+          "Script_TryGainNewFanFromCounter",
           "HelpSystem_Enable",
           // save_location.c: GameCube-link save flags, nothing off a cartridge.
           "SetPostgameFlags",

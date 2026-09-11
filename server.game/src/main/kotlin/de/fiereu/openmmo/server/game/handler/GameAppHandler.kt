@@ -127,6 +127,7 @@ constructor(
     private val characterStore: CharacterStore,
     private val storyPlayerService: de.fiereu.openmmo.server.game.services.StoryPlayerService,
     private val flyService: de.fiereu.openmmo.server.game.services.FlyService,
+    private val encounterTracker: de.fiereu.openmmo.server.game.services.EncounterTrackerService,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -146,6 +147,7 @@ constructor(
     onSuspend<TileInteractPacket> { event -> interactionService.onTileInteract(event) }
     onSuspend<DialogActionResponsePacket> { event -> dialogService.onInteractive(event) }
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }
+    on<de.fiereu.openmmo.net.game.packets.EncounterTrackerPinPacket> { event -> encounterTracker.onPin(event) }
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
 

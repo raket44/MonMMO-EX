@@ -218,7 +218,7 @@ object GameProtocol : Protocol() {
     c2s<LeaveChatChannelPacket>(0x42u, LeaveChatChannelPacketCodec)
     s2c<BattleSideAddPokemonPacket>(0x42u, BattleSideAddPokemonPacketCodec)
 
-    c2s<SetChatUserIgnoredPacket>(0x43u, SetChatUserIgnoredPacketCodec)
+    c2s<EncounterTrackerPinPacket>(0x43u, EncounterTrackerPinPacketCodec)
     s2c<BattleSideRemovePokemonPacket>(0x43u, BattleSideRemovePokemonPacketCodec)
 
     c2s<TournamentTeleportAcceptPacket>(0x44u, TournamentTeleportAcceptPacketCodec)
@@ -409,9 +409,9 @@ object GameProtocol : Protocol() {
 
     s2c<ChatChannelMessagesPacket>(0x8Cu, ChatChannelMessagesPacketCodec)
 
-    s2c<ChatChannelUserListPacket>(0x8Du, ChatChannelUserListPacketCodec)
+    s2c<EncounterTrackerStatePacket>(0x8Du, EncounterTrackerStatePacketCodec)
 
-    s2c<ChannelCountDeltaPacket>(0x8Eu, ChannelCountDeltaPacketCodec)
+    s2c<EncounterTrackerUpdatePacket>(0x8Eu, EncounterTrackerUpdatePacketCodec)
 
     s2c<ChatMessageWithdrawPacket>(0x8Fu, ChatMessageWithdrawPacketCodec)
 

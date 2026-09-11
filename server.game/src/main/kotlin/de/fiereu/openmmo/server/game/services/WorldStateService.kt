@@ -15,7 +15,10 @@ import javax.inject.Singleton
  * anything that rewrites them has to send this whole block again.
  */
 @Singleton
-class WorldStateService @Inject constructor(private val dexProgress: DexProgressService) {
+class WorldStateService @Inject constructor(
+    private val dexProgress: DexProgressService,
+    private val tracker: EncounterTrackerService? = null,
+) {
 
   /**
    * Set [fullVars] when this is a resync rather than a login, so vars that dropped back to 0 are
@@ -45,6 +48,8 @@ class WorldStateService @Inject constructor(private val dexProgress: DexProgress
     setFlags.forEach { ctx.send(it) }
     // A Hall of Fame entry keeps the encounter counter unlocked on every later login (HallOfFame).
     if (HallOfFame.FLAG in stored.storyFlags) ctx.send(HallOfFame.encounterCounterPacket())
+    // The tracker's counter sets, every kind (the client looks kinds up by id on each update).
+    tracker?.sendState(ctx, stored)
 
     val containers =
         mapOf(

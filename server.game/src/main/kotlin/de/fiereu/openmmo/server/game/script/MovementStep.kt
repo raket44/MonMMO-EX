@@ -118,6 +118,10 @@ enum class MovementStep(
           "walk_slower_up" -> WALK_UP
           "walk_slower_left" -> WALK_LEFT
           "walk_slower_right" -> WALK_RIGHT
+          // Oak's excited hop (walk_in_place_fast_down/up): the faster in-place step is the
+          // nearest client action the codes are known for.
+          "walk_in_place_fast_down" -> WALK_IN_PLACE_FASTER_DOWN
+          "walk_in_place_fast_up" -> WALK_IN_PLACE_FASTER_UP
           "walk_in_place_fast_left" -> WALK_IN_PLACE_FAST_LEFT
           "walk_in_place_fast_right" -> WALK_IN_PLACE_FAST_RIGHT
           "walk_in_place_down" -> WALK_IN_PLACE_FASTER_DOWN

@@ -52,6 +52,8 @@ class ScriptSupportRegressionTest :
                 "PokemonLeague_BrunosRoom_EventScript_Bruno",
                 "PokemonLeague_AgathasRoom_EventScript_Agatha",
                 "PokemonLeague_LancesRoom_EventScript_Lance",
+                "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
+                "PokedexRating_EventScript_RateInPerson",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

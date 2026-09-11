@@ -615,6 +615,17 @@ class InterpretedScript(
             "BufferSonOrDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
             "CreateInGameTradePokemon" -> {}
             "EnterHallOfFame" -> tracedWait(ctx, "hall of fame") { ctx.enterHallOfFame() }
+            // src/prof_pc.c: Oak's (or the PC's) rating line for the caught count in VAR_0x8004,
+            // ten species a step; VAR_RESULT TRUE only for a complete Kanto dex (Mew excepted).
+            "GetProfOaksRatingMessage" -> {
+              val count = ctx.getVar(namespaced("VAR_0x8004"))
+              val complete = count >= KANTO_DEX_COUNT
+              val label = if (complete) "PokedexRating_Text_Complete" else "PokedexRating_Text_LessThan${((count / 10 + 1) * 10).coerceIn(10, 150)}"
+              ctx.setVar(namespaced("VAR_RESULT"), if (complete) 1 else 0)
+              tracedWait(ctx, "dex rating") { ctx.say(textLine(label, instruction)) }
+            }
+            // src/event_data.c: the National Dex is FLAG_SYS_NATIONAL_DEX plus a save magic.
+            "EnableNationalPokedex" -> ctx.setFlag(namespaced("FLAG_SYS_NATIONAL_DEX"))
             // The easy-chat word picker has no client screen. Answer as a backed-out picker:
             // VAR_RESULT FALSE (nothing entered) and VAR_0x8004 left non-zero so the Mystery
             // Event Club woman takes her "decided not to" line instead of the special-profile one.
@@ -708,8 +719,9 @@ class InterpretedScript(
                 val (seen, owned) = ctx.dexCounts(kantoOnly)
                 ctx.setVar(namespaced("VAR_0x8005"), seen)
                 ctx.setVar(namespaced("VAR_0x8006"), owned)
-                0
+                if (ctx.isFlagSet(namespaced("FLAG_SYS_NATIONAL_DEX"))) 1 else 0
               }
+              else if (function == "IsNationalPokedexEnabled") (if (ctx.isFlagSet(namespaced("FLAG_SYS_NATIONAL_DEX"))) 1 else 0)
               // src/trade_scene.c: the in-game trade NPCs of the Pokemon Lab lounge and friends.
               else if (function == "GetInGameTradeSpeciesInfo") ctx.inGameTradeInfo(ctx.getVar(namespaced("VAR_0x8004")))
               else if (function == "GetTradeSpecies") ctx.partySpecies(ctx.getVar(namespaced("VAR_0x8005")))
@@ -1983,6 +1995,9 @@ internal object TrainerStoryState {
 
 /** The GBA answer when a multichoice is cancelled with B. */
 private const val MULTI_B_PRESSED = 127
+
+/** prof_pc.c: 150 caught rates as complete (Mew is the 151st and never required). */
+private const val KANTO_DEX_COUNT = 150
 
 private const val B_OUTCOME_WON = 1
 

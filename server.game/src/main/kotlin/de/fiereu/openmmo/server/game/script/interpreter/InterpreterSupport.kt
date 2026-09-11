@@ -114,6 +114,12 @@ internal object InterpreterSupport {
           "Script_UpdateTrainerFanClubGameClear",
           "Script_TryGainNewFanFromCounter",
           "HelpSystem_Enable",
+          // The help-context stack around Oak's rating (prof_pc / help_system): no help window here.
+          "BackupHelpContext",
+          "RestoreHelpContext",
+          "Script_SetHelpContext",
+          // save_location.c: dex-unlock save flags for the link features, nothing off a cartridge.
+          "SetUnlockedPokedexFlags",
           // save_location.c: GameCube-link save flags, nothing off a cartridge.
           "SetPostgameFlags",
           // The roaming legendary (Raikou/Entei/Suicune) is not modelled; Celio's Sapphire scene continues.
@@ -155,6 +161,8 @@ internal object InterpreterSupport {
           "BufferSonOrDaughterString",
           "ShowEasyChatScreen",
           "EnterHallOfFame",
+          "GetProfOaksRatingMessage",
+          "EnableNationalPokedex",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",
@@ -268,6 +276,7 @@ internal object InterpreterSupport {
           "GetBattleOutcome",
           "IsPlayerLeftOfVermilionSailor",
           "GetPokedexCount",
+          "IsNationalPokedexEnabled",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",
           "DoesPlayerPartyContainSpecies",
@@ -292,7 +301,8 @@ internal object InterpreterSupport {
           // The ferry desk: Vermilion is seagallop number 7 (src/seagallop.c).
           "GetSeagallopNumber" to 7,
           "GetSelectedSeagallopDestination" to 127,
-          "IsNationalPokedexEnabled" to 0,
+          // Every Kanto species with Mew: never on a server dex.
+          "HasAllMons" to 0,
           // No wireless adapter on a server build: the Joyful Game Corner attendant explains the
           // minigames need one, the way the cartridge does without it.
           "IsWirelessAdapterConnected" to 0,

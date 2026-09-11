@@ -43,22 +43,20 @@ private const val MAX_SPIN_STEPS = 64
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
 
-/** FireRed's ordinary ground elevation, the fallback when a tile's own is the 0 wildcard. */
-internal const val DEFAULT_GBA_ELEVATION = 3
+/** The client's elevation for ordinary ground (its tile value is the GBA elevation minus one: ground 3 -> 2). */
+internal const val DEFAULT_GBA_ELEVATION = 2
 
 /**
- * The elevation a position packet must carry for (x, y): the tile's own from its block word
- * (Tile2D.collision keeps the GBA upper byte: collision bits 0-1, elevation in bits 2-5), or
- * [fallback] where the tile says 0 (bridges, transitions - the cartridge keeps the previous one).
+ * The elevation a position packet must carry for (x, y): what the client itself computes for the
+ * tile, (block upper byte >> 2) - 1 (its eP1.Xd0 - the byte keeps GBA elevation + 1 in bits 2-5:
+ * ground 12 -> 2, water 4 -> 0). Play-verified both ways on 2026-09-11: a surfer sent 2 or 3 sat
+ * stuck on water, a walker sent 3 sat stuck on grass; 2 on ground and 1 on water moved. The
+ * value is sent as is, 0 included - the client treats 0 the way the cartridge does, as no level.
  */
 internal fun gbaElevationAt(map: MapDef, x: Int, y: Int, fallback: Int): Int {
   val tile = map.tileAt(x, y) ?: return fallback
-  // Probed on Route 19: water (elevation 1) stores 4, ground (elevation 3) stores 12 - no +1.
-  val elevation = (tile.collision.toInt() and 0xFF) shr 2
-  return if (elevation > 0) elevation else fallback
+  return (((tile.collision.toInt() and 0xFF) shr 2) - 1).coerceAtLeast(0)
 }
-
-internal fun PlayerState.elevationOr(default: Int): Int = if (elevation > 0) elevation else default
 
 /** After a muted door step: past the client's door open + walk-in (~750 ms), so the second un-fade lands last. */
 private const val DOOR_UNFADE_RETRY_MS = 900L
@@ -574,7 +572,6 @@ constructor(
     characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
     state.x = toX.toShort()
     state.y = toY.toShort()
-    state.elevation = gbaElevationAt(currentMap, toX, toY, state.elevationOr(DEFAULT_GBA_ELEVATION))
     encounterService.onAnyStep(ctx, charId)
     rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
@@ -646,7 +643,7 @@ constructor(
       direction: Direction,
   ) {
     val state = ctx.attributes[PLAYER_STATE]
-    ctx.send(gbaMovePacket(charId, map, x, y, direction, state?.elevationOr(DEFAULT_GBA_ELEVATION) ?: DEFAULT_GBA_ELEVATION))
+    ctx.send(gbaMovePacket(charId, map, x, y, direction, DEFAULT_GBA_ELEVATION))
   }
 
   private fun gbaMovePacket(

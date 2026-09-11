@@ -24,7 +24,7 @@ class NpcService
 constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
-    private val ferry: FerryPlacements,
+    private val ferry: FerryPlacements = FerryPlacements(mapManager),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
 

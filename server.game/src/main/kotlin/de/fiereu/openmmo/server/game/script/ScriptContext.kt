@@ -846,8 +846,9 @@ internal constructor(
     // Same tiers the Pokedex shows: caught = held or ever received, seen = caught + marked.
     val owned = de.fiereu.openmmo.server.game.services.DexProgressService.ownedWireIds(stored)
     val seen = de.fiereu.openmmo.server.game.services.DexProgressService.seenWireIds(stored)
-    val last = if (kantoOnly) 151 else Int.MAX_VALUE
-    return seen.count { it <= last } to owned.count { it <= last }
+    // One dex for the whole game: trades and the GTL bring species from every region, so the
+    // Kanto-only count (VAR_0x8004 = 0) would penalise exactly the MMO play. Every species counts.
+    return seen.size to owned.size
   }
 
   fun leadSpeciesName(): String? =

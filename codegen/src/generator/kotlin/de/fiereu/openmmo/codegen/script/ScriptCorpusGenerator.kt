@@ -114,8 +114,11 @@ class ScriptCorpusGenerator(private val dialogDataDir: File) {
         DialogTable.read(DialogTable.file(dialogDataDir, spec.storyNamespace))
             ?: error("No dialog table for ${spec.storyNamespace} in $dialogDataDir")
     val allTextIds = dialogLines.associate { it.label to it.textId }
+    // Texts the C side shows for a script (prof_pc.c GetProfOaksRatingMessage): no command names
+    // them, so they are shipped by hand for the interpreter's special to find.
+    val specialText = (10..150 step 10).map { "PokedexRating_Text_LessThan$it" } + "PokedexRating_Text_Complete"
     val textIds =
-        referencedText.mapNotNull { label -> allTextIds[label]?.let { label to it } }.toMap()
+        (referencedText + specialText).mapNotNull { label -> allTextIds[label]?.let { label to it } }.toMap()
 
     val direct = events.interactableLabels + events.mapEntryLabels
     val unavailableDirectLabels = direct.filterTo(linkedSetOf()) { it !in index.scriptBodies() }

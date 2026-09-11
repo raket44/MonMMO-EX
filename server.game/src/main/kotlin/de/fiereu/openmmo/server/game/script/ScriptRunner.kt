@@ -160,6 +160,12 @@ constructor(
         dialogService.close(session, state)
         state.releaseScriptLock()
         state.scriptRunning = false
+        // A script that faded to black and never faded back (or died in between) must not leave
+        // the player staring at nothing; a warp in the script owns the screen from then on.
+        if (state.screenFaded) {
+          state.screenFaded = false
+          session.send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(true))
+        }
         // Let a still-animating scripted walk finish before clearing the queue - the clear
         // snaps the player to the endpoint of whatever it interrupts (the lab pull-back
         // "poof"). Hold delays carry no such risk; clearing them is the point.

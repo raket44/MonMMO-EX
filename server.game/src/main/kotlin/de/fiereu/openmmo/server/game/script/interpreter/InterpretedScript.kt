@@ -543,6 +543,18 @@ class InterpretedScript(
           delay((frames * FRAME_MILLIS).coerceAtMost(MAX_DELAY_MILLIS))
           state.pc++
         }
+        // The screen fade, through the client's render-screen packet (the same one the warp flow
+        // blanks and restores with): field_weather.h FADE_FROM_BLACK 0, FADE_TO_BLACK 1,
+        // FADE_FROM_WHITE 2, FADE_TO_WHITE 3 - odd modes blank, even ones restore. The fade takes
+        // about sixteen frames on the cartridge, so the script waits that long before going on.
+        "fadescreen",
+        "fadescreenswapbuffers",
+        "fadescreenspeed" -> {
+          val mode = value(ctx, instruction.arg(0))
+          ctx.fadeScreen(toBlank = mode and 1 == 1)
+          delay(FADE_MILLIS)
+          state.pc++
+        }
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
@@ -1812,6 +1824,8 @@ class InterpretedScript(
     const val MAX_STEPS = 10_000
     const val GBA_VALUE_MASK = 0xFFFF
     const val FRAME_MILLIS = 17L
+    /** A cartridge screen fade: sixteen frames. */
+    const val FADE_MILLIS = 16 * 17L
     const val MAX_DELAY_MILLIS = 5_000L
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255

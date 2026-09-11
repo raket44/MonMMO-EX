@@ -749,6 +749,13 @@ internal constructor(
    * are slots 2..4 (play-verified 2026-09-10 on the Cinnabar trade NPCs: a name in slot 2 showed
    * as STR_VAR_1 and slot 1 showed nowhere).
    */
+  /** fadescreen: the client's render-screen packet, off for FADE_TO_*, on for FADE_FROM_*. */
+  fun fadeScreen(toBlank: Boolean) {
+    send(de.fiereu.openmmo.net.game.packets.RenderScreenPacket(!toBlank))
+    state.screenFaded = toBlank
+  }
+
+  /** A ROM string variable (STR_VAR_n) for the next dialogs of this script: a raw text argument. */
   fun bufferText(variable: Int, text: String) {
     val slot = variable + STR_VAR_SLOT_OFFSET
     setMessageArg(slot, de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(slot = slot.toByte(), kind = 5, text = text))

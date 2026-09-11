@@ -77,6 +77,7 @@ constructor(
     // pads): the client redraws the ROM's tiles, and the cartridge runs ON_LOAD / ON_TRANSITION
     // again - so the entry scripts must run again too, or a barrier they closed vanishes.
     state?.entryScriptsMapKey = -1
+    state?.screenFaded = false
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1
@@ -254,6 +255,7 @@ constructor(
     // pads): the client redraws the ROM's tiles, and the cartridge runs ON_LOAD / ON_TRANSITION
     // again - so the entry scripts must run again too, or a barrier they closed vanishes.
     state?.entryScriptsMapKey = -1
+    state?.screenFaded = false
     state?.pendingStepDir = null
     state?.pendingStepX = -1
     state?.pendingStepY = -1

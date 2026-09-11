@@ -114,6 +114,8 @@ data class PlayerState(
      * the client reports on the map proves it is loaded, and the overrides go out again then.
      */
     @field:Volatile var tileOverridesPendingResend: Boolean = false,
+    /** A script blanked the screen (fadescreen) and has not restored it yet; script end restores it. */
+    @field:Volatile var screenFaded: Boolean = false,
     /**
      * The emergence step: after this arrival's LoadEntity, the server sends an EntityMove one tile
      * in this direction and the CLIENT walks it - the client's 0xE4 handler routes any entity, the

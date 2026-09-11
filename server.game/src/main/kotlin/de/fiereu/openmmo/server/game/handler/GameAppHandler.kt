@@ -261,10 +261,10 @@ constructor(
     // carries a message of its own. During a map-directory tour, plain chat is the naming input.
     onSuspend<ChatMessageSendPacket> { event ->
       val text = event.packet.message ?: event.packet.target
-      if (!chatCommandService.tryHandle(event.session, text)) {
-        val charId = event.session.attributes[PLAYER_STATE]?.characterId
-        if (charId != null) mapTourService.onChat(event.session, charId, text)
-      }
+      if (chatCommandService.tryHandle(event.session, text)) return@onSuspend
+      val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return@onSuspend
+      if (mapTourService.onChat(event.session, charId, text)) return@onSuspend
+      relayChat(event.session, charId, event.packet)
     }
   }
 
@@ -328,5 +328,41 @@ constructor(
             sender = sender,
         ),
     )
+  }
+
+  /**
+   * Player chat. The client's c2s 0x08 (f/YK) carries the chat type as its mode byte (f/XR0, the
+   * same order as ChatType), the text in target - or, for a whisper (mode 4), the recipient in
+   * target and the text in message. Nothing echoes locally: the sender sees their own line only
+   * when the server sends it back (s2c 0x09 with the sender's character id, the entity the
+   * overhead bubble sits on). Typed chat had never been relayed before 2026-09-11.
+   */
+  private fun relayChat(session: de.fiereu.network.SessionContext, charId: Long, packet: ChatMessageSendPacket) {
+    val type = ChatType.entries.getOrNull(packet.mode.toInt()) ?: ChatType.NORMAL
+    val text = (packet.message ?: packet.target).trim()
+    if (text.isEmpty()) return
+    val sender = characterStore.getCharacter(charId)?.info?.name ?: return
+    val out = ChatMessagePacket(type = type, language = Language.EN, message = text, sender = sender, senderId = charId)
+    log.info { "Chat [$type] $sender: $text" }
+    when (type) {
+      ChatType.WHISPER -> {
+        val recipient =
+            sessionRegistry.onlineCharacterIds().firstNotNullOfOrNull { id ->
+              characterStore.getCharacter(id)?.takeIf { it.info.name.equals(packet.target, ignoreCase = true) }?.let { sessionRegistry.getByCharacterId(id) }
+            }
+        if (recipient == null) {
+          session.send(de.fiereu.openmmo.server.game.services.notice("${packet.target} is not online."))
+          return
+        }
+        recipient.send(out)
+        if (recipient !== session) session.send(out)
+      }
+      // Local chat reaches the players who can see the speaker (the map group), the sender included.
+      ChatType.NORMAL -> {
+        presenceService.broadcastToObservers(session, out)
+        session.send(out)
+      }
+      else -> multiplayerService.broadcastMessage(out)
+    }
   }
 }

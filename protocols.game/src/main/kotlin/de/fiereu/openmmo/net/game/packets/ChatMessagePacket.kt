@@ -9,6 +9,8 @@ data class ChatMessagePacket(
     val language: Language?,
     val message: String,
     val sender: String?,
+    /** The sender's character id (the client's f/lU1.qF1): the entity the overhead bubble sits on. 0 for server notices. */
+    val senderId: Long = 0L,
 )
 
 object ChatMessagePacketCodec : PacketCodec<ChatMessagePacket>() {
@@ -22,7 +24,7 @@ object ChatMessagePacketCodec : PacketCodec<ChatMessagePacket>() {
           sender = null,
       )
     } else {
-      field(S64LE) { 0L }
+      val senderId = field(S64LE) { it.senderId }
       val sender =
           field(Utf16LeNullTerminated) {
             it.sender ?: throw MalformedPacketException("sender must not be null")
@@ -40,6 +42,7 @@ object ChatMessagePacketCodec : PacketCodec<ChatMessagePacket>() {
           language = language,
           message = message,
           sender = sender,
+          senderId = senderId,
       )
     }
   }

@@ -569,6 +569,19 @@ class InterpretedScript(
             "ExitSafariMode" -> ctx.exitSafari()
             // src/field_specials.c ChoosePartyMon: VAR_0x8004 = the party slot, PARTY_SIZE when closed.
             "ChoosePartyMon" -> ctx.setVar(namespaced("VAR_0x8004"), tracedWait(ctx, "party pick") { ctx.choosePartyMember() })
+            // src/seagallop.c: the ferry scene ends by warping to the destination's harbor mat;
+            // VAR_0x8006 is the SEAGALLOP_* destination (VAR_0x8004 the origin). The screen is
+            // already faded by the script; the warp flow restores it on arrival.
+            "DoSeagallopFerryScene" -> {
+              val dest = ctx.getVar(namespaced("VAR_0x8006"))
+              val target = InterpreterSupport.SEAGALLOP_DESTINATIONS.getOrNull(dest)
+                  ?: error("Script ${program.id.stable}: unknown seagallop destination $dest")
+              val harbor = ctx.mapByName(target.first, KANTO_REGION)
+                  ?: error("Script ${program.id.stable}: no map named ${target.first}")
+              tracedWait(ctx, "ferry to ${target.first}") {
+                ctx.warp(KANTO_REGION, harbor.bankId.toInt() and 0xFF, harbor.mapId.toInt() and 0xFF, target.second, target.third, de.fiereu.openmmo.common.enums.Direction.UP)
+              }
+            }
             // The in-game trade: VAR_0x8004 = the trade, VAR_0x8005 = the party slot given away. The
             // monster is built and swapped in one go at the scene; the create step has nothing left to do.
             "CreateInGameTradePokemon" -> {}
@@ -1828,6 +1841,7 @@ class InterpretedScript(
     const val MAX_STEPS = 10_000
     const val GBA_VALUE_MASK = 0xFFFF
     const val FRAME_MILLIS = 17L
+    const val KANTO_REGION = 0
     /** A cartridge screen fade: sixteen frames. */
     const val FADE_MILLIS = 16 * 17L
     const val MAX_DELAY_MILLIS = 5_000L

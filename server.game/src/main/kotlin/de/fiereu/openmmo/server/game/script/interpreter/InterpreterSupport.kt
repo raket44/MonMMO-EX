@@ -97,7 +97,6 @@ internal object InterpreterSupport {
           // The Sevii ferry: the client has no destination menu yet, so the menu draws nothing and
           // GetSelectedSeagallopDestination answers "cancel"; the sailor's own lines still play.
           "DrawSeagallopDestinationMenu",
-          "DoSeagallopFerryScene",
           // Gift monsters: the "give it a nickname?" screen. The client has no server-driven nickname
           // entry yet, so a YES answer keeps the species name; the gift itself already landed.
           "ChangePokemonNickname",
@@ -129,6 +128,7 @@ internal object InterpreterSupport {
           "SetHiddenItemFlag",
           "ExitSafariMode",
           "ChoosePartyMon",
+          "DoSeagallopFerryScene",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",
@@ -161,6 +161,25 @@ internal object InterpreterSupport {
               .associate { (index, name) -> "TUTOR_MOVE_$name" to index }
 
   val SUPPORTED_SPECIALS = NOOP_SPECIALS + IMPLEMENTED_SPECIALS
+
+  /**
+   * src/seagallop.c sSeagallopSpawnTable, by SEAGALLOP_* id: where the ferry ride ends (map source
+   * name, x, y). All of these are Kanto-region maps.
+   */
+  val SEAGALLOP_DESTINATIONS: List<Triple<String, Int, Int>> =
+      listOf(
+          Triple("VermilionCity", 0x17, 0x20),
+          Triple("OneIsland_Harbor", 8, 5),
+          Triple("TwoIsland_Harbor", 8, 5),
+          Triple("ThreeIsland_Harbor", 8, 5),
+          Triple("FourIsland_Harbor", 8, 5),
+          Triple("FiveIsland_Harbor", 8, 5),
+          Triple("SixIsland_Harbor", 8, 5),
+          Triple("SevenIsland_Harbor", 8, 5),
+          Triple("CinnabarIsland", 0x15, 0x07),
+          Triple("NavelRock_Harbor", 8, 5),
+          Triple("BirthIsland_Harbor", 8, 5),
+      )
 
   /**
    * A multichoice drawn as the client's text-button list: entries of one DS text bank, plus the

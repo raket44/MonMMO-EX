@@ -576,6 +576,10 @@ internal constructor(
   }
 
   /** getpartysize. */
+  /** A hosted map by its decomp source name (OneIsland_Harbor) within [regionId]. */
+  fun mapByName(name: String, regionId: Int): de.fiereu.openmmo.maps.MapDef? =
+      maps?.getMapsByName(name)?.firstOrNull { it.regionId.toInt() == regionId }
+
   fun partySize(): Int = characterId?.let { characters?.getCharacter(it)?.pokemon?.size } ?: 0
 
   /** setwildbattle + dowildbattle: a scripted wild encounter the script waits out. */

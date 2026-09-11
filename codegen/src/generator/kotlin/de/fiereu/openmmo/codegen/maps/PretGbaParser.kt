@@ -183,6 +183,7 @@ class PretGbaParser(
         borderTiles = parseBorderTiles(layout),
         blockData = parseBlockData(layout, layoutId),
         behaviorData = parseBehaviorData(layout, layoutId),
+        metatileBehaviorData = parseMetatileBehaviorData(layout),
         encounters = parseEncounters(mapJson, ctx),
         // Dark caves (map.json requires_flash) darken on the client and Flash lights them.
         lighting =
@@ -419,6 +420,11 @@ class PretGbaParser(
     val secondary = layout["secondary_tileset"]?.jsonPrimitive?.contentOrNull
     return metatileBehaviors.behaviorData(primary, secondary, bytes)
   }
+
+  private fun parseMetatileBehaviorData(layout: JsonObject): String =
+      metatileBehaviors.metatileBehaviorData(
+          layout["primary_tileset"]?.jsonPrimitive?.contentOrNull,
+          layout["secondary_tileset"]?.jsonPrimitive?.contentOrNull)
 
   private fun parseEncounters(mapJson: JsonObject, ctx: Context): List<ParsedEncounterTable> {
     val mapId = mapJson["id"]?.jsonPrimitive?.contentOrNull ?: return emptyList()

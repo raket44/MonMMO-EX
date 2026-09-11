@@ -47,6 +47,22 @@ private constructor(
     return Base64.getEncoder().encodeToString(out)
   }
 
+  /**
+   * Base64 of one behavior ordinal byte per metatile id of the layout's tilesets (the primary
+   * tileset's slots first, the secondary's from [primaryCount] on), so a setmetatile can be
+   * given the tileset's real behavior for a metatile the map never uses itself - the Pokemon
+   * League's opened exit door is a warp door only in the tileset (2026-09-11).
+   */
+  fun metatileBehaviorData(primaryTileset: String?, secondaryTileset: String?): String {
+    val primary = primaryTileset?.let { categories(it) } ?: IntArray(0)
+    val secondary = secondaryTileset?.let { categories(it) } ?: IntArray(0)
+    if (primary.isEmpty() && secondary.isEmpty()) return ""
+    val out = ByteArray(primaryCount + secondary.size) { TileBehavior.NORMAL.ordinal.toByte() }
+    for (i in primary.indices) if (i < primaryCount) out[i] = primary[i].toByte()
+    for (i in secondary.indices) out[primaryCount + i] = secondary[i].toByte()
+    return Base64.getEncoder().encodeToString(out)
+  }
+
   private fun categories(tilesetName: String): IntArray =
       tilesetCache.getOrPut(tilesetName) {
         val symbol = tilesetAttributeSymbol[tilesetName] ?: return@getOrPut IntArray(0)

@@ -39,6 +39,7 @@ internal val ${objectName}: MapDef =
         borderTiles = ${RenderUtil.INSTANCE.borderTiles(map.getBorderTiles())},
         blockData = "${map.getBlockData()}",
         behaviorData = "${map.getBehaviorData()}",
+        metatileBehaviorData = "${map.getMetatileBehaviorData()}",
         wildEncounters = ${RenderUtil.INSTANCE.encounters(map.getEncounters())},
         lighting = ${map.getLighting()},
         weather = ${map.getWeather()},

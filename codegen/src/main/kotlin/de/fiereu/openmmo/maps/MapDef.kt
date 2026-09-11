@@ -44,9 +44,22 @@ class MapDef(
     val coordScripts: List<MapCoordScript> = emptyList(),
     private val blockData: String = "",
     private val behaviorData: String = "",
+    private val metatileBehaviorData: String = "",
 ) {
 
   val tiles: List<Tile2D> by lazy { decodeBlockData(blockData, behaviorData) }
+
+  private val metatileBehaviors: ByteArray by lazy {
+    if (metatileBehaviorData.isEmpty()) ByteArray(0) else Base64.getDecoder().decode(metatileBehaviorData)
+  }
+
+  /**
+   * The tileset behavior of a metatile id, whether or not the map uses it anywhere: what a
+   * setmetatile'd tile really is (the Pokemon League's opened exit door is a warp door). Null on
+   * maps without tileset data.
+   */
+  fun metatileBehavior(metatileId: Int): TileBehavior? =
+      metatileBehaviors.getOrNull(metatileId)?.toInt()?.let { TileBehavior.entries.getOrNull(it) }
 
   fun tileAt(x: Int, y: Int): Tile2D? =
       if (x in 0 until width && y in 0 until height) tiles.getOrNull(y * width + x) else null

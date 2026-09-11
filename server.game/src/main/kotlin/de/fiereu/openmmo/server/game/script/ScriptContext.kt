@@ -763,11 +763,14 @@ internal constructor(
     // door on screen and still stops the player (MapEntryPolish).
     val elevationBits = if (elevation != null) (elevation shl 2) else ((existing?.collision?.toInt() ?: 0x10) and 0xFC)
     val collision: Byte = (elevationBits or (if (impassable) 1 else 0)).toByte()
-    // Behavior is a tileset attribute of the metatile: any tile of this map built from the same
-    // metatile shows it (floor over a staircase is no warp any more). A metatile the map does not
-    // use anywhere keeps the tile's previous behavior, the best guess without the tileset.
+    // Behavior is a tileset attribute of the metatile, read from the map's tileset table (floor
+    // over a staircase is no warp any more; the Pokemon League's opened exit door IS a warp door,
+    // one the map never uses closed - keeping the closed door's behavior left the client fading
+    // into a door the server never warped, 2026-09-11). Maps without the table fall back to any
+    // tile built from the same metatile, then to the tile's previous behavior.
     val behavior =
-        map?.tiles?.firstOrNull { it.material == metatileId.toShort() }?.behavior
+        map?.metatileBehavior(metatileId)
+            ?: map?.tiles?.firstOrNull { it.material == metatileId.toShort() }?.behavior
             ?: existing?.behavior
             ?: de.fiereu.openmmo.common.enums.TileBehavior.NORMAL
     state.tileOverrides[key] = de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), collision, behavior)

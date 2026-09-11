@@ -17,6 +17,8 @@ data class ParsedMap(
     val borderTiles: List<Int>,
     val blockData: String,
     val behaviorData: String,
+    // One behavior byte per metatile id of the layout's tilesets, for setmetatile lookups.
+    val metatileBehaviorData: String,
     val encounters: List<ParsedEncounterTable>,
     val lighting: String,
     val weather: String,

@@ -28,6 +28,8 @@ class InteractionService
 @Inject
 constructor(
     private val npcService: NpcService,
+    private val ferryPlacements: FerryPlacements,
+    private val ferryTravel: FerryTravel,
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
     private val scriptRegistry: ScriptRegistry,
@@ -116,6 +118,14 @@ constructor(
     val regionId = stored.info.positionRegionId.toInt()
     val bankId = stored.info.positionBankId.toInt()
     val mapId = stored.info.positionMapId.toInt()
+
+    ferryPlacements.at(regionId, bankId, mapId)?.let { p ->
+      if (npcService.getNpcEntityId(regionId, bankId, mapId, FerryPlacements.LOCAL_ID) == npcEntityId) {
+        scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
+        runScript(session, state, ferryTravel.script(stored, p), npcEntityId)
+        return
+      }
+    }
 
     for (npc in currentMap.npcs) {
       if (npcService.getNpcEntityId(regionId, bankId, mapId, npc.entityIdx) == npcEntityId) {

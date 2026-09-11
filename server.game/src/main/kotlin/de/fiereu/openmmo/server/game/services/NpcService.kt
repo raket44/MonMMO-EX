@@ -24,6 +24,7 @@ class NpcService
 constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
+    private val ferry: FerryPlacements,
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
 
@@ -106,6 +107,10 @@ constructor(
               bankId,
               mapId,
           ))
+    }
+    // The region-link ferry captain is not in the ROM; he stands in the harbour town.
+    ferry.at(regionId, bankId, mapId)?.let { p ->
+      ctx.send(buildSpawnPacket(p.npc(), entityIdFor(regionId, bankId, mapId, FerryPlacements.LOCAL_ID), regionId, bankId, mapId))
     }
   }
 

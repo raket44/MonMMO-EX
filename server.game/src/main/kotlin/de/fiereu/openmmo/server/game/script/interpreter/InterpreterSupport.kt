@@ -136,6 +136,8 @@ internal object InterpreterSupport {
           "ExitSafariMode",
           "ChoosePartyMon",
           "DoSeagallopFerryScene",
+          "BufferBigGuyOrBigGirlString",
+          "BufferSonOrDaughterString",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
           "GetMagikarpSizeRecordInfo",

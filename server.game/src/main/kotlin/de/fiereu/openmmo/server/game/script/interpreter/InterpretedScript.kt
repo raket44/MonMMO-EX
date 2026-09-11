@@ -584,6 +584,10 @@ class InterpretedScript(
             }
             // The in-game trade: VAR_0x8004 = the trade, VAR_0x8005 = the party slot given away. The
             // monster is built and swapped in one go at the scene; the create step has nothing left to do.
+            // src/field_specials.c: the player's gender picks the word for STR_VAR_1 (Lostelle's
+            // "Big guy" / "Big girl"; the son/daughter pair is the cartridge's own, inverted as written).
+            "BufferBigGuyOrBigGirlString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "Big guy" else "Big girl")
+            "BufferSonOrDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
             "CreateInGameTradePokemon" -> {}
             "DoInGameTradeScene" -> {
               val done = tracedWait(ctx, "npc trade") { ctx.inGameTrade(ctx.getVar(namespaced("VAR_0x8004")), ctx.getVar(namespaced("VAR_0x8005"))) }

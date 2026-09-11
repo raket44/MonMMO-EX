@@ -81,7 +81,11 @@ class FerryPlacements @Inject constructor(private val mapManager: MapManager) {
     /** Local npc id of the captain; ROM maps stay well under this. */
     const val LOCAL_ID = 250
 
-    /** The captain as a trainer model: the client's own Pirate Hat and Pirate Outfit over a bearded face. */
+    /** Skin colors are f/An indexes, named by strings 32000 + index: 5 Black, 26 Dark Yellow. */
+    private const val BLACK: UByte = 5u
+    private const val GOLD: UByte = 26u
+
+    /** The captain as a trainer model: the client's own Pirate Hat and Pirate Outfit, black with gold boots, over a bearded face. */
     val CAPTAIN: NpcLook =
         NpcLook(
             gender = 0,
@@ -90,13 +94,13 @@ class FerryPlacements @Inject constructor(private val mapManager: MapManager) {
                     skins =
                         listOf(
                                 Skin(SkinSlot.FOREHEAD, 0u, 0u),
-                                Skin(SkinSlot.HAT, 158u, 0u),
+                                Skin(SkinSlot.HAT, 158u, BLACK),
                                 Skin(SkinSlot.HAIR, 0u, 0u),
                                 Skin(SkinSlot.EYES, 1u, 0u),
                                 Skin(SkinSlot.FACIAL_HAIR, 3u, 0u),
-                                Skin(SkinSlot.TOP, 119u, 0u),
-                                Skin(SkinSlot.LEGGINGS, 0u, 0u),
-                                Skin(SkinSlot.FOOTWEAR, 0u, 0u),
+                                Skin(SkinSlot.TOP, 119u, BLACK),
+                                Skin(SkinSlot.LEGGINGS, 0u, BLACK),
+                                Skin(SkinSlot.FOOTWEAR, 0u, GOLD),
                             )
                             .associateBy { it.slot }))
   }

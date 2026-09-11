@@ -17,6 +17,7 @@ import de.fiereu.openmmo.net.game.packets.TradeRequestPacket
 import de.fiereu.openmmo.net.game.packets.TradeSelectMonPacket
 import de.fiereu.openmmo.net.game.packets.ChatMessagePacket
 import de.fiereu.openmmo.net.game.packets.ChatMessageSendPacket
+import de.fiereu.openmmo.net.game.packets.MonsterRecordBookPacket
 import de.fiereu.openmmo.net.game.packets.ContainerActionPacket
 import de.fiereu.openmmo.net.game.packets.CosmeticSlotApplyPacket
 import de.fiereu.openmmo.net.game.packets.CreateCharacterPacket
@@ -128,6 +129,7 @@ constructor(
     private val storyPlayerService: de.fiereu.openmmo.server.game.services.StoryPlayerService,
     private val flyService: de.fiereu.openmmo.server.game.services.FlyService,
     private val encounterTracker: de.fiereu.openmmo.server.game.services.EncounterTrackerService,
+    private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
     scope: CoroutineScope,
 ) : CoroutineProtocolHandler<GameProtocol>(GameProtocol, Side.SERVER, scope) {
 
@@ -341,9 +343,14 @@ constructor(
     val type = ChatType.entries.getOrNull(packet.mode.toInt()) ?: ChatType.NORMAL
     val text = (packet.message ?: packet.target).trim()
     if (text.isEmpty()) return
-    val sender = characterStore.getCharacter(charId)?.info?.name ?: return
-    val out = ChatMessagePacket(type = type, language = Language.EN, message = text, sender = sender, senderId = charId)
+    val stored = characterStore.getCharacter(charId) ?: return
+    val sender = stored.info.name
     log.info { "Chat [$type] $sender: $text" }
+    val (expanded, records) = expandChatLinks(stored, text)
+    val out = ChatMessagePacket(type = type, language = Language.EN, message = expanded, sender = sender, senderId = charId)
+    // Linked monsters ride ahead of the line as loose records (0x8B -> the client's Com8.Gw0 cache);
+    // the expanded token's O: id is what the click looks up there.
+    val attachments = if (records.isEmpty()) null else MonsterRecordBookPacket(records)
     when (type) {
       ChatType.WHISPER -> {
         val recipient =
@@ -354,15 +361,48 @@ constructor(
           session.send(de.fiereu.openmmo.server.game.services.notice("${packet.target} is not online."))
           return
         }
+        attachments?.let { recipient.send(it); if (recipient !== session) session.send(it) }
         recipient.send(out)
         if (recipient !== session) session.send(out)
       }
       // Local chat reaches the players who can see the speaker (the map group), the sender included.
       ChatType.NORMAL -> {
+        attachments?.let { presenceService.broadcastToObservers(session, it); session.send(it) }
         presenceService.broadcastToObservers(session, out)
         session.send(out)
       }
-      else -> multiplayerService.broadcastMessage(out)
+      else -> {
+        attachments?.let(multiplayerService::broadcastMessage)
+        multiplayerService.broadcastMessage(out)
+      }
     }
+  }
+
+  /**
+   * Chat links (bytecode, f/lP1.zB1): the client drops `{M:<monster id>}` / `{I:<item code>}` into the
+   * text it sends, and renders a received `{...}` only as `key:value` pairs split on `;` - O the
+   * monster id (long), M the species (short), G gender, F form (bytes), S shiny and A alpha ("1"),
+   * I the item id (short) with C a byte. The monster is looked up by O in the loose-record cache
+   * the 0x8B packet fills, so the records go out with the line (2026-09-11).
+   */
+  private fun expandChatLinks(stored: de.fiereu.openmmo.server.game.storage.StoredCharacter, text: String): Pair<String, List<de.fiereu.openmmo.common.Pokemon>> {
+    val records = ArrayList<de.fiereu.openmmo.common.Pokemon>()
+    var out =
+        MONSTER_LINK.replace(text) { m ->
+          val id = m.groupValues[1].toLongOrNull() ?: return@replace m.value
+          val mon = (stored.pokemon + stored.pcStorage).firstOrNull { it.id == id } ?: return@replace m.value
+          records += mon
+          val def = speciesRegistry.get(mon.dexId)
+          val gender = if (def == null) de.fiereu.openmmo.server.game.battle.Gender.GENDERLESS else de.fiereu.openmmo.server.game.battle.Gender.of(def.genderRatio, mon.seed)
+          "{O:${mon.id};M:${de.fiereu.openmmo.common.clientSpeciesId(mon.dexId)};G:$gender;F:0;S:${if (mon.isShiny) 1 else 0};A:${if (mon.isAlpha) 1 else 0}}"
+        }
+    // The bag stack code is the client item id in the high 16 bits.
+    out = ITEM_LINK.replace(out) { m -> m.groupValues[1].toLongOrNull()?.let { "{I:${it shr 16};C:0}" } ?: m.value }
+    return out to records
+  }
+
+  private companion object {
+    val MONSTER_LINK = Regex("""\{M:(\d+)\}""")
+    val ITEM_LINK = Regex("""\{I:(\d+)\}""")
   }
 }

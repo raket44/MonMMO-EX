@@ -64,20 +64,23 @@ constructor(
       val flags = characterStore.getCharacter(charId)?.storyFlags ?: emptySet()
       layoutVariants?.onMapEnter(session, state) { it in flags }
     }
-    val entry = entryScripts.onEntry(state, map)
+    val (setup, frame) = entryScripts.onEntryPhases(state, map)
     val hasArrivalTrigger = entryScripts.hasCoordinate(map, state.x.toInt(), state.y.toInt())
-    if (entry.isEmpty() && !hasArrivalTrigger) return
+    if (setup.isEmpty() && frame == null && !hasArrivalTrigger) return
 
     // Entry scripts may trigger their landing coordinate.
     val entrySequence = Script { ctx ->
-      entry.forEach { it.run(ctx) }
+      setup.forEach { it.run(ctx) }
+      // ON_TRANSITION just wrote the vars that dynamic npc sprites and positions read (the
+      // decomp runs it before objects load); re-send the affected npcs with the fresh values -
+      // BEFORE the frame scene, which walks them (One Island's Bill snapped back to his
+      // setobjectxyperm tile when this ran after the scene).
+      npcService.refreshDynamicNpcs(
+          session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+      frame?.run(ctx)
       // Silph Co's barriers and every other ON_LOAD setmetatile: the client can still be loading
       // the map when these went out, so the first step on the map re-sends them.
       if (state.tileOverrides.isNotEmpty()) state.tileOverridesPendingResend = true
-      // ON_TRANSITION just wrote the vars that dynamic npc sprites and positions read (the
-      // decomp runs it before objects load); re-send the affected npcs with the fresh values.
-      npcService.refreshDynamicNpcs(
-          session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
       if (charId != null) {
         entryScripts.atCoordinate(charId, map, state.x.toInt(), state.y.toInt())?.run(ctx)
       }

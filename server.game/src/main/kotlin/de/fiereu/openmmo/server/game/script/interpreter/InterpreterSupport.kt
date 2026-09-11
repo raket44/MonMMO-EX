@@ -100,6 +100,10 @@ internal object InterpreterSupport {
           // The GBA help-system toggles: nothing to do off a cartridge.
           "HelpSystem_Disable",
           "HelpSystem_Enable",
+          // save_location.c: GameCube-link save flags, nothing off a cartridge.
+          "SetPostgameFlags",
+          // The roaming legendary (Raikou/Entei/Suicune) is not modelled; Celio's Sapphire scene continues.
+          "InitRoamer",
           // Gift monsters: the "give it a nickname?" screen. The client has no server-driven nickname
           // entry yet, so a YES answer keeps the species name; the gift itself already landed.
           "ChangePokemonNickname",

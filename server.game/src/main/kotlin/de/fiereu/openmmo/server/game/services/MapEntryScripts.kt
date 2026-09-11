@@ -26,6 +26,23 @@ constructor(
     private val scriptRegistry: ScriptRegistry,
     private val storyService: StoryService,
 ) {
+  /**
+   * [onEntry] split the way the cartridge orders them: ON_TRANSITION and ON_LOAD first, then the
+   * frame-table scene - the caller re-sends the npcs those two placed BEFORE the scene walks them.
+   */
+  fun onEntryPhases(state: PlayerState, map: MapDef): Pair<List<Script>, Script?> {
+    val setup = buildList {
+      resolve(map.onTransitionScript, map.regionId.toInt())?.let { add(it) }
+      resolve(map.onLoadScript, map.regionId.toInt())?.let { add(it) }
+    }
+    val charId = state.characterId ?: return setup to null
+    val frame =
+        map.onFrameScripts
+            .firstOrNull { storyService.getVar(charId, it.varKey) == it.value }
+            ?.let { resolve(it.script, map.regionId.toInt()) }
+    return setup to frame
+  }
+
   fun onEntry(state: PlayerState, map: MapDef): List<Script> {
     val charId = state.characterId
     return buildList {

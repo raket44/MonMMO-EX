@@ -1241,10 +1241,10 @@ class InterpretedScript(
     // The in-battle defeat speech, shown by the battle end packet before the prize money.
     val defeat = textLine(textArg(instruction, 1).token, instruction)
     val defeatedKey = TrainerStoryState.defeated(program.storyNamespace, trainer.id)
-    if (ctx.isFlagSet(defeatedKey)) {
-      state.pc++
-      return true
-    }
+    // TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT -> EventScript_DoNoIntroTrainerBattle (battle_setup.c):
+    // no Script_HasTrainerBeenFought check, the fight happens every time the script reaches it.
+    // The scripts gate repeats themselves (goto_if_set FLAG_DEFEATED_LORELEI); skipping on the
+    // trainer flag made a re-challenged Elite Four member "win" without a battle (2026-09-11).
     return when (val result =
         tracedWait(ctx, "battle ${trainer.constant}") {
           ctx.trainerBattle(trainer, defeat.textId)

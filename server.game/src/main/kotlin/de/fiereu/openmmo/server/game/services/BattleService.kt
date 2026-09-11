@@ -339,13 +339,12 @@ constructor(
     if (!(result == BattleResult.DEFEAT && battle.whiteoutOnDefeat)) {
       event.session.attributes[PLAYER_STATE]?.let { state ->
         val mount: Byte? = if (state.surfing) SURF_TRANSPORTATION else if (state.riding) RIDING_TRANSPORTATION else null
-        if (mount != null) {
-          event.session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
-          // The client's overworld player may not be rebuilt yet when this ack arrives (the
-          // first attempt, sent only here, changed nothing live); the first step proves it is.
-          state.mountResendPending = true
-          log.info { "Battle over for char=$charId: mount $mount re-sent (surfing=${state.surfing} riding=${state.riding})" }
-        }
+        if (mount != null) event.session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+        // The client's overworld player may not be rebuilt yet when this ack arrives, and what is
+        // sent now can be lost (the mount was, play-verified); the first step proves it is back,
+        // and the release, the mount and a facing go out again then.
+        if (battle.trainer == null) state.mountResendPending = true
+        log.info { "Battle over for char=$charId: mount $mount (surfing=${state.surfing} riding=${state.riding}), wild=${battle.trainer == null}" }
       }
     }
     // A scripted loss without whiteout (early rival) is the script's to handle.

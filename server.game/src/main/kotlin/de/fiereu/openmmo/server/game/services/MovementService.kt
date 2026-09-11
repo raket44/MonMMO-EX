@@ -131,11 +131,17 @@ constructor(
     if (encounterService.inBattle(charId)) return
     if (state.mountResendPending) {
       state.mountResendPending = false
+      // A wild battle's release (scripted state off) went out at the client-ready ack, which the
+      // client can drop while it rebuilds the overworld; a trainer battle's script releases
+      // later and those players walk away fine. So the first step after a wild battle repeats
+      // the release, the mount, and a facing action that seizes the movement controller.
       val mount: Byte = if (state.surfing) 0x01 else if (state.riding) 0x02 else 0
-      if (mount != 0.toByte()) {
-        ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
-        log.info { "First step after a battle for char=$charId: mount $mount sent again" }
+      if (!state.scriptRunning && !state.blocksPlayerInput) {
+        ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
       }
+      if (mount != 0.toByte()) ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+      scriptMovement.reassertScriptedFacing(ctx, state)
+      log.info { "First step after a wild battle for char=$charId: release + mount $mount + facing sent again (script=${state.scriptRunning})" }
     }
     val stored = characterStore.getCharacter(charId) ?: return
     val currentMap =

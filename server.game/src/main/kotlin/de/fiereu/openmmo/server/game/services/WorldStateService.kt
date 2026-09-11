@@ -107,8 +107,9 @@ class WorldStateService @Inject constructor(
         flags = 0,
         partyDex = partyDex,
         partyForms = partyDex.map { 0.toByte() },
-        pokedexSeen = emptyList(),
-        pokedexCaught = emptyList(),
+        // f/Za0 keeps these as f/Ob1.Ls / r5: the counts the Pokedex and trainer card show.
+        pokedexSeen = DexProgressService.seenWireIds(stored).sorted().map { it.toShort() },
+        pokedexCaught = DexProgressService.ownedWireIds(stored).sorted().map { it.toShort() },
         badges = emptyList(),
         variables = StoryClientState.itemUnlocks(stored.items),
     )

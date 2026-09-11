@@ -39,19 +39,14 @@ import javax.inject.Singleton
 class DexProgressService @Inject constructor(private val characters: CharacterStore) {
 
   fun resetPacket(stored: StoredCharacter): WorldFlagTableResetPacket {
-    val owned = heldWireIds(stored)
+    val owned = ownedWireIds(stored)
     val asOriginalTrainer =
         (stored.pokemon + stored.pcStorage)
             .filter { it.ot == stored.info.name }
             .map { clientSpeciesId(it.dexId) }
             .filter { it in 1..LAST_WIRE_ID }
             .toSet()
-    val seen =
-        owned +
-            stored.storyFlags
-                .filter { it.startsWith(SEEN_FLAG_PREFIX) }
-                .mapNotNull { it.removePrefix(SEEN_FLAG_PREFIX).toIntOrNull() }
-                .filter { it in 1..LAST_WIRE_ID }
+    val seen = seenWireIds(stored)
     return WorldFlagTableResetPacket(
         listOf(group(seen), group(owned), group(asOriginalTrainer), ByteArray(0)))
   }
@@ -67,7 +62,7 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
         wireIds
             .filter { it in 1..LAST_WIRE_ID }
             .filter { SEEN_FLAG_PREFIX + it !in stored.storyFlags }
-            .filter { it !in heldWireIds(stored) }
+            .filter { it !in ownedWireIds(stored) }
     if (unseen.isEmpty()) return
     unseen.forEach { characters.setStoryFlag(characterId, SEEN_FLAG_PREFIX + it) }
     refresh(ctx, characterId)
@@ -79,11 +74,6 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
     ctx.send(resetPacket(stored))
   }
 
-  private fun heldWireIds(stored: StoredCharacter): Set<Int> =
-      (stored.pokemon + stored.pcStorage)
-          .map { clientSpeciesId(it.dexId) }
-          .filter { it in 1..LAST_WIRE_ID }
-          .toSet()
 
   private fun group(wireIds: Set<Int>): ByteArray = DexProgressGroups.encode(wireIds)
 
@@ -92,6 +82,19 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
     const val LAST_WIRE_ID = DexProgressGroups.LAST_WIRE_ID
 
     const val SEEN_FLAG_PREFIX = "dex_seen:"
+    const val OWNED_FLAG_PREFIX = "dex_owned:"
+
+    /** Caught: every species the character holds or ever received (CharacterStore.addPokemon flags). */
+    fun ownedWireIds(stored: StoredCharacter): Set<Int> =
+        ((stored.pokemon + stored.pcStorage).map { clientSpeciesId(it.dexId) } + flagged(stored, OWNED_FLAG_PREFIX))
+            .filter { it in 1..LAST_WIRE_ID }
+            .toSet()
+
+    /** Seen: everything caught plus every species marked by [markSeen]. */
+    fun seenWireIds(stored: StoredCharacter): Set<Int> = ownedWireIds(stored) + flagged(stored, SEEN_FLAG_PREFIX)
+
+    private fun flagged(stored: StoredCharacter, prefix: String): List<Int> =
+        stored.storyFlags.filter { it.startsWith(prefix) }.mapNotNull { it.removePrefix(prefix).toIntOrNull() }.filter { it in 1..LAST_WIRE_ID }
   }
 }
 

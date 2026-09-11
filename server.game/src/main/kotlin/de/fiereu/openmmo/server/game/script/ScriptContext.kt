@@ -843,17 +843,9 @@ internal constructor(
    */
   fun dexCounts(kantoOnly: Boolean): Pair<Int, Int> {
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return 0 to 0
-    val owned =
-        (stored.pokemon + stored.pcStorage)
-            .map { de.fiereu.openmmo.common.clientSpeciesId(it.dexId) }
-            .filter { it >= 1 }
-            .toSet()
-    val seen =
-        owned +
-            stored.storyFlags
-                .filter { it.startsWith(de.fiereu.openmmo.server.game.services.DexProgressService.SEEN_FLAG_PREFIX) }
-                .mapNotNull { it.removePrefix(de.fiereu.openmmo.server.game.services.DexProgressService.SEEN_FLAG_PREFIX).toIntOrNull() }
-                .filter { it >= 1 }
+    // Same tiers the Pokedex shows: caught = held or ever received, seen = caught + marked.
+    val owned = de.fiereu.openmmo.server.game.services.DexProgressService.ownedWireIds(stored)
+    val seen = de.fiereu.openmmo.server.game.services.DexProgressService.seenWireIds(stored)
     val last = if (kantoOnly) 151 else Int.MAX_VALUE
     return seen.count { it <= last } to owned.count { it <= last }
   }

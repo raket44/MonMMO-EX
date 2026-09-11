@@ -253,6 +253,12 @@ constructor(
           else it.copy(pcStorage = it.pcStorage.filter { m -> m.id != pokemon.id }.toMutableList())
         },
     )
+        .also { added ->
+          // The Pokedex "caught" tier is what the character EVER owned, not what it holds now:
+          // a released or traded-away species stays caught, as on the cartridge (GetSetPokedexFlag
+          // on receipt). Held species still count without the flag; this covers the departures.
+          if (added) setStoryFlag(characterId, de.fiereu.openmmo.server.game.services.DexProgressService.OWNED_FLAG_PREFIX + de.fiereu.openmmo.common.clientSpeciesId(pokemon.dexId))
+        }
   }
 
   /**

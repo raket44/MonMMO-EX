@@ -417,6 +417,25 @@ internal constructor(
 
   fun setVar(key: String, value: Int) {
     characterId?.let { story.setVar(it, key, value) }
+    // A scene variable that arms or disarms an elevation lock on this map (the badge gates) is
+    // re-evaluated at once, so the guard's "go right ahead" lifts the row before the release.
+    de.fiereu.openmmo.server.game.services.MapEntryPolish.onVarChanged(this, key)
+  }
+
+  /** The hosted map the player stands on, null on DS maps. */
+  fun currentMap(): de.fiereu.openmmo.maps.MapDef? {
+    val info = characterId?.let { characters?.getCharacter(it)?.info } ?: return null
+    return maps?.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+  }
+
+  fun hasTileOverride(x: Int, y: Int): Boolean = state.tileOverrides.containsKey((x shl 16) or (y and 0xFFFF))
+
+  /** Puts a tile back to what the map says (graphic, collision and elevation) for this player. */
+  fun restoreMetatile(x: Int, y: Int) {
+    val tile = currentMap()?.tileAt(x, y) ?: return
+    val upper = tile.collision.toInt() and 0xFF
+    setMetatile(x, y, tile.material.toInt() and 0xFFFF, impassable = (upper and 1) != 0, elevation = upper shr 2)
+    state.tileOverrides.remove((x shl 16) or (y and 0xFFFF))
   }
 
   /** Record the local player/interacted-object lock used by this script. */

@@ -45,24 +45,36 @@ object MapEntryPolish {
 
   /**
    * The badge guards of Route 23 and the Route 22 gate (data/scripts/route23.inc): a trigger row
-   * in front of each guard checks one badge and walks the player a tile back without it. The
-   * tiles just north of each trigger - the way onward - are raised while that badge is missing,
-   * so nobody slips past the row before the guard's script lands. Guards on the row itself stay
-   * the client's own npc collision. Nothing is touched once the badge is held.
+   * in front of each guard checks one badge, and the row is ARMED while the map's scene variable
+   * still names that gate. The tiles just north of each armed trigger - the way onward - are
+   * raised, badge or no badge: on the cartridge the guard stops everyone first and only then lets
+   * the badge holder through. The guard's "go right ahead" sets the scene variable past the
+   * gate, which [onVarChanged] sees and lifts the row before the script releases the player.
+   * Guards on the row itself stay the client's own npc collision.
    */
   private fun lockBadgeGates(ctx: ScriptContext, map: MapDef, gates: List<de.fiereu.openmmo.maps.MapCoordScript>) {
-    val namespace = de.fiereu.openmmo.common.enums.Region.byId(map.regionId.toInt())?.name?.lowercase() ?: return
-    val locked = HashSet<Int>()
+    val seen = HashSet<Int>()
     for (gate in gates) {
-      val badge = BADGE_BY_GATE.entries.firstOrNull { gate.script.contains(it.key) }?.value ?: continue
-      if (ctx.isFlagSet("$namespace/FLAG_BADGE0${badge}_GET")) continue
       val x = gate.x
       val y = gate.y - 1
+      if (!seen.add((x shl 16) or y)) continue
       val tile = map.tileAt(x, y) ?: continue
       if (tile.blocksMovement()) continue
-      if (!locked.add((x shl 16) or y)) continue
-      ctx.setMetatile(x, y, tile.material.toInt() and 0xFFFF, impassable = true, elevation = LOCKED_ELEVATION)
+      val armed = ctx.getVar(gate.varKey) == gate.value
+      if (armed) {
+        if (!ctx.hasTileOverride(x, y)) ctx.setMetatile(x, y, tile.material.toInt() and 0xFFFF, impassable = true, elevation = LOCKED_ELEVATION)
+      } else if (ctx.hasTileOverride(x, y)) {
+        ctx.restoreMetatile(x, y)
+      }
     }
+  }
+
+  /** A script wrote [key]: if it is a badge gate's scene variable on the current map, re-evaluate the locks. */
+  fun onVarChanged(ctx: ScriptContext, key: String) {
+    val map = ctx.currentMap() ?: return
+    val gates = map.coordScripts.filter { it.script.endsWith(BADGE_GATE_SUFFIX) }
+    if (gates.none { it.varKey == key }) return
+    lockBadgeGates(ctx, map, gates)
   }
 
   private const val KANTO = 0
@@ -77,9 +89,4 @@ object MapEntryPolish {
   /** Any GBA elevation but the ground's 3 (and not the 0 wildcard): the client refuses the step. */
   const val LOCKED_ELEVATION = 4
   private const val BADGE_GATE_SUFFIX = "BadgeGuardTrigger"
-  private val BADGE_BY_GATE =
-      linkedMapOf(
-          "Boulder" to 1, "Cascade" to 2, "Thunder" to 3, "Rainbow" to 4,
-          "Soul" to 5, "Marsh" to 6, "Volcano" to 7, "Earth" to 8,
-      )
 }

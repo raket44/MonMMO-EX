@@ -74,6 +74,9 @@ internal object InterpreterSupport {
       )
 
   /** Specials that are pure client presentation or quest-log bookkeeping. */
+  /** Music commands (all no-ops here); a delay next to one is the song's own play-out time. */
+  val BGM_COMMANDS = setOf("playbgm", "fadeoutbgm", "fadedefaultbgm", "fadenewbgm", "savebgm", "playfanfare")
+
   val NOOP_SPECIALS =
       setOf(
           "SetUsedPkmnCenterQuestLogEvent",
@@ -141,6 +144,7 @@ internal object InterpreterSupport {
           "StartMarowakBattle",
           "GetElevatorFloor",
           "ListMenu",
+          "ReturnToListMenu",
           "EnterSafariMode",
           "SetHiddenItemFlag",
           "ExitSafariMode",

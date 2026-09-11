@@ -559,11 +559,14 @@ class InterpretedScript(
         in InterpreterSupport.NOOP_COMMANDS -> state.pc++
         "delay" -> {
           val frames = (instruction.arg(0) as? IntArg)?.value ?: 0
-          // A delay right after a music change only lets the song play out (Pewter's Jigglypuff,
-          // 455 frames); the music commands are no-ops here, so the player would just stand
-          // frozen with nothing happening (Miltank, 2026-09-11).
-          val previous = state.activeProgram.instructions.getOrNull(state.pc - 1)?.command
-          if (previous != "playbgm" && previous != "fadeoutbgm") {
+          // A delay bracketed by music commands only lets a song play out (Pewter's Jigglypuff:
+          // playbgm, message, waitmessage, delay 455, playbgm); the music commands are no-ops
+          // here, so the player just stood frozen for five silent seconds (Miltank, 2026-09-11).
+          val neighbours =
+              listOfNotNull(
+                  state.activeProgram.instructions.getOrNull(state.pc - 1)?.command,
+                  state.activeProgram.instructions.getOrNull(state.pc + 1)?.command)
+          if (neighbours.none { it in InterpreterSupport.BGM_COMMANDS }) {
             delay((frames * FRAME_MILLIS).coerceAtMost(MAX_DELAY_MILLIS))
           }
           state.pc++
@@ -583,7 +586,7 @@ class InterpretedScript(
         "special" -> {
           when (val function = instruction.arg(0).token) {
             "HealPlayerParty" -> ctx.healParty()
-            "ListMenu" -> runListMenu(ctx, state)
+            "ListMenu", "ReturnToListMenu" -> runListMenu(ctx, state)
             // src/safari_zone.c: the Safari Game on the client's own safari counters.
             // FlagSet(gSpecialVar_0x8004): the Silph Co. doors after the Card Key opens them.
             "SetHiddenItemFlag" -> ctx.setFlagRememberedInVar(namespaced("VAR_0x8004"))
@@ -1387,7 +1390,7 @@ class InterpretedScript(
         // A `call` here is a flag check that sets the result (the fossil scientist's list checks).
         "waitmessage", "setvar", "copyvar", "specialvar", "compare", "call" -> pc++
         "multichoice", "multichoicedefault", "multichoicegrid", "ds_menu" -> return true
-        "special" -> return if (instruction.arg(0).token == "ListMenu") true else caseTargets > 0
+        "special" -> return if (instruction.arg(0).token == "ListMenu" || instruction.arg(0).token == "ReturnToListMenu") true else caseTargets > 0
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
           val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false
           if (!multichoiceFollows(targetProgram, target, visited)) return false

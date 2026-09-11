@@ -1,16 +1,12 @@
 package de.fiereu.openmmo.server.game.services
 
-import de.fiereu.bytecodec.GrowableWriteBuffer
-import de.fiereu.bytecodec.U8
-import de.fiereu.bytecodec.Utf16LeNullTerminated
 import de.fiereu.network.PacketEvent
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.enums.PokemonContainer
-import de.fiereu.openmmo.net.game.codecs.PokemonCodec
 import de.fiereu.openmmo.net.game.packets.ChatLinkInspectRequestPacket
 import de.fiereu.openmmo.net.game.packets.MonsterRecordBookPacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
-import de.fiereu.openmmo.net.game.packets.dialog.DialogActionPacket
+import de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -20,14 +16,15 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /**
- * The reply to a chat monster-link click (c2s 0x2E). The client only ever builds its summary
- * window from a monster in one of its own containers, and the packet the retail server answers
- * with is not identified yet, so the reply is a switchable probe (/linkprobe N) until one of the
- * candidates opens the window in play (2026-09-11):
+ * The reply to a chat monster-link click (c2s 0x2E). The client (f/yT0 = 0x13 container packet
+ * handler) keeps one container object per container byte; byte 15 (f/Cy.Vg0) is the "shared
+ * monster" slot, built as f/po, and f/ln1.fN makes it the selected container ahead of the PC.
+ * The 0x27 toggle (f/ka0) then calls f/NA0.CK1 -> dI0, which opens the box window for the
+ * selected container, in read-only summary mode (f/ur1.m3, fresh stats) when it is byte 15.
+ * So the reply is: the monster delivered into container 15, then 0x27 with `shown`.
  *
- * 0-3 the monster delivered in a container the client shows summaries for (GTL listing, event,
- *     rental party, trade); 4 the dialog kind that carries monster records (wire 59: owner name,
- *     count, records); 5 the loose-record packet alone.
+ * `/linkprobe N` (developer) can still answer with the older candidates for comparison:
+ * 1-3 the monster in a GTL/event/rental container, 5 the loose record-book packet.
  */
 @Singleton
 class ChatLinkService @Inject constructor(private val characterStore: CharacterStore) {
@@ -45,31 +42,16 @@ class ChatLinkService @Inject constructor(private val characterStore: CharacterS
       return
     }
     val variant = probeVariant
-    log.info { "Chat link: char=${state.characterId} inspects ${mon.id} (${mon.dexId}) of ${request.ownerId}, probe variant $variant" }
+    log.info { "Chat link: char=${state.characterId} views ${mon.id} (${mon.dexId}) of ${request.ownerId}, variant $variant" }
     when (variant) {
-      0 -> session.send(inContainer(mon, PokemonContainer.GTS))
-      1 -> session.send(inContainer(mon, PokemonContainer.EVENT))
-      2 -> session.send(inContainer(mon, PokemonContainer.RENTAL_PARTY))
-      3 -> session.send(inContainer(mon, PokemonContainer.TRADE))
-      4 -> {
-        val out = GrowableWriteBuffer()
-        Utf16LeNullTerminated.write(out, owner.info.name)
-        U8.write(out, 1)
-        PokemonCodec.write(out, mon)
-        val seq = state.dialogSeqId
-        state.dialogSeqId = seq + 1
-        session.send(
-            DialogActionPacket(
-                flags = seq.toByte(),
-                actionType = RECORD_LIST_KIND,
-                textId = 0,
-                entityId = mon.id,
-                contextValue = 0,
-                messageArgs = emptyList(),
-                detail = out.toByteArray(),
-            ))
+      1 -> session.send(inContainer(mon, PokemonContainer.GTS))
+      2 -> session.send(inContainer(mon, PokemonContainer.EVENT))
+      3 -> session.send(inContainer(mon, PokemonContainer.RENTAL_PARTY))
+      5 -> session.send(MonsterRecordBookPacket(listOf(mon)))
+      else -> {
+        session.send(inContainer(mon, PokemonContainer.SHARED_VIEW))
+        session.send(PcTogglePacket(shown = true))
       }
-      else -> session.send(MonsterRecordBookPacket(listOf(mon)))
     }
   }
 
@@ -80,9 +62,4 @@ class ChatLinkService @Inject constructor(private val characterStore: CharacterS
           delete = false,
           pokemon = listOf(mon.copy(container = container, containerSlot = 0)),
       )
-
-  private companion object {
-    /** Dialog wire 59 (f/qM1 Cu0): parse case 8 = a string, u8 count, then monster records. */
-    const val RECORD_LIST_KIND: Byte = 59
-  }
 }

@@ -97,6 +97,9 @@ internal object InterpreterSupport {
           // The Sevii ferry: the client has no destination menu yet, so the menu draws nothing and
           // GetSelectedSeagallopDestination answers "cancel"; the sailor's own lines still play.
           "DrawSeagallopDestinationMenu",
+          // The GBA help-system toggles: nothing to do off a cartridge.
+          "HelpSystem_Disable",
+          "HelpSystem_Enable",
           // Gift monsters: the "give it a nickname?" screen. The client has no server-driven nickname
           // entry yet, so a YES answer keeps the species name; the gift itself already landed.
           "ChangePokemonNickname",
@@ -257,6 +260,9 @@ internal object InterpreterSupport {
           "GetSeagallopNumber" to 7,
           "GetSelectedSeagallopDestination" to 127,
           "IsNationalPokedexEnabled" to 0,
+          // No wireless adapter on a server build: the Joyful Game Corner attendant explains the
+          // minigames need one, the way the cartridge does without it.
+          "IsWirelessAdapterConnected" to 0,
           // No Vs Seeker / Match Call rematch offers until the server models them; scripts fall
           // through to their ordinary already-defeated dialog.
           "ShouldTryRematchBattle" to 0,

@@ -433,6 +433,37 @@ class ScriptSupportAnalyzer(
   private fun isImmediate(arg: de.fiereu.openmmo.script.ScriptArg): Boolean =
       arg is IntArg || (arg is SymbolArg && arg.token in BOOLEAN_SYMBOLS)
 
+  /**
+   * A comparison on the result of the specialvar right before it, when that specialvar has a
+   * constant answer (SPECIALVAR_RESULTS), is decided here: the branch the constant never takes is
+   * not walked. The Joyful Game Corner attendant asks IsWirelessAdapterConnected first, and
+   * everything behind YES is the wireless link lobby the server does not model; without this the
+   * whole npc fell to the Kotlin stub over code it could never reach. Null = undecided.
+   */
+  private fun constantBranch(program: ScriptProgram, pc: Int, instruction: ScriptInstruction): Boolean? {
+    if (instruction.args.size != 3) return null
+    val previous = program.instructions.getOrNull(pc - 1) ?: return null
+    if (previous.command != "specialvar" || previous.args.size != 2) return null
+    val variable = (instruction.args[0] as? VarArg)?.token ?: return null
+    if ((previous.args[0] as? VarArg)?.token != variable) return null
+    val constant = InterpreterSupport.SPECIALVAR_RESULTS[previous.args[1].token] ?: return null
+    val operand =
+        when (val arg = instruction.args[1]) {
+          is IntArg -> arg.value
+          is SymbolArg -> when (arg.token) { "TRUE" -> 1; "FALSE" -> 0; else -> return null }
+          else -> return null
+        }
+    return when (instruction.command.removePrefix("goto_").removePrefix("call_")) {
+      "if_eq" -> constant == operand
+      "if_ne" -> constant != operand
+      "if_lt" -> constant < operand
+      "if_le" -> constant <= operand
+      "if_gt" -> constant > operand
+      "if_ge" -> constant >= operand
+      else -> null
+    }
+  }
+
   private fun successors(
       script: InterpretedScript,
       activeProgram: ScriptProgram,
@@ -445,16 +476,14 @@ class ScriptSupportAnalyzer(
       "return" -> emptyList()
       "goto" -> listOf(target(script, activeProgram, instruction, 0))
       "call" -> listOf(target(script, activeProgram, instruction, 0), next)
-      in COMPARISON_BRANCHES ->
-          listOf(
-              target(
-                  script,
-                  activeProgram,
-                  instruction,
-                  if (instruction.args.size == 1) 0 else 2,
-              ),
-              next,
-          )
+      in COMPARISON_BRANCHES -> {
+        val branch = target(script, activeProgram, instruction, if (instruction.args.size == 1) 0 else 2)
+        when (constantBranch(activeProgram, pc, instruction)) {
+          true -> if (instruction.command.startsWith("call_if")) listOf(branch, next) else listOf(branch)
+          false -> listOf(next)
+          null -> listOf(branch, next)
+        }
+      }
       in FLAG_BRANCHES -> listOf(target(script, activeProgram, instruction, 1), next)
       in InterpreterSupport.DEFEATED_BRANCHES ->
           listOf(target(script, activeProgram, instruction, 1), next)

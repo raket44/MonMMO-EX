@@ -522,6 +522,9 @@ class InterpretedScript(
                     "bufferpartymonnick" -> ctx.partyNickname(value(ctx, instruction.arg(1)))
                     "buffermovename" -> ctx.moveName(value(ctx, instruction.arg(1)))
                     "bufferspeciesname" -> ctx.speciesName(value(ctx, instruction.arg(1)))
+                    // A named item (ITEM_DOME_FOSSIL); an item held in a var is a DS convention.
+                    "bufferitemname" ->
+                        (instruction.arg(1) as? SymbolArg)?.let { ctx.resolveItem(it.token)?.name }
                     "bufferleadmonspeciesname" -> ctx.leadSpeciesName()
                     "buffernumberstring" -> value(ctx, instruction.arg(1)).toString()
                     else -> null
@@ -1331,7 +1334,8 @@ class InterpretedScript(
     while (pc in program.instructions.indices && visited.add("${program.id.stable}:$pc")) {
       val instruction = program.instructions[pc]
       when (instruction.command) {
-        "waitmessage", "setvar", "copyvar", "specialvar", "compare" -> pc++
+        // A `call` here is a flag check that sets the result (the fossil scientist's list checks).
+        "waitmessage", "setvar", "copyvar", "specialvar", "compare", "call" -> pc++
         "multichoice", "multichoicedefault", "multichoicegrid", "ds_menu" -> return true
         "special" -> return if (instruction.arg(0).token == "ListMenu") true else caseTargets > 0
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {

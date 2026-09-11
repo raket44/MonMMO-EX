@@ -1078,6 +1078,8 @@ constructor(
     if (x !in 0 until map.width || y !in 0 until map.height) return false
     // A tile a script replaced (setmetatile) carries its own collision until the map reloads.
     val tile = overrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y) ?: return true
+    // A waterfall is climbed by the HM prompt (the UP push handled before this), never stepped on.
+    if (tile.behavior == TileBehavior.WATERFALL) return false
     // Water blocks feet and carries a surfer.
     if (tile.behavior.isSurfable) return surfing
     return !tile.blocksMovement()

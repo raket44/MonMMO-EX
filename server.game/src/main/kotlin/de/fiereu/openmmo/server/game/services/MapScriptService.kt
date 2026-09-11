@@ -6,6 +6,7 @@ import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptRunner
 import de.fiereu.openmmo.server.game.session.DeferredTrigger
 import de.fiereu.openmmo.server.game.session.PlayerState
+import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,6 +16,8 @@ import javax.inject.Singleton
  * by the first ON_FRAME entry whose story var matches. The conditional ON_WARP table is a later
  * addition.
  */
+private val log = KotlinLogging.logger {}
+
 @Singleton
 class MapScriptService
 @Inject
@@ -41,6 +44,20 @@ constructor(
     if (charId != null) applyFlashState(session, charId, map)
     if (charId != null && resetMapLocalState(charId, map)) {
       npcService.refreshDynamicNpcs(session, map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt())
+    }
+    if (charId != null && state.arrivedByFall) {
+      state.arrivedByFall = false
+      // FallWarpEffect_7: landing on surfable water after a drop (Seafoam Islands) sets VAR_TEMP_1
+      // and mounts the surf, and the floor's frame script rides the current from there.
+      if (map.tileAt(state.x.toInt(), state.y.toInt())?.behavior?.isSurfable == true) {
+        val namespace = de.fiereu.openmmo.common.enums.Region.byId(map.regionId.toInt())?.name?.lowercase()
+        if (namespace != null) characterStore.setStoryVar(charId, "$namespace/VAR_TEMP_1", 1)
+        state.surfing = true
+        state.riding = false
+        session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0x01))
+        state.mountResendPending = true
+        log.info { "Fell onto water at (${state.x}, ${state.y}) on ${map.bankId}:${map.mapId}: surfing, VAR_TEMP_1 = 1" }
+      }
     }
     // Story-dependent map variants: the client's block grid follows the flags already set.
     if (charId != null) {

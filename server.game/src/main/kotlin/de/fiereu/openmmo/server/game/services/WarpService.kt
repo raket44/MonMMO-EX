@@ -73,6 +73,12 @@ constructor(
               de.fiereu.openmmo.common.enums.Direction.DOWN)
         } else stored.info.dynamicWarp
     state?.justWarped = true
+    // FallWarpEffect_7 (field_effect.c): a drop through a hole that lands on Seafoam water puts the
+    // player on the current - VAR_TEMP_1 = 1 for the floor's frame script, surfing on. Flagged
+    // here, applied on arrival once the map's temp vars have been reset.
+    state?.arrivedByFall =
+        mapManager.getMap(stored.info.positionRegionId, stored.info.positionBankId, stored.info.positionMapId)
+            ?.tileAt(tile.x, tile.y)?.behavior == de.fiereu.openmmo.common.enums.TileBehavior.FALL_WARP
     // A warp is a fresh map load even when it lands on the same map (Silph Co's teleporter
     // pads): the client redraws the ROM's tiles, and the cartridge runs ON_LOAD / ON_TRANSITION
     // again - so the entry scripts must run again too, or a barrier they closed vanishes.

@@ -1,6 +1,8 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
+import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
+import de.fiereu.openmmo.net.game.packets.Value16Group
 import de.fiereu.openmmo.common.enums.EncounterMethod
 import de.fiereu.openmmo.common.enums.TileBehavior
 import de.fiereu.openmmo.maps.MapDef
@@ -96,6 +98,7 @@ constructor(
       if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(rate, lead)) return
       val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
       val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
+      if (repelBlocks(charId, lead, level)) return
       log.info {
         "Wild encounter for char=$charId at ($x, $y) [$season/$time]: " +
             "species ${slot.dexId} level $level"
@@ -114,6 +117,7 @@ constructor(
     if (!rollsEncounter(decompTable, lead)) return
     val slot = pickSlot(decompTable) ?: return
     val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
+    if (repelBlocks(charId, lead, level)) return
     log.info {
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
@@ -152,6 +156,35 @@ constructor(
   /** True while the character has a battle running - steps that land then are stale. */
   fun inBattle(charId: Long): Boolean = battleService.inBattle(charId)
 
+  /**
+   * Every completed step burns one repel step (src/item_use.c / field_player_avatar.c): the HUD's
+   * "{00} repel step(s)" line follows through the local delta's 0x10 group, and the last step
+   * announces the end the way the cartridge does.
+   */
+  fun onAnyStep(session: SessionContext, charId: Long) {
+    val stored = characterStore.getCharacter(charId) ?: return
+    val left = stored.info.repelLeft.toInt()
+    if (left <= 0) return
+    val next = left - 1
+    val item: Short = if (next == 0) 0 else stored.info.repelItemId
+    characterStore.updateCharacter(stored.info.copy(repelLeft = next.toShort(), repelItemId = item))
+    session.send(LocalCharacterDeltaPacket(value16 = Value16Group(next.toShort(), item)))
+    if (next == 0) {
+      characterStore.flushCharacterAsync(charId)
+      session.send(notice("The Repel's effect wore off."))
+      log.info { "[Repel] char=$charId wore off" }
+    }
+  }
+
+  /** An active repel turns away any wild monster below the lead's level (wild_encounter.c IsWildLevelAllowed). */
+  private fun repelBlocks(charId: Long, lead: OverworldAbilities.Lead?, wildLevel: Int): Boolean {
+    if (lead == null) return false
+    val left = characterStore.getCharacter(charId)?.info?.repelLeft ?: 0
+    if (left <= 0 || wildLevel >= lead.level) return false
+    log.debug { "[Repel] char=$charId repelled a level $wildLevel wild (lead ${lead.level})" }
+    return true
+  }
+
   fun onNdsStep(session: SessionContext, charId: Long, region: Int, bank: Int, map: Int, x: Int, y: Int) {
     val type = ndsLand.typeAt(region, bank, map, x, y) ?: return
     val types =
@@ -173,6 +206,7 @@ constructor(
     if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(DEFAULT_ENCOUNTER_RATE, lead)) return
     val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
     val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
+    if (repelBlocks(charId, lead, level)) return
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
     battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))

@@ -19,4 +19,6 @@ data class NpcDef(
     val script: String = "0x0",
     /** Story flag that hides this npc by default, or "" when it is always shown. */
     val hideFlag: String = "",
+    /** The floor-below boulder's hide flag a pushable boulder reveals when it drops through a hole. */
+    val revealFlag: String = "",
 )

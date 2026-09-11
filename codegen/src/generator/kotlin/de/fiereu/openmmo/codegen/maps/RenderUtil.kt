@@ -45,7 +45,8 @@ object RenderUtil {
           " movementRangeY = ${it.movementRangeY}, trainerType = ${it.trainerType}," +
           " sightRange = ${it.sightRange}," +
           " facing = ${it.facing}, script = ${escapeString(it.script)}," +
-          " hideFlag = ${escapeString(it.hideFlag)})"
+          " hideFlag = ${escapeString(it.hideFlag)}," +
+          " revealFlag = ${escapeString(it.revealFlag)})"
     }
   }
 

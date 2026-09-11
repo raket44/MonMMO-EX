@@ -38,7 +38,9 @@ enum class TileBehavior {
   SPIN_UP,
   SPIN_DOWN,
   /** MB_STOP_SPINNING: the spin ends on this tile. */
-  STOP_SPINNING;
+  STOP_SPINNING,
+  /** MB_FALL_WARP: a hole. The player drops a floor; a Strength boulder pushed onto it falls through (Seafoam Islands). */
+  FALL_WARP;
 
   /** The direction a spin tile sends the player, null for any other tile. */
   val spinDirection: Direction?
@@ -69,5 +71,5 @@ enum class TileBehavior {
         }
 
   val warpsOnStep: Boolean
-    get() = this == LADDER || this == NON_ANIMATED_DOOR
+    get() = this == LADDER || this == NON_ANIMATED_DOOR || this == FALL_WARP
 }

@@ -87,6 +87,8 @@ data class ParsedNpc(
     val script: String,
     // Namespaced story flag that hides this npc by default, or "" when it is always shown.
     val hideFlag: String,
+    /** A pushable boulder's trainer_type: the hide flag of the boulder on the floor below, cleared when this one falls through a hole. */
+    val revealFlag: String = "",
 )
 
 data class ParsedBgEvent(

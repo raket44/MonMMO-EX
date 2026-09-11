@@ -142,6 +142,7 @@ class WarpRules @Inject constructor() {
               Triple("DOOR", Fire.STEP, Direction.UP) to Arrival.STEP,
               Triple("NON_ANIMATED_DOOR", Fire.CONTACT, null) to Arrival.STEP,
               Triple("LADDER", Fire.CONTACT, null) to Arrival.REST,
+              Triple("FALL_WARP", Fire.CONTACT, null) to Arrival.REST,
               Triple("STAIR_WARP_EAST", Fire.STAND, Direction.RIGHT) to Arrival.REST,
               Triple("STAIR_WARP_WEST", Fire.STAND, Direction.LEFT) to Arrival.REST,
               Triple("NORTH_ARROW_WARP", Fire.STAND, Direction.UP) to Arrival.REST,

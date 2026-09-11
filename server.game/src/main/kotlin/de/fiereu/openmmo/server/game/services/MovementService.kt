@@ -175,6 +175,7 @@ constructor(
       state.x = toX.toShort()
       state.y = toY.toShort()
       state.facingDirection = msg.direction
+      encounterService.onAnyStep(ctx, charId)
       if (executeCustomWarp(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)) {
         return
       }
@@ -574,6 +575,7 @@ constructor(
     state.x = toX.toShort()
     state.y = toY.toShort()
     state.elevation = gbaElevationAt(currentMap, toX, toY, state.elevationOr(DEFAULT_GBA_ELEVATION))
+    encounterService.onAnyStep(ctx, charId)
     rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
     if (startSpin(ctx, charId, state, currentMap, toX, toY)) return
@@ -739,6 +741,16 @@ constructor(
     characterStore.setStoryVar(charId, npcService.xyOverrideKey(region, bank, mapId, boulder.entityIdx), (beyondX shl 12) or beyondY)
     npcService.repositionNpc(ctx, region, bank, mapId, boulder.entityIdx, beyondX, beyondY)
     log.info { "Strength: char=$charId pushed boulder ${boulder.entityIdx} to ($beyondX, $beyondY)" }
+    // HandleBoulderFallThroughHole (field_control_avatar.c): onto a hole the boulder drops out of
+    // this floor for good, and the boulder waiting on the floor below is revealed - the flag
+    // FireRed keeps in the boulder's trainer_type slot (Seafoam Islands' current puzzle).
+    if (map.tileAt(beyondX, beyondY)?.behavior == TileBehavior.FALL_WARP) {
+      npcService.despawnNpc(ctx, region, bank, mapId, boulder.entityIdx)
+      if (boulder.hideFlag.isNotEmpty()) characterStore.setStoryFlag(charId, boulder.hideFlag)
+      if (boulder.revealFlag.isNotEmpty()) characterStore.clearStoryFlag(charId, boulder.revealFlag)
+      characterStore.flushCharacterAsync(charId)
+      log.info { "Strength: boulder ${boulder.entityIdx} fell through the hole at ($beyondX, $beyondY); revealed ${boulder.revealFlag.ifEmpty { "nothing" }}" }
+    }
     return true
   }
 

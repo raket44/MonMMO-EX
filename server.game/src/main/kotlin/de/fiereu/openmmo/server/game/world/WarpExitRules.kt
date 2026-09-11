@@ -33,7 +33,8 @@ object WarpExitRules {
         TileBehavior.STAIR_WARP_EAST -> Direction.LEFT
         TileBehavior.STAIR_WARP_WEST -> Direction.RIGHT
         // Ladders, escalators and warp pads: keep the pre-warp facing, per vanilla.
-        TileBehavior.LADDER -> entryFacing
+        TileBehavior.LADDER,
+        TileBehavior.FALL_WARP -> entryFacing
         else -> Direction.DOWN
       }
 

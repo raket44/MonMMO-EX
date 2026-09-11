@@ -116,7 +116,6 @@ private constructor(
           "MB_UP_ESCALATOR",
           "MB_DOWN_ESCALATOR",
           "MB_REGULAR_WARP",
-          "MB_FALL_WARP",
           "MB_DEEP_SOUTH_WARP",
           "MB_UNION_ROOM_WARP",
           "MB_BRIDGE_OVER_OCEAN",
@@ -130,6 +129,8 @@ private constructor(
           "MB_DOWN_RIGHT_STAIR_WARP" -> TileBehavior.STAIR_WARP_EAST
           "MB_UP_LEFT_STAIR_WARP",
           "MB_DOWN_LEFT_STAIR_WARP" -> TileBehavior.STAIR_WARP_WEST
+          // A hole: the player falls a floor, and a pushed boulder falls through to the floor below.
+          "MB_FALL_WARP" -> TileBehavior.FALL_WARP
           "MB_NORTH_ARROW_WARP" -> TileBehavior.NORTH_ARROW_WARP
           "MB_SOUTH_ARROW_WARP",
           "MB_WATER_SOUTH_ARROW_WARP" -> TileBehavior.SOUTH_ARROW_WARP

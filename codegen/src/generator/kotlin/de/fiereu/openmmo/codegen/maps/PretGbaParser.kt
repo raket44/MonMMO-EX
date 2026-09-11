@@ -321,6 +321,10 @@ class PretGbaParser(
           facing = movementTypes.facingRef(movementName),
           script = npc["script"]?.jsonPrimitive?.contentOrNull ?: "0x0",
           hideFlag = if (shownByDefault) "" else "${region.name}/$flag",
+          // FireRed keeps the boulder-below's hide flag in a pushable boulder's trainer_type slot
+          // (GetBoulderRevealFlagByLocalIdAndMap); it is a flag name there, not a trainer type.
+          revealFlag =
+              npc["trainer_type"]?.jsonPrimitive?.contentOrNull?.takeIf { it.startsWith("FLAG_") }?.let { "${region.name}/$it" } ?: "",
       )
     }
   }

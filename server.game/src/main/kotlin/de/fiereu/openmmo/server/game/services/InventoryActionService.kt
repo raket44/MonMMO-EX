@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.PacketEvent
+import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.Skin
 import de.fiereu.openmmo.common.clientSpeciesId
@@ -11,6 +12,8 @@ import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.ContainerActionPacket
 import de.fiereu.openmmo.net.game.packets.EntitySpriteChangePacket
 import de.fiereu.openmmo.net.game.packets.EntityTransportationPacket
+import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
+import de.fiereu.openmmo.net.game.packets.Value16Group
 import de.fiereu.openmmo.net.game.packets.PartyReorderPacket
 import de.fiereu.openmmo.net.game.packets.PokedexSpeciesUnlockPacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
@@ -19,6 +22,7 @@ import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry
 import de.fiereu.openmmo.server.game.battle.StatCalculator
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -105,6 +109,10 @@ constructor(
     if (monsterId == 0L) {
       if (ocarinas.isOcarina(itemId)) {
         ocarinas.use(ctx, state, charId, itemId)
+        return
+      }
+      repelSteps[itemId]?.let { steps ->
+        useRepel(ctx, charId, stored, itemId, steps)
         return
       }
       if (itemId == BICYCLE_ITEM_ID) {
@@ -367,6 +375,35 @@ constructor(
    * The mid-session bag update is a per-stack delta, the same packet the shop flow uses; the full
    * snapshot only lands at login, and the client ignores it afterwards.
    */
+  /** Repel / Super Repel / Max Repel: how many steps each keeps weaker wild monsters away (item.c). */
+  private val repelSteps: Map<Int, Int> by lazy {
+    mapOf(
+        items.idOf(de.fiereu.openmmo.items.generated.Items.REPEL) to 100,
+        items.idOf(de.fiereu.openmmo.items.generated.Items.SUPER_REPEL) to 200,
+        items.idOf(de.fiereu.openmmo.items.generated.Items.MAX_REPEL) to 250,
+    )
+  }
+
+  /**
+   * A repel from the bag: the counter goes into the character (CharacterInfo.repelLeft/repelItemId,
+   * the HUD's "{00} repel step(s)" line) and to the client at once through the local delta's 0x10
+   * group (f/cd1 -> ZZ.J61 / ZZ.fS1). EncounterService burns a step per step and gates the rolls.
+   */
+  private suspend fun useRepel(ctx: SessionContext, charId: Long, stored: StoredCharacter, itemId: Int, steps: Int) {
+    val name = items.get(itemId)?.name ?: "Repel"
+    if (stored.info.repelLeft > 0) {
+      ctx.reply("The effect of the previous $name still lingers.")
+      return
+    }
+    characters.updateCharacter(stored.info.copy(repelLeft = steps.toShort(), repelItemId = itemId.toShort()))
+    characters.addItem(charId, itemId, -1)
+    characters.flushCharacterAsync(charId)
+    sendStack(ctx, charId, itemId)
+    ctx.send(LocalCharacterDeltaPacket(value16 = Value16Group(steps.toShort(), itemId.toShort())))
+    ctx.reply("Used the $name. Weaker wild monsters will stay away for $steps steps.")
+    log.info { "[UseItem] REPEL char=$charId item=$itemId steps=$steps" }
+  }
+
   private fun sendStack(ctx: de.fiereu.network.SessionContext, charId: Long, itemId: Int) {
     val quantity = characters.getCharacter(charId)?.items?.get(itemId) ?: 0
     ctx.send(itemStackUpdatePacket(itemId, quantity))

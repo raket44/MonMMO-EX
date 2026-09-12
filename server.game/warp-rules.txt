@@ -91,3 +91,16 @@
 1;SOUTH_ARROW_WARP;STAND;DOWN;STEP
 1;EAST_ARROW_WARP;STAND;RIGHT;STEP
 1;WEST_ARROW_WARP;STAND;LEFT;STEP
+
+# Sevii harbour doors on the island side are SOUTH_ARROW_WARP tiles: the cartridge lands you on
+# them facing north and does NOT walk you off (Task_ExitNonDoor). The generic arrow walk-out put
+# the player one tile north - onto the spot Four Island's rival walks to (2026-09-12).
+0;3;12;12;18;STAND;DOWN;REST    # One Island
+0;3;13;10;8;STAND;DOWN;REST     # Two Island
+0;3;49;12;13;STAND;DOWN;REST    # Three Island port
+0;3;15;10;28;STAND;DOWN;REST    # Four Island
+0;3;16;12;14;STAND;DOWN;REST    # Five Island
+0;3;18;11;23;STAND;DOWN;REST    # Six Island
+0;3;17;16;13;STAND;DOWN;REST    # Seven Island
+0;2;0;9;16;STAND;DOWN;REST      # Navel Rock
+0;2;56;15;24;STAND;DOWN;REST    # Birth Island

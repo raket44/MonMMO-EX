@@ -69,10 +69,9 @@ class GeneratedScriptCorpusTest :
         // repaired in the parser, so any new failure here is a regression worth seeing.
         fireRed.diagnostics.parseFailureCategories shouldBe emptyMap()
         emerald.diagnostics.parseFailureCategories shouldBe emptyMap()
-        // Every Emerald script a map event names has a body since the local-label promotion
-        // (2026-09-11); FireRed keeps its one Johto-guide stub, whose script the ROM never wrote.
+        // Every script a map event names has a body since the local-label promotion (2026-09-11).
         emerald.diagnostics.unavailableDirectLabels shouldBe emptySet()
-        fireRed.diagnostics.unavailableDirectLabels shouldBe setOf("PalletTown_EventScript_JohtoGuide")
+        fireRed.diagnostics.unavailableDirectLabels shouldBe emptySet()
       }
 
       test("duplicate bare labels across game sources do not collide") {

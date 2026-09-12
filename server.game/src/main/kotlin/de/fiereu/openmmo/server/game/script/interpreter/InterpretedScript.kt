@@ -81,7 +81,7 @@ class InterpretedScript(
           }
           state.pc++
         }
-        "message" -> {
+        "message", "messageautoscroll" -> {
           // A multichoice right after re-presents the same text with the choice attached, so
           // showing it here too would put the identical dialog up twice in a row.
           if (multichoiceFollows(state)) {
@@ -503,6 +503,20 @@ class InterpretedScript(
           ctx.closeMessage()
           state.pc++
         }
+        // The player's own sprite off and on (the S.S. Tidal boarding, Emerald's truck exit).
+        "hideplayer" -> {
+          ctx.hidePlayerSprite()
+          state.pc++
+        }
+        "showplayer" -> {
+          ctx.showPlayerSprite()
+          state.pc++
+        }
+        // Game Corner coins are not modelled: every check reads 0.
+        "checkcoins" -> {
+          ctx.setVar(namespaced(instruction.arg(0).token), 0)
+          state.pc++
+        }
         "braillemessage_wait" -> {
           // FireRed's macro (Tanoby Key, Dotted Hole floors): braillemessage, then the cursor-wait
           // routine's waitbuttonpress; the next sign line replaces this one in the same window.
@@ -632,6 +646,11 @@ class InterpretedScript(
             // "Big guy" / "Big girl"; the son/daughter pair is the cartridge's own, inverted as written).
             "BufferBigGuyOrBigGirlString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "Big guy" else "Big girl")
             "BufferSonOrDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
+            // field_specials.c GetRivalSonDaughterString: the rival is the other gender.
+            "GetRivalSonDaughterString" -> ctx.bufferText(1, if (ctx.playerGender() == 0) "daughter" else "son")
+            // The wall clock screens have no client counterpart; the script faded to black for
+            // them, so the field comes back at once.
+            "Special_ViewWallClock", "StartWallClock" -> ctx.fadeScreen(false)
             "CreateInGameTradePokemon" -> {}
             "EnterHallOfFame" -> tracedWait(ctx, "hall of fame") { ctx.enterHallOfFame() }
             // src/prof_pc.c: Oak's (or the PC's) rating line for the caught count in VAR_0x8004,
@@ -752,6 +771,17 @@ class InterpretedScript(
               else if (function == "IsThereRoomInAnyBoxForMorePokemon") (if (ctx.pcHasRoom()) 1 else 0)
               // field_specials.c: the player's facing as a DIR_* code (the Rocket Warehouse admins).
               else if (function == "GetPlayerFacingDirection") ctx.gbaFacingCode()
+              else if (function == "CalculatePlayerPartyCount") ctx.partySize()
+              // battle_setup.c: two usable monsters for a double battle, else which single case.
+              else if (function == "HasEnoughMonsForDoubleBattle") {
+                when {
+                  ctx.usablePartyCount() >= 2 -> 0
+                  ctx.partySize() == 1 -> 1
+                  else -> 2
+                }
+              }
+              // Nothing here is a completed Hoenn dex, a saved Wonder Card or an Eon Ticket to hand out.
+              else if (function == "HasAllHoennMons" || function == "ValidateSavedWonderCard" || function == "ShouldDistributeEonTicket") 0
               // src/braille_puzzles.c (Emerald's flip): Wailord leads the party, Relicanth ends it.
               else if (function == "CheckRelicanthWailord") {
                 val size = ctx.partySize()
@@ -902,7 +932,8 @@ class InterpretedScript(
           state.pc++
         }
         in InterpreterSupport.DEFEATED_BRANCHES -> runDefeatedBranch(ctx, state, instruction)
-        "warp" -> {
+        // warpdoor plays the door animation and warpsilent skips the fade; the arrival is the same.
+        "warp", "warpdoor", "warpsilent" -> {
           // MAP_ constants pack the destination as num | group << 8; group is the server bank.
           val packed = (instruction.arg(0) as IntArg).value
           val region =

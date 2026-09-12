@@ -518,6 +518,12 @@ constructor(
     sendActions(session, charId, listOf(MovementStep.SET_VISIBLE))
   }
 
+  /** The client's set_invisible on the player's own sprite (hideplayer). */
+  fun hideSelf(session: SessionContext, state: PlayerState) {
+    val charId = state.characterId ?: return
+    sendActions(session, charId, listOf(MovementStep.SET_INVISIBLE))
+  }
+
   /** A single facing re-assert with no hold - the scripted-state flag does the actual locking. */
   fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return

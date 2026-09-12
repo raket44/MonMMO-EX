@@ -209,8 +209,16 @@ class ScriptSupportAnalyzer(
           "giveitem_msg", "msgreceiveditem" -> args.size in 2..4
           "setobjectxy",
           "setobjectxyperm",
-          "warp" -> args.size in 3..4
+          "warp",
+          "warpdoor",
+          "warpsilent" -> args.size in 3..4
           "warphole" -> args.size == 1
+          "messageautoscroll",
+          "checkcoins" -> args.size == 1
+          "hideplayer",
+          "showplayer" -> args.isEmpty()
+          // The lead's species needs no second argument.
+          "bufferleadmonspeciesname" -> args.size == 1
           "setdynamicwarp" -> args.size == 4
           "multichoice" -> args.size == 4
           "multichoicedefault",
@@ -357,7 +365,8 @@ class ScriptSupportAnalyzer(
     val valid =
         when (instruction.command) {
           "msgbox",
-          "message" -> args[0] is TextArg
+          "message",
+          "messageautoscroll" -> args[0] is TextArg
           "setflag",
           "setworldmapflag",
           "clearflag" -> args[0] is FlagArg
@@ -374,7 +383,7 @@ class ScriptSupportAnalyzer(
           // The parser types the first argument as an object only for a fixed command list; the
           // interpreter rebuilds the ObjectArg from the token (as copyobjectxytoperm does).
           "setobjectmovementtype" -> args.size == 2
-          "warp", "warphole" -> args.all { it is IntArg }
+          "warp", "warpdoor", "warpsilent", "warphole" -> args.all { it is IntArg }
           "setdynamicwarp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
@@ -683,6 +692,12 @@ class ScriptSupportAnalyzer(
             "trainerbattle_no_intro",
             "warp",
             "warphole",
+            "warpdoor",
+            "warpsilent",
+            "messageautoscroll",
+            "hideplayer",
+            "showplayer",
+            "checkcoins",
             "setdynamicwarp",
         ) +
             InterpreterSupport.DEFEATED_BRANCHES +

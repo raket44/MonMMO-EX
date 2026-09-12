@@ -35,6 +35,12 @@ internal object InterpreterSupport {
           "setrespawn",
           // The Dig / Escape Rope exit: neither is modelled, so the cave's escape target is not kept.
           "setescapewarp",
+          // Dive's surfacing target: the server dives along the map's own DIVE/EMERGE connections.
+          "setdivewarp",
+          // Sprite draw order and the sparkle field effect: presentation the client owns.
+          "setobjectsubpriority",
+          "resetobjectsubpriority",
+          "dofieldeffectsparkle",
           // A whole-layout swap (dug-out tunnel, Seafoam with the current stopped): the client's
           // footer switch (LayoutVariants) is the real implementation; until a variant is mapped
           // the map keeps its default layout and the rest of the entry script still runs.
@@ -164,6 +170,9 @@ internal object InterpreterSupport {
           "DoSeagallopFerryScene",
           "BufferBigGuyOrBigGirlString",
           "BufferSonOrDaughterString",
+          "GetRivalSonDaughterString",
+          "Special_ViewWallClock",
+          "StartWallClock",
           "ShowEasyChatScreen",
           "EnterHallOfFame",
           "GetProfOaksRatingMessage",
@@ -285,6 +294,11 @@ internal object InterpreterSupport {
           "IsNationalPokedexEnabled",
           "CheckRelicanthWailord",
           "GetPlayerFacingDirection",
+          "CalculatePlayerPartyCount",
+          "HasEnoughMonsForDoubleBattle",
+          "HasAllHoennMons",
+          "ValidateSavedWonderCard",
+          "ShouldDistributeEonTicket",
           "GetSelectedSeagallopDestination",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",

@@ -88,6 +88,13 @@ class ScriptSupportRegressionTest :
                 "Underwater_SealedChamber_EventScript_Braille",
                 "DesertRuins_EventScript_CaveEntranceSide",
                 "AncientTomb_EventScript_CaveEntranceSide",
+                "LittlerootTown_EventScript_StepOffTruckMale",
+                "OldaleTown_EventScript_BlockedPath",
+                "LittlerootTown_MaysHouse_1F_EventScript_YoureNewNeighbor",
+                "LittlerootTown_ProfessorBirchsLab_EventScript_GiveStarterEvent",
+                "LittlerootTown_ProfessorBirchsLab_OnTransition",
+                "SlateportCity_Harbor_EventScript_FerryAttendant",
+                "PlayersHouse_2F_EventScript_CheckWallClock",
             )
         val analyzer = ScriptSupportAnalyzer()
         val emerald = InterpretedScripts.sources.first { it.corpus.source == "emerald" }

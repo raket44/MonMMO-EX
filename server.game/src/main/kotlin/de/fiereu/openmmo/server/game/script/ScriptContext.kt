@@ -641,6 +641,15 @@ internal constructor(
 
   fun partySize(): Int = characterId?.let { characters?.getCharacter(it)?.pokemon?.size } ?: 0
 
+  /** Party members that can fight: not an egg, HP above zero. */
+  fun usablePartyCount(): Int =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.count { mon -> !mon.isEgg && mon.hp > 0 } } ?: 0
+
+  /** hideplayer / showplayer: the player's own sprite, the client's set_invisible / set_visible. */
+  fun hidePlayerSprite() = movement.hideSelf(session, state)
+
+  fun showPlayerSprite() = movement.showSelf(session, state)
+
   /** setwildbattle + dowildbattle: a scripted wild encounter the script waits out. */
   internal suspend fun wildBattle(dexId: Int, level: Int): BattleResult =
       checkNotNull(battles) { "Battle service is unavailable" }.startScriptedWildBattle(session, dexId, level)

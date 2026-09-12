@@ -71,7 +71,14 @@ enum class MovementStep(
   // frame (the Dotted Hole thief dropping from the ceiling). The client's table has no row for
   // them and skips unmatched codes (f/NV0.uv0), so they cost nothing on the wire.
   DISABLE_ANIM(Direction.DOWN, false, 0x5E, changesFacing = false, holdMs = 0),
-  RESTORE_ANIM(Direction.DOWN, false, 0x5F, changesFacing = false, holdMs = 0);
+  RESTORE_ANIM(Direction.DOWN, false, 0x5F, changesFacing = false, holdMs = 0),
+  // lock/unlock_facing_direction (0x4C/0x4D) and the jump-landing ground effect toggles
+  // (0x50/0x51): engine-side state the client does not model; skipped on the wire like the
+  // animation freeze above.
+  LOCK_FACING_DIRECTION(Direction.DOWN, false, 0x4C, changesFacing = false, holdMs = 0),
+  UNLOCK_FACING_DIRECTION(Direction.DOWN, false, 0x4D, changesFacing = false, holdMs = 0),
+  ENABLE_JUMP_LANDING_GROUND_EFFECT(Direction.DOWN, false, 0x50, changesFacing = false, holdMs = 0),
+  DISABLE_JUMP_LANDING_GROUND_EFFECT(Direction.DOWN, false, 0x51, changesFacing = false, holdMs = 0);
 
   companion object {
     /** Translates source-level pret action names into the existing client movement vocabulary. */
@@ -110,8 +117,17 @@ enum class MovementStep(
           "set_visible" -> SET_VISIBLE
           "disable_anim" -> DISABLE_ANIM
           "restore_anim" -> RESTORE_ANIM
+          "lock_facing_direction" -> LOCK_FACING_DIRECTION
+          "unlock_facing_direction" -> UNLOCK_FACING_DIRECTION
+          "enable_jump_landing_ground_effect" -> ENABLE_JUMP_LANDING_GROUND_EFFECT
+          "disable_jump_landing_ground_effect" -> DISABLE_JUMP_LANDING_GROUND_EFFECT
           // The GBA slide_* (0x39-0x3C, a walk-speed glide with the frame held): the client has no
           // row for those codes, and its faster walk is the same tile-per-tick pace.
+          // The one-tile jump_* (0x42-0x45, the truck hop): no client row; a step covers the tile.
+          "jump_down" -> WALK_DOWN
+          "jump_up" -> WALK_UP
+          "jump_left" -> WALK_LEFT
+          "jump_right" -> WALK_RIGHT
           "slide_down" -> FASTER_DOWN
           "slide_up" -> FASTER_UP
           "slide_left" -> FASTER_LEFT

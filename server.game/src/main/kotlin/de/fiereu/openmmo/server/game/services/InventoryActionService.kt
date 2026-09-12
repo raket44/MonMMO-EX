@@ -508,7 +508,7 @@ constructor(
       log.info { "[UseItem] cosmetic $itemCode ($slot $addonId) is not worn by char=$charId (worn $worn)" }
       return
     }
-    cosmeticAnimations.play(ctx, charId, slot, cosmeticAnimations.useVariant)
+    cosmeticAnimations.play(ctx, charId, slot, addonId)
   }
 
 }

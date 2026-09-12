@@ -323,7 +323,7 @@ object GameProtocol : Protocol() {
     s2c<BattleSidePacket>(0x6Bu, BattleSidePacketCodec)
 
     c2s<MatchmakingLanguagePrefsPacket>(0x6Cu, MatchmakingLanguagePrefsPacketCodec)
-    s2c<MountMoveCooldownPacket>(0x6Cu, MountMoveCooldownPacketCodec)
+    s2c<CosmeticAnimationPacket>(0x6Cu, CosmeticAnimationPacketCodec)
 
     s2c<ClientCookieUpdatePacket>(0x6Du, ClientCookieUpdatePacketCodec)
 

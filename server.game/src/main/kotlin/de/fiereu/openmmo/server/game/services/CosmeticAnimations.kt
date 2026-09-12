@@ -1,67 +1,28 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
-import de.fiereu.openmmo.common.Skin
 import de.fiereu.openmmo.common.enums.SkinSlot
-import de.fiereu.openmmo.net.game.codecs.SkinSet
-import de.fiereu.openmmo.net.game.packets.EntitySpriteChangePacket
-import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.net.game.packets.CosmeticAnimationPacket
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 private val log = KotlinLogging.logger {}
 
 /**
  * A hotbar click on a worn animated cosmetic (the Werewolf Masks carry an idle loop and a one-shot
- * howl in addons.pak) re-announces the worn skin set with that slot's variant byte swapped to the
- * howl form - the same per-slot "extra" byte the customization menu uses for alternate forms - and
- * puts the base form back once the howl has played (69 frames at 50 ms). Everyone on the map gets
- * both announcements. The variant value is the one open number: `/anim set N` retunes it live,
- * `/anim N` plays it once on the player.
+ * howl in addons.pak) plays that one-shot on the player's entity: s2c 0x6C names the entity, the
+ * slot and the worn addon, and every client on the map that receives it swaps the slot from its
+ * idle loop to the second animation until it has run out (client f/Sv1 -> f/Di0.Jy1 -> f/F90.fR).
+ * The packet only reaches players that render the entity, so it goes to the player and to
+ * everyone observing them.
  */
 @Singleton
-class CosmeticAnimations
-@Inject
-constructor(
-    private val presence: PresenceService,
-    private val characters: CharacterStore,
-) {
-  /** The variant byte a cosmetic click swaps in; adjustable live through `/anim set N`. */
-  @Volatile var useVariant: Int = DEFAULT_USE_VARIANT
-
-  private val scope = CoroutineScope(Dispatchers.Default)
-
-  /** Plays [variant] on the [slot] the character wears for [HOWL_MS], then restores the base form. */
-  fun play(ctx: SessionContext, charId: Long, slot: SkinSlot, variant: Int) {
-    val current = characters.getCharacter(charId) ?: return
-    val worn = current.skins[slot] ?: return
-    val gender = current.info.rivalSex
-    val region = current.info.skinRegionSelectionIndex
-    val swapped = current.skins + (slot to Skin(worn.slot, worn.type, worn.color, (variant and 0xFF).toUByte()))
-    announce(ctx, charId, EntitySpriteChangePacket(charId, staged = false, appearance = SkinSet(region, swapped), gender = gender))
-    log.info { "[Cosmetic] entity $charId plays $slot variant $variant" }
-    scope.launch {
-      delay(HOWL_MS)
-      if (!ctx.channel.isActive) return@launch
-      val now = characters.getCharacter(charId) ?: return@launch
-      announce(ctx, charId, EntitySpriteChangePacket(charId, staged = false, appearance = SkinSet(now.info.skinRegionSelectionIndex, now.skins), gender = now.info.rivalSex))
-    }
-  }
-
-  private fun announce(ctx: SessionContext, charId: Long, packet: EntitySpriteChangePacket) {
+class CosmeticAnimations @Inject constructor(private val presence: PresenceService) {
+  fun play(ctx: SessionContext, charId: Long, slot: SkinSlot, addonId: Int) {
+    val packet = CosmeticAnimationPacket(charId, slot, addonId.toShort(), playSound = true)
     ctx.send(packet)
     presence.broadcastToObservers(ctx, packet)
-  }
-
-  companion object {
-    /** The first candidate: the addon's second form. */
-    const val DEFAULT_USE_VARIANT = 1
-    /** The Werewolf Mask's howl: 69 frames at 50 ms. */
-    const val HOWL_MS = 3500L
+    log.info { "[Cosmetic] entity $charId plays $slot addon $addonId" }
   }
 }

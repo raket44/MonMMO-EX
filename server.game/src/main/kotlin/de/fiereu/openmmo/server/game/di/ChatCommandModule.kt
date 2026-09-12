@@ -18,7 +18,6 @@ import de.fiereu.openmmo.server.game.services.command.DeveloperScriptCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperSeasonCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperStoryCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperTeleportCommand
-import de.fiereu.openmmo.server.game.services.command.AnimProbeCommand
 import de.fiereu.openmmo.server.game.services.command.LinkProbeCommand
 import de.fiereu.openmmo.server.game.services.command.DonatorCommand
 import de.fiereu.openmmo.server.game.services.command.GiveMoneyCommand
@@ -58,8 +57,6 @@ interface ChatCommandModule {
   @Binds @IntoSet fun developerSeasonCommand(command: DeveloperSeasonCommand): ChatCommand
 
   @Binds @IntoSet fun linkProbeCommand(command: LinkProbeCommand): ChatCommand
-
-  @Binds @IntoSet fun animProbeCommand(command: AnimProbeCommand): ChatCommand
 
   @Binds
   @IntoSet

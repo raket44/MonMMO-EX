@@ -25,6 +25,29 @@ internal data class NewGameStart(
 )
 
 internal object NewGameStarts {
+  /**
+   * The story state of EVERY region's new game at once - the flags each source game sets on its
+   * own new-game map reset and the intro vars. A character is one save across five games: the
+   * regions it has not started must still sit in their opening state (their later-story npcs
+   * hidden, their scene vars at 0), whichever way the player reaches them (ferry, Fly, a warp
+   * command). The starting region's Kanto game mode decides Kanto's variant.
+   */
+  fun storyStateForAllRegions(
+      female: Boolean,
+      gameMode: GameMode = GameMode.REMAKE,
+  ): Pair<Set<String>, Map<String, Int>> {
+    val flags = LinkedHashSet<String>()
+    val vars = LinkedHashMap<String, Int>()
+    for (region in Region.entries) {
+      val start = forRegion(region, female, gameMode)
+      flags += start.storyFlags
+      vars += start.storyVars
+    }
+    return flags to vars
+  }
+
+  /** The namespace prefix a region's story keys carry ("kanto/", "hoenn/", ...). */
+  fun namespace(region: Region): String = region.name.lowercase() + "/"
 
   fun forRegion(
       region: Region,

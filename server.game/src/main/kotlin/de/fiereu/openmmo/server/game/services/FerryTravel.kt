@@ -85,11 +85,10 @@ constructor(
     val charId = stored.info.id
     val id = dest.wireValue.toInt()
     if (dest == Region.KANTO || dest == Region.HOENN) {
-      // The region's new game: its opening flags and vars, then the same first map a fresh
-      // character of that region gets (Emerald's moving truck, FireRed's bedroom).
+      // The region's new game: the same first map a fresh character of that region gets
+      // (Emerald's moving truck, FireRed's bedroom). Its opening flags and vars are already in
+      // place - every character carries all five regions' new-game story state from creation.
       val start = NewGameStarts.forRegion(dest, female = ctx.playerGender() != 0)
-      start.storyFlags.forEach { characterStore.setStoryFlag(charId, it) }
-      start.storyVars.forEach { (k, v) -> characterStore.setStoryVar(charId, k, v) }
       start.dynamicWarp?.let { dw ->
         ctx.setDynamicWarp(dw.regionId.toInt(), dw.bankId.toInt(), dw.mapId.toInt(), dw.x.toInt(), dw.y.toInt(), dw.facing)
       }

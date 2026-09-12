@@ -7,6 +7,7 @@ import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.Skin
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.common.enums.CharacterGender
+import de.fiereu.openmmo.common.enums.GameMode
 import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.common.enums.SkinSlot
@@ -86,6 +87,8 @@ constructor(
   ): StoredCharacter {
     val female = gender == CharacterGender.FEMALE
     val start = NewGameStarts.forRegion(startingRegion, female)
+    // The position comes from the starting region; the story state from all five.
+    val (allFlags, allVars) = NewGameStarts.storyStateForAllRegions(female)
     val id = entityIds.newCharacterId()
     val now = LocalDateTime.now()
     // Staff accounts (user_permissions) start their characters with their granted bits.
@@ -125,8 +128,8 @@ constructor(
             mutableListOf(),
             mutableListOf(),
             mutableMapOf(),
-            storyFlags = start.storyFlags.toMutableSet(),
-            storyVars = start.storyVars.toMutableMap(),
+            storyFlags = allFlags.toMutableSet(),
+            storyVars = allVars.toMutableMap(),
             skins = skins.toMap(),
         )
     repository.insertAggregate(stored)
@@ -137,6 +140,30 @@ constructor(
   }
 
   fun getCharacter(id: Long): StoredCharacter? = characters[id]
+
+  /**
+   * Older characters were created with their starting region's story state only; a region the
+   * character has never touched (no flag or var in its namespace) gets its new-game state now, so
+   * its later-story npcs are hidden and its scenes arm exactly as for a fresh character. Regions
+   * with any state are left alone - that is progress, not a missing start.
+   */
+  fun ensureRegionStoryStarts(characterId: Long): List<Region> {
+    val stored = characters[characterId] ?: return emptyList()
+    val female = stored.info.rivalSex == CharacterGender.FEMALE.wireValue
+    val gameMode = GameMode.entries.getOrNull(stored.storyVars[GameMode.VAR_KEY] ?: 0) ?: GameMode.REMAKE
+    val added = ArrayList<Region>()
+    for (region in Region.entries) {
+      val ns = NewGameStarts.namespace(region)
+      if (stored.storyFlags.any { it.startsWith(ns) } || stored.storyVars.keys.any { it.startsWith(ns) }) continue
+      val start = NewGameStarts.forRegion(region, female, gameMode)
+      if (start.storyFlags.isEmpty() && start.storyVars.isEmpty()) continue
+      start.storyFlags.forEach { setStoryFlag(characterId, it) }
+      start.storyVars.forEach { (k, v) -> setStoryVar(characterId, k, v) }
+      added += region
+    }
+    if (added.isNotEmpty()) flushCharacterAsync(characterId)
+    return added
+  }
 
   /** Whether [name] is already in use by any character, cached or not, ignoring case. */
   suspend fun isNameTaken(name: String): Boolean =

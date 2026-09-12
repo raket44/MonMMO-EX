@@ -67,7 +67,9 @@ class CharacterIntroTest :
           character.info.positionY shouldBe 6
           // Kanto has no truck ride, so nothing depends on the player's dynamic warp yet.
           character.info.dynamicWarp shouldBe null
-          character.storyVars shouldBe emptyMap()
+          // Kanto itself has no intro vars; the other regions' new-game state rides along.
+          character.storyVars.keys.none { it.startsWith("kanto/") } shouldBe true
+          character.storyVars[HoennVars.VAR_LITTLEROOT_INTRO_STATE] shouldBe 2
           // Oak waits in the grass rather than in his lab or in town.
           (KantoFlags.FLAG_HIDE_OAK_IN_HIS_LAB in character.storyFlags) shouldBe true
           (KantoFlags.FLAG_HIDE_OAK_IN_PALLET_TOWN in character.storyFlags) shouldBe true

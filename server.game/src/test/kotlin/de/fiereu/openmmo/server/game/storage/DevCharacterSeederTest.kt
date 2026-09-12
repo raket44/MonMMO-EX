@@ -45,7 +45,8 @@ class DevCharacterSeederTest :
             character.info.positionMapId shouldBe start.mapId
             character.info.positionX shouldBe start.x
             character.info.positionY shouldBe start.y
-            character.storyFlags shouldBe start.storyFlags
+            // Every character carries all five regions' new-game flags; the seeded region's are among them.
+            (character.storyFlags.containsAll(start.storyFlags)) shouldBe true
             character.info.hasPermission(CharacterPermissions.DEVELOPER) shouldBe true
           }
         }

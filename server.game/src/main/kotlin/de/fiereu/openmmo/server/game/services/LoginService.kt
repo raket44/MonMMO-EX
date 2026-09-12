@@ -285,6 +285,9 @@ constructor(
     state.characterId = charId
     sessionRegistry.bindCharacter(ctx, charId)
     log.info { "Player selected character '${stored.info.name}' (id=$charId)" }
+    characterStore.ensureRegionStoryStarts(charId).takeIf { it.isNotEmpty() }?.let { regions ->
+      log.info { "Character $charId: new-game story state applied for ${regions.joinToString { it.name }}" }
+    }
 
     // The Bicycle is earned through each region's own bike quest (StoryPlayerService maps every
     // region's bike item onto the client's Bicycle); the old unconditional grant is gone, and a

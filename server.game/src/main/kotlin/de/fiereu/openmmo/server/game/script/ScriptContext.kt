@@ -66,6 +66,14 @@ internal constructor(
   val facingDirection: Direction
     get() = state.facingDirection
 
+  /**
+   * The facing the player had as this script started. The cartridge writes gSpecialVar_Facing
+   * at the input that starts a script (field_control_avatar.c) and never again while it runs,
+   * so a scene's own turns do not change which VAR_FACING branch it takes - reading the live
+   * facing made the National Dex scene walk the rival in three times (2026-09-12).
+   */
+  private val facingAtStart: Direction = state.facingDirection
+
   val isFemale: Boolean
     get() = movement.playerGender(state) == FEMALE
 
@@ -434,13 +442,13 @@ internal constructor(
     // The engine writes the player's facing into VAR_FACING as a script starts (script.c
     // SetUpFieldMove / event_object_movement.c), so the DIR_* branch ladders of a scene turn the
     // right way; it is never a stored variable.
-    if (key.endsWith("/VAR_FACING")) return gbaFacingCode()
+    if (key.endsWith("/VAR_FACING")) return gbaFacingCode(facingAtStart)
     return characterId?.let { story.getVar(it, key) } ?: 0
   }
 
   /** The player's facing as the GBA DIR_* code (global.h: 1 south, 2 north, 3 west, 4 east). */
-  fun gbaFacingCode(): Int =
-      when (state.facingDirection) {
+  fun gbaFacingCode(direction: Direction = state.facingDirection): Int =
+      when (direction) {
         Direction.UP -> 2
         Direction.LEFT -> 3
         Direction.RIGHT -> 4

@@ -486,27 +486,38 @@ constructor(
 
     // Walking off the edge of a map hands the player to the neighbouring map, if there is one.
     if (toX !in 0 until currentMap.width || toY !in 0 until currentMap.height) {
-      val connection = currentMap.connections.find { it.direction == msg.direction }
-      // Connections stay inside one region.
-      val targetMap =
-          connection?.let {
-            mapManager.getMap(currentMap.regionId, it.targetBank.toByte(), it.targetMap.toByte())
+      // A side can hold several neighbours (Six Island Water Path's west edge meets Green Path,
+      // Six Island and Ruin Valley at offsets 0, 40 and 80): like the ROM's GetIncomingConnection,
+      // take the one whose span covers the crossing tile. Connections stay inside one region.
+      val candidates =
+          currentMap.connections
+              .filter { it.direction == msg.direction }
+              .mapNotNull { c ->
+                mapManager.getMap(currentMap.regionId, c.targetBank.toByte(), c.targetMap.toByte())?.let { c to it }
+              }
+      val covering =
+          candidates.firstOrNull { (c, target) ->
+            when (msg.direction) {
+              Direction.LEFT, Direction.RIGHT -> (fromY - c.unknown) in 0 until target.height
+              else -> (fromX - c.unknown) in 0 until target.width
+            }
           }
-      if (connection == null || targetMap == null) {
+      if (covering == null) {
         bonk(ctx, charId, state, msg.direction)
         return
       }
+      val (connection, targetMap) = covering
       val entryX =
           when (msg.direction) {
             Direction.LEFT -> targetMap.width - 1
             Direction.RIGHT -> 0
-            else -> (fromX - connection.unknown).coerceIn(0, targetMap.width - 1)
+            else -> fromX - connection.unknown
           }
       val entryY =
           when (msg.direction) {
             Direction.UP -> targetMap.height - 1
             Direction.DOWN -> 0
-            else -> (fromY - connection.unknown).coerceIn(0, targetMap.height - 1)
+            else -> fromY - connection.unknown
           }
       // The landing tile must be walkable. Pallet Town's bottom row is open across its width but
       // Route 21's top row is a fence with one gap: the client bonks on the fence while the server

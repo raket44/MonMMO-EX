@@ -341,6 +341,23 @@ internal object InterpreterSupport {
   val CLIENT_STRING_OVERRIDES: Map<String, Int> =
       mapOf("Text_NoMoreRoomForPokemon" to 2305, "gText_NoMoreRoomForPokemon" to 2305)
 
+  /**
+   * data/text/braille.inc: the braille signs' plain readings. They are `.braille` data, not dialog
+   * text, so the corpus has no id for them; a braillemessage shows the reading as a system line.
+   */
+  val BRAILLE_TEXTS: Map<String, String> =
+      mapOf(
+          "Braille_Text_Up" to "UP", "Braille_Text_Down" to "DOWN", "Braille_Text_Right" to "RIGHT", "Braille_Text_Left" to "LEFT",
+          "Braille_Text_Cut" to "CUT", "Braille_Text_ABC" to "ABC", "Braille_Text_GHI" to "GHI", "Braille_Text_MNO" to "MNO",
+          "Braille_Text_TUV" to "TUV", "Braille_Text_DEF" to "DEF", "Braille_Text_JKL" to "JKL", "Braille_Text_PQRS" to "PQRS",
+          "Braille_Text_WXYZ" to "WXYZ", "Braille_Text_Period" to ".", "Braille_Text_Comma" to ",",
+          "Braille_Text_Everything" to "EVERYTHING", "Braille_Text_HasMeaning1" to "HAS MEANING", "Braille_Text_Existence" to "EXISTENCE",
+          "Braille_Text_HasMeaning2" to "HAS MEANING", "Braille_Text_BeingAlive" to "BEING ALIVE", "Braille_Text_HasMeaning3" to "HAS MEANING",
+          "Braille_Text_HaveDreams" to "HAVE DREAMS", "Braille_Text_UsePower" to "USE POWER.", "Braille_Text_LetTheTwo" to "LET THE TWO",
+          "Braille_Text_Glittering" to "GLITTERING", "Braille_Text_Stones" to "STONES", "Braille_Text_OneInRed" to "ONE IN RED",
+          "Braille_Text_OneInBlue" to "ONE IN BLUE", "Braille_Text_ConnectThe" to "CONNECT THE", "Braille_Text_Past" to "PAST.",
+      )
+
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */
   val ITEM_COMMANDS = setOf("giveitem", "additem", "checkitem", "removeitem", "checkitemspace", "finditem")
 }

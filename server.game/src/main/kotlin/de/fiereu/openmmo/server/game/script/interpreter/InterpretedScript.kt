@@ -493,9 +493,12 @@ class InterpretedScript(
           state.pc++
         }
         "braillemessage" -> {
-          // Braille signs read as plain sign text on this client.
-          val line = textLine(textArg(instruction, 0).token, instruction)
-          tracedWait(ctx, "dialog") { ctx.sign(line) }
+          // Braille signs read as plain text on this client: a ROM sign line when the corpus has
+          // one, else the braille reading itself (data/text/braille.inc) as a system line.
+          val token = instruction.arg(0).token
+          val reading = InterpreterSupport.BRAILLE_TEXTS[token]
+          if (reading != null) ctx.session.send(de.fiereu.openmmo.server.game.services.notice("The braille reads: $reading"))
+          else tracedWait(ctx, "dialog") { ctx.sign(textLine(token, instruction)) }
           state.pc++
         }
         "copyobjectxytoperm" -> {

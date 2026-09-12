@@ -71,6 +71,11 @@ constructor(
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
     val npc = map.npcs.firstOrNull { it.hideFlag == flag } ?: return
+    // An npc a scene already put on the map (addobject, then walked) is where the scene left it;
+    // the GBA clearflag spawns nothing by itself. Re-spawning it here sent May back to her map
+    // default - the stairs tile - after she had walked to her PC, and she blocked the only exit
+    // of her bedroom (2026-09-12).
+    if (scriptedNpcPose(state, npc.entityIdx) != null) return
     npcService.spawnNpc(
         session,
         info.positionRegionId.toInt(),

@@ -16359,197 +16359,197 @@
         },
         {
             "label": "Braille_Text_Up",
-            "id": 1741448,
+            "id": 1741568,
             "text": "UP$"
         },
         {
             "label": "Braille_Text_Down",
-            "id": 1741451,
+            "id": 1741571,
             "text": "DOWN$"
         },
         {
             "label": "Braille_Text_Right",
-            "id": 1741456,
+            "id": 1741576,
             "text": "RIGHT$"
         },
         {
             "label": "Braille_Text_Left",
-            "id": 1741462,
+            "id": 1741582,
             "text": "LEFT$"
         },
         {
             "label": "Braille_Text_Cut",
-            "id": 1741467,
+            "id": 1741587,
             "text": "CUT$"
         },
         {
             "label": "Braille_Text_ABC",
-            "id": 1741471,
+            "id": 1741591,
             "text": "ABC$"
         },
         {
             "label": "Braille_Text_GHI",
-            "id": 1741475,
+            "id": 1741595,
             "text": "GHI$"
         },
         {
             "label": "Braille_Text_MNO",
-            "id": 1741479,
+            "id": 1741599,
             "text": "MNO$"
         },
         {
             "label": "Braille_Text_TUV",
-            "id": 1741483,
+            "id": 1741603,
             "text": "TUV$"
         },
         {
             "label": "Braille_Text_DEF",
-            "id": 1741487,
+            "id": 1741607,
             "text": "DEF$"
         },
         {
             "label": "Braille_Text_JKL",
-            "id": 1741491,
+            "id": 1741611,
             "text": "JKL$"
         },
         {
             "label": "Braille_Text_PQRS",
-            "id": 1741495,
+            "id": 1741615,
             "text": "PQRS$"
         },
         {
             "label": "Braille_Text_WXYZ",
-            "id": 1741500,
+            "id": 1741620,
             "text": "WXYZ$"
         },
         {
             "label": "Braille_Text_Period",
-            "id": 1741505,
+            "id": 1741625,
             "text": ".$"
         },
         {
             "label": "Braille_Text_Comma",
-            "id": 863687,
+            "id": 1460050,
             "text": ",$"
         },
         {
             "label": "Braille_Text_Everything",
-            "id": 1741509,
+            "id": 1741629,
             "text": "EVERYTHING$"
         },
         {
             "label": "Braille_Text_HasMeaning1",
-            "id": 1741520,
+            "id": 1741640,
             "text": "HAS MEANING$"
         },
         {
             "label": "Braille_Text_Existence",
-            "id": 1741532,
+            "id": 1741652,
             "text": "EXISTENCE$"
         },
         {
             "label": "Braille_Text_HasMeaning2",
-            "id": 1741520,
+            "id": 1741640,
             "text": "HAS MEANING$"
         },
         {
             "label": "Braille_Text_BeingAlive",
-            "id": 1741554,
+            "id": 1741674,
             "text": "BEING ALIVE$"
         },
         {
             "label": "Braille_Text_HasMeaning3",
-            "id": 1741520,
+            "id": 1741640,
             "text": "HAS MEANING$"
         },
         {
             "label": "Braille_Text_HaveDreams",
-            "id": 1741578,
+            "id": 1741698,
             "text": "HAVE DREAMS$"
         },
         {
             "label": "Braille_Text_UsePower",
-            "id": 1741590,
+            "id": 1741710,
             "text": "USE POWER.$"
         },
         {
             "label": "Braille_Text_LetTheTwo",
-            "id": 1741601,
+            "id": 1741721,
             "text": "LET THE TWO$"
         },
         {
             "label": "Braille_Text_Glittering",
-            "id": 1741613,
+            "id": 1741733,
             "text": "GLITTERING$"
         },
         {
             "label": "Braille_Text_Stones",
-            "id": 1741624,
+            "id": 1741744,
             "text": "STONES$"
         },
         {
             "label": "Braille_Text_OneInRed",
-            "id": 1741631,
+            "id": 1741751,
             "text": "ONE IN RED$"
         },
         {
             "label": "Braille_Text_OneInBlue",
-            "id": 1741642,
+            "id": 1741762,
             "text": "ONE IN BLUE$"
         },
         {
             "label": "Braille_Text_ConnectThe",
-            "id": 1741654,
+            "id": 1741774,
             "text": "CONNECT THE$"
         },
         {
             "label": "Braille_Text_Past",
-            "id": 1741666,
+            "id": 1741786,
             "text": "PAST.$"
         },
         {
             "label": "Braille_Text_TwoFriends",
-            "id": 1741672,
+            "id": 1741792,
             "text": "TWO FRIENDS$"
         },
         {
             "label": "Braille_Text_Sharing",
-            "id": 1741684,
+            "id": 1741804,
             "text": "SHARING$"
         },
         {
             "label": "Braille_Text_PowerOpen",
-            "id": 1741692,
+            "id": 1741812,
             "text": "POWER OPEN$"
         },
         {
             "label": "Braille_Text_AWindowTo",
-            "id": 1741703,
+            "id": 1741823,
             "text": "A WINDOW TO$"
         },
         {
             "label": "Braille_Text_ANewWorld",
-            "id": 1741715,
+            "id": 1741835,
             "text": "A NEW WORLD$"
         },
         {
             "label": "Braille_Text_ThatGlows",
-            "id": 1741727,
+            "id": 1741847,
             "text": "THAT GLOWS.$"
         },
         {
             "label": "Braille_Text_TheNext",
-            "id": 1741739,
+            "id": 1741859,
             "text": "THE NEXT$"
         },
         {
             "label": "Braille_Text_WorldWaits",
-            "id": 1741748,
+            "id": 1741868,
             "text": "WORLD WAITS$"
         },
         {
             "label": "Braille_Text_ForYou",
-            "id": 1741760,
+            "id": 1741880,
             "text": "FOR YOU.$"
         },
         {

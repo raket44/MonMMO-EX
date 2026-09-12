@@ -43,13 +43,20 @@ class RomIndex private constructor(private val latin1: String) {
   companion object {
     private const val GAME_CODE_OFFSET = 0xAC
 
-    /** Finds the ROM in [romsDir] whose header game code equals [gameCode] (e.g. "BPEE"). */
-    fun find(romsDir: File, gameCode: String): RomIndex? {
+    private const val VERSION_OFFSET = 0xBC
+
+    /**
+     * Finds the ROM in [romsDir] whose header game code equals [gameCode] (e.g. "BPEE"), and whose
+     * header version byte equals [version] when one is asked for (FireRed v1.0 = 0, v1.1 = 1).
+     */
+    fun find(romsDir: File, gameCode: String, version: Int? = null): RomIndex? {
       val rom =
           romsDir
               .listFiles { f -> f.isFile }
               ?.firstOrNull { f ->
-                f.length() > GAME_CODE_OFFSET + 4 && readGameCode(f) == gameCode
+                f.length() > VERSION_OFFSET + 1 &&
+                    readGameCode(f) == gameCode &&
+                    (version == null || readVersion(f) == version)
               } ?: return null
       return RomIndex(String(rom.readBytes(), Charsets.ISO_8859_1))
     }
@@ -59,6 +66,12 @@ class RomIndex private constructor(private val latin1: String) {
           s.skip(GAME_CODE_OFFSET.toLong())
           val b = ByteArray(4)
           if (s.read(b) != 4) "" else String(b, Charsets.US_ASCII)
+        }
+
+    private fun readVersion(file: File): Int =
+        file.inputStream().use { s ->
+          s.skip(VERSION_OFFSET.toLong())
+          s.read()
         }
   }
 }

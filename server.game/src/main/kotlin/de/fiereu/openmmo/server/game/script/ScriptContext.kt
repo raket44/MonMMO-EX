@@ -430,7 +430,22 @@ internal constructor(
   }
 
   /** The story var [key], or 0 if it was never set. */
-  fun getVar(key: String): Int = characterId?.let { story.getVar(it, key) } ?: 0
+  fun getVar(key: String): Int {
+    // The engine writes the player's facing into VAR_FACING as a script starts (script.c
+    // SetUpFieldMove / event_object_movement.c), so the DIR_* branch ladders of a scene turn the
+    // right way; it is never a stored variable.
+    if (key.endsWith("/VAR_FACING")) return gbaFacingCode()
+    return characterId?.let { story.getVar(it, key) } ?: 0
+  }
+
+  /** The player's facing as the GBA DIR_* code (global.h: 1 south, 2 north, 3 west, 4 east). */
+  fun gbaFacingCode(): Int =
+      when (state.facingDirection) {
+        Direction.UP -> 2
+        Direction.LEFT -> 3
+        Direction.RIGHT -> 4
+        else -> 1
+      }
 
   fun setVar(key: String, value: Int) {
     characterId?.let { story.setVar(it, key, value) }

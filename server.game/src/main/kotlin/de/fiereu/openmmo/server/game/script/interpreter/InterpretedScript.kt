@@ -750,6 +750,8 @@ class InterpretedScript(
               }
               else if (function == "InitElevatorFloorSelectMenuPos") ctx.elevatorMenuPosition()
               else if (function == "IsThereRoomInAnyBoxForMorePokemon") (if (ctx.pcHasRoom()) 1 else 0)
+              // field_specials.c: the player's facing as a DIR_* code (the Rocket Warehouse admins).
+              else if (function == "GetPlayerFacingDirection") ctx.gbaFacingCode()
               // src/braille_puzzles.c (Emerald's flip): Wailord leads the party, Relicanth ends it.
               else if (function == "CheckRelicanthWailord") {
                 val size = ctx.partySize()

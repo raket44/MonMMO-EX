@@ -65,6 +65,9 @@ class ScriptSupportRegressionTest :
                 "SixIsland_DottedHole_B2F_EventScript_BrailleLeft",
                 "SixIsland_DottedHole_SapphireRoom_EventScript_Sapphire",
                 "SixIsland_DottedHole_SapphireRoom_EventScript_BrailleMessage",
+                "FiveIsland_RocketWarehouse_EventScript_Admin1",
+                "FiveIsland_RocketWarehouse_EventScript_DefeatedAdmin1",
+                "FiveIsland_RocketWarehouse_EventScript_Admin2",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

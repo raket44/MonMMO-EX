@@ -284,6 +284,7 @@ internal object InterpreterSupport {
           "GetPokedexCount",
           "IsNationalPokedexEnabled",
           "CheckRelicanthWailord",
+          "GetPlayerFacingDirection",
           "GetSelectedSeagallopDestination",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",

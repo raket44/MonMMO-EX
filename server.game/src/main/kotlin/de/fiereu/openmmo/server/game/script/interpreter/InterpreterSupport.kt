@@ -99,6 +99,13 @@ internal object InterpreterSupport {
           "DoSealedChamberShakingEffect_Short",
           // The heal location moves back from Dewford; the respawn point is the nurse's here.
           "ResetHealLocationFromDewford",
+          // Wally's catching demonstration: PokeMMO skips the GBA tutorial battle (the earlier
+          // Kotlin port did the same); the party swap around it is moot, so the scene keeps its
+          // walk, its lines and its state advance and returns to the gym.
+          "SavePlayerParty",
+          "LoadPlayerParty",
+          "LoadWallyZigzagoon",
+          "StartWallyTutorialBattle",
           "DoPokemonLeagueLightingEffect",
           "PlayerFaceTrainerAfterBattle",
           // Buffers "big guy"/"cute girl" into STR_VAR_1 for a handful of Route 104 intros. No

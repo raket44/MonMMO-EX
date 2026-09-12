@@ -1014,7 +1014,7 @@ class InterpretedScript(
       state: RuntimeState,
       instruction: ScriptInstruction,
   ) {
-    check(instruction.args.size == 2) {
+    check(instruction.args.size in 2..3) {
       "Script ${program.id.stable} supports current-map applymovement only in " +
           "`${instruction.sourceLine}`"
     }
@@ -1105,7 +1105,7 @@ class InterpretedScript(
       state: RuntimeState,
       instruction: ScriptInstruction,
   ) {
-    check(instruction.args.size <= 1) {
+    check(instruction.args.size <= 2) {
       "Script ${program.id.stable} supports current-map waitmovement only in " +
           "`${instruction.sourceLine}`"
     }

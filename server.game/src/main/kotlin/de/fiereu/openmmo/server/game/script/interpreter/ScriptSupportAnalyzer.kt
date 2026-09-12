@@ -271,12 +271,14 @@ class ScriptSupportAnalyzer(
           "addvar",
           "subvar",
           "compare",
-          "applymovement",
           "goto_if_set",
           "goto_if_unset",
           "call_if_set",
           "call_if_unset" -> args.size == 2
-          "waitmovement" -> args.size <= 1
+          // The optional third / second argument names the object's map (the Petalburg tutorial
+          // addresses Wally on the current map); only the current map is ever meant.
+          "applymovement" -> args.size in 2..3
+          "waitmovement" -> args.size <= 2
           "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
           "ds_flagtovar" -> args.size == 2
           "ds_warp" -> args.size == 3

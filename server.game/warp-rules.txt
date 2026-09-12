@@ -107,3 +107,11 @@
 0;3;17;16;13;STAND;DOWN;REST    # Seven Island
 0;2;0;9;16;STAND;DOWN;REST      # Navel Rock
 0;2;56;15;24;STAND;DOWN;REST    # Birth Island
+
+# The S.S. Anne gangway (Vermilion dock 3:5 (22..24,34) <-> S.S. Anne exterior 1:4 (32,5)): the
+# ONE arrow arrival that steps off. Resting on it left the client armed on the warp tile and its
+# next step faded to black with no map coming (2026-09-08); every other arrow arrival rests.
+0;1;4;32;5;STAND;UP;STEP        # gangway on the ship, arrive facing DOWN, step onto the deck
+0;3;5;22;34;STAND;DOWN;STEP     # dock, west tile
+0;3;5;23;34;STAND;DOWN;STEP     # dock, middle tile
+0;3;5;24;34;STAND;DOWN;STEP     # dock, east tile

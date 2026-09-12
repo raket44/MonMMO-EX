@@ -4,9 +4,12 @@
 #
 #   region;type;fire;press;arrival
 #
-#   GBA arrow warps ARRIVE with a step: the cartridge walks you one tile off the arrow tile the
-#   way you face (the S.S. Anne gangway, the Underground Path stairs). Resting there left the
-#   client armed on a warp tile, and its next step faded to black with no map coming (2026-09-08).
+#   GBA arrivals step off DOORS only (field_fadetransition.c SetUpWarpExitTask: Task_ExitDoor for
+#   a door tile, Task_ExitNonAnimDoor for a cave mouth, Task_ExitNonDoor - no walk - for all else).
+#   Interior door MATS are SOUTH_ARROW_WARP tiles in both FireRed and Emerald, so arrow arrivals
+#   REST: the cutscenes that meet you at the door (Six Island's rival) are laid out for the mat.
+#   (2026-09-08 had arrows STEP after the S.S. Anne gangway faded to black on a rest; if that
+#   returns, retune that one tile with an 8-field row, not the type.)
 #
 #   region : 0 Kanto, 1 Hoenn, 3 Sinnoh, 4 Johto (2 Unova needs no rows - its warps carry
 #            their own directions from the ROM)
@@ -72,10 +75,10 @@
 0;LADDER;CONTACT;-;REST
 0;STAIR_WARP_EAST;STAND;RIGHT;REST
 0;STAIR_WARP_WEST;STAND;LEFT;REST
-0;NORTH_ARROW_WARP;STAND;UP;STEP
-0;SOUTH_ARROW_WARP;STAND;DOWN;STEP
-0;EAST_ARROW_WARP;STAND;RIGHT;STEP
-0;WEST_ARROW_WARP;STAND;LEFT;STEP
+0;NORTH_ARROW_WARP;STAND;UP;REST
+0;SOUTH_ARROW_WARP;STAND;DOWN;REST
+0;EAST_ARROW_WARP;STAND;RIGHT;REST
+0;WEST_ARROW_WARP;STAND;LEFT;REST
 # The Champion's Room entrance (1:79) is an arrow strip: its frame script walks the player 10 tiles
 # up from the landing tile, so the arrival must REST there (the cartridge steps off doors and
 # directional stairs only, field_fadetransition.c). The step put the player on the rival (2026-09-11).
@@ -87,10 +90,10 @@
 1;LADDER;CONTACT;-;REST
 1;STAIR_WARP_EAST;STAND;RIGHT;REST
 1;STAIR_WARP_WEST;STAND;LEFT;REST
-1;NORTH_ARROW_WARP;STAND;UP;STEP
-1;SOUTH_ARROW_WARP;STAND;DOWN;STEP
-1;EAST_ARROW_WARP;STAND;RIGHT;STEP
-1;WEST_ARROW_WARP;STAND;LEFT;STEP
+1;NORTH_ARROW_WARP;STAND;UP;REST
+1;SOUTH_ARROW_WARP;STAND;DOWN;REST
+1;EAST_ARROW_WARP;STAND;RIGHT;REST
+1;WEST_ARROW_WARP;STAND;LEFT;REST
 
 # Sevii harbour doors on the island side are SOUTH_ARROW_WARP tiles: the cartridge lands you on
 # them facing north and does NOT walk you off (Task_ExitNonDoor). The generic arrow walk-out put

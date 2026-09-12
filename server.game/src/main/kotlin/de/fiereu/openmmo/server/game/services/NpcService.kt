@@ -15,6 +15,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.launch
 
 private val log = KotlinLogging.logger {}
 
@@ -25,6 +26,7 @@ constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
     private val ferry: FerryPlacements = FerryPlacements(mapManager),
+    private val scope: kotlinx.coroutines.CoroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
 
@@ -262,14 +264,28 @@ constructor(
             ctx, applyXyOverride(regionId, bankId, mapId, npc, storyVars), regionId, storyVars)
     if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) return
     log.info { "Scripted spawn $regionId:$bankId:$mapId local=$localId gfx=${resolved.graphicsId} at (${resolved.x}, ${resolved.y}) elev=${resolved.elevation} hideFlag=${npc.hideFlag}" }
-    ctx.send(
-        buildSpawnPacket(
-            resolved,
-            entityIdFor(regionId, bankId, mapId, localId),
-            regionId,
-            bankId,
-            mapId,
-        ))
+    sendAfterArrival(ctx, buildSpawnPacket(resolved, entityIdFor(regionId, bankId, mapId, localId), regionId, bankId, mapId))
+  }
+
+  /**
+   * A spawn sent inside the arrival choreography window (LoginService.moveIgnoreUntil) never
+   * showed: the client is still bringing the map up and drops it, so a scene that adds its npc
+   * as its first command (Four Island's rival, Six Island's Pokemon Center) played to an
+   * invisible actor. Scripted moves already wait that window out (awaitSelfActions); the spawn
+   * now waits the same way, so it still lands before the moves.
+   */
+  private fun sendAfterArrival(ctx: SessionContext, packet: NpcSpawnPacket) {
+    val state = ctx.attributes[PLAYER_STATE]
+    val wait = (state?.moveIgnoreUntil ?: 0L) - System.currentTimeMillis()
+    if (wait <= 0) {
+      ctx.send(packet)
+      return
+    }
+    log.info { "Scripted spawn of entity ${packet.entityId} held ${wait}ms for the arrival window" }
+    scope.launch {
+      kotlinx.coroutines.delay(wait)
+      ctx.send(packet)
+    }
   }
 
   /** Spawns an NPC at a cutscene position. */
@@ -283,7 +299,8 @@ constructor(
       y: Int,
   ) {
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
-    ctx.send(
+    sendAfterArrival(
+        ctx,
         buildSpawnPacket(
             resolveDynamicGraphics(ctx, npc.copy(x = x, y = y), regionId, sessionStoryVars(ctx)),
             entityIdFor(regionId, bankId, mapId, localId),

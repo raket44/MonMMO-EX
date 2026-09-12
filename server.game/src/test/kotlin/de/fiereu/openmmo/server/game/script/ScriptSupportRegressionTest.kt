@@ -57,6 +57,8 @@ class ScriptSupportRegressionTest :
                 "FourIsland_IcefallCave_1F_OnResume",
                 "FourIsland_IcefallCave_1F_OnLoad",
                 "FourIsland_IcefallCave_1F_EventScript_FallDownHole",
+                "SixIsland_RuinValley_EventScript_DottedHoleDoor",
+                "SixIsland_RuinValley_OnLoad",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

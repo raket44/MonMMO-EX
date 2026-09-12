@@ -28,6 +28,9 @@ object MapEntryPolish {
     if (map.regionId.toInt() == KANTO && map.sourceName == WAREHOUSE_MAP) {
       touches += Touch { ctx -> lockRocketWarehouseDoor(ctx) }
     }
+    if (map.regionId.toInt() == KANTO && map.sourceName == RUIN_VALLEY_MAP) {
+      touches += Touch { ctx -> lockDottedHoleDoor(ctx) }
+    }
     val gates = map.coordScripts.filter { it.script.endsWith(BADGE_GATE_SUFFIX) }
     if (gates.isNotEmpty()) touches += Touch { ctx -> lockBadgeGates(ctx, map, gates) }
     if (touches.isEmpty()) return null
@@ -48,6 +51,17 @@ object MapEntryPolish {
    * the client bumps; the unlock script's own setmetatile puts the open door back at the
    * ground's elevation (ScriptContext.setMetatile keeps the ROM tile's bits, not the lock's).
    */
+  /**
+   * Ruin Valley's Dotted Hole: the braille door opens only to Cut used facing it
+   * (fldeff_cut.c CutMoveRuinValleyCheck, InteractionService.openDottedHole). Until then the
+   * closed door sits on the locked layer; the client's own ROM data calls that tile a door, so
+   * without the lock it kept walking into it while the server had no warp to give.
+   */
+  private fun lockDottedHoleDoor(ctx: ScriptContext) {
+    if (ctx.isFlagSet(DOTTED_HOLE_CUT_FLAG)) return
+    ctx.setMetatile(DOTTED_HOLE_DOOR_X, DOTTED_HOLE_DOOR_Y, DOTTED_HOLE_DOOR_CLOSED_METATILE, impassable = true, elevation = LOCKED_ELEVATION)
+  }
+
   private fun lockRocketWarehouseDoor(ctx: ScriptContext) {
     if (ctx.isFlagSet(WAREHOUSE_UNLOCKED_FLAG)) return
     ctx.setMetatile(WAREHOUSE_DOOR_X, WAREHOUSE_DOOR_Y, WAREHOUSE_DOOR_LOCKED_METATILE, impassable = true, elevation = LOCKED_ELEVATION)
@@ -103,6 +117,13 @@ object MapEntryPolish {
   const val CINNABAR_GYM_DOOR_METATILE = 0x15B
   /** Any GBA elevation but the ground's 3 (and not the 0 wildcard): the client refuses the step. */
   const val LOCKED_ELEVATION = 4
+  const val RUIN_VALLEY_MAP = "SixIsland_RuinValley"
+  const val DOTTED_HOLE_CUT_FLAG = "kanto/FLAG_USED_CUT_ON_RUIN_VALLEY_BRAILLE"
+  const val DOTTED_HOLE_DOOR_X = 24
+  const val DOTTED_HOLE_DOOR_Y = 24
+  /** METATILE_SeviiIslands67_DottedHoleDoor_Closed / _Open. */
+  const val DOTTED_HOLE_DOOR_CLOSED_METATILE = 0x357
+  const val DOTTED_HOLE_DOOR_OPEN_METATILE = 0x358
   private const val WAREHOUSE_MAP = "FiveIsland_Meadow"
   const val WAREHOUSE_UNLOCKED_FLAG = "kanto/FLAG_UNLOCKED_ROCKET_WAREHOUSE"
   const val WAREHOUSE_DOOR_X = 12

@@ -288,6 +288,29 @@ constructor(
     runScript(session, state, script, entityId)
   }
 
+  /**
+   * The Dotted Hole door (field_specials.c CutMoveOpenDottedHoleDoor): the Cut banner, the flag
+   * the map's ON_LOAD reads on later visits, and the open door in place of the locked one - a
+   * script's setmetatile keeps the ROM tile's elevation, so the lock lifts and the door is a warp.
+   */
+  private fun openDottedHole(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
+    if (MapEntryPolish.DOTTED_HOLE_CUT_FLAG in stored.storyFlags) {
+      session.send(notice("The door is already open."))
+      return
+    }
+    FieldMoveBanners.send(session, stored, state.regionId, FieldMoves.CUT)
+    runScript(
+        session,
+        state,
+        Script { ctx ->
+          ctx.setFlag(MapEntryPolish.DOTTED_HOLE_CUT_FLAG)
+          ctx.setMetatile(MapEntryPolish.DOTTED_HOLE_DOOR_X, MapEntryPolish.DOTTED_HOLE_DOOR_Y, MapEntryPolish.DOTTED_HOLE_DOOR_OPEN_METATILE, impassable = false)
+        },
+        entityId = -1,
+    )
+    log.info { "Dotted Hole opened by Cut for char=${stored.info.id}" }
+  }
+
   /** The waterfall prompt, or the engine's "can't" line when the badge is missing. */
   fun waterfallPrompt(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
     val hoenn = Region.byId(state.regionId) == Region.HOENN
@@ -315,6 +338,11 @@ constructor(
     val fx = stored.info.positionX.toInt() + state.facingDirection.dx
     val fy = stored.info.positionY.toInt() + state.facingDirection.dy
     val facing = map.tileAt(fx, fy)?.behavior
+    // fldeff_cut.c CutMoveRuinValleyCheck: Cut facing the Dotted Hole's braille door opens it.
+    if (moveId == FieldMoves.CUT && map.sourceName == MapEntryPolish.RUIN_VALLEY_MAP && fx == MapEntryPolish.DOTTED_HOLE_DOOR_X && fy == MapEntryPolish.DOTTED_HOLE_DOOR_Y) {
+      openDottedHole(session, state, stored)
+      return
+    }
     when (moveId) {
       FieldMoves.CUT, FieldMoves.ROCK_SMASH, FieldMoves.STRENGTH -> {
         val wanted =

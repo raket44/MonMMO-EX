@@ -103,9 +103,6 @@ internal object InterpreterSupport {
           "SpawnCameraObject",
           "AnimateTeleporterHousing",
           "AnimateTeleporterCable",
-          // The Sevii ferry: the client has no destination menu yet, so the menu draws nothing and
-          // GetSelectedSeagallopDestination answers "cancel"; the sailor's own lines still play.
-          "DrawSeagallopDestinationMenu",
           // The GBA help-system toggles: nothing to do off a cartridge.
           "HelpSystem_Disable",
           // Shows the easy-chat profile the club woman was given; no profile is ever entered here.
@@ -162,6 +159,7 @@ internal object InterpreterSupport {
           "ShowEasyChatScreen",
           "EnterHallOfFame",
           "GetProfOaksRatingMessage",
+          "DrawSeagallopDestinationMenu",
           "EnableNationalPokedex",
           "CreateInGameTradePokemon",
           "DoInGameTradeScene",
@@ -277,6 +275,7 @@ internal object InterpreterSupport {
           "IsPlayerLeftOfVermilionSailor",
           "GetPokedexCount",
           "IsNationalPokedexEnabled",
+          "GetSelectedSeagallopDestination",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",
           "DoesPlayerPartyContainSpecies",
@@ -300,7 +299,6 @@ internal object InterpreterSupport {
           "IsPokerusInParty" to 0,
           // The ferry desk: Vermilion is seagallop number 7 (src/seagallop.c).
           "GetSeagallopNumber" to 7,
-          "GetSelectedSeagallopDestination" to 127,
           // Every Kanto species with Mew: never on a server dex.
           "HasAllMons" to 0,
           // No wireless adapter on a server build: the Joyful Game Corner attendant explains the

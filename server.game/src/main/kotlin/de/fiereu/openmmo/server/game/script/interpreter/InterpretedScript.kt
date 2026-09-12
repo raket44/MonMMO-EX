@@ -626,6 +626,26 @@ class InterpretedScript(
             }
             // src/event_data.c: the National Dex is FLAG_SYS_NATIONAL_DEX plus a save magic.
             "EnableNationalPokedex" -> ctx.setFlag(namespaced("FLAG_SYS_NATIONAL_DEX"))
+            // src/script_menu.c: the Rainbow Pass ferry menu. VAR_0x8004 = origin, VAR_0x8005 = page
+            // (0: Vermilion..Four Island, 1: Four/Five..Seven), the origin left out, then OTHER and
+            // EXIT; VAR_RESULT = the row picked, which GetSelectedSeagallopDestination decodes.
+            "DrawSeagallopDestinationMenu" -> {
+              val origin = ctx.getVar(namespaced("VAR_0x8004"))
+              val page = ctx.getVar(namespaced("VAR_0x8005"))
+              var dest = if (page == 1) (if (origin < SEAGALLOP_FIVE_ISLAND) SEAGALLOP_FIVE_ISLAND else SEAGALLOP_FOUR_ISLAND) else SEAGALLOP_VERMILION_CITY
+              val wanted = if (page == 1) 3 else 4
+              val options = ArrayList<String>()
+              while (options.size < wanted) {
+                if (dest != origin) options += SEAGALLOP_NAMES[dest]
+                dest = (dest + 1) % SEAGALLOP_NAMES.size
+              }
+              options += "OTHER"
+              options += "EXIT"
+              val line = checkNotNull(state.currentMessage) { "Script ${program.id.stable} has no current message for `${instruction.sourceLine}`" }
+              val list = checkNotNull(InterpreterSupport.dsTextList(options)) { "Ferry menu too long" }
+              val pick = tracedWait(ctx, "ferry menu") { ctx.dsTextListMenu(line, list, 0) }
+              ctx.setVar(namespaced("VAR_RESULT"), if (pick in options.indices) pick else MULTI_B_PRESSED)
+            }
             // The easy-chat word picker has no client screen. Answer as a backed-out picker:
             // VAR_RESULT FALSE (nothing entered) and VAR_0x8004 left non-zero so the Mystery
             // Event Club woman takes her "decided not to" line instead of the special-profile one.
@@ -722,6 +742,27 @@ class InterpretedScript(
                 if (ctx.isFlagSet(namespaced("FLAG_SYS_NATIONAL_DEX"))) 1 else 0
               }
               else if (function == "IsNationalPokedexEnabled") (if (ctx.isFlagSet(namespaced("FLAG_SYS_NATIONAL_DEX"))) 1 else 0)
+              // src/script_menu.c GetSelectedSeagallopDestination: the row back to a SEAGALLOP_* id.
+              else if (function == "GetSelectedSeagallopDestination") {
+                val row = ctx.getVar(namespaced("VAR_RESULT"))
+                val origin = ctx.getVar(namespaced("VAR_0x8004"))
+                val page = ctx.getVar(namespaced("VAR_0x8005"))
+                when {
+                  row == MULTI_B_PRESSED -> MULTI_B_PRESSED
+                  page == 1 ->
+                      when (row) {
+                        0 -> if (origin > SEAGALLOP_FOUR_ISLAND) SEAGALLOP_FOUR_ISLAND else SEAGALLOP_FIVE_ISLAND
+                        1 -> if (origin > SEAGALLOP_FIVE_ISLAND) SEAGALLOP_FIVE_ISLAND else SEAGALLOP_SIX_ISLAND
+                        2 -> if (origin > SEAGALLOP_SIX_ISLAND) SEAGALLOP_SIX_ISLAND else SEAGALLOP_SEVEN_ISLAND
+                        3 -> SEAGALLOP_MORE
+                        else -> MULTI_B_PRESSED
+                      }
+                  row == 4 -> SEAGALLOP_MORE
+                  row == 5 -> MULTI_B_PRESSED
+                  row >= origin -> row + 1
+                  else -> row
+                }
+              }
               // src/trade_scene.c: the in-game trade NPCs of the Pokemon Lab lounge and friends.
               else if (function == "GetInGameTradeSpeciesInfo") ctx.inGameTradeInfo(ctx.getVar(namespaced("VAR_0x8004")))
               else if (function == "GetTradeSpecies") ctx.partySpecies(ctx.getVar(namespaced("VAR_0x8005")))
@@ -1995,6 +2036,15 @@ internal object TrainerStoryState {
 
 /** The GBA answer when a multichoice is cancelled with B. */
 private const val MULTI_B_PRESSED = 127
+
+/** include/constants/seagallop.h and the sSeagallopDestStrings texts (src/strings.c). */
+private const val SEAGALLOP_VERMILION_CITY = 0
+private const val SEAGALLOP_FOUR_ISLAND = 4
+private const val SEAGALLOP_FIVE_ISLAND = 5
+private const val SEAGALLOP_SIX_ISLAND = 6
+private const val SEAGALLOP_SEVEN_ISLAND = 7
+private const val SEAGALLOP_MORE = 254
+private val SEAGALLOP_NAMES = listOf("VERMILION", "ONE ISLAND", "TWO ISLAND", "THREE ISLAND", "FOUR ISLAND", "FIVE ISLAND", "SIX ISLAND", "SEVEN ISLAND")
 
 /** prof_pc.c: 150 caught rates as complete (Mew is the 151st and never required). */
 private const val KANTO_DEX_COUNT = 150

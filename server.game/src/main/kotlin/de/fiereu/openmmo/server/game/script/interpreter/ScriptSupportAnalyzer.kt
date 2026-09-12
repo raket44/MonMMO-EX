@@ -222,7 +222,8 @@ class ScriptSupportAnalyzer(
           "addmoney",
           "removemoney" -> args.size in 1..2
           "givemon" -> args.size in 2..3
-          "braillemessage" -> args.size == 1
+          "braillemessage",
+          "braillemsgbox" -> args.size == 1
           "getpartysize",
           "dowildbattle" -> args.isEmpty()
           "setwildbattle" -> args.size in 2..3
@@ -239,6 +240,7 @@ class ScriptSupportAnalyzer(
           "release",
           "releaseall",
           "closemessage",
+          "closebraillemessage",
           "waitmessage",
           "waitbuttonpress",
           "signmsg",
@@ -377,7 +379,8 @@ class ScriptSupportAnalyzer(
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
-          "braillemessage" -> args[0] is TextArg || args[0].token in InterpreterSupport.BRAILLE_TEXTS
+          "braillemessage",
+          "braillemsgbox" -> args[0] is TextArg || args[0].token in InterpreterSupport.BRAILLE_TEXTS
           "copyobjectxytoperm" -> args[0] is ObjectArg || (args[0] is SymbolArg && args[0].token.startsWith("LOCALID_"))
           "checkmoney",
           "addmoney",
@@ -608,6 +611,7 @@ class ScriptSupportAnalyzer(
             "release",
             "releaseall",
             "closemessage",
+            "closebraillemessage",
             "waitmessage",
             "waitbuttonpress",
             "yesnobox",
@@ -653,6 +657,7 @@ class ScriptSupportAnalyzer(
             "removemoney",
             "givemon",
             "braillemessage",
+            "braillemsgbox",
             "getpartysize",
             "setwildbattle",
             "dowildbattle",

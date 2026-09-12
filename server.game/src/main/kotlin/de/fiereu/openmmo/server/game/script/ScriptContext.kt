@@ -134,6 +134,19 @@ internal constructor(
     )
   }
 
+  /**
+   * A braille sign: the client's own braille dialog (kind 19, f/qM1.WN, which styles the text
+   * with its braille font) showing the cells of [reading] through a bare "{00}" client string.
+   * The following waitbuttonpress owns the acknowledgement, like a message.
+   */
+  internal fun showBraille(reading: String) {
+    holdScriptedFacing()
+    val cells =
+        de.fiereu.openmmo.net.game.packets.dialog.RawMessageArg(
+            slot = 0, kind = 5, text = de.fiereu.openmmo.server.game.script.interpreter.InterpreterSupport.brailleGlyphs(reading))
+    dialog.show(session, state, BRAILLE_PLACEHOLDER_STRING, BRAILLE, -1, DialogPresentation(messageArgs = listOf(cells)))
+  }
+
   internal fun setDialogMessageMode(mode: DialogMessageMode) {
     state.dialogMessageMode = mode
   }
@@ -1077,6 +1090,10 @@ internal constructor(
     // Sign boxes have no speaker, npc boxes point at the entity.
     const val SIGN = 3
     const val NPC = 4
+    /** Dialog kind wire 19 (f/qM1.WN): the braille sign window. */
+    const val BRAILLE = 19
+    /** Client string 200532 is just "{00}": the braille cells go in as its raw-string argument. */
+    const val BRAILLE_PLACEHOLDER_STRING = 200532
     // Client string table (strings_en.xml): "You found a {00}!" / "You found {00} {01}(s)!"
     const val FOUND_ITEM_STRING = 6063
     const val FOUND_ITEMS_STRING = 6066

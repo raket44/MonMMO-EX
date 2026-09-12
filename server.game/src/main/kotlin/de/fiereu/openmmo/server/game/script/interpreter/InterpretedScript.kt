@@ -493,12 +493,26 @@ class InterpretedScript(
           state.pc++
         }
         "braillemessage" -> {
-          // Braille signs read as plain text on this client: a ROM sign line when the corpus has
-          // one, else the braille reading itself (data/text/braille.inc) as a system line.
+          // The sign's reading (data/text/braille.inc) as braille cells in the client's braille
+          // dialog; the script's waitbuttonpress owns the acknowledgement. Never the letters: the
+          // puzzle is the player's to read.
           val token = instruction.arg(0).token
           val reading = InterpreterSupport.BRAILLE_TEXTS[token]
-          if (reading != null) ctx.session.send(de.fiereu.openmmo.server.game.services.notice("The braille reads: $reading"))
-          else tracedWait(ctx, "dialog") { ctx.sign(textLine(token, instruction)) }
+          if (reading != null) ctx.showBraille(reading)
+          else ctx.showMessage(textLine(token, instruction))
+          state.pc++
+        }
+        "closebraillemessage" -> {
+          ctx.closeMessage()
+          state.pc++
+        }
+        "braillemsgbox" -> {
+          // Emerald's macro: braillemessage, waitbuttonpress, closebraillemessage.
+          val token = instruction.arg(0).token
+          val reading = InterpreterSupport.BRAILLE_TEXTS[token]
+          if (reading != null) ctx.showBraille(reading) else ctx.showMessage(textLine(token, instruction))
+          tracedWait(ctx, "dialog button") { ctx.waitButtonPress() }
+          ctx.closeMessage()
           state.pc++
         }
         "copyobjectxytoperm" -> {
@@ -734,6 +748,11 @@ class InterpretedScript(
               }
               else if (function == "InitElevatorFloorSelectMenuPos") ctx.elevatorMenuPosition()
               else if (function == "IsThereRoomInAnyBoxForMorePokemon") (if (ctx.pcHasRoom()) 1 else 0)
+              // src/braille_puzzles.c (Emerald's flip): Wailord leads the party, Relicanth ends it.
+              else if (function == "CheckRelicanthWailord") {
+                val size = ctx.partySize()
+                if (size > 0 && ctx.partySpecies(0) == WAILORD && ctx.partySpecies(size - 1) == RELICANTH) 1 else 0
+              }
               else if (function == "DoesPlayerPartyContainSpecies") (if (ctx.partyContainsSpecies(ctx.getVar(namespaced("VAR_0x8004")))) 1 else 0)
               else if (function == "GetPokedexCount") {
                 // src/prof_pc.c: VAR_0x8004 0 = the Kanto dex, else national; 0x8005 seen, 0x8006
@@ -2053,6 +2072,9 @@ internal object TrainerStoryState {
 private const val MULTI_B_PRESSED = 127
 
 /** include/constants/seagallop.h and the sSeagallopDestStrings texts (src/strings.c). */
+/** National dex numbers, the party's species ids. */
+private const val WAILORD = 321
+private const val RELICANTH = 369
 private const val SEAGALLOP_VERMILION_CITY = 0
 private const val SEAGALLOP_FOUR_ISLAND = 4
 private const val SEAGALLOP_FIVE_ISLAND = 5

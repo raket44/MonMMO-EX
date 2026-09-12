@@ -88,6 +88,9 @@ internal object InterpreterSupport {
           // The walk-away-from-a-sign cancel timer; there is no walk-away cancel here.
           "SetWalkingIntoSignVars",
           "ShakeScreen",
+          // The Sealed Chamber's rumble as the Regi doors open: a camera shake, no game state.
+          "DoSealedChamberShakingEffect_Long",
+          "DoSealedChamberShakingEffect_Short",
           "DoPokemonLeagueLightingEffect",
           "PlayerFaceTrainerAfterBattle",
           // Buffers "big guy"/"cute girl" into STR_VAR_1 for a handful of Route 104 intros. No
@@ -280,6 +283,7 @@ internal object InterpreterSupport {
           "IsPlayerLeftOfVermilionSailor",
           "GetPokedexCount",
           "IsNationalPokedexEnabled",
+          "CheckRelicanthWailord",
           "GetSelectedSeagallopDestination",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",
@@ -342,11 +346,13 @@ internal object InterpreterSupport {
       mapOf("Text_NoMoreRoomForPokemon" to 2305, "gText_NoMoreRoomForPokemon" to 2305)
 
   /**
-   * data/text/braille.inc: the braille signs' plain readings. They are `.braille` data, not dialog
-   * text, so the corpus has no id for them; a braillemessage shows the reading as a system line.
+   * data/text/braille.inc of both GBA games: the braille signs' readings. They are `.braille`
+   * data, not dialog text, so the corpus has no id for them; a braillemessage shows the reading
+   * as braille glyphs ([brailleGlyphs]) in the client's braille dialog, never as letters.
    */
   val BRAILLE_TEXTS: Map<String, String> =
       mapOf(
+          // FireRed: Dotted Hole, Ruin Valley and the Tanoby Key.
           "Braille_Text_Up" to "UP", "Braille_Text_Down" to "DOWN", "Braille_Text_Right" to "RIGHT", "Braille_Text_Left" to "LEFT",
           "Braille_Text_Cut" to "CUT", "Braille_Text_ABC" to "ABC", "Braille_Text_GHI" to "GHI", "Braille_Text_MNO" to "MNO",
           "Braille_Text_TUV" to "TUV", "Braille_Text_DEF" to "DEF", "Braille_Text_JKL" to "JKL", "Braille_Text_PQRS" to "PQRS",
@@ -356,7 +362,66 @@ internal object InterpreterSupport {
           "Braille_Text_HaveDreams" to "HAVE DREAMS", "Braille_Text_UsePower" to "USE POWER.", "Braille_Text_LetTheTwo" to "LET THE TWO",
           "Braille_Text_Glittering" to "GLITTERING", "Braille_Text_Stones" to "STONES", "Braille_Text_OneInRed" to "ONE IN RED",
           "Braille_Text_OneInBlue" to "ONE IN BLUE", "Braille_Text_ConnectThe" to "CONNECT THE", "Braille_Text_Past" to "PAST.",
+          "Braille_Text_TwoFriends" to "TWO FRIENDS", "Braille_Text_Sharing" to "SHARING", "Braille_Text_PowerOpen" to "POWER OPEN",
+          "Braille_Text_AWindowTo" to "A WINDOW TO", "Braille_Text_ANewWorld" to "A NEW WORLD", "Braille_Text_ThatGlows" to "THAT GLOWS.",
+          "Braille_Text_TheNext" to "THE NEXT", "Braille_Text_WorldWaits" to "WORLD WAITS", "Braille_Text_ForYou" to "FOR YOU.",
+          // Emerald: the Sealed Chamber and the three Regi tombs.
+          "Underwater_SealedChamber_Braille_GoUpHere" to "GO UP HERE.",
+          "SealedChamber_OuterRoom_Braille_ABC" to "ABC", "SealedChamber_OuterRoom_Braille_GHI" to "GHI",
+          "SealedChamber_OuterRoom_Braille_MNO" to "MNO", "SealedChamber_OuterRoom_Braille_TUV" to "TUV",
+          "SealedChamber_OuterRoom_Braille_DEF" to "DEF", "SealedChamber_OuterRoom_Braille_JKL" to "JKL",
+          "SealedChamber_OuterRoom_Braille_PQRS" to "PQRS", "SealedChamber_OuterRoom_Braille_Period" to ".",
+          "SealedChamber_OuterRoom_Braille_WXYZ" to "WXYZ", "SealedChamber_OuterRoom_Braille_Comma" to ",",
+          "SealedChamber_OuterRoom_Braille_DigHere" to "DIG HERE.",
+          "SealedChamber_InnerRoom_Braille_FirstWailordLastRelicanth" to "FIRST COMES\nWAILORD.\nLAST COMES\nRELICANTH.",
+          "SealedChamber_InnerRoom_Braille_InThisCaveWeHaveLived" to "IN THIS\nCAVE WE\nHAVE\nLIVED.",
+          "SealedChamber_InnerRoom_Braille_WeOweAllToThePokemon" to "WE OWE ALL\nTO THE\nPOKEMON.",
+          "SealedChamber_InnerRoom_Braille_ButWeSealedThePokemonAway" to "BUT, WE\nSEALED THE\nPOKEMON\nAWAY.",
+          "SealedChamber_InnerRoom_Braille_WeFearedIt" to "WE FEARED IT.",
+          "SealedChamber_InnerRoom_Braille_ThoseWithCourageHope" to "THOSE WITH\nCOURAGE,\nTHOSE WITH\nHOPE.",
+          "SealedChamber_InnerRoom_Braille_OpenDoorEternalPokemonWaits" to "OPEN A DOOR.\nAN ETERNAL\nPOKEMON\nWAITS.",
+          "DesertRuins_Braille_UseRockSmash" to "LEFT, LEFT,\nDOWN, DOWN.\nTHEN, USE\nROCK SMASH.",
+          "IslandCave_Braille_RunLapAroundWall" to "STAY CLOSE\nTO THE WALL.\nRUN AROUND\nONE LAP.",
+          "AncientTomb_Braille_ShineInTheMiddle" to "THOSE WHO\nINHERIT OUR\nWILL, SHINE\nIN THE MIDDLE.",
       )
+
+  /** Unicode 6-dot cells (U+2800..) for A..Z, the alphabet the GBA's braille font draws. */
+  private const val BRAILLE_LETTERS =
+      "\u2801\u2803\u2809\u2819\u2811\u280B\u281B\u2813\u280A\u281A\u2805\u2807\u280D\u281D\u2815\u280F\u281F\u2817\u280E\u281E\u2825\u2827\u283A\u282D\u283D\u2835"
+  private val BRAILLE_MARKS =
+      mapOf(
+          ' ' to '\u2800', '.' to '\u2832', ',' to '\u2802', '?' to '\u2826', '!' to '\u2816', ':' to '\u2812',
+          ';' to '\u2806', '-' to '\u2824', '/' to '\u280C', '(' to '\u2836', ')' to '\u2836', '\'' to '\u2804')
+
+  /**
+   * A reading as the braille the sign shows: letters to cells, a digit run behind the number
+   * sign as a-j (preproc's .braille encoding), line breaks kept. The player deciphers it.
+   */
+  fun brailleGlyphs(reading: String): String {
+    val out = StringBuilder(reading.length)
+    var inNumber = false
+    for (c in reading) {
+      when {
+        c == '\n' -> {
+          out.append('\n')
+          inNumber = false
+        }
+        c.isLetter() -> out.append(BRAILLE_LETTERS[c.uppercaseChar() - 'A'])
+        c.isDigit() -> {
+          if (!inNumber) {
+            out.append('\u283C')
+            inNumber = true
+          }
+          out.append(BRAILLE_LETTERS[(c - '0' + 9) % 10])
+        }
+        else -> {
+          if (c == ' ') inNumber = false
+          out.append(BRAILLE_MARKS[c] ?: c)
+        }
+      }
+    }
+    return out.toString()
+  }
 
   /** Bag commands: first arg an ITEM_ constant, optional second a count. */
   val ITEM_COMMANDS = setOf("giveitem", "additem", "checkitem", "removeitem", "checkitemspace", "finditem")

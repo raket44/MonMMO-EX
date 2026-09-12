@@ -59,11 +59,35 @@ class ScriptSupportRegressionTest :
                 "FourIsland_IcefallCave_1F_EventScript_FallDownHole",
                 "SixIsland_RuinValley_EventScript_DottedHoleDoor",
                 "SixIsland_RuinValley_OnLoad",
+                "SixIsland_DottedHole_B1F_EventScript_BrailleUp",
+                "SixIsland_DottedHole_B4F_EventScript_BrailleDown",
+                "SixIsland_DottedHole_B3F_EventScript_BrailleRight",
+                "SixIsland_DottedHole_B2F_EventScript_BrailleLeft",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }
         for (label in labels) {
           val script = checkNotNull(firered.scriptsByLabel[label]) { "missing $label" }
+          val support = analyzer.analyze(script)
+          withClue("$label: ${support.reason}") { support.complete shouldBe true }
+        }
+      }
+
+      test("the emerald braille signs interpret through the braille dialog") {
+        val labels =
+            listOf(
+                "SealedChamber_OuterRoom_EventScript_BrailleABC",
+                "SealedChamber_OuterRoom_EventScript_BrailleDigHere",
+                "SealedChamber_InnerRoom_EventScript_BrailleStoryPart1",
+                "SealedChamber_InnerRoom_EventScript_BrailleBackWall",
+                "Underwater_SealedChamber_EventScript_Braille",
+                "DesertRuins_EventScript_CaveEntranceSide",
+                "AncientTomb_EventScript_CaveEntranceSide",
+            )
+        val analyzer = ScriptSupportAnalyzer()
+        val emerald = InterpretedScripts.sources.first { it.corpus.source == "emerald" }
+        for (label in labels) {
+          val script = checkNotNull(emerald.scriptsByLabel[label]) { "missing $label" }
           val support = analyzer.analyze(script)
           withClue("$label: ${support.reason}") { support.complete shouldBe true }
         }

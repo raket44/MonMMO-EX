@@ -167,7 +167,11 @@ constructor(
       if (it.startsWith(prefix)) it.removePrefix(prefix).toIntOrNull()?.let(moved::add)
       changed = true
     }
-    stored.storyFlags.filter { it.contains("/FLAG_TEMP_") }.forEach {
+    // ClearTempFieldEventData (event_data.c, both games) on every map load: the temp flags and
+    // the per-map system flags - Strength's activation, the flutes, the special wild battle
+    // (FireRed), the encounter-rate items and the deletable-object control (Emerald). Strength
+    // otherwise stayed on for good once used (2026-09-12).
+    stored.storyFlags.filter { flag -> flag.contains("/FLAG_TEMP_") || MAP_LOCAL_SYS_FLAGS.any { flag.endsWith("/$it") } }.forEach {
       characterStore.clearStoryFlag(charId, it)
       changed = true
     }
@@ -181,6 +185,20 @@ constructor(
   }
 
   companion object {
+    /** The system flags ClearTempFieldEventData clears with the temp flags (FireRed + Emerald). */
+    private val MAP_LOCAL_SYS_FLAGS =
+        setOf(
+            "FLAG_SYS_USE_STRENGTH",
+            "FLAG_SYS_WHITE_FLUTE_ACTIVE",
+            "FLAG_SYS_BLACK_FLUTE_ACTIVE",
+            "FLAG_SYS_SPECIAL_WILD_BATTLE",
+            "FLAG_SYS_INFORMED_OF_LOCAL_WIRELESS_PLAYER",
+            "FLAG_SYS_ENC_UP_ITEM",
+            "FLAG_SYS_ENC_DOWN_ITEM",
+            "FLAG_SYS_CTRL_OBJ_DELETE",
+            "FLAG_NURSE_UNION_ROOM_REMINDER",
+        )
+
     /** IsMapTypeOutdoors: town, city, route, underwater and ocean route. */
     private val OUTDOORS =
         setOf(

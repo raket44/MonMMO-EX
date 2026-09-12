@@ -129,10 +129,6 @@ constructor(
 
     for (npc in currentMap.npcs) {
       if (npcService.getNpcEntityId(regionId, bankId, mapId, npc.entityIdx) == npcEntityId) {
-        // Every talked-to npc turns to the player FIRST, script or not - vanilla's interaction
-        // locks and faceplayers before the script body, and the hand-written ports dropped
-        // their faceplayer lines. Facing must never depend on script resolution succeeding.
-        scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
         val script =
             try {
               scriptRegistry.forLabel(npc.script, gbaScriptSource(state.regionId))
@@ -142,6 +138,12 @@ constructor(
               log.info { "NPC entityIdx=${npc.entityIdx} script=${npc.script}: ${e.message}" }
               null
             }
+        // Only a script's own faceplayer turns an object: cut trees, dolls and item balls never
+        // turn on the cartridge (a blanket turn here had them face the player, 2026-09-12). The
+        // hand-written Kotlin ports dropped their faceplayer lines, so those still get the turn.
+        if (script !is de.fiereu.openmmo.server.game.script.interpreter.InterpretedScript) {
+          scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
+        }
         if (script != null) {
           runScript(session, state, script, npcEntityId)
         } else {

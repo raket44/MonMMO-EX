@@ -605,6 +605,13 @@ constructor(
       return
     }
 
+    // A client that is walking has no modal box open, so a dialog flag with no script behind it
+    // is stale (a box the client dropped without answering); left set, it silently swallowed
+    // every floor trigger until the next map load (Icefall Cave's Lorelei scene, 2026-09-12).
+    if (state.dialogVisible && !state.scriptRunning) {
+      log.info { "Stale dialog flag cleared for char=$charId on a walked step" }
+      state.dialogVisible = false
+    }
     // Story coordinate events take precedence over random encounters on the same step. Creative
     // mode meets nothing - a world builder mid-placement does not want a Zubat.
     if (!state.creative && !mapScriptService.onStep(ctx, state, currentMap, toX, toY)) {

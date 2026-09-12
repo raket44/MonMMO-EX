@@ -214,6 +214,7 @@ constructor(
             DeferredTrigger(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt(), x, y)
         return true
       }
+      if (entryScripts.hasCoordinate(map, x, y)) log.info { "Floor trigger at ($x, $y) skipped: dialog=${state.dialogVisible} script=${state.scriptRunning}" }
       return false
     }
     state.deferredTrigger = null

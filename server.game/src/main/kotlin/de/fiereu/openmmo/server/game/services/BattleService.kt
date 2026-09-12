@@ -113,6 +113,7 @@ constructor(
     private val mapManager: de.fiereu.openmmo.maps.MapManager? = null,
     private val safari: javax.inject.Provider<SafariService>? = null,
     private val encounterTracker: EncounterTrackerService? = null,
+    private val presence: PresenceService? = null,
 ) {
 
   private val pokeBallItemId: Short by lazy { items.idOf(Items.POKE_BALL).toShort() }
@@ -341,7 +342,10 @@ constructor(
     if (!(result == BattleResult.DEFEAT && battle.whiteoutOnDefeat)) {
       event.session.attributes[PLAYER_STATE]?.let { state ->
         val mount: Byte? = if (state.surfing) SURF_TRANSPORTATION else if (state.riding) RIDING_TRANSPORTATION else null
-        if (mount != null) event.session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+        if (mount != null) {
+          val packet = de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount)
+          presence?.announce(event.session, packet) ?: event.session.send(packet)
+        }
         // The client's overworld player may not be rebuilt yet when this ack arrives, and what is
         // sent now can be lost (the mount was, play-verified); the first step proves it is back,
         // and the release, the mount and a facing go out again then.

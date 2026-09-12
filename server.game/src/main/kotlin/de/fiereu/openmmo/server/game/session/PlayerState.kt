@@ -282,6 +282,9 @@ data class PlayerState(
     scriptLockScope = ScriptLockScope.NONE
     scriptLockedEntityId = null
   }
+
+  /** The entity's transportation byte (client f.ti.J10): 0x01 surfing, 0x02 riding, 0 on foot. */
+  fun mountByte(): Int = if (surfing) 0x01 else if (riding) 0x02 else 0
 }
 
 /**

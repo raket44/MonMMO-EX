@@ -27,6 +27,7 @@ constructor(
     private val npcService: NpcService,
     private val characterStore: de.fiereu.openmmo.server.game.storage.CharacterStore,
     private val layoutVariants: LayoutVariants? = null,
+    private val presence: PresenceService? = null,
 ) {
   fun onMapEnter(session: SessionContext, state: PlayerState, map: MapDef) {
     // A script is already running for this player, do not start a second one on top of it.
@@ -83,7 +84,8 @@ constructor(
         if (namespace != null) characterStore.setStoryVar(charId, "$namespace/VAR_TEMP_1", 1)
         state.surfing = true
         state.riding = false
-        session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0x01))
+        val mount = de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0x01)
+        presence?.announce(session, mount) ?: session.send(mount)
         state.mountResendPending = true
         log.info { "Fell onto water at (${state.x}, ${state.y}) on ${map.bankId}:${map.mapId}: surfing, VAR_TEMP_1 = 1" }
       }

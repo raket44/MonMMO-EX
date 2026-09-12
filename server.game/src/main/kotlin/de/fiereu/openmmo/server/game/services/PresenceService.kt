@@ -46,6 +46,17 @@ constructor(
     for (other in observers(ctx, key)) other.send(EntityLeavePacket(entityId))
   }
 
+  /**
+   * Send a packet to the player AND everyone observing them. Every live change to the player's
+   * entity that observers render - skins (0x90), the mount byte (0x28), addon animations (0x6C) -
+   * goes this way; sending it to the player alone left observers on the old look and on walking
+   * speed for a rider, which the server then corrected by teleporting the rider (2026-09-12).
+   */
+  fun announce(ctx: SessionContext, packet: Any) {
+    ctx.send(packet)
+    broadcastToObservers(ctx, packet)
+  }
+
   /** Send a packet to everyone observing the player on its current map (excludes the player). */
   fun broadcastToObservers(ctx: SessionContext, packet: Any) {
     val key = currentMapKey(ctx) ?: mapKeyFor(ctx) ?: return
@@ -119,7 +130,7 @@ constructor(
         state.facingDirection,
         party = stored.pokemon,
         skins = stored.skins,
-        transportation = if (state.riding) 0x02 else 0,
+        transportation = state.mountByte(),
         followerId = state.followerMonId)
   }
 

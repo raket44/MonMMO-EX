@@ -36,6 +36,7 @@ class AppearanceService
 @Inject
 constructor(
     private val characters: CharacterStore,
+    private val presence: PresenceService? = null,
 ) {
 
   fun onCustomizeAppearance(event: PacketEvent<CustomizeCharacterAppearancePacket>) {
@@ -190,7 +191,7 @@ constructor(
     // Swapping bikes mid-ride: the skin refresh above changes the art; re-assert the ride bit
     // so the mounted frame set survives the sprite change.
     if (slot == SkinSlot.BIKE && state.riding) {
-      ctx.send(EntityTransportationPacket(charId, 0x02))
+      send(ctx, EntityTransportationPacket(charId, 0x02))
     }
   }
 
@@ -202,13 +203,19 @@ constructor(
    */
   private fun resend(ctx: de.fiereu.network.SessionContext, charId: Long) {
     val stored = characters.getCharacter(charId) ?: return
-    ctx.send(
+    send(
+        ctx,
         EntitySpriteChangePacket(
             entityId = charId,
             staged = false,
             appearance = SkinSet(stored.info.skinRegionSelectionIndex, stored.skins),
             gender = stored.info.rivalSex,
         ))
+  }
+
+  /** To the player and to everyone on the map watching them - the equip is a live entity change. */
+  private fun send(ctx: de.fiereu.network.SessionContext, packet: Any) {
+    presence?.announce(ctx, packet) ?: ctx.send(packet)
   }
 }
 

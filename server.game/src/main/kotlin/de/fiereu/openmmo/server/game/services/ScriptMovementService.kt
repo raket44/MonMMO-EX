@@ -38,7 +38,13 @@ constructor(
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
     /** Lazily: MovementService depends on this service; the edge crossing lives there. */
     private val movementService: javax.inject.Provider<MovementService>? = null,
+    private val presence: PresenceService? = null,
 ) {
+
+  /** A live change to the player's entity: to the player and to everyone watching them. */
+  fun announce(ctx: de.fiereu.network.SessionContext, packet: Any) {
+    presence?.announce(ctx, packet) ?: ctx.send(packet)
+  }
   /** DS maps have no MapDef; the ROM npc table gives an npc's resting pose. */
   private fun ndsNpcPose(regionId: Int, bankId: Int, mapId: Int, localId: Int): Pose? {
     if (regionId !in 2..4) return null

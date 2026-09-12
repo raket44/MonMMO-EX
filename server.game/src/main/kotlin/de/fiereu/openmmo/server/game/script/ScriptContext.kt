@@ -784,7 +784,7 @@ internal constructor(
   suspend fun startSurfing() {
     state.riding = false
     state.surfing = true
-    session.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(playerEntityId, SURF_TRANSPORTATION.toByte()))
+    movement.announce(session, de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(playerEntityId, SURF_TRANSPORTATION.toByte()))
     val step =
         when (state.facingDirection) {
           Direction.UP -> MovementStep.WALK_UP

@@ -478,7 +478,8 @@ constructor(
       val current = characters.getCharacter(charId) ?: return
       // false routes the set into IL0.v4 - the DISPLAYED set (true stages into JQ1,
       // which nothing draws; that bool cost a whole night of invisible skin updates).
-      ctx.send(
+      presenceService.announce(
+          ctx,
           EntitySpriteChangePacket(
               entityId = charId,
               staged = false,
@@ -486,7 +487,7 @@ constructor(
               gender = current.info.rivalSex,
           ))
     }
-    ctx.send(EntityTransportationPacket(charId, if (state.riding) RIDING_TRANSPORTATION else 0))
+    presenceService.announce(ctx, EntityTransportationPacket(charId, if (state.riding) RIDING_TRANSPORTATION else 0))
     log.info {
       "[UseItem] BIKE riding=${state.riding} skin=${characters.getCharacter(charId)?.skins?.get(SkinSlot.BIKE)?.type} char=$charId"
     }

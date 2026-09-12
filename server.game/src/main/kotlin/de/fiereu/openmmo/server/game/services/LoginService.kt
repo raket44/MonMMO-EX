@@ -653,7 +653,7 @@ constructor(
             skins = stored.skins,
             railLine = state.pendingRailLine,
             // Bit 1 = riding (f.ti.U7): a re-spawn while on the bike keeps the mounted frames.
-            transportation = if (state.riding) 0x02 else state.transportOverride,
+            transportation = if (state.surfing || state.riding) state.mountByte() else state.transportOverride,
             followerId = state.followerMonId,
         )
     ctx.send(loadEntity)

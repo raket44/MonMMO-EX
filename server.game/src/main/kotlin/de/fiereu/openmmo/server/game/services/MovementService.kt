@@ -143,7 +143,7 @@ constructor(
       if (!state.scriptRunning && !state.blocksPlayerInput) {
         ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
       }
-      if (mount != 0.toByte()) ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
+      if (mount != 0.toByte()) presenceService.announce(ctx, de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, mount))
       scriptMovement.reassertScriptedFacing(ctx, state)
       log.info { "First step after a wild battle for char=$charId: release + mount $mount + facing sent again (script=${state.scriptRunning})" }
     }
@@ -1225,7 +1225,7 @@ constructor(
     if (state.underwater) return
     if (map.tileAt(x, y)?.behavior?.isSurfable == true) return
     state.surfing = false
-    ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0))
+    presenceService.announce(ctx, de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0))
     log.info { "Surf ended for char=$charId at ($x, $y)" }
   }
 

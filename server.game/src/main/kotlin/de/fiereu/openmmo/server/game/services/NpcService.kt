@@ -261,6 +261,7 @@ constructor(
         resolveDynamicGraphics(
             ctx, applyXyOverride(regionId, bankId, mapId, npc, storyVars), regionId, storyVars)
     if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) return
+    log.info { "Scripted spawn $regionId:$bankId:$mapId local=$localId gfx=${resolved.graphicsId} at (${resolved.x}, ${resolved.y}) elev=${resolved.elevation} hideFlag=${npc.hideFlag}" }
     ctx.send(
         buildSpawnPacket(
             resolved,

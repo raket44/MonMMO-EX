@@ -21,6 +21,7 @@ import de.fiereu.openmmo.pokemon.SpeciesRegistry
 import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry
 import de.fiereu.openmmo.server.game.battle.StatCalculator
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
+import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -38,6 +39,18 @@ private const val RIDING_TRANSPORTATION: Byte = 0x02
 
 /** Client-generated cosmetic item ids (2000 + slot * 256 + addon, plus HAT's 4320+ range). */
 private val COSMETIC_ITEM_BAND = 2000..4887
+
+/** HAT addons 256..495 carry item ids 4576..4815 (f/J61.ZQ1: id + 4320). */
+private const val HAT_HIGH_ITEM_BASE = 4320
+private val HAT_HIGH_ITEMS = (256 + HAT_HIGH_ITEM_BASE)..(495 + HAT_HIGH_ITEM_BASE)
+
+/** A cosmetic item id back to its addon slot and id. */
+private fun cosmeticSlotAndId(itemCode: Int): Pair<SkinSlot, Int>? {
+  if (itemCode in HAT_HIGH_ITEMS) return SkinSlot.HAT to (itemCode - HAT_HIGH_ITEM_BASE)
+  val rel = itemCode - 2000
+  val slot = SkinSlot.entries.getOrNull(rel / 256) ?: return null
+  return slot to (rel % 256)
+}
 
 /**
  * Bag items used on party monsters, and party drags - the two container actions decoded from live
@@ -59,6 +72,7 @@ constructor(
     private val dexProgress: DexProgressService,
     private val breedingService: BreedingService,
     private val presenceService: PresenceService,
+    private val cosmeticAnimations: CosmeticAnimations,
     private val ocarinas: OcarinaService,
     private val moveTeacher: MoveTutorService,
     private val moves: de.fiereu.openmmo.moves.MoveRegistry,
@@ -99,6 +113,12 @@ constructor(
     log.info {
       "[UseItem] char=$charId code=$itemCode resolved=$itemId monster=$monsterId qty=$quantity"
     }
+    // A hotbar click on a cosmetic: a mount item rides that mount, a worn animated cosmetic
+    // plays its animation (the Werewolf Masks' howl). Nothing else in the band does anything.
+    if (itemId == null && itemCode in COSMETIC_ITEM_BAND && monsterId == 0L) {
+      useCosmetic(ctx, state, charId, stored, itemCode)
+      return
+    }
     if (itemId == null) {
       ctx.reply("That item could not be matched to anything in the bag (code $itemCode).")
       return
@@ -116,37 +136,7 @@ constructor(
         return
       }
       if (itemId == BICYCLE_ITEM_ID) {
-        // THE BIKE, decoded end to end from the client: the drawn bike is the BIKE skin slot
-        // (type 0 = Red Bicycle, per the 31000+ string block), and whether the player renders
-        // the mounted frame set is transportation bit 1 (f.ti.aU1; f.F90.aX returns the
-        // standing pose whenever f.ti.U7 - that bit - is false). Packet 0x28 (f.OJ0 ->
-        // f.tS1.D40) overwrites that byte on the LIVE entity, so the toggle is instant - D40
-        // even plays the region's bike bell on the not-riding -> riding edge.
-        if (stored.skins[SkinSlot.BIKE] == null) {
-          // No bike chosen yet - default to the Red Bicycle so there is something to draw.
-          characters.setSkin(charId, SkinSlot.BIKE, Skin(SkinSlot.BIKE, 0u, 0u))
-          characters.flushCharacterAsync(charId)
-        }
-        state.riding = !state.riding
-        if (state.riding) {
-          // Mounting re-announces the STORED skin set on the live entity before the ride bit
-          // flips, so the drawn bike is always whatever the customization menu last picked -
-          // the menu writes the skin, the bike script points at it.
-          val current = characters.getCharacter(charId) ?: return
-          // false routes the set into IL0.v4 - the DISPLAYED set (true stages into JQ1,
-          // which nothing draws; that bool cost a whole night of invisible skin updates).
-          ctx.send(
-              EntitySpriteChangePacket(
-                  entityId = charId,
-                  staged = false,
-                  appearance = SkinSet(current.info.skinRegionSelectionIndex, current.skins),
-                  gender = current.info.rivalSex,
-              ))
-        }
-        ctx.send(EntityTransportationPacket(charId, if (state.riding) RIDING_TRANSPORTATION else 0))
-        log.info {
-          "[UseItem] BIKE riding=${state.riding} skin=${characters.getCharacter(charId)?.skins?.get(SkinSlot.BIKE)?.type} char=$charId"
-        }
+        rideBike(ctx, state, charId, stored, mountType = null)
       } else {
         ctx.reply(
             "Using ${items.get(itemId)?.name ?: "item $itemId"} from the bag is not wired up yet.")
@@ -456,6 +446,71 @@ constructor(
             5024 to 9999, // Max Potion
         )
   }
+
+  /**
+   * THE BIKE, decoded end to end from the client: the drawn bike is the BIKE skin slot (type 0 =
+   * Red Bicycle, per the 31000+ string block), and whether the player renders the mounted frame
+   * set is transportation bit 1 (f.ti.aU1; f.F90.aX returns the standing pose whenever f.ti.U7 -
+   * that bit - is false). Packet 0x28 (f.OJ0 -> f.tS1.D40) overwrites that byte on the LIVE
+   * entity, so the toggle is instant - D40 even plays the region's bike bell on the not-riding ->
+   * riding edge. A mount item names the bike skin to ride ([mountType]); the Bicycle rides the
+   * skin the customization menu last picked.
+   */
+  private fun rideBike(ctx: SessionContext, state: PlayerState, charId: Long, stored: StoredCharacter, mountType: Int?) {
+    if (mountType != null) {
+      // Riding a named mount: that skin from now on; a click on the mount already ridden dismounts.
+      val worn = stored.skins[SkinSlot.BIKE]?.type?.toInt()
+      if (worn != mountType) {
+        characters.setSkin(charId, SkinSlot.BIKE, Skin(SkinSlot.BIKE, mountType.toUShort(), 0u))
+        characters.flushCharacterAsync(charId)
+        state.riding = false
+      }
+    } else if (stored.skins[SkinSlot.BIKE] == null) {
+      // No bike chosen yet - default to the Red Bicycle so there is something to draw.
+      characters.setSkin(charId, SkinSlot.BIKE, Skin(SkinSlot.BIKE, 0u, 0u))
+      characters.flushCharacterAsync(charId)
+    }
+    state.riding = !state.riding
+    if (state.riding) {
+      // Mounting re-announces the STORED skin set on the live entity before the ride bit
+      // flips, so the drawn bike is always whatever the customization menu last picked -
+      // the menu writes the skin, the bike script points at it.
+      val current = characters.getCharacter(charId) ?: return
+      // false routes the set into IL0.v4 - the DISPLAYED set (true stages into JQ1,
+      // which nothing draws; that bool cost a whole night of invisible skin updates).
+      ctx.send(
+          EntitySpriteChangePacket(
+              entityId = charId,
+              staged = false,
+              appearance = SkinSet(current.info.skinRegionSelectionIndex, current.skins),
+              gender = current.info.rivalSex,
+          ))
+    }
+    ctx.send(EntityTransportationPacket(charId, if (state.riding) RIDING_TRANSPORTATION else 0))
+    log.info {
+      "[UseItem] BIKE riding=${state.riding} skin=${characters.getCharacter(charId)?.skins?.get(SkinSlot.BIKE)?.type} char=$charId"
+    }
+  }
+
+  /** A hotbar click on a cosmetic item the character owns. */
+  private fun useCosmetic(ctx: SessionContext, state: PlayerState, charId: Long, stored: StoredCharacter, itemCode: Int) {
+    if (itemCode !in stored.items) {
+      log.info { "[UseItem] cosmetic $itemCode is not in the bag of char=$charId" }
+      return
+    }
+    val (slot, addonId) = cosmeticSlotAndId(itemCode) ?: return
+    if (slot == SkinSlot.BIKE) {
+      rideBike(ctx, state, charId, stored, mountType = addonId)
+      return
+    }
+    val worn = stored.skins[slot]?.type?.toInt()
+    if (worn != addonId) {
+      log.info { "[UseItem] cosmetic $itemCode ($slot $addonId) is not worn by char=$charId (worn $worn)" }
+      return
+    }
+    cosmeticAnimations.play(ctx, charId, cosmeticAnimations.useAnimation)
+  }
+
 }
 
 /**

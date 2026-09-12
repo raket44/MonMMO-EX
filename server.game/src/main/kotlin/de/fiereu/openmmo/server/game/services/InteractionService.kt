@@ -298,7 +298,7 @@ constructor(
       session.send(notice("The door is already open."))
       return
     }
-    FieldMoveBanners.send(session, stored, state.regionId, FieldMoves.CUT)
+    banners.send(session, stored, state.regionId, FieldMoves.CUT)
     runScript(
         session,
         state,

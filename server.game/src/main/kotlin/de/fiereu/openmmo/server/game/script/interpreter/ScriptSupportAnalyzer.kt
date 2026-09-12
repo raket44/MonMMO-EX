@@ -210,6 +210,7 @@ class ScriptSupportAnalyzer(
           "setobjectxy",
           "setobjectxyperm",
           "warp" -> args.size in 3..4
+          "warphole" -> args.size == 1
           "setdynamicwarp" -> args.size == 4
           "multichoice" -> args.size == 4
           "multichoicedefault",
@@ -370,7 +371,7 @@ class ScriptSupportAnalyzer(
           // The parser types the first argument as an object only for a fixed command list; the
           // interpreter rebuilds the ObjectArg from the token (as copyobjectxytoperm does).
           "setobjectmovementtype" -> args.size == 2
-          "warp" -> args.all { it is IntArg }
+          "warp", "warphole" -> args.all { it is IntArg }
           "setdynamicwarp" -> args.all { it is IntArg }
           "trainerbattle_no_intro" -> args[0] is TrainerArg && args[1] is TextArg
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
@@ -673,6 +674,7 @@ class ScriptSupportAnalyzer(
             "hideobjectat",
             "trainerbattle_no_intro",
             "warp",
+            "warphole",
             "setdynamicwarp",
         ) +
             InterpreterSupport.DEFEATED_BRANCHES +

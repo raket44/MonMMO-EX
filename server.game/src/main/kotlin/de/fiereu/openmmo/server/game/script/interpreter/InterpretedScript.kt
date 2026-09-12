@@ -899,6 +899,18 @@ class InterpretedScript(
           }
           state.pc++
         }
+        // warphole MAP: the fall through a hole (Icefall Cave's broken ice) lands on the map below
+        // at the player's own coordinates, and the arrival is a fall (FallWarpEffect: on water the
+        // player surfs the current).
+        "warphole" -> {
+          val packed = (instruction.arg(0) as IntArg).value
+          val region = when (program.id.source) { "firered" -> 0; "emerald" -> 1; else -> error("Script ${program.id.stable} cannot warp for source " + program.id.source) }
+          ctx.state.arrivedByFall = true
+          tracedWait(ctx, "warp") {
+            ctx.warp(region, packed shr 8, packed and 0xFF, ctx.state.x.toInt(), ctx.state.y.toInt(), de.fiereu.openmmo.common.enums.Direction.DOWN)
+          }
+          state.pc++
+        }
         "trainerbattle_no_intro" -> {
           if (!runTrainerBattleNoIntro(ctx, state, instruction)) return
         }

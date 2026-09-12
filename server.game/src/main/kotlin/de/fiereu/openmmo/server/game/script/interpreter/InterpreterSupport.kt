@@ -45,6 +45,8 @@ internal object InterpreterSupport {
           // Statue text is cosmetic; blocking every gym leader on it was the real cost.
           "set_gym_trainers",
           "waitstate",
+          // Per-step callbacks (Icefall Cave's ice) are the movement service's, not the script's.
+          "setstepcallback",
           // Flash: the flicker is client-side; setflashlevel below carries the lit state.
           "animateflash",
           "showmoneybox",
@@ -117,6 +119,9 @@ internal object InterpreterSupport {
           "Script_SetHelpContext",
           // save_location.c: dex-unlock save flags for the link features, nothing off a cartridge.
           "SetUnlockedPokedexFlags",
+          // Icefall Cave's cracked tiles re-drawn from temp flags on load: the tiles are re-cracked
+          // by stepping here, and temp flags are wiped on entry anyway.
+          "SetIcefallCaveCrackedIceMetatiles",
           // save_location.c: GameCube-link save flags, nothing off a cartridge.
           "SetPostgameFlags",
           // The roaming legendary (Raikou/Entei/Suicune) is not modelled; Celio's Sapphire scene continues.

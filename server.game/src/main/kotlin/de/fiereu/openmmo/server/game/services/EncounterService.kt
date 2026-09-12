@@ -59,9 +59,13 @@ constructor(
     // walkable step, the way caves have always worked - the decomp-only path never covered caves.
     val waterStep = state?.surfing == true && tile.behavior.isSurfable
     val grassStep = !waterStep && isLandEncounterTile(tile.behavior)
+    // Floor rolls belong to maps with no grass at all (caves, towers). The retail dump files a
+    // mountain's exterior and its caves under one name (Mt. Ember: Grass, Cave and Rocks rows), so
+    // a Cave row must not turn every rock step outside into an encounter.
     val floorStep =
         !waterStep &&
             !grassStep &&
+            !hasGrass(map) &&
             RetailEncounters.entriesFor(map.sourceName, map.regionId.toInt()).any { it.type in FLOOR_TYPES }
     if (!waterStep && !grassStep && !floorStep) return
     if (battleService.inBattle(charId)) {
@@ -294,6 +298,12 @@ constructor(
 
   private fun isLandEncounterTile(behavior: TileBehavior): Boolean =
       behavior == TileBehavior.TALL_GRASS || behavior == TileBehavior.LONG_GRASS
+
+  private val grassMaps = java.util.concurrent.ConcurrentHashMap<MapDef, Boolean>()
+
+  /** Whether any tile of [map] is grass: such a map rolls grass, never its floor rows. */
+  private fun hasGrass(map: MapDef): Boolean =
+      grassMaps.getOrPut(map) { map.tiles.any { isLandEncounterTile(it.behavior) } }
 
   private fun hasUsablePartyMon(charId: Long): Boolean =
       characterStore.getCharacter(charId)?.pokemon?.any { it.hp > 0 } ?: false

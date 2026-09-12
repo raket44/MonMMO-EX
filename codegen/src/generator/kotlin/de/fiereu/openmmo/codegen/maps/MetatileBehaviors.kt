@@ -117,6 +117,9 @@ private constructor(
           "MB_INTERIOR_DEEP_WATER",
           "MB_SOOTOPOLIS_DEEP_WATER" -> TileBehavior.DEEP_WATER
           "MB_WATERFALL" -> TileBehavior.WATERFALL
+          "MB_ICE" -> TileBehavior.ICE
+          "MB_THIN_ICE" -> TileBehavior.THIN_ICE
+          "MB_CRACKED_ICE" -> TileBehavior.CRACKED_ICE
           "MB_JUMP_EAST" -> TileBehavior.JUMP_EAST
           "MB_JUMP_WEST" -> TileBehavior.JUMP_WEST
           "MB_JUMP_NORTH" -> TileBehavior.JUMP_NORTH

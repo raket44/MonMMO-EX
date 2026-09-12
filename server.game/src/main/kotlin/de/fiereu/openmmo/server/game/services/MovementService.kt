@@ -40,6 +40,12 @@ private const val RECENT_TILES = 8
 // A spin-tile slide never runs longer than this; the hideout mazes are far shorter.
 private const val MAX_SPIN_STEPS = 64
 
+/** Seafoam tileset metatiles Icefall Cave's ice turns into (include/constants/metatile_labels.h). */
+private const val CRACKED_ICE_METATILE = 0x35A
+private const val ICE_HOLE_METATILE = 0x35B
+/** The 1F frame script for VAR_TEMP_1 = 1: the fall to B1F. */
+private const val ICEFALL_FALL_SCRIPT = "FourIsland_IcefallCave_1F_EventScript_FallDownHole"
+
 /** The window after a desync reset in which pre-reset claims are dropped, about one round trip. */
 private const val RESET_ECHO_MILLIS = 600L
 
@@ -556,6 +562,15 @@ constructor(
       runFieldScript(ctx, state, label)
       return
     }
+    // Waterfall, downward: the cartridge lets a surfer onto the fall from above and the current
+    // pushes them south to the pool below (ForcedMovement_PushedSouthByCurrent); no HM needed.
+    if (state.surfing && msg.direction == Direction.DOWN && targetBehavior == TileBehavior.WATERFALL && !state.creative) {
+      characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
+      state.x = toX.toShort()
+      state.y = toY.toShort()
+      startWaterfallDescent(ctx, charId, state, currentMap, toX, toY)
+      return
+    }
     // Strength: a pushable boulder in the way slides one tile on, when that tile is free.
     pushBoulder(ctx, charId, stored, state, currentMap, toX, toY, msg.direction)
 
@@ -576,6 +591,8 @@ constructor(
     rememberTile(state, currentMap, toX, toY)
     dismountIfAshore(ctx, charId, state, currentMap, toX, toY)
     if (startSpin(ctx, charId, state, currentMap, toX, toY)) return
+    if (startIceSlide(ctx, charId, state, currentMap, toX, toY, msg.direction)) return
+    if (crackIce(ctx, charId, state, currentMap, toX, toY)) return
 
     // The client already walked itself there, so only the observers need telling.
     presenceService.broadcastToObservers(
@@ -946,6 +963,110 @@ constructor(
       }
     }
     return true
+  }
+
+  /**
+   * Down a waterfall: from the fall tile just stepped onto, one fast step per fall tile and one
+   * onto the water below. Driven like a spin (input held, position committed at the end).
+   */
+  private fun startWaterfallDescent(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int) {
+    val steps = mutableListOf<MovementStep>()
+    var cy = y
+    while (steps.size < MAX_SPIN_STEPS && map.tileAt(x, cy)?.behavior == TileBehavior.WATERFALL) {
+      val below = map.tileAt(x, cy + 1) ?: break
+      if (below.behavior != TileBehavior.WATERFALL && !below.behavior.isSurfable) break
+      steps += MovementStep.FAST_DOWN
+      cy++
+    }
+    if (steps.isEmpty()) return
+    log.info { "[Waterfall] char=$charId down from ($x, $y) ${steps.size} steps to ($x, $cy)" }
+    state.spinning = true
+    scope.launch {
+      try {
+        scriptMovement.holdPlayer(ctx, state)
+        scriptMovement.moveSelf(ctx, state, steps)
+      } catch (e: Exception) {
+        log.warn(e) { "[Waterfall] char=$charId descent failed" }
+      } finally {
+        state.spinning = false
+        scriptMovement.releasePlayerHold(ctx, state)
+      }
+    }
+  }
+
+  /**
+   * Ice (MB_ICE, ForcedMovement_Slip): the player keeps sliding the way they stepped, one fast
+   * step per tile, until the tile under them is no longer ice or the next tile is blocked. Thin
+   * ice at the landing cracks like any other landing. Returns true when a slide started.
+   */
+  private fun startIceSlide(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int, direction: Direction): Boolean {
+    if (state.spinning) return false
+    if (tileBehaviorAt(state, map, x, y) != TileBehavior.ICE) return false
+    val steps = mutableListOf<MovementStep>()
+    var cx = x
+    var cy = y
+    while (steps.size < MAX_SPIN_STEPS && tileBehaviorAt(state, map, cx, cy) == TileBehavior.ICE) {
+      val nx = cx + direction.dx
+      val ny = cy + direction.dy
+      if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
+      steps += spinStep(direction)
+      cx = nx
+      cy = ny
+    }
+    if (steps.isEmpty()) return false
+    log.info { "[Ice] char=$charId slid from ($x, $y) ${steps.size} steps to ($cx, $cy)" }
+    state.spinning = true
+    scope.launch {
+      try {
+        scriptMovement.holdPlayer(ctx, state)
+        scriptMovement.moveSelf(ctx, state, steps)
+      } catch (e: Exception) {
+        log.warn(e) { "[Ice] char=$charId slide failed" }
+      } finally {
+        state.spinning = false
+        scriptMovement.releasePlayerHold(ctx, state)
+      }
+      crackIce(ctx, charId, state, map, cx, cy)
+    }
+    return true
+  }
+
+  /**
+   * Icefall Cave's thin ice (field_tasks.c IcefallCaveIcePerStepCallback): a step onto thin ice
+   * cracks it, a step onto cracked ice breaks it into a hole and the map's frame script drops the
+   * player to the floor below (VAR_TEMP_1 = 1). The metatile ids are Seafoam's tileset (0x35A
+   * cracked, 0x35B hole). Returns true when the player is falling.
+   */
+  private fun crackIce(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int): Boolean {
+    when (tileBehaviorAt(state, map, x, y)) {
+      TileBehavior.THIN_ICE -> {
+        log.info { "[Ice] char=$charId cracked the ice at ($x, $y)" }
+        setTile(ctx, state, map, x, y, CRACKED_ICE_METATILE)
+        return false
+      }
+      TileBehavior.CRACKED_ICE -> {
+        log.info { "[Ice] char=$charId broke through the ice at ($x, $y)" }
+        setTile(ctx, state, map, x, y, ICE_HOLE_METATILE)
+        characterStore.setStoryVar(charId, "kanto/VAR_TEMP_1", 1)
+        runFieldScript(ctx, state, ICEFALL_FALL_SCRIPT)
+        return true
+      }
+      else -> return false
+    }
+  }
+
+  private fun tileBehaviorAt(state: PlayerState, map: MapDef, x: Int, y: Int): TileBehavior? =
+      (state.tileOverrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y))?.behavior
+
+  /** The engine's own setmetatile (ScriptContext.setMetatile without a script): the tile keeps its collision bits. */
+  private fun setTile(ctx: SessionContext, state: PlayerState, map: MapDef, x: Int, y: Int, metatileId: Int) {
+    val key = (x shl 16) or (y and 0xFFFF)
+    val existing = state.tileOverrides[key] ?: map.tileAt(x, y) ?: return
+    val behavior = map.metatileBehavior(metatileId) ?: map.tiles.firstOrNull { it.material == metatileId.toShort() }?.behavior ?: existing.behavior
+    state.tileOverrides[key] = de.fiereu.openmmo.common.Tile2D(metatileId.toShort(), existing.collision, behavior)
+    ctx.send(
+        de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
+            map.regionId, map.bankId, map.mapId, x.toShort(), y.toShort(), existing.collision.toShort(), metatileId.toShort()))
   }
 
   private fun spinStep(direction: Direction): MovementStep =

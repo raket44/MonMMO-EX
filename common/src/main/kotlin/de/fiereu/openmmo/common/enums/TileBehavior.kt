@@ -42,7 +42,13 @@ enum class TileBehavior {
   /** MB_FALL_WARP: a hole. The player drops a floor; a Strength boulder pushed onto it falls through (Seafoam Islands). */
   FALL_WARP,
   /** MB_STRENGTH_BUTTON: Victory Road's floor switch - a Strength boulder pushed onto it runs the tile's script. */
-  STRENGTH_BUTTON;
+  STRENGTH_BUTTON,
+  /** MB_ICE: the player slips onward in the walking direction until off the ice or against a wall. */
+  ICE,
+  /** MB_THIN_ICE (Icefall Cave): cracks under the first step. */
+  THIN_ICE,
+  /** MB_CRACKED_ICE: breaks under the next step and drops the player a floor. */
+  CRACKED_ICE;
 
   /** The direction a spin tile sends the player, null for any other tile. */
   val spinDirection: Direction?

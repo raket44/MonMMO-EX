@@ -274,17 +274,34 @@ constructor(
    * invisible actor. Scripted moves already wait that window out (awaitSelfActions); the spawn
    * now waits the same way, so it still lands before the moves.
    */
-  private fun sendAfterArrival(ctx: SessionContext, packet: NpcSpawnPacket) {
+  /** Packets held for a session's arrival window, sent in the order they were queued. */
+  private val heldForArrival = java.util.concurrent.ConcurrentHashMap<SessionContext, java.util.ArrayDeque<Any>>()
+
+  /**
+   * Spawns and repositions during the arrival window are dropped by the client (it is still
+   * loading the map), so they wait for the window to close - in ONE queue per session, in order.
+   * Separate timers let a reposition overtake the spawn it belonged to: Littleroot's entry
+   * script clears mom's hide flag (a spawn at her map default, the door tile) and then sets her
+   * tile to the step in front of it; the reposition went out first and the late spawn put her
+   * back in the doorway (2026-09-12).
+   */
+  private fun sendAfterArrival(ctx: SessionContext, packet: Any) {
     val state = ctx.attributes[PLAYER_STATE]
     val wait = (state?.moveIgnoreUntil ?: 0L) - System.currentTimeMillis()
-    if (wait <= 0) {
+    val pending = heldForArrival[ctx]
+    if (wait <= 0 && pending == null) {
       ctx.send(packet)
       return
     }
-    log.info { "Scripted spawn of entity ${packet.entityId} held ${wait}ms for the arrival window" }
+    val queue = heldForArrival.computeIfAbsent(ctx) { java.util.ArrayDeque() }
+    synchronized(queue) { queue.add(packet) }
+    if (pending != null) return
+    log.info { "Scripted ${packet.javaClass.simpleName} held ${wait}ms for the arrival window" }
     scope.launch {
-      kotlinx.coroutines.delay(wait)
-      ctx.send(packet)
+      kotlinx.coroutines.delay(wait.coerceAtLeast(0L))
+      val drained = heldForArrival.remove(ctx) ?: return@launch
+      val packets = synchronized(drained) { drained.toList() }
+      if (ctx.channel.isActive) packets.forEach { ctx.send(it) }
     }
   }
 
@@ -321,7 +338,8 @@ constructor(
       y: Int,
   ) {
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
-    ctx.send(
+    sendAfterArrival(
+        ctx,
         NpcUpdatePacket(
             entityId = entityIdFor(regionId, bankId, mapId, localId),
             regionId = regionId,

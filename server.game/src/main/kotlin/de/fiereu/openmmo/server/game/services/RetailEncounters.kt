@@ -97,7 +97,9 @@ object RetailEncounters {
     val parts = sourceName.split('_').filter { it.isNotEmpty() }
     val candidates = mutableListOf<String>()
     for (length in parts.size downTo 1) {
-      for (start in 0..parts.size - length) candidates += parts.subList(start, start + length).joinToString("")
+      // Later runs first: the sub-area beats the island it sits on (FourIsland_IcefallCave_B1F is
+      // "Icefall Cave", whose cave rows exist, not "Four Island", which only has sea rows).
+      for (start in (parts.size - length) downTo 0) candidates += parts.subList(start, start + length).joinToString("")
     }
     return candidates.map(::normalize).firstOrNull { it in byLocation }
   }

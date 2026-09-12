@@ -138,24 +138,10 @@ constructor(
             info.positionMapId.toInt(),
             localId,
         )
-    // The glance: a held player turns to WATCH an npc that walks during the scene (Oak heading
-    // for his desk, the gym guide marching off), like the source games. Facing-only shuffles
-    // are ignored - only a real walk earns the look.
-    if (state.blocksPlayerInput && steps.any { it.walks }) {
-      val dx = npc.x - info.positionX.toInt()
-      val dy = npc.y - info.positionY.toInt()
-      val toward =
-          if (kotlin.math.abs(dx) >= kotlin.math.abs(dy)) {
-            if (dx >= 0) Direction.RIGHT else Direction.LEFT
-          } else {
-            if (dy >= 0) Direction.DOWN else Direction.UP
-          }
-      faceStepOf(toward)?.let { glance ->
-        state.facingDirection = toward
-        characterStore.updatePosition(charId, info.positionX, info.positionY, facing = toward)
-        sendActions(session, info.id, listOf(glance))
-      }
-    }
+    // No invented turn here: the source games only turn the player when the script says so
+    // (applymovement LOCALID_PLAYER behind a VAR_FACING branch), and those branches run now. The
+    // 2026-09-08 "glance" that aimed the player at a walking npc START tile turned them the
+    // wrong way whenever the npc ended somewhere else (Oak walking up after the League).
     val end = drive(session, entityId, npc, steps)
     state.scriptedNpcPoses[scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)] =
         ScriptedNpcPose(end.x, end.y, end.facing)

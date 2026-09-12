@@ -36,6 +36,8 @@ constructor(
     private val npcService: NpcService,
     private val characterStore: CharacterStore,
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
+    /** Lazily: MovementService depends on this service; the edge crossing lives there. */
+    private val movementService: javax.inject.Provider<MovementService>? = null,
 ) {
   /** DS maps have no MapDef; the ROM npc table gives an npc's resting pose. */
   private fun ndsNpcPose(regionId: Int, bankId: Int, mapId: Int, localId: Int): Pose? {
@@ -114,42 +116,40 @@ constructor(
       state: PlayerState,
       localId: Int,
       steps: List<MovementStep>,
+      /** The npc's own map (bank to map) when the script names one - it may differ from the player's. */
+      mapOverride: Pair<Int, Int>? = null,
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    val regionId = info.positionRegionId.toInt()
+    val bankId = mapOverride?.first ?: info.positionBankId.toInt()
+    val mapId = mapOverride?.second ?: info.positionMapId.toInt()
+    val map = mapManager.getMap(info.positionRegionId, bankId.toByte(), mapId.toByte())
     // Where the npc really stands: a scripted walk earlier this visit, else its spawned tile
     // (story placement and setobjectxyperm included), else the DS event table.
     val stored = characterStore.getCharacter(charId)
     val npc =
-        scriptedNpcPose(state, localId)
+        state.scriptedNpcPoses[scriptedNpcKey(regionId, bankId, mapId, localId)]?.let { Pose(it.x, it.y, it.facing) }
             ?: map?.npcs?.firstOrNull { it.entityIdx == localId }?.let {
               val spawned =
                   npcService.effectiveNpc(
-                      info.positionRegionId.toInt(),
-                      info.positionBankId.toInt(),
-                      info.positionMapId.toInt(),
+                      regionId,
+                      bankId,
+                      mapId,
                       it,
                       stored?.storyFlags.orEmpty(),
                       stored?.storyVars.orEmpty())
               Pose(spawned.x, spawned.y, spawned.facing)
             }
-            ?: ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+            ?: ndsNpcPose(regionId, bankId, mapId, localId)
             ?: return
-    val entityId =
-        npcService.entityIdFor(
-            info.positionRegionId.toInt(),
-            info.positionBankId.toInt(),
-            info.positionMapId.toInt(),
-            localId,
-        )
+    val entityId = npcService.entityIdFor(regionId, bankId, mapId, localId)
     // No invented turn here: the source games only turn the player when the script says so
     // (applymovement LOCALID_PLAYER behind a VAR_FACING branch), and those branches run now. The
     // 2026-09-08 "glance" that aimed the player at a walking npc START tile turned them the
     // wrong way whenever the npc ended somewhere else (Oak walking up after the League).
     val end = drive(session, entityId, npc, steps)
-    state.scriptedNpcPoses[scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)] =
-        ScriptedNpcPose(end.x, end.y, end.facing)
+    state.scriptedNpcPoses[scriptedNpcKey(regionId, bankId, mapId, localId)] = ScriptedNpcPose(end.x, end.y, end.facing)
   }
 
   /** The tile a script walked this npc to earlier in the visit, if any. */
@@ -229,7 +229,7 @@ constructor(
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = applySteps(start, selfSteps)
     if (map != null) {
-      check(commitPose(charId, state, map, end)) { "Scripted player movement ended off the map" }
+      check(commitScriptedWalk(session, charId, state, map, start, selfSteps)) { "Scripted player movement ended off the map" }
     } else {
       // DS maps: no tile table to validate against, the ROM script is trusted.
       state.x = end.x.toShort()
@@ -465,10 +465,10 @@ constructor(
             CLIENT_LAG_PAD_MS
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
-    // A player walked off the map means the scene ran from a position it never expected (a login
-    // in the middle of a cutscene map). Failing the script rolls its writes back for a clean
-    // retry from the proper entry.
-    check(commitPose(charId, state, map, end)) {
+    // A player walked off the map with no neighbour there means the scene ran from a position it
+    // never expected (a login in the middle of a cutscene map). Failing the script rolls its
+    // writes back for a clean retry from the proper entry.
+    check(commitScriptedWalk(session, charId, state, map, start, steps)) {
       "Scripted player movement ended off the map at (${end.x}, ${end.y})"
     }
   }
@@ -491,6 +491,41 @@ constructor(
    * Commits where a cutscene left the player, unless that is off the map, which would persist a
    * position every later step reads as a desync and snaps back from.
    */
+  /**
+   * The server-side track of a scripted player walk the client is already playing: step by step,
+   * and where a step leaves the map, the same edge crossing a free step gets (the Wally tutorial
+   * walks Petalburg's east edge into Route 102, where the cartridge stages the catch). The walk
+   * then continues on the neighbour from its landing tile.
+   */
+  private fun commitScriptedWalk(
+      session: SessionContext,
+      charId: Long,
+      state: PlayerState,
+      map: MapDef,
+      start: Pose,
+      steps: List<MovementStep>,
+  ): Boolean {
+    var current = map
+    var pose = start
+    for (step in steps) {
+      val next = applySteps(pose, listOf(step))
+      if (next.x in 0 until current.width && next.y in 0 until current.height) {
+        pose = next
+        continue
+      }
+      val crossed =
+          movementService?.get()?.crossEdge(session, charId, state, current, pose.x, pose.y, step.direction) ?: false
+      if (!crossed) {
+        log.warn { "Scripted walk of character $charId left ${current.bankId}:${current.mapId} at (${next.x}, ${next.y}) with no neighbour there" }
+        return false
+      }
+      val info = characterStore.getCharacter(charId)?.info ?: return false
+      current = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return false
+      pose = Pose(info.positionX.toInt(), info.positionY.toInt(), step.direction)
+    }
+    return commitPose(charId, state, current, pose)
+  }
+
   private fun commitPose(charId: Long, state: PlayerState, map: MapDef, pose: Pose): Boolean {
     if (pose.x !in 0 until map.width || pose.y !in 0 until map.height) {
       log.warn {

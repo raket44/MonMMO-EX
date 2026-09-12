@@ -2,6 +2,7 @@ package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.enums.Direction
+import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.WarpTile
 import de.fiereu.openmmo.net.game.packets.MapTransitionPacket
@@ -246,6 +247,35 @@ constructor(
     if (state != null) awaitArrival(ctx, state, charId)
 
     log.info { "Player $charId warped to bank=${warp.targetBankId} map=${warp.targetMapId}" }
+  }
+
+  /**
+   * A script's `warp` lands like any warp: the landing tile's rule decides the exit facing and
+   * whether the player walks one tile off it (a door tile walks out, a mat rests) - the ROM's
+   * SetUpWarpExitTask does not care who started the warp. Norman's script warps onto Petalburg's
+   * gym door; without the walk-out the tutorial walk that follows ran one tile short across the
+   * whole town (2026-09-12).
+   */
+  fun armScriptedArrival(state: PlayerState, destMap: MapDef, x: Int, y: Int, facing: Direction): Direction {
+    val destBehavior = destMap.tileAt(x, y)?.behavior
+    val destRule =
+        warpRules.forTile(destMap.regionId.toInt(), destMap.bankId.toInt(), destMap.mapId.toInt(), x, y)
+            ?: destBehavior?.let { warpRules.forName(destMap.regionId.toInt(), it.name) }
+    val exitFacing = destRule?.press?.opposite() ?: facing
+    state.pendingStepDir = null
+    state.pendingStepX = -1
+    state.pendingStepY = -1
+    if (destRule?.arrival == WarpRules.Arrival.STEP && destMap.warps.any { it.x == x && it.y == y }) {
+      val sx = x + exitFacing.dx
+      val sy = y + exitFacing.dy
+      val open =
+          sx in 0 until destMap.width &&
+              sy in 0 until destMap.height &&
+              destMap.tileAt(sx, sy)?.blocksMovement() != true &&
+              destMap.warps.none { it.x == sx && it.y == sy }
+      if (open) state.pendingStepDir = exitFacing
+    }
+    return exitFacing
   }
 
   /**

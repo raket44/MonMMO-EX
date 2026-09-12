@@ -486,47 +486,9 @@ constructor(
 
     // Walking off the edge of a map hands the player to the neighbouring map, if there is one.
     if (toX !in 0 until currentMap.width || toY !in 0 until currentMap.height) {
-      // A side can hold several neighbours (Six Island Water Path's west edge meets Green Path,
-      // Six Island and Ruin Valley at offsets 0, 40 and 80): like the ROM's GetIncomingConnection,
-      // take the one whose span covers the crossing tile. Connections stay inside one region.
-      val candidates =
-          currentMap.connections
-              .filter { it.direction == msg.direction }
-              .mapNotNull { c ->
-                mapManager.getMap(currentMap.regionId, c.targetBank.toByte(), c.targetMap.toByte())?.let { c to it }
-              }
-      val covering =
-          candidates.firstOrNull { (c, target) ->
-            when (msg.direction) {
-              Direction.LEFT, Direction.RIGHT -> (fromY - c.unknown) in 0 until target.height
-              else -> (fromX - c.unknown) in 0 until target.width
-            }
-          }
-      if (covering == null) {
+      if (!crossEdge(ctx, charId, state, currentMap, fromX, fromY, msg.direction)) {
         bonk(ctx, charId, state, msg.direction)
-        return
       }
-      val (connection, targetMap) = covering
-      val entryX =
-          when (msg.direction) {
-            Direction.LEFT -> targetMap.width - 1
-            Direction.RIGHT -> 0
-            else -> fromX - connection.unknown
-          }
-      val entryY =
-          when (msg.direction) {
-            Direction.UP -> targetMap.height - 1
-            Direction.DOWN -> 0
-            else -> fromY - connection.unknown
-          }
-      // The landing tile must be walkable. Pallet Town's bottom row is open across its width but
-      // Route 21's top row is a fence with one gap: the client bonks on the fence while the server
-      // crossed the seam anyway, snapping NPCs back and desyncing the player (2026-09-07).
-      if (!isWalkable(targetMap, entryX, entryY, state.surfing)) {
-        bonk(ctx, charId, state, msg.direction)
-        return
-      }
-      edgeTransition(ctx, charId, currentMap.regionId, connection, entryX, entryY)
       return
     }
 
@@ -1265,6 +1227,58 @@ constructor(
     state.surfing = false
     ctx.send(de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, 0))
     log.info { "Surf ended for char=$charId at ($x, $y)" }
+  }
+
+  /**
+   * The player at ([fromX], [fromY]) on [currentMap] leaves it toward [direction]: the neighbour
+   * whose span covers that tile takes them, on its walkable landing tile. False when no neighbour
+   * covers the tile or the landing tile is blocked (the caller bonks). A side can hold several
+   * neighbours (Six Island Water Path's west edge meets Green Path, Six Island and Ruin Valley at
+   * offsets 0, 40 and 80): like the ROM's GetIncomingConnection, the covering one is taken.
+   * Connections stay inside one region. Free steps and scripted walks (the Wally tutorial walks
+   * Petalburg's east edge into Route 102) cross the same way.
+   */
+  fun crossEdge(
+      ctx: SessionContext,
+      charId: Long,
+      state: PlayerState,
+      currentMap: MapDef,
+      fromX: Int,
+      fromY: Int,
+      direction: Direction,
+  ): Boolean {
+    val candidates =
+        currentMap.connections
+            .filter { it.direction == direction }
+            .mapNotNull { c ->
+              mapManager.getMap(currentMap.regionId, c.targetBank.toByte(), c.targetMap.toByte())?.let { c to it }
+            }
+    val covering =
+        candidates.firstOrNull { (c, target) ->
+          when (direction) {
+            Direction.LEFT, Direction.RIGHT -> (fromY - c.unknown) in 0 until target.height
+            else -> (fromX - c.unknown) in 0 until target.width
+          }
+        } ?: return false
+    val (connection, targetMap) = covering
+    val entryX =
+        when (direction) {
+          Direction.LEFT -> targetMap.width - 1
+          Direction.RIGHT -> 0
+          else -> fromX - connection.unknown
+        }
+    val entryY =
+        when (direction) {
+          Direction.UP -> targetMap.height - 1
+          Direction.DOWN -> 0
+          else -> fromY - connection.unknown
+        }
+    // The landing tile must be walkable. Pallet Town's bottom row is open across its width but
+    // Route 21's top row is a fence with one gap: the client bonks on the fence while the server
+    // crossed the seam anyway, snapping NPCs back and desyncing the player (2026-09-07).
+    if (!isWalkable(targetMap, entryX, entryY, state.surfing)) return false
+    edgeTransition(ctx, charId, currentMap.regionId, connection, entryX, entryY)
+    return true
   }
 
   private fun edgeTransition(

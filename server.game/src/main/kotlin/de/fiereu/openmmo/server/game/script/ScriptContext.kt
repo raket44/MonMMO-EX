@@ -1004,10 +1004,12 @@ internal constructor(
   internal suspend fun applyNpcMovement(
       localId: Int,
       steps: List<MovementStep>,
+      /** The npc's map when the script names one (applymovement's third argument). */
+      mapOverride: Pair<Int, Int>? = null,
   ): Deferred<Unit> {
-    movement.requireNpc(state, localId)
+    if (mapOverride == null) movement.requireNpc(state, localId)
     return CoroutineScope(currentCoroutineContext()).async(start = CoroutineStart.UNDISPATCHED) {
-      movement.moveNpc(session, state, localId, steps)
+      movement.moveNpc(session, state, localId, steps, mapOverride)
     }
   }
 

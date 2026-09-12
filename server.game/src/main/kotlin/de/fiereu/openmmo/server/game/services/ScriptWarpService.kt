@@ -53,6 +53,10 @@ constructor(
       }
       return
     }
+    // The landing tile's own arrival rule (WarpService.armScriptedArrival): a door tile walks the
+    // player out one tile at arrival, the way every other warp onto it does.
+    val exitFacing =
+        warpService.get().armScriptedArrival(state, map, destination.x.toInt(), destination.y.toInt(), destination.facing)
     val info =
         stored.info.copy(
             positionRegionId = destination.regionId,
@@ -60,7 +64,7 @@ constructor(
             positionMapId = destination.mapId,
             positionX = destination.x,
             positionY = destination.y,
-            positionFacing = destination.facing,
+            positionFacing = exitFacing,
         )
 
     characterStore.updateCharacter(info)
@@ -80,7 +84,7 @@ constructor(
         map.warps.find { it.x == destination.x.toInt() && it.y == destination.y.toInt() }?.elevation
             ?: map.tileAt(destination.x.toInt(), destination.y.toInt())?.let { (it.elevation - 1).coerceAtLeast(0) }
             ?: 0
-    state.facingDirection = destination.facing
+    state.facingDirection = exitFacing
 
     val loaded = CompletableDeferred<Unit>()
     session.attributes[PENDING_MAP_LOAD] = loaded

@@ -1029,6 +1029,11 @@ class InterpretedScript(
         checkNotNull(resolved) {
           "Script ${program.id.stable} cannot apply movement to LOCALID_NONE from " +
               "`${instruction.sourceLine}`"
+        }.let { t ->
+          // The optional map argument: the npc lives on that map (the Wally tutorial addresses him
+          // on Petalburg City from Route 102).
+          val map = movementMapArg(instruction, 2)
+          if (t is MovementTarget.Npc && map != null) t.copy(mapOverride = map) else t
         }
     val movementLabel = movementArg(instruction, 1).token
     val movement =
@@ -1045,7 +1050,7 @@ class InterpretedScript(
         try {
           when (target) {
             MovementTarget.Player -> ctx.applyPlayerMovement(steps)
-            is MovementTarget.Npc -> ctx.applyNpcMovement(target.localId, steps)
+            is MovementTarget.Npc -> ctx.applyNpcMovement(target.localId, steps, target.mapOverride)
           }
         } catch (cause: IllegalStateException) {
           throw IllegalStateException(
@@ -1119,12 +1124,23 @@ class InterpretedScript(
               allowNone = true,
           )
         }
-    val target = requested ?: state.lastMovementTarget
+    val target =
+        (requested ?: state.lastMovementTarget)?.let { t ->
+          val map = movementMapArg(instruction, 1)
+          if (t is MovementTarget.Npc && map != null) t.copy(mapOverride = map) else t
+        }
     if (target != null) {
       val pending = state.pendingMovements.remove(target)
       if (pending != null) tracedWait(ctx, "movement ${target.display}") { pending.await() }
     }
     state.pc++
+  }
+
+  /** The MAP_ constant at [index] as (bank to map) on this program's region, or null when absent. */
+  private fun movementMapArg(instruction: ScriptInstruction, index: Int): Pair<Int, Int>? {
+    val packed = (instruction.args.getOrNull(index) as? IntArg)?.value ?: return null
+    val region = if (program.id.source == "emerald") 1 else 0
+    return gbaBank(region, packed shr 8) to (packed and 0xFF)
   }
 
   private fun movementStep(
@@ -2060,8 +2076,9 @@ class InterpretedScript(
       override val display = "LOCALID_PLAYER"
     }
 
-    data class Npc(val localId: Int) : MovementTarget {
-      override val display = "npc $localId"
+    /** [mapOverride]: the npc's own map (bank to map) when the command names one. */
+    data class Npc(val localId: Int, val mapOverride: Pair<Int, Int>? = null) : MovementTarget {
+      override val display = "npc $localId" + (mapOverride?.let { " on ${it.first}:${it.second}" } ?: "")
     }
   }
 

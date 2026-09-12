@@ -48,7 +48,7 @@ private fun refreshRegion(
   var notFound = 0
   val lines =
       texts.mapNotNull { t ->
-        val bytes = charmap.encode(t.content)
+        val bytes = if (t.braille) BrailleCharmap.encode(t.content) else charmap.encode(t.content)
         if (bytes == null) {
           unencodable++
           return@mapNotNull null

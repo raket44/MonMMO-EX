@@ -380,7 +380,7 @@ class ScriptSupportAnalyzer(
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
           "braillemessage",
-          "braillemsgbox" -> args[0] is TextArg || args[0].token in InterpreterSupport.BRAILLE_TEXTS
+          "braillemsgbox" -> args[0] is TextArg
           "copyobjectxytoperm" -> args[0] is ObjectArg || (args[0] is SymbolArg && args[0].token.startsWith("LOCALID_"))
           "checkmoney",
           "addmoney",

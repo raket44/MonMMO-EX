@@ -493,13 +493,10 @@ class InterpretedScript(
           state.pc++
         }
         "braillemessage" -> {
-          // The sign's reading (data/text/braille.inc) as braille cells in the client's braille
-          // dialog; the script's waitbuttonpress owns the acknowledgement. Never the letters: the
-          // puzzle is the player's to read.
-          val token = instruction.arg(0).token
-          val reading = InterpreterSupport.BRAILLE_TEXTS[token]
-          if (reading != null) ctx.showBraille(reading)
-          else ctx.showMessage(textLine(token, instruction))
+          // The sign's own .braille bytes (dialog table id) in the client's braille dialog; the
+          // script's waitbuttonpress owns the acknowledgement. Never the letters: the puzzle is
+          // the player's to read.
+          ctx.showBraille(textLine(textArg(instruction, 0).token, instruction))
           state.pc++
         }
         "closebraillemessage" -> {
@@ -508,9 +505,7 @@ class InterpretedScript(
         }
         "braillemsgbox" -> {
           // Emerald's macro: braillemessage, waitbuttonpress, closebraillemessage.
-          val token = instruction.arg(0).token
-          val reading = InterpreterSupport.BRAILLE_TEXTS[token]
-          if (reading != null) ctx.showBraille(reading) else ctx.showMessage(textLine(token, instruction))
+          ctx.showBraille(textLine(textArg(instruction, 0).token, instruction))
           tracedWait(ctx, "dialog button") { ctx.waitButtonPress() }
           ctx.closeMessage()
           state.pc++

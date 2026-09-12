@@ -576,7 +576,7 @@ constructor(
 
     // Creative admins walk through anything; the client shows the wall, the server allows it.
     if (!state.creative && !isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides)) {
-      log.debug { "WALL: char=$charId blocked at ($toX, $toY)" }
+      log.info { "WALL: char=$charId blocked at ($toX, $toY) behavior=$targetBehavior collision=${currentMap.tileAt(toX, toY)?.collision} dir=${msg.direction}" }
       if (currentMap.warps.any { it.x == toX && it.y == toY }) {
         log.info { "WALL onto warp tile ($toX, $toY) behavior=$targetBehavior rule=${targetRule?.fire} dir=${msg.direction}" }
       }
@@ -1000,8 +1000,11 @@ constructor(
    * ice at the landing cracks like any other landing. Returns true when a slide started.
    */
   private fun startIceSlide(ctx: SessionContext, charId: Long, state: PlayerState, map: MapDef, x: Int, y: Int, direction: Direction): Boolean {
-    if (state.spinning) return false
     if (tileBehaviorAt(state, map, x, y) != TileBehavior.ICE) return false
+    if (state.spinning) {
+      log.info { "[Ice] char=$charId on ice at ($x, $y) while still sliding" }
+      return false
+    }
     val steps = mutableListOf<MovementStep>()
     var cx = x
     var cy = y
@@ -1013,7 +1016,10 @@ constructor(
       cx = nx
       cy = ny
     }
-    if (steps.isEmpty()) return false
+    if (steps.isEmpty()) {
+      log.info { "[Ice] char=$charId on ice at ($x, $y) facing $direction: nothing to slide onto" }
+      return false
+    }
     log.info { "[Ice] char=$charId slid from ($x, $y) ${steps.size} steps to ($cx, $cy)" }
     state.spinning = true
     scope.launch {

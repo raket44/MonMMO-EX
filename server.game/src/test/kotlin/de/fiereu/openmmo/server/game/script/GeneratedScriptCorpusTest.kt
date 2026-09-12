@@ -45,10 +45,10 @@ class GeneratedScriptCorpusTest :
       }
 
       test("unsupported generated program falls back to Kotlin") {
-        // The starter flow branches into givemon and pick-starter specials the interpreter
-        // does not model, so the hand-written Kotlin cutscene keeps running it.
+        // Zapdos' StartLegendaryBattle special is not modelled, so the hand-written Kotlin
+        // encounter keeps running it (Oak's talk, the old example, is interpreted since 2026-09-11).
         val resolved =
-            registry.forLabel("PalletTown_ProfessorOaksLab_EventScript_ProfOak", "firered")
+            registry.forLabel("PowerPlant_EventScript_Zapdos", "firered")
 
         (resolved is InterpretedScript) shouldBe false
       }
@@ -69,7 +69,10 @@ class GeneratedScriptCorpusTest :
         // repaired in the parser, so any new failure here is a regression worth seeing.
         fireRed.diagnostics.parseFailureCategories shouldBe emptyMap()
         emerald.diagnostics.parseFailureCategories shouldBe emptyMap()
-        (emerald.diagnostics.unavailableDirectLabels.isNotEmpty()) shouldBe true
+        // Every Emerald script a map event names has a body since the local-label promotion
+        // (2026-09-11); FireRed keeps its one Johto-guide stub, whose script the ROM never wrote.
+        emerald.diagnostics.unavailableDirectLabels shouldBe emptySet()
+        fireRed.diagnostics.unavailableDirectLabels shouldBe setOf("PalletTown_EventScript_JohtoGuide")
       }
 
       test("duplicate bare labels across game sources do not collide") {

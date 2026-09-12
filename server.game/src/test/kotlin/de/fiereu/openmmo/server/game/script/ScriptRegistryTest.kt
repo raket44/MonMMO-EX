@@ -50,7 +50,7 @@ class ScriptRegistryTest :
             PretMovementParser.parse(
                 id = scriptId("Example_Movement"),
                 sourceFile = "test.inc",
-                lines = listOf("Example_Movement::", "jump_2_up", "step_end"),
+                lines = listOf("Example_Movement::", "slide_down", "step_end"),
             )
         val interpreted =
             interpreted(
@@ -99,7 +99,7 @@ class ScriptRegistryTest :
       test("generated real scripts are routed by completeness instead of old manual registration") {
         val registry = ScriptRegistry.generated()
         val supported = "PalletTown_EventScript_PlayersHouseSign"
-        val incomplete = "PalletTown_ProfessorOaksLab_EventScript_ProfOak"
+        val incomplete = "PowerPlant_EventScript_Zapdos"
 
         registry.forLabel(supported, "firered") shouldBe
             registry.forId("gba:firered:BPRE:$supported")

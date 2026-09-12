@@ -156,6 +156,13 @@ data class PlayerState(
      */
     @field:Volatile var moveIgnoreUntil: Long = 0,
     /**
+     * Until when scene packets (scripted spawns, repositions) are held after an arrival: the
+     * client drops them while it still loads the map. Armed at every LoadEntity, so a mat
+     * arrival with no walk-out step holds them as a door exit does (Norman never reached the
+     * Petalburg Gym entrance, 2026-09-12).
+     */
+    @field:Volatile var sceneHoldUntil: Long = 0,
+    /**
      * The tiles the server committed on the current map, oldest first (packed x shl 16 or y),
      * a short ring. A client claim that names one of them is a phantom-step rewind - a step the
      * client announced and then did not take (a turn-around, a bonk) that the server walked

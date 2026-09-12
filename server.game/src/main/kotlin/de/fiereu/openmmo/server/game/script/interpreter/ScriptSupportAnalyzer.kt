@@ -215,6 +215,7 @@ class ScriptSupportAnalyzer(
           "warphole" -> args.size == 1
           "messageautoscroll",
           "checkcoins" -> args.size == 1
+          "checkpcitem" -> args.size in 1..2
           "hideplayer",
           "showplayer" -> args.isEmpty()
           // The lead's species needs no second argument.
@@ -698,6 +699,7 @@ class ScriptSupportAnalyzer(
             "hideplayer",
             "showplayer",
             "checkcoins",
+            "checkpcitem",
             "setdynamicwarp",
         ) +
             InterpreterSupport.DEFEATED_BRANCHES +

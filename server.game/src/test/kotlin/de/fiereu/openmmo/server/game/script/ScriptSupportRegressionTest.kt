@@ -95,6 +95,9 @@ class ScriptSupportRegressionTest :
                 "LittlerootTown_ProfessorBirchsLab_OnTransition",
                 "SlateportCity_Harbor_EventScript_FerryAttendant",
                 "PlayersHouse_2F_EventScript_CheckWallClock",
+                "PetalburgCity_Gym_OnTransition",
+                "PetalburgCity_Gym_OnLoad",
+                "PetalburgCity_Gym_EventScript_Norman",
             )
         val analyzer = ScriptSupportAnalyzer()
         val emerald = InterpretedScripts.sources.first { it.corpus.source == "emerald" }

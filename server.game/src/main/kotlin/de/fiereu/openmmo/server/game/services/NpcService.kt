@@ -287,7 +287,7 @@ constructor(
    */
   private fun sendAfterArrival(ctx: SessionContext, packet: Any) {
     val state = ctx.attributes[PLAYER_STATE]
-    val wait = (state?.moveIgnoreUntil ?: 0L) - System.currentTimeMillis()
+    val wait = maxOf(state?.moveIgnoreUntil ?: 0L, state?.sceneHoldUntil ?: 0L) - System.currentTimeMillis()
     val pending = heldForArrival[ctx]
     if (wait <= 0 && pending == null) {
       ctx.send(packet)

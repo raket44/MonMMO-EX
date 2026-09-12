@@ -512,6 +512,11 @@ class InterpretedScript(
           ctx.showPlayerSprite()
           state.pc++
         }
+        // The PC item box does not exist on this client: nothing is ever stored there.
+        "checkpcitem" -> {
+          ctx.setVar(namespaced("VAR_RESULT"), 0)
+          state.pc++
+        }
         // Game Corner coins are not modelled: every check reads 0.
         "checkcoins" -> {
           ctx.setVar(namespaced(instruction.arg(0).token), 0)
@@ -651,6 +656,10 @@ class InterpretedScript(
             // The wall clock screens have no client counterpart; the script faded to black for
             // them, so the field comes back at once.
             "Special_ViewWallClock", "StartWallClock" -> ctx.fadeScreen(false)
+            // The Petalburg Gym's room doors open for the room in VAR_0x8004 (the slide is instant here).
+            "PetalburgGymSlideOpenRoomDoors", "PetalburgGymUnlockRoomDoors" -> ctx.petalburgGymOpenRoomDoors(ctx.getVar(namespaced("VAR_0x8004")))
+            // time_events.c InitBirchState: the Route 101 rescue countdown starts at 0.
+            "InitBirchState" -> ctx.setVar(namespaced("VAR_BIRCH_STATE"), 0)
             "CreateInGameTradePokemon" -> {}
             "EnterHallOfFame" -> tracedWait(ctx, "hall of fame") { ctx.enterHallOfFame() }
             // src/prof_pc.c: Oak's (or the PC's) rating line for the caught count in VAR_0x8004,
@@ -782,6 +791,8 @@ class InterpretedScript(
               }
               // Nothing here is a completed Hoenn dex, a saved Wonder Card or an Eon Ticket to hand out.
               else if (function == "HasAllHoennMons" || function == "ValidateSavedWonderCard" || function == "ShouldDistributeEonTicket") 0
+              // No Match Call rematches and no e-Reader berry here.
+              else if (function == "IsTrainerReadyForRematch" || function == "IsEnigmaBerryValid") 0
               // src/braille_puzzles.c (Emerald's flip): Wailord leads the party, Relicanth ends it.
               else if (function == "CheckRelicanthWailord") {
                 val size = ctx.partySize()

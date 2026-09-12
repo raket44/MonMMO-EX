@@ -97,6 +97,8 @@ internal object InterpreterSupport {
           // The Sealed Chamber's rumble as the Regi doors open: a camera shake, no game state.
           "DoSealedChamberShakingEffect_Long",
           "DoSealedChamberShakingEffect_Short",
+          // The heal location moves back from Dewford; the respawn point is the nurse's here.
+          "ResetHealLocationFromDewford",
           "DoPokemonLeagueLightingEffect",
           "PlayerFaceTrainerAfterBattle",
           // Buffers "big guy"/"cute girl" into STR_VAR_1 for a handful of Route 104 intros. No
@@ -173,6 +175,9 @@ internal object InterpreterSupport {
           "GetRivalSonDaughterString",
           "Special_ViewWallClock",
           "StartWallClock",
+          "PetalburgGymSlideOpenRoomDoors",
+          "PetalburgGymUnlockRoomDoors",
+          "InitBirchState",
           "ShowEasyChatScreen",
           "EnterHallOfFame",
           "GetProfOaksRatingMessage",
@@ -299,6 +304,8 @@ internal object InterpreterSupport {
           "HasAllHoennMons",
           "ValidateSavedWonderCard",
           "ShouldDistributeEonTicket",
+          "IsTrainerReadyForRematch",
+          "IsEnigmaBerryValid",
           "GetSelectedSeagallopDestination",
           "InitElevatorFloorSelectMenuPos",
           "IsThereRoomInAnyBoxForMorePokemon",

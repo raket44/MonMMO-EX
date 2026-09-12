@@ -86,6 +86,8 @@ private const val EMERGENCE_STEP_DELAY_MS = 0L
 
 /** GBA steps wait for the fade-in, or the walk happens invisibly during the black screen. */
 private const val GBA_STEP_DELAY_MS = 300L
+/** How long after LoadEntity the client is still loading and drops scene packets (PlayerState.sceneHoldUntil). */
+private const val ARRIVAL_SCENE_HOLD_MS = 900L
 
 /** Rail walks wait this long for the client to finish attaching the spawn to the rail. */
 private const val RAIL_STEP_DELAY_MS = 250L
@@ -640,6 +642,7 @@ constructor(
     val info = stored.info
 
     log.info { "Sending LoadEntity for character '${info.name}'" }
+    state.sceneHoldUntil = System.currentTimeMillis() + ARRIVAL_SCENE_HOLD_MS
     val facing = state.facingDirection
     val loadEntity =
         mapLoadService.createLoadEntity(

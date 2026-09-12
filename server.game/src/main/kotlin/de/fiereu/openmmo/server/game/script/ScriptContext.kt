@@ -645,6 +645,30 @@ internal constructor(
   fun usablePartyCount(): Int =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.count { mon -> !mon.isEgg && mon.hp > 0 } } ?: 0
 
+  /**
+   * PetalburgGymSetDoorMetatiles (field_specials.c): the sliding door of gym room [room] in its
+   * open frame - two impassable tiles, the frame and the row below it. The slide animates on
+   * the GBA; here the door is simply open.
+   */
+  fun petalburgGymOpenRoomDoors(room: Int) {
+    val doors: List<Pair<Int, Int>> =
+        when (room) {
+          1 -> listOf(1 to 104, 7 to 104)
+          2 -> listOf(1 to 78, 7 to 78)
+          3 -> listOf(1 to 91, 7 to 91)
+          4 -> listOf(7 to 39)
+          5 -> listOf(1 to 52, 7 to 52)
+          6 -> listOf(1 to 65)
+          7 -> listOf(7 to 13)
+          8 -> listOf(1 to 26)
+          else -> emptyList()
+        }
+    for ((x, y) in doors) {
+      setMetatile(x, y, PETALBURG_GYM_DOOR_OPEN, impassable = true)
+      setMetatile(x, y + 1, PETALBURG_GYM_DOOR_OPEN + METATILE_ROW_WIDTH, impassable = true)
+    }
+  }
+
   /** hideplayer / showplayer: the player's own sprite, the client's set_invisible / set_visible. */
   fun hidePlayerSprite() = movement.hideSelf(session, state)
 
@@ -1122,6 +1146,9 @@ internal constructor(
     const val NPC = 4
     /** Dialog kind wire 19 (f/qM1.WN): the braille sign window, fed by a ROM braille text id. */
     const val BRAILLE = 19
+    /** METATILE_PetalburgGym_SlidingDoor_Frame4 and the tileset row width the lower tile sits at. */
+    const val PETALBURG_GYM_DOOR_OPEN = 0x21C
+    const val METATILE_ROW_WIDTH = 8
     // Client string table (strings_en.xml): "You found a {00}!" / "You found {00} {01}(s)!"
     const val FOUND_ITEM_STRING = 6063
     const val FOUND_ITEMS_STRING = 6066

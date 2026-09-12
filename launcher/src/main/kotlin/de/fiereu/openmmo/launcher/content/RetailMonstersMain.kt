@@ -74,6 +74,8 @@ fun main(args: Array<String>) {
                       text("rarity_morning"),
                       text("rarity_day"),
                       text("rarity_night"),
+                      // The floor or zone the dump splits an area into ("Mt. Moon (B1F)").
+                      text("location_name_full").replace(';', ','),
                   )
                   .joinToString(";"))
           locationCount++

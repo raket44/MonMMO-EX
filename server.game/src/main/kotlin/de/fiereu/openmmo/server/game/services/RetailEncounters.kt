@@ -32,6 +32,8 @@ object RetailEncounters {
       val rarityMorning: String,
       val rarityDay: String,
       val rarityNight: String,
+      /** The dump's location_name_full: the short name plus a floor or zone, "Mt. Moon (B1F)". */
+      val fullName: String = locationName,
   ) {
     fun rarity(time: TimeOfDay): String =
         when (time) {
@@ -44,10 +46,10 @@ object RetailEncounters {
   /** One rollable slot: a species with a weight in hundredths of a percent. */
   data class Slot(val dexId: Int, val minLevel: Int, val maxLevel: Int, val weight: Int)
 
-  private val byLocation: Map<String, List<Entry>> by lazy {
+  private val allEntries: List<Entry> by lazy {
     val stream =
         RetailEncounters::class.java.getResourceAsStream("/monmmo/retail-locations.csv")
-            ?: return@lazy emptyMap<String, List<Entry>>().also {
+            ?: return@lazy emptyList<Entry>().also {
               log.warn { "retail-locations.csv missing; retail encounter tables disabled" }
             }
     val entries =
@@ -55,7 +57,7 @@ object RetailEncounters {
           lines
               .mapNotNull { line ->
                 val p = line.split(';')
-                if (p.size != 14) return@mapNotNull null
+                if (p.size < 14) return@mapNotNull null
                 Entry(
                     dexId = p[0].toIntOrNull() ?: return@mapNotNull null,
                     form = p[1].toIntOrNull() ?: -1,
@@ -70,13 +72,16 @@ object RetailEncounters {
                     rarityMorning = p[11],
                     rarityDay = p[12],
                     rarityNight = p[13],
+                    fullName = p.getOrNull(14)?.takeIf { it.isNotEmpty() } ?: p[3],
                 )
               }
               .toList()
         }
     log.info { "Retail encounter tables: ${entries.size} entries" }
-    entries.groupBy { normalize(it.locationName) }
+    entries
   }
+
+  private val byLocation: Map<String, List<Entry>> by lazy { allEntries.groupBy { normalize(it.locationName) } }
 
   /**
    * All entries for a decomp map, matched by normalized name prefix before any floor suffix AND by
@@ -85,7 +90,108 @@ object RetailEncounters {
    * Johto; the server's map regions share the 0/1 assignments it hosts.
    */
   fun entriesFor(sourceName: String, regionId: Int): List<Entry> =
-      locationKey(sourceName)?.let { key -> byLocation[key].orEmpty().filter { it.regionId == regionId } }.orEmpty()
+      resolved.getOrPut(regionId to sourceName) {
+        resolve(sourceName, regionId)
+            ?: locationKey(sourceName)?.let { key -> byLocation[key].orEmpty().filter { it.regionId == regionId } }.orEmpty()
+      }
+
+  private val resolved = java.util.concurrent.ConcurrentHashMap<Pair<Int, String>, List<Entry>>()
+
+  /** One retail area of a region: its short name's rows split by full name (floor / zone). */
+  private class Area(
+      val shortName: String,
+      val shortTokens: List<String>,
+      /** Full names that add a floor or zone to the short name. */
+      val floors: List<FloorRows>,
+      /** Rows whose full name is just the short name. */
+      val unsuffixed: List<Entry>,
+      val all: List<Entry>,
+  )
+
+  private class FloorRows(val tokens: List<String>, val entries: List<Entry>)
+
+  private val areasByRegion: Map<Int, List<Area>> by lazy {
+    allEntries.groupBy { it.regionId }.mapValues { (_, rows) ->
+      rows.groupBy { normalize(it.locationName) }.values.map { areaRows ->
+        val short = areaRows.first().locationName
+        val shortTokens = tokens(short)
+        val byFull = areaRows.groupBy { it.fullName }
+        val floors = byFull.filterKeys { tokens(it) != shortTokens }.map { (full, e) -> FloorRows(tokens(full), e) }
+        val unsuffixed = byFull.filterKeys { tokens(it) == shortTokens }.values.flatten()
+        Area(short, shortTokens, floors, unsuffixed, areaRows)
+      }
+    }
+  }
+
+  /**
+   * The rows for a map, in any region, by the words of its name against the dump's full location
+   * names - one rule for FireRed's `FourIsland_IcefallCave_B1F`, Emerald's `MtPyre_Exterior` and
+   * the DS directory's `Mt Coronet 4f Rooms 1 And 2` alike (2026-09-12):
+   *
+   *  1. the area whose short name's words all appear in the map name - the most words, then the
+   *     one named latest in it (the cave inside an island beats the island);
+   *  2. within it the full names whose extra words all appear ("Icefall Cave (B1F)"), the most
+   *     specific ones;
+   *  3. else every full name sharing a floor label with the map ("Mt. Coronet (4F North)" and
+   *     "(4F South)" for a 4F room the dump does not split the same way);
+   *  4. else the area's rows with no floor at all;
+   *  5. else nothing when the map names a floor the dump has no rows for (Pokemon Tower 1F, where
+   *     the dump starts at 3F) - and the whole area, logged, only for a map naming no floor.
+   */
+  private fun resolve(name: String, regionId: Int): List<Entry>? {
+    val mapTokens = tokens(name)
+    if (mapTokens.isEmpty()) return null
+    val mapSet = mapTokens.toSet()
+    val candidates = areasByRegion[regionId].orEmpty().filter { it.shortTokens.isNotEmpty() && mapSet.containsAll(it.shortTokens) }
+    if (candidates.isEmpty()) return null
+    val area = candidates.maxWithOrNull(compareBy<Area>({ it.shortTokens.size }, { a -> a.shortTokens.maxOf { mapTokens.lastIndexOf(it) } })) ?: return null
+    val exact = area.floors.filter { mapSet.containsAll(it.tokens) }
+    if (exact.isNotEmpty()) {
+      val most = exact.maxOf { it.tokens.size }
+      return exact.filter { it.tokens.size == most }.flatMap { it.entries }
+    }
+    val floorLabels = mapTokens.filter { FLOOR_LABEL.matches(it) }.toSet()
+    if (floorLabels.isNotEmpty()) {
+      val sharing = area.floors.filter { f -> f.tokens.any { it in floorLabels } }
+      if (sharing.isNotEmpty()) return sharing.flatMap { it.entries }
+    }
+    if (area.unsuffixed.isNotEmpty()) return area.unsuffixed
+    if (floorLabels.isNotEmpty() && area.floors.isNotEmpty()) {
+      log.info { "[Retail] $name (region $regionId) names a floor '${area.shortName}' has no rows for: no encounters" }
+      return emptyList()
+    }
+    log.info { "[Retail] $name (region $regionId) matches no floor of '${area.shortName}': using all its rows" }
+    return area.all
+  }
+
+  /**
+   * The words of a map or location name: ASCII, lower case, CamelCase and letter/digit boundaries
+   * split, floor labels (B1F, 10F, 2R) kept whole, a few spellings unified, filler dropped.
+   */
+  internal fun tokens(name: String): List<String> {
+    val ascii = java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD).filter { it.code < 128 }.replace("'s", "").replace("'S", "")
+    return ascii
+        .split(NON_WORD)
+        .filter { it.isNotEmpty() }
+        .flatMap { chunk -> WORD.findAll(chunk).map { it.value.lowercase() } }
+        .map { TOKEN_ALIASES[it] ?: it }
+        .filter { it !in FILLER_TOKENS }
+  }
+
+  private val NON_WORD = Regex("[^A-Za-z0-9]+")
+  private val WORD = Regex("[Bb]?\\d+[FfRr](?![A-Za-z])|[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+")
+  private val FLOOR_LABEL = Regex("^(b?\\d+f|\\d+r)$")
+  private val TOKEN_ALIASES =
+      mapOf(
+          "island" to "isle",
+          "exterior" to "outside",
+          "inside" to "interior",
+          "entryway" to "entrance",
+          "rooftop" to "roof",
+          "digletts" to "diglett",
+      )
+  // "area" and "room" are the dump's own furniture ("East Area", "Back Room", "Northern Room").
+  private val FILLER_TOKENS = setOf("area", "the", "room")
 
   /**
    * The retail location a decomp map name belongs to. Names are `Area_Sub_Floor` chains: the whole
@@ -165,6 +271,7 @@ object RetailEncounters {
    * that contains it. Null when nothing fits or several do.
    */
   fun entriesForNdsName(name: String, regionId: Int): List<Entry> {
+    resolve(name, regionId)?.let { return it }
     val key = normalize(name)
     if (key.isEmpty()) return emptyList()
     byLocation[key]?.filter { it.regionId == regionId }?.takeIf { it.isNotEmpty() }?.let { return it }

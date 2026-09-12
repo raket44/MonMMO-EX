@@ -547,8 +547,16 @@ constructor(
           WarpRules.Fire.STAND,
           null -> false
         }
+    // A locked door (MapEntryPolish) is the door's graphic raised to another elevation: the
+    // client refuses the step, and so must the server - the walk-up below would otherwise take
+    // the impassable warp tile for a door and warp the player through the lock (the Rocket
+    // Warehouse, 2026-09-12). Elevation 0 (wide doors' side tiles, doorways) joins any level.
+    val fromElevation = elevationAt(currentMap, fromX, fromY, state.tileOverrides)
+    val toElevation = elevationAt(currentMap, toX, toY, state.tileOverrides)
+    val elevationBlocks = fromElevation != 0 && toElevation != 0 && fromElevation != toElevation
     val warp =
-        if (stepsIntoWarp) currentMap.warps.find { w -> w.x == toX && w.y == toY }
+        if (elevationBlocks) null
+        else if (stepsIntoWarp) currentMap.warps.find { w -> w.x == toX && w.y == toY }
         else if (targetRule == null && msg.direction == Direction.UP && !isWalkable(currentMap, toX, toY, state.surfing, state.tileOverrides))
         // The side tiles of a wide door (Rocket Hideout's elevator, three warps on an impassable
         // row with one DOOR tile in the middle) carry the ROM's warp events too: a walk-up into
@@ -1226,6 +1234,10 @@ constructor(
    */
   private fun behaviorAt(map: MapDef, x: Int, y: Int, overrides: Map<Int, de.fiereu.openmmo.common.Tile2D>) =
       (overrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y))?.behavior
+
+  /** The GBA elevation (bits 2-5 of the block's upper byte) of (x, y) as the player's map shows it: an override's, else the ROM's. */
+  private fun elevationAt(map: MapDef, x: Int, y: Int, overrides: Map<Int, de.fiereu.openmmo.common.Tile2D>): Int =
+      (((overrides[(x shl 16) or (y and 0xFFFF)] ?: map.tileAt(x, y))?.collision?.toInt() ?: 0) shr 2) and 0xF
 
   private fun isWalkable(
       map: MapDef,

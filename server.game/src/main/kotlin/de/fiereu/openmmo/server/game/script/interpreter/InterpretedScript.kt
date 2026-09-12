@@ -946,7 +946,7 @@ class InterpretedScript(
           tracedWait(ctx, "warp") {
             ctx.warp(
                 region,
-                packed shr 8,
+                gbaBank(region, packed shr 8),
                 packed and 0xFF,
                 // `warp map, x, y` or `warp map, warpId, x, y` (asm/macros/event.inc: map, a, b, c).
                 value(ctx, instruction.arg(instruction.args.size - 2)),
@@ -964,7 +964,7 @@ class InterpretedScript(
           val region = when (program.id.source) { "firered" -> 0; "emerald" -> 1; else -> error("Script ${program.id.stable} cannot warp for source " + program.id.source) }
           ctx.state.arrivedByFall = true
           tracedWait(ctx, "warp") {
-            ctx.warp(region, packed shr 8, packed and 0xFF, ctx.state.x.toInt(), ctx.state.y.toInt(), de.fiereu.openmmo.common.enums.Direction.DOWN)
+            ctx.warp(region, gbaBank(region, packed shr 8), packed and 0xFF, ctx.state.x.toInt(), ctx.state.y.toInt(), de.fiereu.openmmo.common.enums.Direction.DOWN)
           }
           state.pc++
         }
@@ -983,7 +983,7 @@ class InterpretedScript(
               }
           ctx.setDynamicWarp(
               region,
-              packed shr 8,
+              gbaBank(region, packed shr 8),
               packed and 0xFF,
               value(ctx, instruction.arg(2)),
               value(ctx, instruction.arg(3)),
@@ -2107,6 +2107,15 @@ internal object TrainerStoryState {
 private const val MULTI_B_PRESSED = 127
 
 /** include/constants/seagallop.h and the sSeagallopDestStrings texts (src/strings.c). */
+/**
+ * A GBA MAP_ constant's group as the server bank: FireRed's groups are the banks as they are,
+ * Emerald's sit 50 higher (the generated maps: Littleroot Town 50/9, May's house 51/2). The raw
+ * group sent the Littleroot intro's warpsilent to bank 1 - "map not found 1:1:0" - and left the
+ * player hidden in the street (2026-09-12).
+ */
+private fun gbaBank(region: Int, group: Int): Int = if (region == 1) group + HOENN_BANK_OFFSET else group
+private const val HOENN_BANK_OFFSET = 50
+
 /** National dex numbers, the party's species ids. */
 private const val WAILORD = 321
 private const val RELICANTH = 369

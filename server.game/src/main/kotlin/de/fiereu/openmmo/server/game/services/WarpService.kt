@@ -29,6 +29,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private val log = KotlinLogging.logger {}
 
+/** How long after the transition the re-shown sprite waits for the client to have the new map up. */
+private const val SHOW_AFTER_ARRIVAL_MS = 1500L
+
 // A player must not stay gated if the client never answers the transition.
 private val ARRIVAL_TIMEOUT = 10.seconds
 
@@ -207,6 +210,20 @@ constructor(
           ctx.attributes.getOrPut(SCRIPT_SCOPE) {
             CoroutineScope(SupervisorJob() + Dispatchers.Default)
           }
+      // A hideplayer before the warp (the Littleroot intro walks the player into the house
+      // hidden, then warpsilent): the GBA re-creates the player object on the new map, visible.
+      // The client keeps the sprite hidden across the load, so it is shown once the map is up.
+      if (state?.spriteHidden == true) {
+        state.spriteHidden = false
+        scope.launch {
+          delay(SHOW_AFTER_ARRIVAL_MS)
+          if (ctx.channel.isActive) {
+            ctx.send(
+                de.fiereu.openmmo.net.game.packets.DialogDataPacket(
+                    charId, unk1 = 0, type = 1, data = byteArrayOf(de.fiereu.openmmo.server.game.script.MovementStep.SET_VISIBLE.action.toByte())))
+          }
+        }
+      }
       scope.launch {
         delay(5000)
         if (ctx.channel.isActive &&

@@ -116,6 +116,8 @@ data class PlayerState(
     @field:Volatile var tileOverridesPendingResend: Boolean = false,
     /** A script blanked the screen (fadescreen) and has not restored it yet; script end restores it. */
     @field:Volatile var screenFaded: Boolean = false,
+    /** hideplayer is in effect: the next warp shows the sprite again, as the GBA's warp re-creates the player. */
+    @field:Volatile var spriteHidden: Boolean = false,
     /** A battle just ended while surfing or riding: the mount is told again on the first step. */
     @field:Volatile var mountResendPending: Boolean = false,
     /** The warp just taken was a hole (MB_FALL_WARP): landing on Seafoam water starts the current ride. */

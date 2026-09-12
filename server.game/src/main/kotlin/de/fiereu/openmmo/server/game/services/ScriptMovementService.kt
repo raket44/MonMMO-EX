@@ -515,12 +515,14 @@ constructor(
   /** The client's set_visible on the player's own sprite - a door entry it started hides it. */
   fun showSelf(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return
+    state.spriteHidden = false
     sendActions(session, charId, listOf(MovementStep.SET_VISIBLE))
   }
 
   /** The client's set_invisible on the player's own sprite (hideplayer). */
   fun hideSelf(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return
+    state.spriteHidden = true
     sendActions(session, charId, listOf(MovementStep.SET_INVISIBLE))
   }
 

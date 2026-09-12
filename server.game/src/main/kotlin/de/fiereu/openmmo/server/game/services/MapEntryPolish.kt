@@ -25,6 +25,9 @@ object MapEntryPolish {
     if (map.regionId.toInt() == KANTO && map.bankId.toInt() == CINNABAR_BANK && map.mapId.toInt() == CINNABAR_MAP) {
       touches += Touch { ctx -> lockCinnabarGymDoor(ctx) }
     }
+    if (map.regionId.toInt() == KANTO && map.sourceName == WAREHOUSE_MAP) {
+      touches += Touch { ctx -> lockRocketWarehouseDoor(ctx) }
+    }
     val gates = map.coordScripts.filter { it.script.endsWith(BADGE_GATE_SUFFIX) }
     if (gates.isNotEmpty()) touches += Touch { ctx -> lockBadgeGates(ctx, map, gates) }
     if (touches.isEmpty()) return null
@@ -38,6 +41,18 @@ object MapEntryPolish {
    * keeps its graphic at elevation 4 instead of the ground's 3: the player bumps, the trigger
    * still says the door is locked, and the door is a door again once the key is in the bag.
    */
+  /**
+   * Five Island's Rocket Warehouse: the ROM keeps the door a warp and lets its script say "another
+   * password is needed" as the player is already stepping in. Until both passwords have opened
+   * it (FLAG_UNLOCKED_ROCKET_WAREHOUSE) the locked door graphic sits at the locked elevation, so
+   * the client bumps; the unlock script's own setmetatile puts the open door back at the
+   * ground's elevation (ScriptContext.setMetatile keeps the ROM tile's bits, not the lock's).
+   */
+  private fun lockRocketWarehouseDoor(ctx: ScriptContext) {
+    if (ctx.isFlagSet(WAREHOUSE_UNLOCKED_FLAG)) return
+    ctx.setMetatile(WAREHOUSE_DOOR_X, WAREHOUSE_DOOR_Y, WAREHOUSE_DOOR_LOCKED_METATILE, impassable = true, elevation = LOCKED_ELEVATION)
+  }
+
   private fun lockCinnabarGymDoor(ctx: ScriptContext) {
     if (ctx.isFlagSet(CINNABAR_SECRET_KEY_FLAG)) return
     ctx.setMetatile(CINNABAR_GYM_DOOR_X, CINNABAR_GYM_DOOR_Y, CINNABAR_GYM_DOOR_METATILE, impassable = true, elevation = LOCKED_ELEVATION)
@@ -88,5 +103,11 @@ object MapEntryPolish {
   const val CINNABAR_GYM_DOOR_METATILE = 0x15B
   /** Any GBA elevation but the ground's 3 (and not the 0 wildcard): the client refuses the step. */
   const val LOCKED_ELEVATION = 4
+  private const val WAREHOUSE_MAP = "FiveIsland_Meadow"
+  const val WAREHOUSE_UNLOCKED_FLAG = "kanto/FLAG_UNLOCKED_ROCKET_WAREHOUSE"
+  const val WAREHOUSE_DOOR_X = 12
+  const val WAREHOUSE_DOOR_Y = 21
+  /** METATILE_SeviiIslands45_RocketWarehouseDoor_Locked. */
+  const val WAREHOUSE_DOOR_LOCKED_METATILE = 0x30B
   private const val BADGE_GATE_SUFFIX = "BadgeGuardTrigger"
 }

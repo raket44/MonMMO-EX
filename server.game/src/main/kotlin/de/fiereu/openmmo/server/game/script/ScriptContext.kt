@@ -788,7 +788,9 @@ internal constructor(
     // [elevation] (GBA 0..15) replaces the tile's own: the client refuses steps between different
     // non-zero elevations before it even looks for a door, which is how a locked door stays a
     // door on screen and still stops the player (MapEntryPolish).
-    val elevationBits = if (elevation != null) (elevation shl 2) else ((existing?.collision?.toInt() ?: 0x10) and 0xFC)
+    // A script's own setmetatile keeps the ROM tile's elevation, never a lock's (MapEntryPolish
+    // raises a locked door; the unlock script's setmetatile must put it back on the ground).
+    val elevationBits = if (elevation != null) (elevation shl 2) else (((map?.tileAt(x, y) ?: existing)?.collision?.toInt() ?: 0x10) and 0xFC)
     val collision: Byte = (elevationBits or (if (impassable) 1 else 0)).toByte()
     // Behavior is a tileset attribute of the metatile, read from the map's tileset table (floor
     // over a staircase is no warp any more; the Pokemon League's opened exit door IS a warp door,

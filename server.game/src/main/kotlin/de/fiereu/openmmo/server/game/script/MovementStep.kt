@@ -66,7 +66,12 @@ enum class MovementStep(
   // Bytecode-verified (f/l31 G5 -> f/yy.CG -> balloon model 50 + spot SFX): the "!" bubble,
   // 750ms. 0x63 is the silent "?" bubble. Emerald ids 0x56/0x57 shifted +12 like set_invisible.
   EMOTE_EXCLAMATION(Direction.DOWN, false, 0x62, changesFacing = false, holdMs = 750),
-  EMOTE_QUESTION(Direction.DOWN, false, 0x63, changesFacing = false, holdMs = 750);
+  EMOTE_QUESTION(Direction.DOWN, false, 0x63, changesFacing = false, holdMs = 750),
+  // The GBA's disable_anim/restore_anim (0x5E/0x5F) bracket a slide so the sprite keeps one
+  // frame (the Dotted Hole thief dropping from the ceiling). The client's table has no row for
+  // them and skips unmatched codes (f/NV0.uv0), so they cost nothing on the wire.
+  DISABLE_ANIM(Direction.DOWN, false, 0x5E, changesFacing = false, holdMs = 0),
+  RESTORE_ANIM(Direction.DOWN, false, 0x5F, changesFacing = false, holdMs = 0);
 
   companion object {
     /** Translates source-level pret action names into the existing client movement vocabulary. */
@@ -103,6 +108,14 @@ enum class MovementStep(
           "delay_16" -> DELAY_16
           "set_invisible" -> SET_INVISIBLE
           "set_visible" -> SET_VISIBLE
+          "disable_anim" -> DISABLE_ANIM
+          "restore_anim" -> RESTORE_ANIM
+          // The GBA slide_* (0x39-0x3C, a walk-speed glide with the frame held): the client has no
+          // row for those codes, and its faster walk is the same tile-per-tick pace.
+          "slide_down" -> FASTER_DOWN
+          "slide_up" -> FASTER_UP
+          "slide_left" -> FASTER_LEFT
+          "slide_right" -> FASTER_RIGHT
           // The felled Cut tree vanishes in place; the script removes the object right after.
           "cut_tree" -> SET_INVISIBLE
           "rock_smash_break" -> SET_INVISIBLE

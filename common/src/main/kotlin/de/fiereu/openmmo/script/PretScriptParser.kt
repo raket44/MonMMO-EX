@@ -127,7 +127,7 @@ object PretScriptParser {
   ): ScriptArg =
       when {
         token.isEmpty() -> SymbolArg(token)
-        command in setOf("msgbox", "message", "braillemessage", "braillemsgbox") && index == 0 -> TextArg(token)
+        command in setOf("msgbox", "message", "braillemessage", "braillemsgbox", "braillemessage_wait") && index == 0 -> TextArg(token)
         command == "applymovement" && index == 0 -> ObjectArg(token)
         command == "applymovement" && index == 1 -> MovementArg(token)
         command == "waitmovement" && index == 0 -> ObjectArg(token)

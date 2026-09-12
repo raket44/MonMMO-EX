@@ -63,6 +63,8 @@ class ScriptSupportRegressionTest :
                 "SixIsland_DottedHole_B4F_EventScript_BrailleDown",
                 "SixIsland_DottedHole_B3F_EventScript_BrailleRight",
                 "SixIsland_DottedHole_B2F_EventScript_BrailleLeft",
+                "SixIsland_DottedHole_SapphireRoom_EventScript_Sapphire",
+                "SixIsland_DottedHole_SapphireRoom_EventScript_BrailleMessage",
             )
         val analyzer = ScriptSupportAnalyzer()
         val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }

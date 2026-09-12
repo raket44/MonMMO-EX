@@ -50,7 +50,7 @@ class ScriptRegistryTest :
             PretMovementParser.parse(
                 id = scriptId("Example_Movement"),
                 sourceFile = "test.inc",
-                lines = listOf("Example_Movement::", "slide_down", "step_end"),
+                lines = listOf("Example_Movement::", "fly_up", "step_end"),
             )
         val interpreted =
             interpreted(

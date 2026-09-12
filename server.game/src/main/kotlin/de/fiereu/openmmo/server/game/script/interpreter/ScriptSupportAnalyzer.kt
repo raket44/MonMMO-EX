@@ -223,7 +223,8 @@ class ScriptSupportAnalyzer(
           "removemoney" -> args.size in 1..2
           "givemon" -> args.size in 2..3
           "braillemessage",
-          "braillemsgbox" -> args.size == 1
+          "braillemsgbox",
+          "braillemessage_wait" -> args.size == 1
           "getpartysize",
           "dowildbattle" -> args.isEmpty()
           "setwildbattle" -> args.size in 2..3
@@ -380,7 +381,8 @@ class ScriptSupportAnalyzer(
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
           "braillemessage",
-          "braillemsgbox" -> args[0] is TextArg
+          "braillemsgbox",
+          "braillemessage_wait" -> args[0] is TextArg
           "copyobjectxytoperm" -> args[0] is ObjectArg || (args[0] is SymbolArg && args[0].token.startsWith("LOCALID_"))
           "checkmoney",
           "addmoney",
@@ -658,6 +660,7 @@ class ScriptSupportAnalyzer(
             "givemon",
             "braillemessage",
             "braillemsgbox",
+            "braillemessage_wait",
             "getpartysize",
             "setwildbattle",
             "dowildbattle",

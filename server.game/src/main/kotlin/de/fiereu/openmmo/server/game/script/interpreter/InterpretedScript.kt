@@ -503,6 +503,13 @@ class InterpretedScript(
           ctx.closeMessage()
           state.pc++
         }
+        "braillemessage_wait" -> {
+          // FireRed's macro (Tanoby Key, Dotted Hole floors): braillemessage, then the cursor-wait
+          // routine's waitbuttonpress; the next sign line replaces this one in the same window.
+          ctx.showBraille(textLine(textArg(instruction, 0).token, instruction))
+          tracedWait(ctx, "dialog button") { ctx.waitButtonPress() }
+          state.pc++
+        }
         "braillemsgbox" -> {
           // Emerald's macro: braillemessage, waitbuttonpress, closebraillemessage.
           ctx.showBraille(textLine(textArg(instruction, 0).token, instruction))

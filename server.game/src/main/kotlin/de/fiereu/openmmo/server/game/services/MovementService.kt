@@ -1017,7 +1017,12 @@ constructor(
       cy = ny
     }
     if (steps.isEmpty()) {
-      log.info { "[Ice] char=$charId on ice at ($x, $y) facing $direction: nothing to slide onto" }
+      // Blocked straight away: the client still parks itself on a forced-movement tile waiting
+      // for the server's slide, so it gets the slide's ending without the slide - the release and
+      // a facing action that hands the movement controller back.
+      log.info { "[Ice] char=$charId on ice at ($x, $y) facing $direction: blocked, releasing" }
+      scriptMovement.releasePlayerHold(ctx, state)
+      scriptMovement.reassertScriptedFacing(ctx, state)
       return false
     }
     log.info { "[Ice] char=$charId slid from ($x, $y) ${steps.size} steps to ($cx, $cy)" }

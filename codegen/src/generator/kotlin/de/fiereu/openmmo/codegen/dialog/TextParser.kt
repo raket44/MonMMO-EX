@@ -68,6 +68,9 @@ class TextParser(private val decompDir: File) {
           }
           buffer.append(stringLiteral(line))
         }
+        // Emerald keeps an RS-era brailleformat line between a braille label and its .braille
+        // lines (data/text/braille.inc); it is layout data the game ignores, so is the parser.
+        line.startsWith("brailleformat") -> {}
         else -> {
           flush()
           pending = null

@@ -27043,6 +27043,116 @@
             "text": "The BLEND MASTER's supposed to work\\non his skills deep in the mountains.\\pSometimes, he comes to LILYCOVE\\nto blend BERRIES all day long.$"
         },
         {
+            "label": "Underwater_SealedChamber_Braille_GoUpHere",
+            "id": 271215387,
+            "text": "GO UP HERE.$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_ABC",
+            "id": 271215405,
+            "text": "ABC$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_GHI",
+            "id": 271215415,
+            "text": "GHI$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_MNO",
+            "id": 271215425,
+            "text": "MNO$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_TUV",
+            "id": 271215435,
+            "text": "TUV$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_DEF",
+            "id": 271215445,
+            "text": "DEF$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_JKL",
+            "id": 271215455,
+            "text": "JKL$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_PQRS",
+            "id": 271215465,
+            "text": "PQRS$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_Period",
+            "id": 268474202,
+            "text": ".$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_WXYZ",
+            "id": 271215484,
+            "text": "WXYZ$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_Comma",
+            "id": 268437027,
+            "text": ",$"
+        },
+        {
+            "label": "SealedChamber_OuterRoom_Braille_DigHere",
+            "id": 271215503,
+            "text": "DIG HERE.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_FirstWailordLastRelicanth",
+            "id": 271215519,
+            "text": "FIRST COMES\\nWAILORD.\\nLAST COMES\\nRELICANTH.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_InThisCaveWeHaveLived",
+            "id": 271215568,
+            "text": "IN THIS\\nCAVE WE\\nHAVE\\nLIVED.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_WeOweAllToThePokemon",
+            "id": 271215602,
+            "text": "WE OWE ALL\\nTO THE\\nPOKEMON.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_ButWeSealedThePokemonAway",
+            "id": 271215635,
+            "text": "BUT, WE\\nSEALED THE\\nPOKEMON\\nAWAY.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_WeFearedIt",
+            "id": 271215674,
+            "text": "WE FEARED IT.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_ThoseWithCourageHope",
+            "id": 271215694,
+            "text": "THOSE WITH\\nCOURAGE,\\nTHOSE WITH\\nHOPE.$"
+        },
+        {
+            "label": "SealedChamber_InnerRoom_Braille_OpenDoorEternalPokemonWaits",
+            "id": 271215737,
+            "text": "OPEN A DOOR.\\nAN ETERNAL\\nPOKEMON\\nWAITS.$"
+        },
+        {
+            "label": "DesertRuins_Braille_UseRockSmash",
+            "id": 271215782,
+            "text": "LEFT, LEFT,\\nDOWN, DOWN.\\nTHEN, USE\\nROCK SMASH.$"
+        },
+        {
+            "label": "IslandCave_Braille_RunLapAroundWall",
+            "id": 271215834,
+            "text": "STAY CLOSE\\nTO THE WALL.\\nRUN AROUND\\nONE LAP.$"
+        },
+        {
+            "label": "AncientTomb_Braille_ShineInTheMiddle",
+            "id": 271215884,
+            "text": "THOSE WHO\\nINHERIT OUR\\nWILL, SHINE\\nIN THE MIDDLE.$"
+        },
+        {
             "label": "CableClub_Text_WelcomeWhichCableClubService",
             "id": 271023780,
             "text": "Welcome to the POKéMON CABLE\\nCLUB.\\pWhich of our services do you wish\\nto use?$"

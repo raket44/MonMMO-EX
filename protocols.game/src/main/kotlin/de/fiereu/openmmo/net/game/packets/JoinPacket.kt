@@ -41,7 +41,12 @@ data class JoinPacket(
     val arch: Arch,
     val bitness: Bitness,
     val unk1: ByteArray,
-    val unk2: ByteArray,
+    /**
+     * Absent on Android. Desktop 31914 ends the join with a fixed 32-byte block after [unk1];
+     * r32645 on Android stops after [unk1], whose 32 bytes are the SHA-256 of the app's own signing
+     * certificate (the anti-tamper report). Decoded as null when the frame is already exhausted.
+     */
+    val unk2: ByteArray?,
 ) {
   override fun equals(other: Any?): Boolean =
       other is JoinPacket &&
@@ -76,7 +81,7 @@ data class JoinPacket(
     r = r * 31 + arch.hashCode()
     r = r * 31 + bitness.hashCode()
     r = r * 31 + unk1.contentHashCode()
-    r = r * 31 + unk2.contentHashCode()
+    r = r * 31 + (unk2?.contentHashCode() ?: 0)
     return r
   }
 }
@@ -148,7 +153,22 @@ private val ClientInfoMapCodec: Codec<Map<Byte, String>> =
 
 private val MacBytes = fixedBytes(6)
 private val Unk1Bytes = bytesPrefixed(U8)
-private val Unk2Bytes = fixedBytes(32)
+/**
+ * The join's last field, which Android does not send. Reading it unconditionally overran the frame
+ * by exactly its own width and the whole join was dropped, so the client sat on "Loading, please
+ * wait" forever. Present only when the frame still holds it; writes nothing when null.
+ */
+private val Unk2Bytes: Codec<ByteArray?> =
+    object : Codec<ByteArray?> {
+      private val inner = fixedBytes(32)
+
+      override fun read(buf: ReadBuffer): ByteArray? =
+          if (buf.remaining() >= 32) inner.read(buf) else null
+
+      override fun write(buf: WriteBuffer, value: ByteArray?) {
+        if (value != null) inner.write(buf, value)
+      }
+    }
 
 object JoinPacketCodec : PacketCodec<JoinPacket>() {
   override fun CodecScope<JoinPacket>.body(): JoinPacket {

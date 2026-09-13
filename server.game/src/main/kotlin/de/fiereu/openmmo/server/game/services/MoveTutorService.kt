@@ -109,10 +109,9 @@ constructor(
       if (slot >= 0) moves[slot] = move else moves += move
       characterStore.updatePokemon(charId, stored.copy(moves = moves))
       characterStore.flushCharacterAsync(charId)
-      // The client prints "{mon} learned {move}!" for a slot of 0-3 and refreshes the moveset
-      // from the delta, exactly as after a level-up.
+      // A free slot is only a moveset update: r32645's move-learn prompt always opens the
+      // four-moves screen, and has no "learned into a slot" form.
       val taken = moves.indexOfFirst { it.id.toInt() == moveId }
-      session.send(MoveLearnPromptPacket(monId, taken.toByte(), moveId.toShort()))
       session.send(emitter.moveSlotsDelta(monId, moves.map { it.id to it.pp }, 0))
       log.info { "char=$charId taught move $moveId to $monId in slot $taken" }
       onResult(true)

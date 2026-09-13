@@ -248,29 +248,24 @@ constructor(
   }
 
   /**
-   * Offers [moveId] to a full-moveset monster outside battle (a move tutor): the client opens its
-   * forget dialog and answers through the level-up reply packet, which then calls [onAnswer].
+   * Offers [moveId] to a full-moveset monster outside battle (a TM or a move tutor): the client
+   * opens its move-learn screen and answers through the same reply packet, which calls [onAnswer].
    */
   fun offerMove(session: SessionContext, charId: Long, monId: Long, moveId: Short, onAnswer: (Boolean) -> Unit) {
     pendingLearns[monId] = PendingMoveLearn(charId, monId, listOf(moveId), onAnswer)
-    session.send(MoveLearnPromptPacket(monId, MoveLearnPromptPacket.ASK, moveId))
+    session.send(MoveLearnPromptPacket(monId, listOf(moveId)))
   }
 
-  /** Applies the moveset the player picked after a level up. */
+  /**
+   * Applies the moveset the player picked on the move-learn screen (level up, TM, tutor). One
+   * reply answers every move the screen offered; Skip sends the moveset back unchanged.
+   */
   fun onMoveLearnReply(event: PacketEvent<MoveLearnReplyPacket>) {
     val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
     val reply = event.packet
     val pending = pendingLearns[reply.entityId] ?: return
-    if (pending.charId != charId || reply.moveId !in pending.offered) return
-    // One answer per offered move; the entry lives until every prompt is answered.
-    val remaining = pending.offered - reply.moveId
-    if (remaining.isEmpty()) pendingLearns.remove(reply.entityId)
-    else pendingLearns[reply.entityId] = pending.copy(offered = remaining)
-    if (reply.slot < 0) {
-      log.info { "char=$charId declined move ${reply.moveId} for ${reply.entityId}" }
-      pending.onAnswer?.invoke(false)
-      return
-    }
+    if (pending.charId != charId) return
+    pendingLearns.remove(reply.entityId)
     val stored =
         characterStore.getCharacter(charId)?.pokemon?.firstOrNull { it.id == reply.entityId }
     if (stored == null) {
@@ -278,14 +273,15 @@ constructor(
       return
     }
     val moves = stored.moves.toMutableList()
-    if (!moveLearner.replace(moves, reply.slot.toInt(), reply.moveId)) {
+    if (!moveLearner.apply(moves, reply.moveIds, pending.offered)) {
       log.warn {
-        "char=$charId picked an invalid slot ${reply.slot} for move ${reply.moveId} on ${reply.entityId}"
+        "char=$charId sent an invalid moveset ${reply.moveIds} for ${reply.entityId} (offered ${pending.offered})"
       }
       pending.onAnswer?.invoke(false)
       return
     }
-    if (moves == stored.moves) {
+    if (moves.map { it.id } == stored.moves.map { it.id }) {
+      log.info { "char=$charId kept the moves of ${reply.entityId} (skipped ${pending.offered})" }
       pending.onAnswer?.invoke(false)
       return
     }
@@ -567,14 +563,16 @@ constructor(
       // A trainer's monsters are built to a fixed difficulty, so they must not keep the rolled
       // IVs. Max hp moves with them, and the monster comes out full.
       if (spec.iv != null) {
+        // An IV is 0-31; a larger trainer value is bad data and must not multiply every stat.
+        val iv = spec.iv.coerceIn(0, 31)
         val ivs =
             IVs().apply {
-              hp = spec.iv
-              atk = spec.iv
-              this.def = spec.iv
-              spAtk = spec.iv
-              spDef = spec.iv
-              spd = spec.iv
+              hp = iv
+              atk = iv
+              this.def = iv
+              spAtk = iv
+              spDef = iv
+              spd = iv
             }
         val fixed = rolled.copy(iVs = ivs)
         rolled = fixed.copy(hp = computeWildStats(def, fixed).hp.toShort())
@@ -1072,19 +1070,17 @@ constructor(
     val outcome =
         moveLearner.learn(winner.moves, winner.source.dexId, winner.level, reward.newLevel)
     emitter.sendVictoryDelta(battle, winner.entityId, reward)
-    // The client prints "{mon} learned {move}!" itself for a move that took a free slot, and
-    // opens its forget dialog for a slot of -1; one packet per move either way.
-    for (move in outcome.learned) {
-      val slot = winner.moves.indexOfFirst { it.id.toInt() == move.moveId }
+    // A move that took a free slot is only a moveset update: r32645's prompt has no "learned into a
+    // slot" form, and any prompt opens the four-moves screen. Moves that need a slot freed go out as
+    // ONE prompt listing all of them, answered by one reply.
+    if (outcome.learned.isNotEmpty()) {
       battle.session.send(
-          MoveLearnPromptPacket(winner.entityId, slot.toByte(), move.moveId.toShort()))
+          emitter.moveSlotsDelta(winner.entityId, winner.moves.map { it.id to it.pp }, 0))
     }
     if (outcome.offered.isNotEmpty()) {
       val offered = outcome.offered.map { it.moveId.toShort() }
       pendingLearns[winner.entityId] = PendingMoveLearn(battle.charId, winner.entityId, offered)
-      for (moveId in offered) {
-        battle.session.send(MoveLearnPromptPacket(winner.entityId, MoveLearnPromptPacket.ASK, moveId))
-      }
+      battle.session.send(MoveLearnPromptPacket(winner.entityId, offered))
     }
     // Happiness grows with every earned victory (operator-directed): the cartridge bands - a
     // less-happy monster warms up faster - doubled by a held Soothe Bell, capped at 255.
@@ -1225,7 +1221,8 @@ constructor(
               hp = state.currentHp.toShort(),
               status = persistedStatus(state),
               heldItem = state.heldItem,
-              moves = state.moves.map { PokemonMove(it.id, it.pp) },
+              // A transformed monster keeps its own moves; the copied ones never leave the battle.
+              moves = (state.transformedFrom ?: state.moves).map { PokemonMove(it.id, it.pp) },
           )
       characterStore.updatePokemon(battle.charId, updated)
     }

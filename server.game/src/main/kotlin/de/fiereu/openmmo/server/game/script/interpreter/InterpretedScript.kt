@@ -577,8 +577,11 @@ class InterpretedScript(
                     // STDSTRING_* (badge names for the Route 23 guards, pockets, contest stats).
                     "bufferstdstring" -> InterpreterSupport.STD_STRINGS.getOrNull(value(ctx, instruction.arg(1)))
                     // A named item (ITEM_DOME_FOSSIL); an item held in a var is a DS convention.
+                    // The corpus stores constants as numbered args (IntArg keeps the token), so read
+                    // the token of any arg, as giveitem_msg does. Accepting only SymbolArg skipped the
+                    // name and the message showed a stale slot: "Oh! That is Cut!" (2026-09-13).
                     "bufferitemname" ->
-                        (instruction.arg(1) as? SymbolArg)?.let { ctx.resolveItem(it.token)?.name }
+                        instruction.arg(1).takeIf { it !is VarArg }?.let { ctx.resolveItem(it.token)?.name }
                     "bufferleadmonspeciesname" -> ctx.leadSpeciesName()
                     "buffernumberstring" -> value(ctx, instruction.arg(1)).toString()
                     else -> null

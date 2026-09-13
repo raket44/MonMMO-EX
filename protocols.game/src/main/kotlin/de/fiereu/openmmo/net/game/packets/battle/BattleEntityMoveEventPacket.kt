@@ -305,8 +305,10 @@ private val StatChangeBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
         val changeType = field(S8) { (it as BattleEventBody.StatChange).changeType }
-        // Low seven bits name the stat (client f/RC0 order); bit 0x80 asks for the text line.
-        val stat = field(S8) { ((it as BattleEventBody.StatChange).stat.toInt() or 0x80).toByte() }
+        // Low seven bits name the stat (client f/RC0 order). Bit 0x80 SUPPRESSES the stat animation
+        // (client SF1 event 1 animates only when it is clear; the text line prints either way), so it
+        // stays clear - the retail Growl capture has it clear too.
+        val stat = field(S8) { ((it as BattleEventBody.StatChange).stat.toInt() and STAT_INDEX_MASK).toByte() }
         val stages = field(S8) { (it as BattleEventBody.StatChange).stageDelta.toByte() }
         // The animation's direction byte: the delta when the change landed, 0 when it could not.
         val direction = field(S8) { val c = it as BattleEventBody.StatChange; if (c.applied) c.stageDelta.toByte() else 0 }

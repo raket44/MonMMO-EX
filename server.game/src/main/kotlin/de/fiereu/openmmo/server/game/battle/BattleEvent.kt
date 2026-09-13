@@ -90,6 +90,9 @@ sealed interface BattleEvent {
   /** The monster now shows as [wireSpecies]: an Illusion dropping or a form change. */
   data class SpeciesShown(val targetId: Long, val wireSpecies: Int) : BattleEvent
 
+  /** A monster's moveset changed mid-battle (Transform): the owner's move menu follows it. */
+  data class MovesChanged(val targetId: Long, val moves: List<Pair<Short, Byte>>) : BattleEvent
+
   /** An ability activated: the client shows its banner and any line it knows for it. */
   data class AbilityShown(
       val targetId: Long,

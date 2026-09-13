@@ -55,6 +55,10 @@ class BattleMonState(
   var trapDamageDivisor: Int = 8
   /** Illusion: the party member this monster is showing itself as, until it takes a hit. */
   var illusionOf: BattleMonState? = null
+  /** Transform and Imposter: the moves it had before copying its target's, back when it leaves the field. */
+  var transformedFrom: List<PokemonMove>? = null
+  val transformed: Boolean
+    get() = transformedFrom != null
 
   /** Turns of Toxic so far, which scales its damage; resets when the monster leaves the field. */
   var toxicCounter: Int = 0
@@ -99,6 +103,11 @@ class BattleMonState(
 
   /** Everything a switch or a faint forgets: stages and the per-battle flags. */
   fun resetVolatile() {
+    transformedFrom?.let { own ->
+      moves.clear()
+      moves += own
+    }
+    transformedFrom = null
     stages.clear()
     toxicCounter = 0
     ability = Abilities.of(species, source)

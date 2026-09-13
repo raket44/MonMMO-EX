@@ -20,4 +20,16 @@ enum class MoveFlag(val bit: Int) {
   MINIMIZE_DOUBLE_DAMAGE(1 shl 14),
   /** The user faints after using it (Explosion, Self-Destruct). */
   EXPLOSION(1 shl 15),
+  /** Reaches a target in the air (Gust, Thunder, Sky Uppercut). */
+  DAMAGES_AIRBORNE(1 shl 16),
+  /** Reaches a target in the air for double damage (Gust, Twister). */
+  DAMAGES_AIRBORNE_DOUBLE(1 shl 17),
+  /** Reaches a target underground for double damage (Earthquake, Magnitude). */
+  DAMAGES_UNDERGROUND(1 shl 18),
+  /** Reaches a target underwater for double damage (Surf, Whirlpool). */
+  DAMAGES_UNDERWATER(1 shl 19),
+  /** Never misses in rain (Thunder, Hurricane). */
+  ALWAYS_HITS_IN_RAIN(1 shl 20),
+  /** Never misses in hail (Blizzard). */
+  ALWAYS_HITS_IN_HAIL(1 shl 21),
 }

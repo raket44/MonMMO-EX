@@ -306,8 +306,8 @@ constructor(
                 "re-read them.")
       }
       "learn" -> {
-        // Replays the move-forget prompt for the first party member, to see whether the client
-        // renders it at all outside a battle (the fixtures came from client 32710; ours is 31914).
+        // Replays the move-learn screen for the first party member, to see the client render it
+        // outside a battle (r32645 reads the offered moves as a counted list, f/lg.Rl0).
         val moveId = (ctx.args.getOrNull(1)?.toIntOrNull() ?: 55).toShort()
         val mon = characterStore.getCharacter(ctx.characterId)?.pokemon?.firstOrNull()
         if (mon == null) {
@@ -315,10 +315,7 @@ constructor(
           return
         }
         ctx.session.send(
-            de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket(
-                mon.id,
-                de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket.ASK,
-                moveId))
+            de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket(mon.id, listOf(moveId)))
         ctx.reply("Sent MoveLearnPromptPacket for ${mon.id} offering move $moveId.")
       }
       "pcinv" -> {

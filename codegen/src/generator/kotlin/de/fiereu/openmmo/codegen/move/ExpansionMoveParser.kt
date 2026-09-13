@@ -32,7 +32,9 @@ class ExpansionMoveParser(private val rootDir: File) {
           val body = preprocess(match.groupValues[2], config)
           val name = NAME.find(body)?.groupValues?.get(1) ?: return@mapNotNull null
           val declared = resolveToken(raw(body, "effect") ?: "EFFECT_HIT", config)
-          val effect = statChangeEffect(body, damaging = declared == "EFFECT_HIT") ?: declared
+          // Only the generic stat move gets a specific name. Swagger, Rapid Spin and every damaging
+          // move keep their own effect; their stat changes are in the additional effects.
+          val effect = if (declared == "EFFECT_STAT_CHANGE") statChangeEffect(body) ?: declared else declared
           ParsedMove(
               id = id,
               name = clean(name),
@@ -105,6 +107,12 @@ class ExpansionMoveParser(private val rootDir: File) {
       if (on("bitingMove")) add("FLAG_BITE")
       if (on("minimizeDoubleDamage")) add("FLAG_MINIMIZE_DOUBLE_DAMAGE")
       if (on("explosion")) add("FLAG_EXPLOSION")
+      if (on("damagesAirborne")) add("FLAG_DAMAGES_AIRBORNE")
+      if (on("damagesAirborneDoubleDamage")) add("FLAG_DAMAGES_AIRBORNE_DOUBLE")
+      if (on("damagesUnderground")) add("FLAG_DAMAGES_UNDERGROUND")
+      if (on("damagesUnderwater")) add("FLAG_DAMAGES_UNDERWATER")
+      if (on("alwaysHitsInRain")) add("FLAG_ALWAYS_HITS_IN_RAIN")
+      if (on("alwaysHitsInHailSnow")) add("FLAG_ALWAYS_HITS_IN_HAIL")
     }
   }
 
@@ -120,20 +128,26 @@ class ExpansionMoveParser(private val rootDir: File) {
    * Returns null when the shape is anything the engine has no branch for, so the Expansion's own
    * effect is kept and the move is honestly recorded as unimplemented.
    */
-  private fun statChangeEffect(body: String, damaging: Boolean): String? {
+  private fun statChangeEffect(body: String): String? {
     val start = body.indexOf("ADDITIONAL_EFFECTS(")
     if (start < 0) return null
-    val entry = EFFECT_ENTRY.find(body, start)?.groupValues?.get(1) ?: return null
-    val direction =
-        STAT_DIRECTION.find(entry)?.groupValues?.get(2)?.let { if (it == "PLUS") "UP" else "DOWN" }
-            ?: return null
+    // One change of one stat by one or two stages. Dragon Dance, Shell Smash and Cotton Guard's
+    // three stages keep EFFECT_STAT_CHANGE, which the engine resolves from the additional effects.
+    val entry =
+        EFFECT_ENTRY.findAll(body, start).map { it.groupValues[1] }.filter { STAT_DIRECTION.containsMatchIn(it) }.toList()
+            .singleOrNull() ?: return null
+    val direction = if (STAT_DIRECTION.find(entry)!!.groupValues[2] == "PLUS") "UP" else "DOWN"
     val stat =
-        STATS.firstNotNullOfOrNull { (field, name) ->
+        STATS.mapNotNull { (field, name) ->
           Regex("""\.$field\s*=\s*(\d+)""").find(entry)?.let { name to it.groupValues[1].toInt() }
-        } ?: return null
-    val stages = if (stat.second >= 2) "_2" else ""
-    val suffix = if (damaging) "_HIT" else ""
-    val candidate = "${stat.first}_$direction$stages$suffix"
+        }.singleOrNull() ?: return null
+    val stages =
+        when (stat.second) {
+          1 -> ""
+          2 -> "_2"
+          else -> return null
+        }
+    val candidate = "${stat.first}_$direction$stages"
     return if (candidate in ENGINE_STAT_EFFECTS) "EFFECT_$candidate" else null
   }
 
@@ -290,39 +304,30 @@ class ExpansionMoveParser(private val rootDir: File) {
         setOf(
             "ACCURACY_DOWN",
             "ACCURACY_DOWN_2",
-            "ACCURACY_DOWN_HIT",
             "ACCURACY_UP",
             "ACCURACY_UP_2",
             "ATTACK_DOWN",
             "ATTACK_DOWN_2",
-            "ATTACK_DOWN_HIT",
             "ATTACK_UP",
             "ATTACK_UP_2",
-            "ATTACK_UP_HIT",
             "DEFENSE_DOWN",
             "DEFENSE_DOWN_2",
-            "DEFENSE_DOWN_HIT",
             "DEFENSE_UP",
             "DEFENSE_UP_2",
-            "DEFENSE_UP_HIT",
             "EVASION_DOWN",
             "EVASION_DOWN_2",
-            "EVASION_DOWN_HIT",
             "EVASION_UP",
             "EVASION_UP_2",
             "SPECIAL_ATTACK_DOWN",
             "SPECIAL_ATTACK_DOWN_2",
-            "SPECIAL_ATTACK_DOWN_HIT",
             "SPECIAL_ATTACK_UP",
             "SPECIAL_ATTACK_UP_2",
             "SPECIAL_DEFENSE_DOWN",
             "SPECIAL_DEFENSE_DOWN_2",
-            "SPECIAL_DEFENSE_DOWN_HIT",
             "SPECIAL_DEFENSE_UP",
             "SPECIAL_DEFENSE_UP_2",
             "SPEED_DOWN",
             "SPEED_DOWN_2",
-            "SPEED_DOWN_HIT",
             "SPEED_UP",
             "SPEED_UP_2",
         )

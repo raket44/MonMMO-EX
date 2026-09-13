@@ -2,6 +2,7 @@ package de.fiereu.openmmo.server.game.battle
 
 import de.fiereu.openmmo.common.StatusCondition
 import de.fiereu.openmmo.common.enums.Ability
+import de.fiereu.openmmo.common.PokemonMove
 import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
 import de.fiereu.openmmo.common.enums.MoveEffect
 import de.fiereu.openmmo.common.enums.MoveFlag
@@ -127,6 +128,41 @@ constructor(
     return true
   }
 
+  /**
+   * Transform and Imposter (the Expansion's Cmd_transformdataexecution): [mon] takes [target]'s
+   * species, stats but hp, stat stages, ability and moves, each move at 5 pp or its maximum if
+   * lower, until it leaves the field. Fails on a target that is out of reach, already transformed
+   * or disguised, and for a user that already transformed.
+   */
+  private fun transform(mon: BattleMonState, target: BattleMonState, events: MutableList<BattleEvent>): Boolean {
+    if (target === mon || target.fainted || target.semiInvulnerable || target.transformed || target.illusionOf != null || mon.transformed) return false
+    mon.transformedFrom = mon.moves.map { PokemonMove(it.id, it.pp) }
+    mon.species = target.species
+    mon.stats = target.stats.copy(hp = mon.stats.hp)
+    for (stat in BattleStat.entries) mon.changeStage(stat, target.stage(stat) - mon.stage(stat))
+    mon.ability = target.ability
+    mon.choiceLockedMove = 0
+    mon.moves.clear()
+    for (move in target.moves) {
+      val pp = if (move.id.toInt() == 0) 0 else (moves.get(move.id.toInt())?.pp ?: TRANSFORM_PP).coerceAtMost(TRANSFORM_PP)
+      mon.moves += PokemonMove(move.id, pp.toByte())
+    }
+    events += BattleEvent.SpeciesShown(mon.entityId, mon.wireSpeciesId().toInt())
+    events += BattleEvent.MovesChanged(mon.entityId, mon.moves.map { it.id to it.pp })
+    return true
+  }
+
+  /** Undoes [transform]: the real species, stats and moves come back. */
+  private fun revertTransform(mon: BattleMonState) {
+    val own = mon.transformedFrom ?: return
+    mon.moves.clear()
+    mon.moves += own
+    mon.transformedFrom = null
+    mon.species = mon.originalSpecies
+    mon.stats = StatCalculator.computeAll(mon.originalSpecies, mon.source).copy(hp = mon.stats.hp)
+    mon.ability = Abilities.of(mon.species, mon.source)
+  }
+
   /** Applies the first row of [kind] whose params pass [filter]; false when nothing changed. */
   private fun formChange(
       mon: BattleMonState,
@@ -153,6 +189,7 @@ constructor(
 
   /** A monster leaving the field: its switch-out form, else the one it came in with. Silent. */
   fun switchOut(battle: BattleInstance, mon: BattleMonState) {
+    revertTransform(mon)
     if (formChange(mon, "FORM_CHANGE_BATTLE_SWITCH_OUT", null) { abilityMatches(mon, it.params.getOrNull(0)) }) return
     restoreForm(mon)
   }
@@ -167,9 +204,12 @@ constructor(
   fun endBattle(battle: BattleInstance): List<BattleEvent> {
     val events = mutableListOf<BattleEvent>()
     for (mon in battle.party + battle.opponent) {
-      if (mon.species.id == mon.originalSpecies.id) continue
+      val transformed = mon.transformed
+      revertTransform(mon)
+      if (mon.species.id == mon.originalSpecies.id && !transformed) continue
       restoreForm(mon)
       events += BattleEvent.SpeciesShown(mon.entityId, mon.wireSpeciesId().toInt())
+      if (transformed) events += BattleEvent.MovesChanged(mon.entityId, mon.moves.map { it.id to it.pp })
     }
     return events
   }
@@ -294,11 +334,13 @@ constructor(
       val mon = battle.monAt(0, choice.position) ?: continue
       if (mon.fainted) continue
       val move = chooseMove(battle, mon, moves.get(choice.moveId.toInt()))
-      // A target on the player's own side only counts for moves that can aim there; an attack
-      // packed as position 0 of side 0 (nothing chosen) goes at the foe in front.
+      // The client packs the target as (position << 4) | side and lets the player point any
+      // single-target move at a partner (captured: position 1 aiming at position 0 sent 0x00). The
+      // user's own cell is what an attack with nothing chosen sends in singles, so that one only
+      // counts for a move that can aim at its user.
       val chosen =
           battle.monAt(choice.targetSide, choice.targetPosition)?.takeIf {
-            choice.targetSide != 0 || move?.target in OWN_SIDE_TARGETS
+            choice.targetSide != 0 || it !== mon || move?.target in OWN_SIDE_TARGETS
           }
       actions += targetsFor(battle, mon, move, chosen)
     }
@@ -506,6 +548,22 @@ constructor(
         shown()
         val stat = if (foe.effective(BattleStat.DEFENSE) < foe.effective(BattleStat.SP_DEFENSE)) BattleStat.ATTACK else BattleStat.SP_ATTACK
         ownStage(mon, stat, 1, events)
+      }
+      // Imposter copies the monster diagonally across: the facing one in singles, the other
+      // position in doubles (the Expansion's BATTLE_PARTNER(BATTLE_OPPOSITE)).
+      Ability.IMPOSTER -> {
+        val position = battle.positionOf(mon)
+        val across =
+            if (battle.format == de.fiereu.openmmo.net.game.packets.battle.BattleFormat.DOUBLES && position >= 0) 1 - position
+            else position
+        val target =
+            battle.monAt(if (battle.isPlayerSide(mon.entityId)) 1 else 0, across)?.takeIf { !it.fainted } ?: foe
+        val copied = mutableListOf<BattleEvent>()
+        if (transform(mon, target, copied)) {
+          events += BattleEvent.TurnEffect(mon.entityId)
+          events += BattleEvent.AbilityShown(mon.entityId, Ability.IMPOSTER, target.entityId)
+          events += copied
+        }
       }
       Ability.TRACE -> {
         if (foe.ability != Ability.NONE && foe.ability !in UNTRACEABLE) {
@@ -876,6 +934,11 @@ constructor(
       else -> Unit
     }
 
+    // Brick Break and Psychic Fangs shatter the screens before their damage is worked out.
+    if (move.additionalEffects.any { it.effect == MoveAdditionalEffect.BREAK_SCREEN }) {
+      battle.sideOf(defender).reflectTurns = 0
+      battle.sideOf(defender).lightScreenTurns = 0
+    }
     val hits = hitCount(battle, move)
     var totalDamage = 0
     var lastCrit = false
@@ -954,10 +1017,6 @@ constructor(
     if (effectiveType == PokemonType.FIRE && StatusCondition.isFrozen(defender.status)) {
       defender.status = defender.status and StatusCondition.FREEZE.inv()
       events += BattleEvent.StatusChanged(defender.entityId, defender.status)
-    }
-    if (move.effect == MoveEffect.BRICK_BREAK) {
-      battle.sideOf(defender).reflectTurns = 0
-      battle.sideOf(defender).lightScreenTurns = 0
     }
     if (move.effect == MoveEffect.RAPID_SPIN) {
       attacker.leechSeeded = false
@@ -1362,11 +1421,12 @@ constructor(
         val bits = statusBits(move.argument?.value)
         if (defender.status and bits != 0) power *= 2
       }
-      MoveEffect.EARTHQUAKE, MoveEffect.MAGNITUDE ->
-          if (defender.semiInvulnerable && defender.chargingMoveId != 0) power *= 2
-      MoveEffect.GUST, MoveEffect.TWISTER -> if (defender.semiInvulnerable) power *= 2
       else -> Unit
     }
+    // Earthquake into Dig, Surf into Dive, Gust into Fly: the moves that reach a hidden target hit it twice as hard.
+    if (defender.semiInvulnerable && reachesHidden(defender, move) &&
+        (move.hasFlag(MoveFlag.DAMAGES_UNDERGROUND) || move.hasFlag(MoveFlag.DAMAGES_UNDERWATER) ||
+            move.hasFlag(MoveFlag.DAMAGES_AIRBORNE_DOUBLE))) power *= 2
     return power
   }
 
@@ -1452,6 +1512,15 @@ constructor(
     return (2 * attacker.level / 5 + 2) * power * atk / def.coerceAtLeast(1) / 50 + 2
   }
 
+  /** Whether [move] reaches a [defender] hidden by Fly, Dig or Dive; Shadow Force and the like hide it from everything. */
+  private fun reachesHidden(defender: BattleMonState, move: MoveDef): Boolean =
+      when (defender.chargingMoveId) {
+        in HIDDEN_IN_AIR -> move.hasFlag(MoveFlag.DAMAGES_AIRBORNE) || move.hasFlag(MoveFlag.DAMAGES_AIRBORNE_DOUBLE)
+        HIDDEN_UNDERGROUND -> move.hasFlag(MoveFlag.DAMAGES_UNDERGROUND)
+        HIDDEN_UNDERWATER -> move.hasFlag(MoveFlag.DAMAGES_UNDERWATER)
+        else -> false
+      }
+
   private fun accuracyCheck(
       battle: BattleInstance,
       action: TurnAction,
@@ -1465,28 +1534,21 @@ constructor(
       return true
     }
     if (attacker.ability == Ability.NO_GUARD || defender.ability == Ability.NO_GUARD) return true
-    if (defender.semiInvulnerable) {
-      val allowed =
-          when (move.effect) {
-            MoveEffect.EARTHQUAKE, MoveEffect.MAGNITUDE -> true
-            MoveEffect.GUST, MoveEffect.TWISTER, MoveEffect.THUNDER, MoveEffect.SKY_UPPERCUT -> true
-            else -> false
-          }
-      if (!allowed) return false
-    }
+    if (defender.semiInvulnerable && !reachesHidden(defender, move)) return false
     if (move.effect == MoveEffect.OHKO) {
       if (defender.level > attacker.level) return false
       return battle.rng.accuracyRoll() <= 30 + (attacker.level - defender.level)
     }
     var accuracy = move.accuracy
     val weather = weather(battle)
-    if (move.effect == MoveEffect.THUNDER) {
+    if (move.hasFlag(MoveFlag.ALWAYS_HITS_IN_RAIN)) {
       when (weather) {
         Weather.RAIN -> return true
         Weather.SUN -> accuracy = 50
         else -> Unit
       }
     }
+    if (move.hasFlag(MoveFlag.ALWAYS_HITS_IN_HAIL) && weather == Weather.HAIL) return true
     if (accuracy == 0) return true
     // Keen Eye and Mind's Eye look past evasion boosts; Unaware on either side drops the other's stages.
     val evasionStage =
@@ -1521,13 +1583,6 @@ constructor(
       if (extra.chance < 100 && battle.rng.accuracyRoll() > chance) continue
       if (!extra.self && defender.fainted) continue
       applyAdditional(battle, action, move, extra, events)
-    }
-    // The collapsed Gen 3 names the table keeps for single-stat side effects.
-    secondaryStage(move.effect)?.let { stage ->
-      if (move.secondaryEffectChance > 0 && battle.rng.accuracyRoll() <= move.secondaryEffectChance &&
-          (stage.onSelf || !defender.fainted)) {
-        applyStage(action, stage, events)
-      }
     }
     if (attacker.fainted) return
   }
@@ -1650,14 +1705,17 @@ constructor(
     when (move.effect) {
       MoveEffect.STAT_CHANGE, MoveEffect.CALM_MIND, MoveEffect.BULK_UP, MoveEffect.DRAGON_DANCE,
       MoveEffect.COSMIC_POWER, MoveEffect.TICKLE, MoveEffect.GROWTH, MoveEffect.DEFENSE_CURL -> {
-        val hostile = move.additionalEffects.any { !it.self }
+        // The Expansion's stat move changes whoever the move targets; Dragon Dance and Shell Smash
+        // aim at their user without marking each change as self.
+        val onUser = move.target == MoveTarget.USER || move.target == MoveTarget.USER_AND_ALLY
+        val hostile = move.additionalEffects.any { !it.self && !onUser }
         if (hostile && !accurate()) return
         var applied = false
         for (extra in move.additionalEffects) {
           val sign = if (extra.effect == MoveAdditionalEffect.STAT_MINUS) -1 else 1
           for ((name, stages) in extra.stats) {
             val stat = battleStat(name) ?: continue
-            if (applyStage(action, StageEffect(stat, sign * stages, extra.self), events)) applied = true
+            if (applyStage(action, StageEffect(stat, sign * stages, extra.self || onUser), events)) applied = true
           }
         }
         if (move.effect == MoveEffect.DEFENSE_CURL) attacker.defenseCurled = true
@@ -1702,12 +1760,18 @@ constructor(
         if (!accurate()) return
         confuse(battle, attacker, defender, events)
       }
+      // Swagger and Flatter share the Expansion's EFFECT_SWAGGER; the stat they raise is in the data.
       MoveEffect.SWAGGER, MoveEffect.FLATTER -> {
         if (!accurate()) return
-        val stat = if (move.effect == MoveEffect.SWAGGER) BattleStat.ATTACK else BattleStat.SP_ATTACK
-        applyStage(action, StageEffect(stat, if (move.effect == MoveEffect.SWAGGER) 2 else 1, false), events)
+        for (extra in move.additionalEffects) {
+          for ((name, stages) in extra.stats) {
+            val stat = battleStat(name) ?: continue
+            applyStage(action, StageEffect(stat, stages, false), events)
+          }
+        }
         confuse(battle, attacker, defender, events)
       }
+      MoveEffect.TRANSFORM -> if (!transform(attacker, defender, events)) fail()
       MoveEffect.PROTECT, MoveEffect.ENDURE -> {
         val method = move.argument?.value
         if (move.effect == MoveEffect.PROTECT && method != null && method != "PROTECT_NORMAL") return fail()
@@ -2328,21 +2392,13 @@ constructor(
         else -> null
       }
 
-  private fun secondaryStage(effect: MoveEffect): StageEffect? =
-      when (effect) {
-        MoveEffect.ATTACK_DOWN_HIT -> StageEffect(BattleStat.ATTACK, -1, false)
-        MoveEffect.DEFENSE_DOWN_HIT -> StageEffect(BattleStat.DEFENSE, -1, false)
-        MoveEffect.SPEED_DOWN_HIT -> StageEffect(BattleStat.SPEED, -1, false)
-        MoveEffect.SPECIAL_ATTACK_DOWN_HIT -> StageEffect(BattleStat.SP_ATTACK, -1, false)
-        MoveEffect.SPECIAL_DEFENSE_DOWN_HIT -> StageEffect(BattleStat.SP_DEFENSE, -1, false)
-        MoveEffect.ACCURACY_DOWN_HIT -> StageEffect(BattleStat.ACCURACY, -1, false)
-        MoveEffect.EVASION_DOWN_HIT -> StageEffect(BattleStat.EVASION, -1, false)
-        MoveEffect.ATTACK_UP_HIT -> StageEffect(BattleStat.ATTACK, 1, true)
-        MoveEffect.DEFENSE_UP_HIT -> StageEffect(BattleStat.DEFENSE, 1, true)
-        else -> null
-      }
-
   private companion object {
+    /** Transform gives every copied move this much pp, or the move's maximum when that is lower. */
+    const val TRANSFORM_PP = 5
+    /** Charging moves that hide their user in the air (Fly, Bounce, Sky Drop), underground (Dig), underwater (Dive). */
+    val HIDDEN_IN_AIR = setOf(19, 340, 507)
+    const val HIDDEN_UNDERGROUND = 91
+    const val HIDDEN_UNDERWATER = 291
     /** Targets a move may aim at its own side with. */
     val OWN_SIDE_TARGETS = setOf(MoveTarget.USER, MoveTarget.ALLY, MoveTarget.USER_OR_ALLY, MoveTarget.USER_AND_ALLY, MoveTarget.USER_OR_SELECTED)
     val UNTRACEABLE =

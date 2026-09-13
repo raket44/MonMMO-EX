@@ -199,6 +199,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                 BattleEntityDeltaPacket(
                     entityId = event.targetId,
                     species = de.fiereu.openmmo.net.game.packets.battle.Species(event.wireSpecies.toShort(), 0)))
+        // Only the owner's client lists the moves; a foe's stay hidden.
+        is BattleEvent.MovesChanged ->
+            if (battle.isPlayerSide(event.targetId)) battle.session.send(moveSlotsDelta(event.targetId, event.moves, 0))
         is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
         is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
         is BattleEvent.SafariBait ->

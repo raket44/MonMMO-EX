@@ -1,28 +1,24 @@
 package de.fiereu.openmmo.net.game.packets.battle.moves
 
-import de.fiereu.bytecodec.CodecScope
-import de.fiereu.bytecodec.PacketCodec
-import de.fiereu.bytecodec.S16LE
-import de.fiereu.bytecodec.S64LE
-import de.fiereu.bytecodec.S8
+import de.fiereu.bytecodec.*
 
 /**
- * c2s 0x0A - the forget dialog's answer, written by client 31914's `f/com4`: the monster uid, the
- * slot byte, the offered move id. The dialog's slot pick (`f/mB.Z90`) sends the slot the new move
- * takes over; giving up sends a negative slot, and the monster keeps its moves.
+ * c2s 0x0A - the move-learn screen's answer, written by client r32645's `f/th8.n3` from
+ * `f/du5.fE`: the monster uid, a u8 count and the monster's final move per slot (a new move sits in
+ * the slot it takes over), then a u8 count and the offered moves echoed back. Confirm and Skip send
+ * the same packet; after Skip the moveset simply comes back unchanged.
  */
 data class MoveLearnReplyPacket(
     val entityId: Long,
-    /** 0-3 = replace that slot with [moveId]; negative = declined. */
-    val slot: Byte,
-    val moveId: Short,
+    val moveIds: List<Short>,
+    val offered: List<Short>,
 )
 
 object MoveLearnReplyPacketCodec : PacketCodec<MoveLearnReplyPacket>() {
   override fun CodecScope<MoveLearnReplyPacket>.body(): MoveLearnReplyPacket {
     val entityId = field(S64LE) { it.entityId }
-    val slot = field(S8) { it.slot }
-    val moveId = field(S16LE) { it.moveId }
-    return MoveLearnReplyPacket(entityId, slot, moveId)
+    val moveIds = field(S16LE.listPrefixed(U8)) { it.moveIds }
+    val offered = field(S16LE.listPrefixed(U8)) { it.offered }
+    return MoveLearnReplyPacket(entityId, moveIds, offered)
   }
 }

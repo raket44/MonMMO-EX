@@ -47,7 +47,7 @@ class NdsTrainerParser(private val root: File) {
         "mon" -> {
           val dex = p[4].toInt()
           if (dex in 1..649) mons.getOrPut(p[2].toInt()) { mutableListOf() } +=
-              ParsedTrainerMon(dex, p[5].toInt(), p[6].toInt(), 0, p.drop(8).mapNotNull { it.toIntOrNull() }.filter { it > 0 })
+              ParsedTrainerMon(dex, p[5].toInt(), difficultyToIv(p[6].toInt()), 0, p.drop(8).mapNotNull { it.toIntOrNull() }.filter { it > 0 })
         }
         "msg" -> messages.getOrPut(p[2].toInt()) { linkedMapOf() }[p[3].toInt()] =
             (2 shl 28) or (UNOVA_TRAINER_TEXT_BANK shl 16) or p[4].toInt()
@@ -59,6 +59,14 @@ class NdsTrainerParser(private val root: File) {
       else ParsedTrainer(id, "TRAINER_$id", "", h[0], h[2] != 0, DEFAULT_PRIZE_RATE, party, emptyList(), messages[id].orEmpty())
     }
   }
+
+  /**
+   * The DS games store a trainer mon's difficulty as 0-255 and derive the IV from it at battle time
+   * (difficulty * 31 / 255, the rule the GBA parser already applies). The raw value was copied as the
+   * IV, so DS trainers battled with IVs up to 250 - and Volkner's Electivire with 2500, a typo in the
+   * Platinum decomp's own data - so the value is capped to the byte range before scaling.
+   */
+  private fun difficultyToIv(difficulty: Int): Int = difficulty.coerceIn(0, 255) * 31 / 255
 
   private fun enumList(path: String): Map<String, Int> =
       File(root, path).readLines().map { it.substringBefore('=').trim() }.filter { it.isNotEmpty() }
@@ -86,7 +94,7 @@ class NdsTrainerParser(private val root: File) {
             ParsedTrainerMon(
                 dexId = dex,
                 level = mon["level"]?.jsonPrimitive?.intOrNull ?: 5,
-                iv = mon["iv_scale"]?.jsonPrimitive?.intOrNull ?: 0,
+                iv = difficultyToIv(mon["iv_scale"]?.jsonPrimitive?.intOrNull ?: 0),
                 heldItem = 0,
                 moveIds = (mon["moves"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content?.let(moves::get) }?.filter { it > 0 }.orEmpty(),
             )
@@ -153,7 +161,7 @@ class NdsTrainerParser(private val root: File) {
             ParsedTrainerMon(
                 dexId = dex,
                 level = mon["level"]?.jsonPrimitive?.intOrNull ?: 5,
-                iv = mon["difficulty"]?.jsonPrimitive?.intOrNull ?: 0,
+                iv = difficultyToIv(mon["difficulty"]?.jsonPrimitive?.intOrNull ?: 0),
                 heldItem = 0,
                 moveIds = (mon["moves"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content?.let(moves::get) }?.filter { it > 0 }.orEmpty(),
             )

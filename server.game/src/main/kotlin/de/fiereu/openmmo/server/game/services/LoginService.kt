@@ -11,6 +11,7 @@ import de.fiereu.openmmo.common.enums.Direction
 import de.fiereu.openmmo.common.enums.Language
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapManager
+import de.fiereu.openmmo.net.game.CLIENT_REVISION
 import de.fiereu.openmmo.net.game.codecs.SkinSet
 import de.fiereu.openmmo.net.game.packets.CharacterEntry
 import de.fiereu.openmmo.net.game.packets.CharactersListPacket
@@ -146,6 +147,8 @@ constructor(
     }
     val userId = token.userId.toInt()
 
+    // The monster record's width depends on the client build; codecs read this at encode time.
+    ctx.attributes[CLIENT_REVISION] = event.packet.clientRevision
     ctx.attributes[PLAYER_STATE] = PlayerState(userId = userId)
     sessionRegistry.register(ctx)
     log.info { "Session created for user $userId" }

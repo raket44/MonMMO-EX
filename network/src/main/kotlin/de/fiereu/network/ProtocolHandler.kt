@@ -149,10 +149,11 @@ abstract class ProtocolHandler(
     session.close { "Handler error: ${cause.message}" }
   }
 
-  private fun <T : Any> decode(codec: Codec<T>, buf: ByteBuf): T = codec.read(NettyReadBuffer(buf))
+  private fun <T : Any> decode(codec: Codec<T>, buf: ByteBuf): T =
+      WireContext.with(session.attributes) { codec.read(NettyReadBuffer(buf)) }
 
   @Suppress("UNCHECKED_CAST")
   private fun encode(codec: Codec<*>, value: Any, buf: ByteBuf) {
-    (codec as Codec<Any>).write(NettyWriteBuffer(buf), value)
+    WireContext.with(session.attributes) { (codec as Codec<Any>).write(NettyWriteBuffer(buf), value) }
   }
 }

@@ -7,6 +7,7 @@ import de.fiereu.openmmo.common.canonicalSpeciesId
 import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.*
 import de.fiereu.openmmo.common.utils.hexToBytes
+import de.fiereu.openmmo.net.game.monsterRecordHasLongTrailer
 
 private fun reserved(hex: String): Codec<Unit> =
     object : Codec<Unit> {
@@ -39,6 +40,29 @@ private const val TRAILER_B_LONG = 0x200000L
 // SIGNED byte, so the final byte must stay zero; a misaligned read landing on 0xff is what produced
 // NegativeArraySizeException: -1 at character select.
 private const val TRAILER = "00ffff00"
+
+/**
+ * The record's final bytes depend on the client build. 31914 consumes exactly [TRAILER]; the 32710
+ * captures and the r32645 Android client carry one more zero byte (139-byte record, not 138). The
+ * client's reader finishes by taking the next byte as an array length, so a record one byte short
+ * makes that read land on 0xff: `NegativeArraySizeException: -1` at character select, which is
+ * exactly what the phone hit. The width comes from the revision the peer declared at join
+ * ([monsterRecordHasLongTrailer]); with no session in flight the captured (long) form is used.
+ */
+private val RevisionTrailer: Codec<Unit> =
+    object : Codec<Unit> {
+      private val base = TRAILER.hexToBytes()
+
+      override fun read(buf: ReadBuffer) {
+        buf.readBytes(ByteArray(base.size))
+        if (monsterRecordHasLongTrailer()) buf.readBytes(ByteArray(1))
+      }
+
+      override fun write(buf: WriteBuffer, value: Unit) {
+        buf.writeBytes(base)
+        if (monsterRecordHasLongTrailer()) buf.writeByte(0)
+      }
+    }
 
 private fun packRarity(p: Pokemon): Int =
     (if (p.isShiny) PokemonRarityFlag.SHINY.mask else 0) or
@@ -119,7 +143,7 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     val rarityBits = field(U16LE) { packRarity(it) }
     val caughtAt = field(TimestampLE, Pokemon::caughtAt)
     val isEgg = field(Bool, Pokemon::isEgg)
-    field(reserved(TRAILER)) {}
+    field(RevisionTrailer) {}
     return Pokemon(
         id = id,
         ownerId = ownerId,

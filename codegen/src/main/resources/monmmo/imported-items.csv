@@ -1,308 +1,36 @@
-20000;TM Mega Punch
-20001;TM Pay Day
-20002;TM Fire Punch
-20003;TM Ice Punch
-20004;TM Thunder Punch
-20005;TM Razor Wind
-20006;TM Swords Dance
-20007;TM Cut
-20008;TM Whirlwind
-20009;TM Fly
 20010;TM Bind
-20011;TM Mega Kick
-20012;TM Headbutt
-20013;TM Horn Drill
-20014;TM Body Slam
-20015;TM Take Down
-20016;TM Double-Edge
-20017;TM Pin Missile
-20018;TM Roar
-20019;TM Flamethrower
-20020;TM Water Gun
-20021;TM Hydro Pump
-20022;TM Surf
-20023;TM Ice Beam
-20024;TM Blizzard
-20025;TM Psybeam
-20026;TM Bubble Beam
-20027;TM Hyper Beam
-20028;TM Submission
-20029;TM Low Kick
-20030;TM Counter
-20031;TM Seismic Toss
-20032;TM Strength
-20033;TM Mega Drain
-20034;TM Solar Beam
 20035;TM String Shot
-20036;TM Dragon Rage
-20037;TM Fire Spin
-20038;TM Thunderbolt
-20039;TM Thunder Wave
-20040;TM Thunder
-20041;TM Earthquake
-20042;TM Fissure
-20043;TM Dig
-20044;TM Toxic
-20045;TM Psychic
-20046;TM Agility
-20047;TM Rage
-20048;TM Teleport
-20049;TM Night Shade
-20050;TM Mimic
-20051;TM Screech
-20052;TM Double Team
-20053;TM Confuse Ray
 20054;TM Defense Curl
-20055;TM Light Screen
-20056;TM Haze
-20057;TM Reflect
-20058;TM Focus Energy
-20059;TM Bide
-20060;TM Metronome
-20061;TM Self-Destruct
-20062;TM Egg Bomb
-20063;TM Fire Blast
-20064;TM Waterfall
-20065;TM Swift
-20066;TM Skull Bash
-20067;TM Amnesia
-20068;TM Soft-Boiled
-20069;TM Dream Eater
-20070;TM Leech Life
-20071;TM Sky Attack
-20072;TM Flash
-20073;TM Psywave
-20074;TM Explosion
-20075;TM Rest
-20076;TM Rock Slide
-20077;TM Tri Attack
-20078;TM Super Fang
-20079;TM Substitute
-20080;TM Thief
 20081;TM Nightmare
 20082;TM Snore
-20083;TM Curse
-20084;TM Reversal
-20085;TM Spite
-20086;TM Protect
-20087;TM Scary Face
-20088;TM Sludge Bomb
-20089;TM Mud-Slap
-20090;TM Spikes
-20091;TM Zap Cannon
-20092;TM Icy Wind
-20093;TM Detect
-20094;TM Outrage
-20095;TM Sandstorm
-20096;TM Giga Drain
-20097;TM Endure
-20098;TM Charm
-20099;TM Rollout
-20100;TM False Swipe
-20101;TM Swagger
-20102;TM Fury Cutter
-20103;TM Steel Wing
-20104;TM Attract
-20105;TM Sleep Talk
 20106;TM Heal Bell
-20107;TM Return
-20108;TM Frustration
-20109;TM Safeguard
-20110;TM Pain Split
-20111;TM Dynamic Punch
-20112;TM Megahorn
-20113;TM Dragon Breath
-20114;TM Baton Pass
-20115;TM Encore
-20116;TM Sweet Scent
-20117;TM Iron Tail
-20118;TM Metal Claw
 20119;TM Synthesis
-20120;TM Hidden Power
 20121;TM Twister
-20122;TM Rain Dance
-20123;TM Sunny Day
-20124;TM Crunch
-20125;TM Psych Up
-20126;TM Ancient Power
-20127;TM Shadow Ball
-20128;TM Future Sight
-20129;TM Rock Smash
-20130;TM Whirlpool
-20131;TM Beat Up
-20132;TM Uproar
-20133;TM Heat Wave
-20134;TM Hail
-20135;TM Torment
-20136;TM Will-O-Wisp
-20137;TM Facade
-20138;TM Focus Punch
-20139;TM Nature Power
-20140;TM Charge
-20141;TM Taunt
-20142;TM Helping Hand
-20143;TM Trick
 20144;TM Role Play
-20145;TM Superpower
 20146;TM Magic Coat
-20147;TM Recycle
-20148;TM Revenge
-20149;TM Brick Break
-20150;TM Knock Off
-20151;TM Endeavor
-20152;TM Skill Swap
-20153;TM Imprison
-20154;TM Snatch
-20155;TM Secret Power
-20156;TM Dive
-20157;TM Feather Dance
-20158;TM Blaze Kick
 20159;TM Ice Ball
-20160;TM Hyper Voice
 20161;TM Blast Burn
 20162;TM Hydro Cannon
-20163;TM Weather Ball
-20164;TM Fake Tears
-20165;TM Air Cutter
-20166;TM Overheat
-20167;TM Rock Tomb
-20168;TM Silver Wind
-20169;TM Metal Sound
-20170;TM Cosmic Power
 20171;TM Signal Beam
-20172;TM Sand Tomb
-20173;TM Muddy Water
-20174;TM Bullet Seed
-20175;TM Aerial Ace
-20176;TM Icicle Spear
-20177;TM Iron Defense
 20178;TM Block
-20179;TM Dragon Claw
 20180;TM Frenzy Plant
-20181;TM Bulk Up
 20182;TM Bounce
-20183;TM Mud Shot
-20184;TM Poison Tail
 20185;TM Covet
 20186;TM Volt Tackle
-20187;TM Magical Leaf
-20188;TM Calm Mind
-20189;TM Leaf Blade
-20190;TM Dragon Dance
-20191;TM Rock Blast
-20192;TM Shock Wave
-20193;TM Water Pulse
-20194;TM Roost
-20195;TM Gravity
-20196;TM Gyro Ball
-20197;TM Brine
-20198;TM Natural Gift
-20199;TM Pluck
-20200;TM Tailwind
-20201;TM U-turn
-20202;TM Close Combat
-20203;TM Payback
-20204;TM Assurance
-20205;TM Embargo
-20206;TM Fling
 20207;TM Gastro Acid
-20208;TM Power Swap
-20209;TM Guard Swap
 20210;TM Last Resort
 20211;TM Worry Seed
 20212;TM Sucker Punch
-20213;TM Toxic Spikes
 20214;TM Magnet Rise
-20215;TM Flare Blitz
-20216;TM Aura Sphere
-20217;TM Rock Polish
-20218;TM Poison Jab
-20219;TM Dark Pulse
 20220;TM Aqua Tail
-20221;TM Seed Bomb
-20222;TM Air Slash
-20223;TM X-Scissor
-20224;TM Bug Buzz
-20225;TM Dragon Pulse
-20226;TM Power Gem
-20227;TM Drain Punch
-20228;TM Vacuum Wave
-20229;TM Focus Blast
-20230;TM Energy Ball
-20231;TM Brave Bird
-20232;TM Earth Power
-20233;TM Giga Impact
-20234;TM Nasty Plot
-20235;TM Avalanche
-20236;TM Shadow Claw
-20237;TM Thunder Fang
-20238;TM Ice Fang
-20239;TM Fire Fang
-20240;TM Psycho Cut
-20241;TM Zen Headbutt
-20242;TM Flash Cannon
-20243;TM Rock Climb
-20244;TM Defog
-20245;TM Trick Room
-20246;TM Draco Meteor
-20247;TM Leaf Storm
-20248;TM Power Whip
-20249;TM Cross Poison
-20250;TM Gunk Shot
-20251;TM Iron Head
-20252;TM Stone Edge
-20253;TM Captivate
-20254;TM Stealth Rock
-20255;TM Grass Knot
-20256;TM Bug Bite
-20257;TM Charge Beam
-20258;TM Ominous Wind
-20259;TM Hone Claws
 20260;TM Wonder Room
-20261;TM Psyshock
-20262;TM Venoshock
-20263;TM Telekinesis
 20264;TM Magic Room
-20265;TM Smack Down
-20266;TM Sludge Wave
-20267;TM Heavy Slam
-20268;TM Electro Ball
-20269;TM Flame Charge
-20270;TM Low Sweep
-20271;TM Acid Spray
-20272;TM Foul Play
 20273;TM After You
-20274;TM Round
-20275;TM Echoed Voice
-20276;TM Stored Power
-20277;TM Ally Switch
-20278;TM Scald
-20279;TM Hex
-20280;TM Sky Drop
-20281;TM Incinerate
-20282;TM Quash
-20283;TM Acrobatics
-20284;TM Retaliate
 20285;TM Water Pledge
 20286;TM Fire Pledge
 20287;TM Grass Pledge
-20288;TM Volt Switch
-20289;TM Struggle Bug
-20290;TM Bulldoze
-20291;TM Frost Breath
-20292;TM Dragon Tail
-20293;TM Work Up
-20294;TM Electroweb
-20295;TM Wild Charge
-20296;TM Drill Run
-20297;TM Dual Chop
-20298;TM Razor Shell
-20299;TM Heat Crash
-20300;TM Tail Slap
-20301;TM Hurricane
 20302;TM Relic Song
 20303;TM Secret Sword
-20304;TM Snarl
 20305;TM Phantom Force
 20306;TM Petal Blizzard
 20307;TM Disarming Voice
@@ -379,7 +107,6 @@
 21007;Chipped Pot
 21008;Galarica Cuff
 21009;Galarica Wreath
-21010;Linking Cord
 21011;Black Augurite
 21012;Peat Block
 21013;Malicious Armor
@@ -672,4 +399,3 @@
 22280;Swap Snack
 22281;Twice-Spiced Radish
 22282;Pokéshi Doll
-22283;Ability Pill

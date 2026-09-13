@@ -73,7 +73,10 @@ jteCodegen {
   register("expansionPokemon") {
     mainClass.set("de.fiereu.openmmo.codegen.pokemon.expansion.ExpansionPokemonMain")
     inputDirs.from(expansionDecompDir)
-    extraArgs.set(listOf(expansionDecompDir.asFile.absolutePath))
+    // The client's own form catalogue (launcher :stageRetailData), so Expansion forms the client
+    // already has resolve to its records instead of becoming duplicate species.
+    val retailForms = layout.projectDirectory.file("src/main/resources/monmmo/retail-forms.csv")
+    extraArgs.set(listOf(expansionDecompDir.asFile.absolutePath, retailForms.asFile.absolutePath))
   }
   register("learnset") {
     mainClass.set("de.fiereu.openmmo.codegen.learnset.Main")

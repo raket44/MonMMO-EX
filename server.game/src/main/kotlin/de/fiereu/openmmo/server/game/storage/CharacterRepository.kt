@@ -16,6 +16,7 @@ import de.fiereu.openmmo.db.game.tables.records.CharacterSkinsRecord
 import de.fiereu.openmmo.db.game.tables.records.CharacterVarsRecord
 import de.fiereu.openmmo.db.game.tables.records.CharactersRecord
 import de.fiereu.openmmo.db.game.tables.records.PokemonRecord
+import de.fiereu.openmmo.pokemon.expansion.RetailFormIdentity
 import de.fiereu.openmmo.db.game.tables.references.CHARACTERS
 import de.fiereu.openmmo.db.game.tables.references.CHARACTER_FLAGS
 import de.fiereu.openmmo.db.game.tables.references.CHARACTER_ITEMS
@@ -237,12 +238,38 @@ constructor(
           info = row.toInfo(),
           pokemon = party.toMutableList(),
           pcStorage = pc.toMutableList(),
-          items = itemsByOwner[row.id].orEmpty().toMutableMap(),
+          items = foldRetiredItems(row.id, itemsByOwner[row.id].orEmpty()).toMutableMap(),
           storyFlags = flagsByOwner[row.id].orEmpty().toMutableSet(),
           storyVars = varsByOwner[row.id].orEmpty().toMutableMap(),
           skins = skinsByOwner[row.id].orEmpty(),
       )
     }
+  }
+
+  /**
+   * An inventory that still holds an item id we once created for something the client has itself
+   * (a duplicate TM, the old Ability Pill - codegen ItemIdAliases) gets it folded into the retail
+   * item, and the rows are rewritten at once. Saves only write what changed since load, so a row
+   * left under the old id would come back on every load and re-add quantity already used.
+   */
+  private fun foldRetiredItems(characterId: Long, items: Map<Int, Int>): Map<Int, Int> {
+    val folded = de.fiereu.openmmo.items.ItemIdAliases.canonicalize(items)
+    if (folded == items) return items
+    val touched = (items.keys + items.keys.map(de.fiereu.openmmo.items.ItemIdAliases::canonical)).distinct()
+    dsl.transaction { cfg ->
+      val tx = cfg.dsl()
+      tx.deleteFrom(CHARACTER_ITEMS)
+          .where(CHARACTER_ITEMS.CHARACTER_ID.eq(characterId).and(CHARACTER_ITEMS.ITEM_ID.`in`(touched)))
+          .execute()
+      touched.mapNotNull { id -> folded[id]?.let { id to it } }.forEach { (id, quantity) ->
+        tx.insertInto(CHARACTER_ITEMS)
+            .set(CHARACTER_ITEMS.CHARACTER_ID, characterId)
+            .set(CHARACTER_ITEMS.ITEM_ID, id)
+            .set(CHARACTER_ITEMS.QUANTITY, quantity)
+            .execute()
+      }
+    }
+    return folded
   }
 
   private fun CharacterInfo.toRecord(): CharactersRecord =
@@ -389,6 +416,8 @@ constructor(
           heldItem = heldItem,
           friendship = friendship,
           status = status,
+          abilitySlot = abilitySlot.toShort(),
+          form = form.toShort(),
       )
 
   private fun PokemonRecord.toPokemon(): Pokemon =
@@ -397,7 +426,9 @@ constructor(
           ownerId = ownerId,
           container = PokemonContainer.valueOf(container),
           containerSlot = containerSlot,
-          dexId = dexId,
+          // A monster stored under the Expansion's id for a form the client owns is that species
+          // and form (one identity per form); everything else passes through unchanged.
+          dexId = RetailFormIdentity.normalize(dexId, (form ?: 0).toInt()).first,
           seed = seed,
           ot = ot,
           nickname = nickname ?: "",
@@ -424,6 +455,8 @@ constructor(
           heldItem = heldItem ?: 0,
           friendship = (friendship ?: 70).toInt(),
           status = (status ?: 0).toInt(),
+          abilitySlot = (abilitySlot ?: 0).toInt(),
+          form = RetailFormIdentity.normalize(dexId, (form ?: 0).toInt()).second,
       )
 
   private fun PokemonRecord.hydrateEvs(): EVs =

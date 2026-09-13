@@ -92,6 +92,8 @@ object RetailMonsterData {
       val levelUpLearnset: List<LevelUpMove>,
       val encounters: List<RetailEncounter>,
       val evolutions: List<RetailEvolution>,
+      /** Hectograms; form records carry their own (Giratina Origin 6500 against Altered 7500). */
+      val weight: Int = 0,
   )
 
   /**
@@ -157,6 +159,7 @@ object RetailMonsterData {
         catchRate = m.int("catch_rate"),
         obtainable = m.bool("obtainable"),
         genderRatio = m.int("gender_ratio"),
+        weight = m.int("weight"),
         eggGroups =
             m["egg_groups"]?.jsonArray?.mapNotNull { EGG_GROUP_NAMES[it.jsonPrimitive.content] }
                 ?: emptyList(),

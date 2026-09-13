@@ -587,8 +587,28 @@ constructor(
             Direction.entries.firstOrNull {
               it.dx == dxs.coerceIn(-1, 1) && it.dy == dys.coerceIn(-1, 1)
             } ?: stepDir
-        log.info { "Emergence step: char=$charId -> ($tx, $ty) dir=$moveDir" }
-        ctx.send(EntityMovePacket(entityId = charId, x = tx, y = ty, direction = moveDir))
+        // A queued walk action, the same packet cutscene walks use, in every region - GBA and NDS
+        // run the same client. It plays queued actions only once its player is free - after its
+        // own map load and fade - so a slow device can no longer drop the step and leave the
+        // player on the door tile, which the position packet did on a phone (project owner,
+        // 2026-09-13). NDS still commits the stepped tile above: the walk now always plays.
+        val walk =
+            when (moveDir) {
+              Direction.UP -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_UP
+              Direction.DOWN -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_DOWN
+              Direction.LEFT -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_LEFT
+              Direction.RIGHT -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_RIGHT
+              else -> null
+            }
+        if (walk != null) {
+          log.info { "Emergence step (queued walk): char=$charId -> ($tx, $ty) dir=$moveDir" }
+          ctx.send(
+              de.fiereu.openmmo.net.game.packets.DialogDataPacket(
+                  charId, unk1 = 0, type = 1, data = byteArrayOf(walk.action.toByte())))
+        } else {
+          log.info { "Emergence step: char=$charId -> ($tx, $ty) dir=$moveDir" }
+          ctx.send(EntityMovePacket(entityId = charId, x = tx, y = ty, direction = moveDir))
+        }
       }
     }
     val scope =

@@ -83,12 +83,19 @@ object ExpansionDexText {
     return result
   }
 
-  private fun joinQuoted(body: String): String =
+  /**
+   * The quoted segments joined, keeping the Expansion's own line breaks as the string table's `\n`
+   * (retail writes them the same way, e.g. string 5005). The r32645 dex panel does not wrap: joined
+   * into one line, a paragraph ran off the page (project owner, 2026-09-13).
+   */
+  internal fun joinQuoted(body: String): String =
       QUOTED.findAll(body)
           .joinToString("") { it.groupValues[1] }
-          .replace("\\n", " ")
           .replace("\\\"", "\"")
-          .replace(Regex("\\s+"), " ")
+          .replace(Regex("[ \\t\\r\\n]+"), " ")
+          .replace(Regex(" *\\\\n *"), "\\\\n")
+          .trim()
+          .removeSuffix("\\n")
           .trim()
 
   /** The paragraph for a symbol, falling back through the family the way learnsets do. */

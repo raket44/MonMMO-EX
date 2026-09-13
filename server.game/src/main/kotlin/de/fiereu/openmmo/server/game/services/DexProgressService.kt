@@ -41,11 +41,10 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
   fun resetPacket(stored: StoredCharacter): WorldFlagTableResetPacket {
     val owned = ownedWireIds(stored)
     val asOriginalTrainer =
-        (stored.pokemon + stored.pcStorage)
-            .filter { it.ot == stored.info.name }
-            .map { clientSpeciesId(it.dexId) }
-            .filter { it in 1..LAST_WIRE_ID }
-            .toSet()
+        withBaseSpecies(
+            (stored.pokemon + stored.pcStorage)
+                .filter { it.ot == stored.info.name }
+                .map { clientSpeciesId(it.dexId) })
     val seen = seenWireIds(stored)
     return WorldFlagTableResetPacket(
         listOf(group(seen), group(owned), group(asOriginalTrainer), ByteArray(0)))
@@ -86,12 +85,22 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
 
     /** Caught: every species the character holds or ever received (CharacterStore.addPokemon flags). */
     fun ownedWireIds(stored: StoredCharacter): Set<Int> =
-        ((stored.pokemon + stored.pcStorage).map { clientSpeciesId(it.dexId) } + flagged(stored, OWNED_FLAG_PREFIX))
-            .filter { it in 1..LAST_WIRE_ID }
-            .toSet()
+        withBaseSpecies(
+            (stored.pokemon + stored.pcStorage).map { clientSpeciesId(it.dexId) } + flagged(stored, OWNED_FLAG_PREFIX))
 
     /** Seen: everything caught plus every species marked by [markSeen]. */
-    fun seenWireIds(stored: StoredCharacter): Set<Int> = ownedWireIds(stored) + flagged(stored, SEEN_FLAG_PREFIX)
+    fun seenWireIds(stored: StoredCharacter): Set<Int> =
+        ownedWireIds(stored) + withBaseSpecies(flagged(stored, SEEN_FLAG_PREFIX))
+
+    /**
+     * A regional form also counts for its base species' National entry, as in the games - an
+     * Alolan Vulpix is #037 (project owner, 2026-09-13). Derived when the tiers are sent, so a
+     * monster caught before this rule counts too.
+     */
+    fun withBaseSpecies(wireIds: Collection<Int>): Set<Int> =
+        (wireIds + wireIds.mapNotNull(de.fiereu.openmmo.pokemon.expansion.RegionalForms::baseWireOf))
+            .filter { it in 1..LAST_WIRE_ID }
+            .toSet()
 
     private fun flagged(stored: StoredCharacter, prefix: String): List<Int> =
         stored.storyFlags.filter { it.startsWith(prefix) }.mapNotNull { it.removePrefix(prefix).toIntOrNull() }.filter { it in 1..LAST_WIRE_ID }

@@ -7,15 +7,20 @@ import kotlin.io.path.name
 /**
  * Evolution data read from the Expansion's species tables, converted to the client's model.
  *
- * The client stores one evolution as `(method, param, target)` where the method is a **gen-5 ROM
- * method id** - the loader looks the byte up by value in its method enum and, for the item-based
- * ordinals, shifts the param into PokeMMO's item space. Injected entries go through the exact same
- * enum lookup, so matching the ROM ids is the whole contract.
+ * The client stores one evolution as `(method, param, target)`. The method is the client enum's
+ * ROM key (`f/vj3.v9`, the gen-5 method numbers: 1 happiness, 4 level, 8 item, 21 level knowing a
+ * move, 22 level with a species in the party...), read straight off the bytecode on 2026-09-13.
  *
- * The Expansion writes `.evolutions = EVOLUTION({EVO_ITEM, ITEM_WATER_STONE, SPECIES_VAPOREON})`,
- * with its own method vocabulary and item ids. Methods the ROM never had degrade to a plain
- * level-up entry: the tree still links and renders, only the condition label is approximate. Item
- * params are translated to gen-5 item ids where one exists.
+ * The Expansion writes most special evolutions as `EVO_LEVEL` plus `CONDITIONS(...)`, and the
+ * conditions carry the meaning: Sylveon is level plus friendship plus a known Fairy move, Kingambit
+ * is level after defeating Bisharp holding a Leader's Crest. The conditions choose the client method
+ * that says the same thing, and the parameter moves with it (a move id, an item id, a species).
+ *
+ * A time of day the method key cannot say (a stone at night) rides in [Evolution.time] for the
+ * server; region-gated evolutions become night-time ones (see [convert]). A condition no client
+ * method describes (recoil damage, steps walked, critical hits in one battle...) gets method 0,
+ * which the client draws as a bare arrow and no level check matches, instead of a "Lv. 0" that the
+ * server would read as evolving on any level-up.
  */
 object ExpansionEvolutions {
 
@@ -23,49 +28,160 @@ object ExpansionEvolutions {
   val unmappedItems = sortedSetOf<String>()
 
   /**
-   * Items imported by the overlay get their evolution params here - the imported id minus the
-   * client loader..s +5000 item shift, so the stored value resolves to the imported item.
+   * One evolution. [param] carries the ROM value: an item before the client's +5000 shift, a move
+   * or a level. When the parameter is a species, [speciesParamSymbol] names it (bare symbol) and
+   * [param] is 0 until the caller resolves the client id.
    */
-  private fun importedParam(symbol: String): Int? = EvoItemPlan.evolutionParam(symbol)
-
-  data class Evolution(val method: Int, val param: Int, val targetSymbol: String)
+  data class Evolution(
+      val method: Int,
+      val param: Int,
+      val targetSymbol: String,
+      val speciesParamSymbol: String? = null,
+      /** "day", "night" or null: a time condition the method key does not carry (server only). */
+      val time: String? = null,
+  )
 
   /** Parses every species-info file, keyed by bare species symbol. */
   fun parse(expansionRoot: Path): Map<String, List<Evolution>> {
+    val moveIds = MoveText.ids(expansionRoot)
+    // Items the full import creates (Leader's Crest), by symbol, as ROM values before the shift.
+    val importedItems =
+        ItemImportPlan.compute(expansionRoot).associate { it.symbol to it.itemId - ROM_ITEM_SHIFT }
     val speciesInfo = expansionRoot.resolve("src/data/pokemon/species_info")
     val result = linkedMapOf<String, List<Evolution>>()
     Files.list(speciesInfo).use { files ->
       files
           .filter { it.name.endsWith(".h") }
           .sorted()
-          .forEach { file -> parseFile(Files.readString(file), result) }
+          .forEach { file -> parseFile(Files.readString(file), moveIds, importedItems, result) }
     }
     return result
   }
 
-  private fun parseFile(text: String, into: MutableMap<String, List<Evolution>>) {
+  private fun parseFile(
+      text: String,
+      moveIds: Map<String, Int>,
+      importedItems: Map<String, Int>,
+      into: MutableMap<String, List<Evolution>>,
+  ) {
     ENTRY.findAll(text).forEach { entry ->
       val symbol = entry.groupValues[1]
       val block = EVOLUTIONS.find(entry.groupValues[2])?.groupValues?.get(1) ?: return@forEach
-      val evolutions =
-          entries(block).mapNotNull { tuple ->
-            val head = EVOLUTION_TUPLE.find(tuple) ?: return@mapNotNull null
-            val method = resolveMethod(head.groupValues[1], tuple)
-            val rawParam = head.groupValues[2].trim()
-            val mappedParam =
-                rawParam.toIntOrNull() ?: ITEM_IDS[rawParam] ?: importedParam(rawParam)
-            if (mappedParam == null && method == USE_ITEM) {
-              // An Expansion item the client has no id for. Dropping the entry breaks the chain,
-              // so it degrades to a plain level evolution and is counted for the day the items
-              // themselves are imported.
-              unmappedItems.add(rawParam)
-              return@mapNotNull Evolution(FALLBACK_METHOD, 0, head.groupValues[3])
-            }
-            Evolution(method, mappedParam ?: 0, head.groupValues[3])
-          }
+      val evolutions = entries(block).mapNotNull { tuple -> convert(tuple, moveIds, importedItems) }
       if (evolutions.isNotEmpty()) into[symbol] = evolutions
     }
   }
+
+  /**
+   * One `{EVO_x, param, SPECIES_y, CONDITIONS(...)}` entry in the client's terms, or null.
+   *
+   * An evolution the Expansion gates on a region happens at night here (project owner, 2026-09-13):
+   * this game has no Alola, and night splits Pikachu's Thunder Stone between Raichu and Alolan Raichu,
+   * Cubone's level 28 between Marowak and Alolan Marowak, Quilava's 36 into Hisuian Typhlosion.
+   */
+  internal fun convert(
+      tuple: String,
+      moveIds: Map<String, Int>,
+      importedItems: Map<String, Int> = emptyMap(),
+  ): Evolution? {
+    val head = EVOLUTION_TUPLE.find(tuple) ?: return null
+    val methodSymbol = head.groupValues[1]
+    val rawParam = head.groupValues[2].trim()
+    val target = head.groupValues[3]
+    val conditions = CONDITION.findAll(tuple).associate { match ->
+      match.groupValues[1] to match.groupValues[2].split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    }
+    fun argument(name: String, index: Int = 0) = conditions[name]?.getOrNull(index)
+    val level = rawParam.toIntOrNull() ?: 0
+    val night = argument("IF_TIME") == "TIME_NIGHT"
+    val day = argument("IF_TIME") == "TIME_DAY" || argument("IF_NOT_TIME") == "TIME_NIGHT"
+    val female = argument("IF_GENDER") == "MON_FEMALE"
+    val male = argument("IF_GENDER") == "MON_MALE"
+
+    fun special() = Evolution(SPECIAL, 0, target)
+    fun item(itemSymbol: String?, method: Int): Evolution {
+      val id = itemSymbol?.let { ITEM_IDS[it] ?: EvoItemPlan.evolutionParam(it) ?: importedItems[it] }
+      if (id == null) {
+        itemSymbol?.let(unmappedItems::add)
+        return special()
+      }
+      return Evolution(method, id, target)
+    }
+    fun move(moveSymbol: String?): Evolution {
+      val id = moveSymbol?.let(moveIds::get) ?: return special()
+      return Evolution(LEVEL_WITH_MOVE, CANONICAL_MOVE_IDS[id] ?: id, target)
+    }
+
+    return when (methodSymbol) {
+      "EVO_NONE" -> null
+      // An item that is never created stands in for something the game does natively (the Linking
+      // Cord for a trade): the species' own entry for that already exists, so this one is dropped.
+      "EVO_ITEM" ->
+          if (rawParam in EvoItemPlan.NOT_CREATED) null
+          else item(rawParam, if (male) ITEM_MALE else if (female) ITEM_FEMALE else ITEM)
+      "EVO_TRADE" ->
+          when {
+            "IF_HOLD_ITEM" in conditions -> item(argument("IF_HOLD_ITEM"), TRADE_WITH_ITEM)
+            "IF_TRADE_PARTNER_SPECIES" in conditions ->
+                Evolution(
+                    TRADE_FOR_SPECIES, 0, target,
+                    speciesParamSymbol = argument("IF_TRADE_PARTNER_SPECIES")?.removePrefix("SPECIES_"))
+            else -> Evolution(TRADE, 0, target)
+          }
+      "EVO_SPLIT_FROM_EVO" -> Evolution(SHEDINJA, 0, target)
+      "EVO_LEVEL", "EVO_LEVEL_BATTLE_ONLY", "EVO_BATTLE_END" ->
+          when {
+            "IF_MIN_FRIENDSHIP" in conditions ->
+                Evolution(if (night) HAPPINESS_NIGHT else if (day) HAPPINESS_DAY else HAPPINESS, 0, target)
+            "IF_HOLD_ITEM" in conditions ->
+                item(argument("IF_HOLD_ITEM"), if (night) LEVEL_ITEM_NIGHT else LEVEL_ITEM_DAY)
+            "IF_DEFEAT_X_WITH_ITEMS" in conditions ->
+                item(argument("IF_DEFEAT_X_WITH_ITEMS", 1), LEVEL_ITEM_DAY)
+            "IF_KNOWS_MOVE" in conditions -> move(argument("IF_KNOWS_MOVE"))
+            "IF_USED_MOVE_X_TIMES" in conditions -> move(argument("IF_USED_MOVE_X_TIMES"))
+            "IF_SPECIES_IN_PARTY" in conditions ->
+                Evolution(
+                    LEVEL_WITH_SPECIES, 0, target,
+                    speciesParamSymbol = argument("IF_SPECIES_IN_PARTY")?.removePrefix("SPECIES_"))
+            "IF_ATK_GT_DEF" in conditions -> Evolution(ATK_GT_DEF, level, target)
+            "IF_ATK_EQ_DEF" in conditions -> Evolution(ATK_EQ_DEF, level, target)
+            "IF_ATK_LT_DEF" in conditions -> Evolution(ATK_LT_DEF, level, target)
+            "IF_PID_UPPER_MODULO_10_GT" in conditions -> Evolution(PERSONALITY_HIGH, level, target)
+            "IF_PID_UPPER_MODULO_10_LT" in conditions || "IF_PID_UPPER_MODULO_10_EQ" in conditions ->
+                Evolution(PERSONALITY_LOW, level, target)
+            "IF_MIN_BEAUTY" in conditions -> Evolution(BEAUTY, 0, target)
+            "IF_IN_MAP" in conditions || "IF_IN_MAPSEC" in conditions -> {
+              val place = (argument("IF_IN_MAP") ?: argument("IF_IN_MAPSEC")).orEmpty()
+              val method =
+                  when {
+                    MAGNETIC_PLACES.any { it in place } -> LOCATION_MAGNETIC
+                    "ICE" in place || "SNOW" in place -> LOCATION_ICE
+                    else -> LOCATION_MOSS
+                  }
+              Evolution(method, 0, target)
+            }
+            male && level > 0 -> Evolution(LEVEL_MALE, level, target)
+            female && level > 0 -> Evolution(LEVEL_FEMALE, level, target)
+            // A plain level, or a level with a condition the client has no word for (time of
+            // day, weather, a type in the party): the level is still the rule players meet.
+            level > 0 -> Evolution(LEVEL, level, target)
+            else -> special()
+          }
+      else -> special()
+    }?.let { evolution ->
+      val time =
+          when {
+            evolution.method in TIMED_METHODS -> null
+            "IF_REGION" in conditions || night -> "night"
+            day -> "day"
+            else -> null
+          }
+      evolution.copy(time = time)
+    }
+  }
+
+  /** Methods whose key already says the time of day. */
+  private val TIMED_METHODS = setOf(HAPPINESS_DAY, HAPPINESS_NIGHT, LEVEL_ITEM_DAY, LEVEL_ITEM_NIGHT)
 
   /** Splits an EVOLUTION(...) block into balanced top-level `{...}` entries. */
   private fun entries(block: String): List<String> {
@@ -90,27 +206,6 @@ object ExpansionEvolutions {
     return result
   }
 
-  /**
-   * The modern Expansion writes most special evolutions as `EVO_LEVEL` plus a `CONDITIONS(...)`
-   * suffix, which carries the meaning: Sylveon is level plus minimum friendship plus a known Fairy
-   * move, Leafeon is level inside a forest map. The client has native methods for exactly these
-   * shapes - friendship with day and night variants, and the two location-based methods its own
-   * Eevee entries use - so the conditions choose the method.
-   */
-  private fun resolveMethod(methodSymbol: String, tuple: String): Int {
-    val base = METHODS[methodSymbol] ?: FALLBACK_METHOD
-    return when {
-      "IF_MIN_FRIENDSHIP" in tuple ->
-          when {
-            "IF_TIME, TIME_NIGHT" in tuple -> 3
-            "IF_NOT_TIME, TIME_NIGHT" in tuple -> 2
-            else -> 1
-          }
-      "IF_IN_MAP" in tuple -> if ("ICE" in tuple) LOCATION_ICE else LOCATION_FOREST
-      else -> base
-    }
-  }
-
   /** Species headers in the info files; the body runs to the next header. */
   private val ENTRY =
       Regex(
@@ -124,52 +219,52 @@ object ExpansionEvolutions {
   private val EVOLUTION_TUPLE =
       Regex("""\{\s*(EVO_[A-Z0-9_]+)\s*,\s*([A-Z0-9_]+)\s*,\s*SPECIES_([A-Z0-9_]+)""")
 
-  /** The two location-based methods the client itself uses for Leafeon and Glaceon. */
-  private const val LOCATION_FOREST = 26
-  private const val LOCATION_ICE = 27
+  /** The ROM loader adds this to item parameters; the evolution tables carry the value before it. */
+  private const val ROM_ITEM_SHIFT = 5000
 
-  /** Use-item, confirmed by the running client: Eevee stones are ITEM#8. */
-  private const val USE_ITEM = 8
+  /** One `{IF_x, arg, ...}` inside CONDITIONS(...). */
+  private val CONDITION = Regex("""\{\s*(IF_[A-Z0-9_]+)\s*(?:,([^{}]*))?\}""")
 
-  /** Methods with no gen-5 counterpart render as a plain level evolution. */
-  private const val FALLBACK_METHOD = 4
+  /** Map names the Expansion uses for its magnetic-field evolutions (Magneton, Nosepass). */
+  private val MAGNETIC_PLACES = listOf("MAGNET", "CORONET", "CHARGESTONE", "NEW_MAUVILLE", "VAST_POKE")
+
+  /** The client move ids that stand for Expansion duplicates (see PorymovesLearnsets). */
+  private val CANONICAL_MOVE_IDS = mapOf(809 to 258, 567 to 1000, 680 to 1019)
+
+  // The client's method keys (f/vj3: ordinal == ROM key for every constant).
+  const val SPECIAL = 0
+  const val HAPPINESS = 1
+  const val HAPPINESS_DAY = 2
+  const val HAPPINESS_NIGHT = 3
+  const val LEVEL = 4
+  const val TRADE = 5
+  const val TRADE_WITH_ITEM = 6
+  const val TRADE_FOR_SPECIES = 7
+  const val ITEM = 8
+  const val ATK_GT_DEF = 9
+  const val ATK_EQ_DEF = 10
+  const val ATK_LT_DEF = 11
+  const val PERSONALITY_HIGH = 12
+  const val PERSONALITY_LOW = 13
+  const val SHEDINJA = 15
+  const val BEAUTY = 16
+  const val ITEM_MALE = 17
+  const val ITEM_FEMALE = 18
+  const val LEVEL_ITEM_DAY = 19
+  const val LEVEL_ITEM_NIGHT = 20
+  const val LEVEL_WITH_MOVE = 21
+  const val LEVEL_WITH_SPECIES = 22
+  const val LEVEL_MALE = 23
+  const val LEVEL_FEMALE = 24
+  const val LOCATION_MAGNETIC = 25
+  const val LOCATION_MOSS = 26
+  const val LOCATION_ICE = 27
 
   /**
-   * Expansion method names to gen-5 ROM method ids. The dump the fixup helper writes on load is the
-   * calibration for this table: it prints the client's own value-to-ordinal map next to a known
-   * species' entries.
+   * Methods whose parameter is an item: the ROM loader (v67.SB) adds 5000 to exactly these, so a
+   * record written as data must carry the shifted value itself.
    */
-  private val METHODS =
-      mapOf(
-          "EVO_FRIENDSHIP" to 1,
-          "EVO_FRIENDSHIP_DAY" to 2,
-          "EVO_FRIENDSHIP_NIGHT" to 3,
-          "EVO_LEVEL" to 4,
-          "EVO_TRADE" to 5,
-          "EVO_TRADE_ITEM" to 6,
-          "EVO_ITEM" to 8,
-          "EVO_LEVEL_ATK_GT_DEF" to 8,
-          "EVO_LEVEL_ATK_EQ_DEF" to 9,
-          "EVO_LEVEL_ATK_LT_DEF" to 10,
-          "EVO_LEVEL_SILCOON" to 11,
-          "EVO_LEVEL_CASCOON" to 12,
-          "EVO_LEVEL_NINJASK" to 13,
-          "EVO_LEVEL_SHEDINJA" to 14,
-          "EVO_BEAUTY" to 15,
-          "EVO_ITEM_MALE" to 16,
-          "EVO_ITEM_FEMALE" to 17,
-          "EVO_LEVEL_DAY" to 4,
-          "EVO_LEVEL_NIGHT" to 4,
-          "EVO_HOLD_ITEM_DAY" to 18,
-          "EVO_HOLD_ITEM_NIGHT" to 19,
-          "EVO_MOVE" to 20,
-          "EVO_OTHER_PARTY_MON" to 21,
-          "EVO_LEVEL_MALE" to 22,
-          "EVO_LEVEL_FEMALE" to 23,
-          // Fairy-move affection has no gen-5 method; friendship is the chosen stand-in until a
-          // Sylveon location exists, matching the friendship-plus-place design for Eevee.
-          "EVO_MOVE_TYPE" to 1,
-      )
+  val ITEM_METHODS = setOf(TRADE_WITH_ITEM, ITEM, ITEM_MALE, ITEM_FEMALE, LEVEL_ITEM_DAY, LEVEL_ITEM_NIGHT)
 
   /** Expansion item symbols to gen-5 item ids, for the item-based methods. */
   private val ITEM_IDS =

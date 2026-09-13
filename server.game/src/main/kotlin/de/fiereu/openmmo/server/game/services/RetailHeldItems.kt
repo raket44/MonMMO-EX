@@ -16,15 +16,16 @@ class RetailHeldItems @Inject constructor() {
   private val bySpecies: Map<Int, List<Int>>
 
   init {
-    val stream = RetailHeldItems::class.java.getResourceAsStream("/monmmo/retail-held-items.csv")
+    // Retail's table, then the one the client staging writes for the species retail never had -
+    // the same items the client's dex lists for them. Both are keyed by client species id.
     bySpecies =
-        if (stream == null) {
-          log.warn { "retail-held-items.csv missing; wild monsters hold nothing" }
-          emptyMap()
-        } else {
-          stream
-              .bufferedReader()
-              .useLines { lines ->
+        TABLES.flatMap { path ->
+              val stream = RetailHeldItems::class.java.getResourceAsStream(path)
+              if (stream == null) {
+                log.warn { "${path.substringAfterLast('/')} missing; those species hold nothing" }
+                return@flatMap emptyList()
+              }
+              stream.bufferedReader().useLines { lines ->
                 lines
                     .mapNotNull { line ->
                       val parts = line.split(';')
@@ -34,11 +35,12 @@ class RetailHeldItems @Inject constructor() {
                       val item = parts[2].toIntOrNull() ?: return@mapNotNull null
                       Triple(species, slot, item)
                     }
-                    .groupBy({ it.first }, { it.second to it.third })
-                    .mapValues { (_, slots) -> slots.sortedBy { it.first }.map { it.second } }
+                    .toList()
               }
-              .also { log.info { "Retail held items: ${it.size} species" } }
-        }
+            }
+            .groupBy({ it.first }, { it.second to it.third })
+            .mapValues { (_, slots) -> slots.sortedBy { it.first }.map { it.second } }
+            .also { log.info { "Wild held items: ${it.size} species" } }
   }
 
   /** The items a wild monster of [species] may carry, common first. */
@@ -60,6 +62,7 @@ class RetailHeldItems @Inject constructor() {
   }
 
   private companion object {
+    val TABLES = listOf("/monmmo/retail-held-items.csv", "/monmmo/expansion-held-items.csv")
     const val COMMON_PERCENT = 50
     const val RARE_PERCENT = 5
     const val COMPOUND_EYES_COMMON_PERCENT = 60

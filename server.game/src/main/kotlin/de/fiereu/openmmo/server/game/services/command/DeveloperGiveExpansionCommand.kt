@@ -136,15 +136,22 @@ constructor(
 
     val moveIds = overrideMoves ?: created.moves.map { it.id.toInt() }.filter { it != 0 }
     val isShiny = shinyArgument == "shiny"
+    // A form the retail client owns is given as that species + form (one identity per form).
+    val (speciesId, form) =
+        de.fiereu.openmmo.pokemon.expansion.RetailFormIdentity.normalize(entry.serverId, 0)
     val given =
         storyPlayer.givePokemon(
-            ctx.session, ctx.state, entry.serverId, level, moveIds, isShiny = isShiny)
+            ctx.session, ctx.state, speciesId, level, moveIds, isShiny = isShiny, form = form)
     if (given == null) {
       ctx.reply("Could not add ${entry.displayName}; make sure your party has an open slot.")
       return
     }
     // Without this the species stays a silhouette in the Pokedex even while it sits in the party.
     ctx.session.send(PokedexSpeciesUnlockPacket(wireId.toShort()))
+    // A regional form unlocks its base species' National entry too (Alolan Vulpix is #037).
+    de.fiereu.openmmo.pokemon.expansion.RegionalForms.baseWireOf(wireId)?.let {
+      ctx.session.send(PokedexSpeciesUnlockPacket(it.toShort()))
+    }
     log.info {
       "[ExpansionClient] SENT ${entry.stableId} expansionId=${entry.originalId} " +
           "serverId=${entry.serverId} wireId=$wireId stage=party"

@@ -50,7 +50,13 @@ fun main() {
 private fun installSpeciesWireIds(expansion: ExpansionSpeciesRegistry) {
   val toClient =
       expansion.all().mapNotNull { it.clientWireId?.let { wire -> it.serverId to wire } }.toMap()
-  val toCanonical = toClient.entries.associate { (canonical, wire) -> wire to canonical }
+  // A form the client already owns speaks the client's record id (Unown B -> 201, Rotom Heat ->
+  // 657), so that id must keep resolving to the retail species, never back to the Expansion form.
+  val retailFormServerIds = expansion.all().filter { it.isRetailForm }.mapTo(HashSet()) { it.serverId }
+  val toCanonical =
+      toClient.entries
+          .filter { (canonical, _) -> canonical !in retailFormServerIds }
+          .associate { (canonical, wire) -> wire to canonical }
   SpeciesWireIds.install(
       toClient = { canonical -> toClient[canonical] ?: canonical },
       toCanonical = { wire -> toCanonical[wire] ?: wire },

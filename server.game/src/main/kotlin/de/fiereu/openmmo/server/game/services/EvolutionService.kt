@@ -68,7 +68,7 @@ constructor(
     }
     val mon = characters.getCharacter(charId)?.pokemon?.firstOrNull { it.id == monId } ?: return
     val fromName = expansion.getByClientWireId(clientSpeciesId(mon.dexId))?.displayName
-        ?: species.get(mon.dexId)?.name ?: "The monster"
+        ?: species.forMonster(mon)?.name ?: "The monster"
     if (!event.packet.accepted) {
       log.info { "char=$charId cancelled the evolution of $fromName (monster=$monId)" }
       ctx.send(notice("Huh? $fromName stopped evolving!"))
@@ -105,6 +105,10 @@ constructor(
           ))
     }
     ctx.send(PokedexSpeciesUnlockPacket(pending.targetWire.toShort()))
+    // A regional form unlocks its base species' National entry too (Alolan Marowak is #105).
+    de.fiereu.openmmo.pokemon.expansion.RegionalForms.baseWireOf(pending.targetWire)?.let {
+      ctx.send(PokedexSpeciesUnlockPacket(it.toShort()))
+    }
     dexProgress.refresh(ctx, charId)
     characters.flushCharacterAsync(charId)
     ctx.send(notice("$fromName evolved into $toName!"))

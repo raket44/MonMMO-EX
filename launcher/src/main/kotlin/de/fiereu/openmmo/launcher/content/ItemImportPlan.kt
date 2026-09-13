@@ -58,19 +58,13 @@ object ItemImportPlan {
       imports +=
           Import(item.symbol, item.name, item.description, FIRST_ITEM_ID + imports.size, donor)
     }
-    // The daycare's ability changer - not an Expansion item, but it rides the same pipeline.
-    imports +=
-        Import(
-            symbol = "ITEM_MONMMO_ABILITY_PILL",
-            name = "Ability Pill",
-            description =
-                "A pill that switches a Pokémon to another of its species' abilities. " +
-                    "Sold by the Day Care for \$20,000.",
-            itemId = FIRST_ITEM_ID + imports.size,
-            donorId = DONORS.getValue("POCKET_MEDICINE"),
-        )
+    // The Day Care's ability changer used to be created here as 22283; the client has its own
+    // Ability Pill (1018), so that one is used instead (RETIRED_TO_RETAIL).
     return imports
   }
+
+  /** Ids this plan once created for items the client has itself, to the client's own id. */
+  val RETIRED_TO_RETAIL = mapOf(22283 to 1018)
 
   /**
    * Items Gen 6 renamed: the client holds them under the Gen 5 name, so a bare name diff would

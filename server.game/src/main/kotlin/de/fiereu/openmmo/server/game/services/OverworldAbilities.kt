@@ -33,7 +33,7 @@ class OverworldAbilities(private val species: SpeciesRegistry, private val clean
   fun leadOf(store: CharacterStore, charId: Long): Lead? {
     val mon: Pokemon =
         store.getCharacter(charId)?.pokemon?.sortedBy { it.containerSlot }?.firstOrNull { !it.isEgg && it.hp > 0 } ?: return null
-    val def = species.get(mon.dexId) ?: return null
+    val def = species.forMonster(mon) ?: return null
     return Lead(Abilities.of(def, mon), mon.level.toInt(), mon.nature, Gender.of(def.genderRatio, mon.seed), mon.heldItem)
   }
 

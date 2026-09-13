@@ -2,6 +2,8 @@ package de.fiereu.openmmo.pokemon
 
 import de.fiereu.openmmo.common.MAX_MOVE_SLOTS
 import de.fiereu.openmmo.moves.MoveRegistry
+import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry
+import de.fiereu.openmmo.pokemon.retail.RetailMonsterData
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -9,14 +11,6 @@ import io.kotest.matchers.shouldBe
 
 private const val TACKLE = 33
 private const val GROWL = 45
-private const val LEECH_SEED = 73
-private const val VINE_WHIP = 22
-private const val POISON_POWDER = 77
-private const val SLEEP_POWDER = 79
-private const val SWEET_SCENT = 230
-private const val GROWTH = 74
-private const val SYNTHESIS = 235
-private const val SOLAR_BEAM = 76
 
 class LearnsetRegistryTest :
     FunSpec({
@@ -33,29 +27,39 @@ class LearnsetRegistryTest :
         }
       }
 
-      test("Bulbasaur learns the moves it does in the games") {
-        learnsets.get(1).take(4) shouldBe
-            listOf(
-                LevelUpMove(1, TACKLE),
-                LevelUpMove(4, GROWL),
-                LevelUpMove(7, LEECH_SEED),
-                LevelUpMove(10, VINE_WHIP),
-            )
-      }
-
-      test("two moves can share a level") {
-        learnsets.movesAt(1, 15) shouldBe listOf(POISON_POWDER, SLEEP_POWDER)
+      // Bulbasaur's exact levels depend on which list serves (retail, or the Expansion where the
+      // retail dump is not on the working directory), so these pin only what both agree on. The
+      // walk-and-push-out mechanics are pinned on synthetic learnsets in WildMonFactoryTest.
+      test("Bulbasaur learns Tackle and Growl at level 1") {
+        learnsets.movesAt(1, 1) shouldBe listOf(TACKLE, GROWL)
       }
 
       test("a level with no move learns nothing") { learnsets.movesAt(1, 2).shouldBeEmpty() }
 
       test("the initial moveset stops at the given level") {
-        learnsets.initialMoveset(1, 1) shouldBe listOf(TACKLE)
-        learnsets.initialMoveset(1, 10) shouldBe listOf(TACKLE, GROWL, LEECH_SEED, VINE_WHIP)
+        learnsets.initialMoveset(1, 1) shouldBe listOf(TACKLE, GROWL)
       }
 
-      test("a fifth move pushes out the oldest one") {
-        learnsets.initialMoveset(1, 100) shouldBe listOf(SWEET_SCENT, GROWTH, SYNTHESIS, SOLAR_BEAM)
+      test("a retail species keeps every retail move in order and gains only Expansion moves") {
+        // Needs the retail dump on the working directory, as the server has it; a module test run
+        // does not, and skips - the rule itself is pinned in RetailPlusAdditionsTest.
+        RetailMonsterData.get(1) ?: return@test
+        val expansion = ExpansionSpeciesRegistry()
+        for (dexId in 1..649) {
+          val retail = RetailMonsterData.get(dexId)?.levelUpLearnset.orEmpty()
+          if (retail.isEmpty()) continue
+          val served = learnsets.get(dexId)
+          var matched = 0
+          served.forEach { if (matched < retail.size && it == retail[matched]) matched++ }
+          matched shouldBe retail.size
+          val retailMoves = retail.mapTo(HashSet()) { it.moveId }
+          val expansionMoves =
+              (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
+                  ?.levelUpLearnset
+                  ?.mapTo(HashSet()) { it.originalMoveId }
+                  .orEmpty()
+          served.map { it.moveId }.filter { it !in retailMoves && it !in expansionMoves }.shouldBeEmpty()
+        }
       }
 
       test("no moveset is longer than four moves") {

@@ -10,10 +10,17 @@ import de.fiereu.openmmo.common.enums.PokemonType
 import java.io.File
 
 fun main(args: Array<String>) {
-  require(args.size == 4) { "Usage: <output> <templates> <cache> <expansion-root>" }
+  require(args.size in 4..5) {
+    "Usage: <output> <templates> <cache> <expansion-root> [<retail-forms.csv>]"
+  }
   val outputDir = File(args[0])
   val expansionRoot = File(args[3])
-  val species = ExpansionSpeciesGenerator(expansionRoot).parseAll()
+  val retailForms = args.getOrNull(4)?.let(::File)?.takeIf { it.isFile }?.let(::parseRetailForms).orEmpty()
+  val species = ExpansionSpeciesGenerator(expansionRoot, retailForms).parseAll()
+  println(
+      "[expansion-pokemon] retailForms=${retailForms.size}, " +
+          "formsResolvedToRetail=${species.count { it.retailRecordId != null }}, " +
+          "formsNumbered=${species.count { it.formIndex != null }}")
   val forms = species.count { it.isForm }
   val highest = species.maxOfOrNull { it.originalId } ?: 0
   val mapped = species.count { it.clientWireId != null }

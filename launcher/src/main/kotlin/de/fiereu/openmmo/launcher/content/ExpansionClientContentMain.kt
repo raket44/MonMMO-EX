@@ -34,9 +34,12 @@ fun main(args: Array<String>) {
   // arrived as species 1134 with no client record behind it: reported as given, rendered as
   // nothing. The invariant is that no species carries a wire id without a record to back it.
   // The client's own Dex 1-649 records stay untouched.
+  // Forms the client already owns (Unown B, Rotom Heat, Deoxys Attack...) are never staged: they are
+  // the client's records under the client's own form numbers, not new species.
   val selected =
       expansion.filter {
         it.clientContentCompatible &&
+            !it.isRetailForm &&
             (it.isNewToClient || (it.clientWireId ?: 0) >= FIRST_FORM_WIRE_ID)
       }
   val stagedIds = selected.mapTo(HashSet()) { it.stableId }
@@ -44,17 +47,16 @@ fun main(args: Array<String>) {
   // Every species the client can address, not just the new ones.
   //
   // The client applies a learnset by assignment - section 1 does `species.moves = list` and section
-  // 2 stores into a per-category slot - and our records are appended after the stock ones, so a
-  // record written here replaces what the client shipped. Restricting this to new species left
-  // Jigglypuff and the rest of Gen 1-5 on the client's Gen 5 lists, which is exactly backwards: the
-  // Expansion is meant to be the source of truth for all of them.
+  // 2 stores into a per-category slot - so a record appended after a retail one replaces it. Retail
+  // species therefore go through RetailMerge: retail's own lists stay, and the Expansion only adds
+  // the moves retail does not have (project owner, 2026-09-12; this used to replace them outright).
   val authoritative =
       selected + expansion.filter { !it.isNewToClient && !it.isForm && it.clientWireId != null }
   val records = selected.map(::record)
   // Species the client already has, but whose typing the Expansion changed - the Gen 6 Fairy
-  // retypes. Their learnsets and details are still written from here, but the type change itself
-  // rides in the overlay's fixup helper: replacing the record wholesale created a fresh object
-  // after the ROM loader had linked evolution chains, and Jigglypuff arrived with no evolution.
+  // retypes (project owner: retype the 22). The types go in section 6's TYPES bit, in place:
+  // replacing the section 10 record wholesale created a fresh object after the ROM loader had
+  // linked evolution chains, and Jigglypuff arrived with no evolution.
   val retyped =
       expansion.filter { !it.isNewToClient && !it.isForm && "TYPE_FAIRY" in it.typeSymbols }
   Files.createDirectories(outputData.parent)
@@ -112,7 +114,9 @@ fun main(args: Array<String>) {
           .filter { it.id < FIRST_CLIENT_OWN_MOVE_ID }
   val moveRecords = newMoves.map(::moveRecord)
   // Anything we could not define would render as a blank entry, so it stays out of the learnsets.
-  val definedMoves = (1..LAST_CLIENT_MOVE_ID).toSet() + newMoves.map { it.id }
+  // Plus the client's own moves an Expansion id was folded into (Trick-or-Treat 1000, Bouncy
+  // Bubble 1019): learnsets name those ids now, and the client defines them itself.
+  val definedMoves = (1..LAST_CLIENT_MOVE_ID).toSet() + newMoves.map { it.id } + setOf(1000, 1019)
 
   // Nothing should end up here; if it does, say which move and why rather than dropping it quietly.
   val undefined = usedMoveIds.filter { it > LAST_CLIENT_MOVE_ID && it !in definedMoves }.sorted()
@@ -142,7 +146,23 @@ fun main(args: Array<String>) {
   //
   // A species is a member of a region precisely when its number there is at least 1 - the list is
   // built by filtering on that and sorting by it - so writing the number is writing the membership.
+  // The National number. A species keeps it in its per-region array at NATIONAL_REGION (the
+  // client's constructor fills that slot with the species' own id, which is right for 1-649 and
+  // wrong for every wire id past it - Chespin sat at 668). Section 11 writes a list POSITION into
+  // that slot, so a region-5 list indexed by national number gives each species its real number.
+  // Retail 1-649 get their own ids back (the value they already had); a national number with no
+  // staged species gets an id nothing resolves, which the loader skips while keeping positions.
+  val nationalByDex = selected.filter { !it.isForm }.associateBy { it.nationalDexId }
+  val nationalDex =
+      RegionalDex(
+          NATIONAL_REGION,
+          (1..LAST_NATIONAL_DEX).map { dex ->
+            if (dex <= LAST_RETAIL_DEX) dex
+            else nationalByDex[dex]?.clientWireId ?: UNRESOLVED_SPECIES_ID
+          },
+      )
   val dexRegions =
+      listOf(nationalDex) +
       DEX_REGIONS.map { (region, range) ->
         RegionalDex(
             region,
@@ -150,7 +170,13 @@ fun main(args: Array<String>) {
                 // Forms sit above the last contiguous id, so the Pokedex copy never reaches them.
                 .filter { !it.isForm && (it.nationalDexId ?: 0) in range }
                 .sortedBy { it.nationalDexId }
-                .mapNotNull { it.clientWireId },
+                .mapNotNull { it.clientWireId } +
+                // Regional forms are entries of their region's tab, after its own species, in
+                // National order (Alolan Rattata before Alolan Raticate).
+                selected
+                    .filter { regionalDexRegion(it) == region }
+                    .sortedWith(compareBy({ it.nationalDexId }, { it.clientWireId }))
+                    .mapNotNull { it.clientWireId },
         )
       }
   // Egg, taught and pre-evolution moves, each in the category the client means. The tools tab is
@@ -185,21 +211,131 @@ fun main(args: Array<String>) {
             .map { (category, moves) -> ExtraLearnset(wireId, category, moves) }
       }
 
-  // The optional-field section: egg groups, plus the payload-free flags stock species carry.
-  // The replaced species need their detail record too. Section 10 runs first and rebuilds the
-  // species object, so egg groups and rarity are whatever the record leaves behind unless they are
-  // written here; 7 of the 22 had no stock entry to re-apply.
-  val details =
-      (selected + retyped).mapNotNull { entry ->
-        val wireId = entry.clientWireId ?: return@mapNotNull null
-        val groups = entry.eggGroupSymbols.map(::eggGroup)
+  // Everything else a species carries, with retail as the reference (project owner, 2026-09-13):
+  // what the ROM holds for a species it defines has to exist for the species data adds - held
+  // items, EV yield, catch rate, growth, base exp, height, weight, dex text, evolutions, forms.
+  // Retail species only ever gain: types and egg groups for the Fairy retypes, evolutions into
+  // species retail never had, and Next Form entries after their own forms.
+  val bySymbol = expansion.associateBy { it.symbol.removePrefix("SPECIES_") }
+  val itemNames = ItemNames(expansionRoot)
+  val evolutionSource = ExpansionEvolutions.parse(expansionRoot)
+  fun clientEvolutions(entry: ExpansionSpeciesDef, newTargetsOnly: Boolean): List<ClientEvolution> =
+      evolutionSource[entry.symbol.removePrefix("SPECIES_")].orEmpty().mapNotNull { evo ->
+        val target = bySymbol[evo.targetSymbol] ?: return@mapNotNull null
+        val targetId = target.clientWireId ?: return@mapNotNull null
+        // The target needs a client record: one this build stages, or retail's own.
+        val staged = target.stableId in stagedIds
+        val retailRecord = target.isRetailForm || (!target.isNewToClient && !target.isForm)
+        if (if (newTargetsOnly) !staged else !(staged || retailRecord)) return@mapNotNull null
+        val speciesParam = evo.speciesParamSymbol?.let { bySymbol[it]?.clientWireId }
+        when {
+          evo.speciesParamSymbol != null && speciesParam == null ->
+              ClientEvolution(ExpansionEvolutions.SPECIAL, 0, targetId)
+          evo.method in ExpansionEvolutions.ITEM_METHODS ->
+              ClientEvolution(evo.method, evo.param + ROM_ITEM_SHIFT, targetId, evo.time)
+          else -> ClientEvolution(evo.method, speciesParam ?: evo.param, targetId, evo.time)
+        }
+      }
+
+  // The dex detail text the ROM has no rows for, at the string ids the client code in f/gt0.tt1
+  // reads in their place. Category and paragraph are the Expansion's; height and weight use the
+  // ROM's own formatting (1'04", 13.2 lbs.), as sampled on the running client.
+  val paragraphs = ExpansionDexText.parse(expansionRoot)
+  val dexText = linkedMapOf<Int, String>()
+  selected.forEach { entry ->
+    val wire = checkNotNull(entry.clientWireId)
+    if (entry.categoryName.isNotBlank()) {
+      dexText[romTextId(DEX_CATEGORY_TABLE, wire)] = "${entry.categoryName} Pokémon"
+    }
+    ExpansionDexText.forSymbol(paragraphs, entry.symbol)?.let { paragraph ->
+      dexText[romTextId(DEX_ENTRY_TABLE, wire)] = paragraph
+      dexText[romTextId(DEX_ENTRY_TABLE_IRA, wire)] = paragraph
+    }
+    val inches = Math.round(entry.height * 3.93701).toInt()
+    dexText[romTextId(DEX_HEIGHT_TABLE, wire)] = "${inches / 12}'${"%02d".format(inches % 12)}\""
+    dexText[romTextId(DEX_WEIGHT_TABLE, wire)] =
+        "%.1f lbs.".format(java.util.Locale.ROOT, entry.weight * 0.220462)
+  }
+
+  // Next Form entries: every staged form on its base, regional forms included - an Alolan Vulpix is
+  // a Vulpix in the National dex as well as an Alola tab entry (project owner, 2026-09-13). Pikachu's
+  // caps and cosplay belong to the costume system instead.
+  val nextForms =
+      selected
+          .filter { it.isForm && !isCostumeForm(it) }
+          .groupBy { it.baseSpeciesStableId }
+          .mapValues { (_, forms) -> forms.sortedWith(compareBy({ it.formIndex ?: Int.MAX_VALUE }, { it.clientWireId })) }
+  fun variantsOf(base: ExpansionSpeciesDef, newBase: Boolean): List<Int>? {
+    val forms = nextForms[base.stableId] ?: return null
+    val baseId = base.clientWireId ?: return null
+    // A species data creates has no form 0 of its own; the ROM loader gives every species one.
+    // Retail's forms keep their numbers; new ones follow them without gaps.
+    val firstIndex = if (newBase) 1 else retailLastFormIndex(checkNotNull(base.nationalDexId)) + 1
+    val entries =
+        (if (newBase) listOf(formEntry(0, baseId, 0, 0)) else emptyList()) +
+            forms.mapIndexed { index, form ->
+              val formId = checkNotNull(form.clientWireId)
+              val paragraph = romTextId(DEX_ENTRY_TABLE, formId).takeIf { it in dexText } ?: 0
+              formEntry(firstIndex + index, formId, paragraph, SPECIES_NAME_STRING_BASE + formId)
+            }
+    return listOf(entries.size) + entries.flatten()
+  }
+
+  val heldItems = selected.associateWith { entry ->
+    listOf(entry.itemCommonSymbol, entry.itemRareSymbol).map(itemNames::bySymbol)
+  }
+  val newDetails =
+      selected.map { entry ->
         detail(
-            speciesId = wireId,
-            eggGroup1 = groups.getOrElse(0) { 0 },
-            eggGroup2 = groups.getOrElse(1) { groups.getOrElse(0) { 0 } },
-            rarity = entry.rarity,
+            entry,
+            checkNotNull(entry.clientWireId),
+            heldItems.getValue(entry).mapNotNull { it?.first },
+            clientEvolutions(entry, newTargetsOnly = false),
+            variantsOf(entry, newBase = true),
         )
       }
+  val retailAdditions =
+      expansion
+          .filter { !it.isNewToClient && !it.isForm && it.clientWireId != null }
+          .mapNotNull { entry ->
+            val retype = entry in retyped
+            val evolutions = clientEvolutions(entry, newTargetsOnly = true)
+            val variants = variantsOf(entry, newBase = false)
+            if (!retype && evolutions.isEmpty() && variants == null) return@mapNotNull null
+            val groups = entry.eggGroupSymbols.map(::eggGroup)
+            val types = entry.typeSymbols.map(::clientType)
+            SpeciesDetail(
+                speciesId = checkNotNull(entry.clientWireId),
+                flags =
+                    (if (retype) SpeciesDetail.EGG_GROUPS or SpeciesDetail.TYPES else 0) or
+                        (if (evolutions.isNotEmpty()) SpeciesDetail.EVOLUTIONS else 0) or
+                        (if (variants != null) SpeciesDetail.SPECIAL_VARIANTS else 0),
+                eggGroups =
+                    if (retype) groups.getOrElse(0) { 0 } to groups.getOrElse(1) { groups.getOrElse(0) { 0 } }
+                    else null,
+                types = if (retype) types[0] to types.getOrElse(1) { types[0] } else null,
+                evolutions = evolutions.ifEmpty { null },
+                specialVariants = variants,
+            )
+          }
+  val details = newDetails + retailAdditions
+
+  // The server reads the same evolutions and held items the client shows (item params before the
+  // client's +5000 shift, as monsters.json's retail rows spell them).
+  val serverTables = outputData.parent.parent
+  Files.write(
+      serverTables.resolve("evolutions.csv"),
+      details.flatMap { record ->
+        record.evolutions.orEmpty().map { evo ->
+          val param = if (evo.method in ExpansionEvolutions.ITEM_METHODS) evo.param - ROM_ITEM_SHIFT else evo.param
+          "${record.speciesId}:${evo.method}:$param:${evo.targetId}" + (evo.time?.let { ":$it" } ?: "")
+        }
+      })
+  Files.write(
+      serverTables.resolve("expansion-held-items.csv"),
+      heldItems.flatMap { (entry, slots) ->
+        slots.mapIndexedNotNull { slot, item -> item?.let { "${entry.clientWireId};$slot;${it.first};${it.second}" } }
+      })
 
   // One pass over the file. Each section is decoded in full, appended to, and re-encoded; a codec
   // that cannot reproduce the stock bytes exactly aborts the build before anything is written.
@@ -210,8 +346,8 @@ fun main(args: Array<String>) {
   val built =
       ClientDataPak.parse(Files.readAllBytes(stockData))
           .edit(SpeciesCodec) { stock -> stock + checkNoCollisions(stock, records) }
-          .edit(LevelUpLearnsetCodec) { stock -> stock + learnsets }
-          .edit(ExtraLearnsetCodec) { stock -> stock + extra }
+          .edit(LevelUpLearnsetCodec) { stock -> RetailMerge.levelUp(stock, learnsets) }
+          .edit(ExtraLearnsetCodec) { stock -> RetailMerge.extra(stock, extra) }
           .edit(MoveCodec) { stock ->
             val occupied = stock.map { it.moveId }.toSet()
             val clashes = moveRecords.map { it.moveId }.filter(occupied::contains)
@@ -224,7 +360,39 @@ fun main(args: Array<String>) {
             require(clashes.isEmpty()) { "The client already uses dex regions $clashes" }
             stock + dexRegions
           }
-          .edit(SpeciesDetailCodec) { stock -> stock + details }
+          .edit(SpeciesDetailCodec) { stock -> RetailMerge.details(stock, details) }
+          // New items, each cloned from a real retail item of its kind: TMs only for moves no retail
+          // tool teaches (the client names them "TM - <move>" and gives them their type disc itself),
+          // evolution and imported items with their own name, description and icon.
+          .let { pak ->
+            val expansionItems = ExpansionItems.parse(expansionRoot)
+            val records =
+                TmPlan.created(expansionRoot).map { (itemId, moveId) ->
+                  ClientItemRecords.Record(itemId, TmPlan.DONOR_ITEM_ID, taughtMove = moveId)
+                } +
+                    EvoItemPlan.CREATED.map { (itemId, item) ->
+                      val index = itemId - EvoItemPlan.FIRST_ITEM_ID
+                      ClientItemRecords.Record(
+                          itemId,
+                          EvoItemPlan.DONOR_ITEM_ID,
+                          nameString = EvoItemPlan.NAME_STRING_BASE + index,
+                          descriptionString =
+                              if (expansionItems[item.first]?.description.isNullOrEmpty()) 0
+                              else EvoItemPlan.DESC_STRING_BASE + index,
+                      )
+                    } +
+                    ItemImportPlan.compute(expansionRoot).mapIndexed { index, item ->
+                      ClientItemRecords.Record(
+                          item.itemId,
+                          item.donorId,
+                          nameString = ItemImportPlan.NAME_STRING_BASE + index,
+                          descriptionString =
+                              if (item.description.isEmpty()) 0 else ItemImportPlan.DESC_STRING_BASE + index,
+                      )
+                    }
+            println("[expansion-client] items created in section 3: ${records.size}")
+            pak.with(3, ClientItemRecords.append(checkNotNull(pak.payloadOf(3)), records))
+          }
   // The retail wild-locations rebuild (WildLocationsSection) is parked: replacing section 5
   // wholesale changed the dex in ways the project owner rejected - species with retail-only data
   // rendered empty, and season rows-in-the-list is not the wanted design. The stock table stays
@@ -238,7 +406,7 @@ fun main(args: Array<String>) {
     println("[expansion-client] dex region ${it.regionId} lists ${it.speciesIds.size} species")
   }
   println(
-      "[expansion-client] ${retyped.size} retypes ride in the overlay fixups: " +
+      "[expansion-client] ${retyped.size} Fairy retypes written in place: " +
           retyped.joinToString { it.symbol.removePrefix("SPECIES_").lowercase() })
   println(
       "[expansion-client] move definitions written: ${moveRecords.size} " +
@@ -249,7 +417,13 @@ fun main(args: Array<String>) {
   println(
       "[expansion-client] learnsets=${learnsets.size} species, $keptMoves of $totalMoves moves " +
           "(${totalMoves - keptMoves} need client move definitions)")
-  patchNames(stockStrings, outputStrings, selected, expansionRoot, newMoves)
+  patchNames(stockStrings, outputStrings, selected, expansionRoot, newMoves, dexText = dexText)
+  println(
+      "[expansion-client] full species records: ${newDetails.size} new, ${retailAdditions.size} retail " +
+          "additions, ${details.sumOf { it.evolutions.orEmpty().size }} evolutions, " +
+          "${nextForms.values.sumOf { it.size }} next forms, ${dexText.size} dex texts" +
+          if (ExpansionEvolutions.unmappedItems.isEmpty()) ""
+          else "; evolution items with no client id: ${ExpansionEvolutions.unmappedItems.joinToString()}")
 
   // Metadata registers a species; without converted assets the client would draw it blank.
   val withAssets = selected.filter { it.assetSourcesResolved }
@@ -297,18 +471,24 @@ fun main(args: Array<String>) {
   val itemManifest = outputData.parent.parent.resolve("imported-items.csv")
   Files.newBufferedWriter(itemManifest).use { writer ->
     val moveNames = MoveText.parse(expansionRoot, MoveText.ids(expansionRoot)).associateBy { it.id }
-    TmPlan.taughtMoves(expansionRoot).forEachIndexed { index, moveId ->
+    TmPlan.created(expansionRoot).forEach { (itemId, moveId) ->
       // Numberless (operator-directed): the name is "TM <move>" everywhere a name renders.
       val name = "TM ${moveNames[moveId]?.name ?: ""}".trim()
-      writer.appendLine("${TmPlan.FIRST_ITEM_ID + index};$name")
+      writer.appendLine("$itemId;$name")
     }
-    EvoItemPlan.ITEMS.forEachIndexed { index, (_, name) ->
-      writer.appendLine("${EvoItemPlan.FIRST_ITEM_ID + index};$name")
-    }
+    EvoItemPlan.CREATED.forEach { (itemId, item) -> writer.appendLine("$itemId;${item.second}") }
     ItemImportPlan.compute(expansionRoot).forEach { item ->
       writer.appendLine("${item.itemId};${item.name}")
     }
   }
+
+  // Ids once created for things the client has itself, to the client's own id - the server folds
+  // any inventory that still holds one (codegen ItemIdAliases).
+  Files.write(
+      outputData.parent.parent.resolve("item-id-aliases.csv"),
+      (TmPlan.retiredToRetail(expansionRoot) + ItemImportPlan.RETIRED_TO_RETAIL).map { (old, retail) ->
+        "$old;$retail"
+      })
 
   val report = outputData.parent.parent.resolve("compatibility.csv")
   Files.newBufferedWriter(report).use { writer ->
@@ -366,8 +546,12 @@ private fun record(entry: ExpansionSpeciesDef): SpeciesRecord {
                   entry.abilityIds.getOrElse(1) { 0 },
                   entry.abilityIds.getOrElse(2) { 0 },
               ),
-          trailer = SPECIES_TRAILER,
+          // The trailer is the gender ratio (f/fi7 section 10 -> zp3.VF0, the ROM personal byte):
+          // 0-254 the female share on the cartridge scale, 255 genderless. Every stock record is a
+          // genderless PokeMMO event species, which is how a constant 255 passed for "unknown".
+          trailer = entry.genderRatio,
       )
+  require(record.trailer in 0..255) { "Species ${record.speciesId} has gender ratio ${record.trailer}" }
   val shorts = listOf(record.speciesId) + record.stats + record.abilities + record.trailer
   require(shorts.all { it in 0..0xffff }) {
     "Species record exceeds an unsigned 16-bit field: $record"
@@ -396,14 +580,27 @@ private fun checkNoCollisions(
 }
 
 /**
- * Builds one optional-field record. Only the bits with a payload we can fill are set, alongside the
- * payload-free flags every stock species carries.
+ * A new species' optional-field record, carrying everything the ROM carries for a species it
+ * defines (retail is the reference, project owner 2026-09-13): egg groups, EV yield, held items,
+ * catch rate, rarity, forms, and - through MonMMO-EX's client code - growth rate, base exp, height,
+ * weight and evolutions. Only fields with a value are flagged.
  */
-private fun detail(speciesId: Int, eggGroup1: Int, eggGroup2: Int, rarity: Int): SpeciesDetail {
+private fun detail(
+    entry: ExpansionSpeciesDef,
+    speciesId: Int,
+    heldItems: List<Int>,
+    evolutions: List<ClientEvolution>,
+    variants: List<Int>?,
+): SpeciesDetail {
+  val groups = entry.eggGroupSymbols.map(::eggGroup)
+  val eggGroup1 = groups.getOrElse(0) { 0 }
+  val eggGroup2 = groups.getOrElse(1) { eggGroup1 }
   require(eggGroup1 in 0..MAX_EGG_GROUP && eggGroup2 in 0..MAX_EGG_GROUP) {
     "Species $speciesId has an egg group outside the client range"
   }
-  val rare = rarity != 0
+  val growth = GROWTH_ORDER.indexOf(entry.growthRateSymbol.removePrefix("GROWTH_"))
+  require(growth >= 0) { "Species $speciesId has growth rate ${entry.growthRateSymbol}" }
+  val rare = entry.rarity != 0
   return SpeciesDetail(
       speciesId = speciesId,
       flags =
@@ -412,11 +609,56 @@ private fun detail(speciesId: Int, eggGroup1: Int, eggGroup2: Int, rarity: Int):
               // creates, and the Pokedex skips any entry carrying it.
               // Nor EXCLUDED_FROM_DEX, the second flag the screen checks alongside it.
               SpeciesDetail.FLAG_200 or
-              (if (rare) SpeciesDetail.RARITY else 0),
+              SpeciesDetail.EV_YIELD or
+              SpeciesDetail.CATCH_RATE or
+              SpeciesDetail.ROM_SCALARS or
+              (if (rare) SpeciesDetail.RARITY else 0) or
+              (if (heldItems.isNotEmpty()) SpeciesDetail.HELD_ITEMS else 0) or
+              (if (evolutions.isNotEmpty()) SpeciesDetail.EVOLUTIONS else 0) or
+              (if (variants != null) SpeciesDetail.SPECIAL_VARIANTS else 0),
       eggGroups = eggGroup1 to eggGroup2,
-      rarity = if (rare) rarity else null,
+      field010 = evYieldWord(entry),
+      heldItems = heldItems.ifEmpty { null },
+      field080 = entry.catchRate,
+      rarity = if (rare) entry.rarity else null,
+      specialVariants = variants,
+      romScalars = RomScalars(growth, entry.expYield, entry.height, entry.weight),
+      evolutions = evolutions.ifEmpty { null },
   )
 }
+
+/** The ROM's EV yield word: two bits per stat, HP from bit 0, then Atk, Def, Spe, SpA, SpD (f/r59.e). */
+internal fun evYieldWord(entry: ExpansionSpeciesDef): Int =
+    listOf(
+            entry.evYieldHp,
+            entry.evYieldAttack,
+            entry.evYieldDefense,
+            entry.evYieldSpeed,
+            entry.evYieldSpAttack,
+            entry.evYieldSpDefense,
+        )
+        .foldIndexed(0) { stat, word, yield -> word or (yield.coerceIn(0, 3) shl (stat * 2)) }
+
+/**
+ * One Next Form entry for section 6's form list (f/fi7 bit 0x400 -> f/p13): its form number, the
+ * form's own record, the sprite the record draws (its own id), no follow costume, the paragraph
+ * string that stands in for the base's, the name string, and available.
+ */
+internal fun formEntry(formIndex: Int, recordId: Int, descriptionStringId: Int, nameStringId: Int): List<Int> =
+    Writer()
+        .apply {
+          byte(formIndex)
+          short(recordId)
+          short(recordId)
+          short(0)
+          int(descriptionStringId)
+          int(nameStringId)
+          byte(0)
+          byte(1)
+        }
+        .bytes()
+        .map { it.toInt() and 0xff }
+        .also { check(it.size == SpeciesDetail.SPECIAL_VARIANT_BYTES) }
 
 /**
  * A move the ROMs never had, written out in full.
@@ -481,6 +723,7 @@ private fun patchNames(
     expansionRoot: Path,
     importedMoves: List<MoveText.Move>,
     locationNames: List<Pair<Int, String>> = emptyList(),
+    dexText: Map<Int, String> = emptyMap(),
 ) {
   val factory =
       DocumentBuilderFactory.newInstance().apply {
@@ -593,6 +836,7 @@ private fun patchNames(
   // Expansion's own item table so the bag text is the real one, not the donor stone's.
   val expansionItems = ExpansionItems.parse(expansionRoot)
   EvoItemPlan.ITEMS.forEachIndexed { index, (symbol, name) ->
+    if (symbol in EvoItemPlan.NOT_CREATED) return@forEachIndexed
     val nameId = EvoItemPlan.NAME_STRING_BASE + index
     val descriptionId = EvoItemPlan.DESC_STRING_BASE + index
     val description = expansionItems[symbol]?.description.orEmpty()
@@ -663,6 +907,17 @@ private fun patchNames(
         document.createElement("string").apply {
           setAttribute("id", stringId.toString())
           textContent = entry.categoryName
+        })
+  }
+
+  // The dex detail text for species the ROM has no rows for (see romTextId). Written only where no
+  // string exists, and nothing is ever written for a species the ROM owns.
+  dexText.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId already exists; dex text would shadow it" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
         })
   }
 
@@ -773,6 +1028,39 @@ private fun clientDisplayName(entry: ExpansionSpeciesDef): String {
 /** The client's move table covers this many ids; beyond it a move has no definition. */
 private const val LAST_CLIENT_MOVE_ID = 559
 
+/** The ROM loader adds this to an item-method evolution parameter; data carries it already. */
+private const val ROM_ITEM_SHIFT = 5000
+
+/** A species' name is this string id plus its client id. */
+private const val SPECIES_NAME_STRING_BASE = 150000
+
+/**
+ * The string id that takes the place of ROM text row [entry] of dex table [table]: the MonMMO-EX
+ * client code in f/gt0.tt1 reads 1500000000 + table * 100000 + entry before the ROM archive.
+ */
+internal fun romTextId(table: Int, entry: Int): Int = 1_500_000_000 + table * 100_000 + entry
+
+/** The dex detail panel's ROM text tables (desktop client, measured on screen 2026-09-02). */
+private const val DEX_ENTRY_TABLE = 235
+private const val DEX_ENTRY_TABLE_IRA = 236
+private const val DEX_HEIGHT_TABLE = 245
+private const val DEX_CATEGORY_TABLE = 260
+private const val DEX_WEIGHT_TABLE = 268
+
+/** The dex tab a regional form is listed under, or null: the rule the server shares (RegionalForms). */
+internal fun regionalDexRegion(entry: ExpansionSpeciesDef): Int? =
+    de.fiereu.openmmo.pokemon.expansion.RegionalForms.regionOf(entry)
+
+/** Pikachu's caps and cosplay outfits: costumes on the client's own Pikachu, not forms. */
+internal fun isCostumeForm(entry: ExpansionSpeciesDef): Boolean =
+    de.fiereu.openmmo.pokemon.expansion.RegionalForms.isPikachuCostume(entry)
+
+/** The highest form number the client's own catalogue gives a retail species (costumes included). */
+private fun retailLastFormIndex(nationalDex: Int): Int =
+    de.fiereu.openmmo.pokemon.retail.RetailForms.all()
+        .filter { it.speciesId == nationalDex }
+        .maxOfOrNull { it.formId } ?: 0
+
 /** The last free per-region dex slot in the client's six-wide array. */
 /**
  * The single Pokedex region the imported species are filed under.
@@ -783,6 +1071,13 @@ private const val LAST_CLIENT_MOVE_ID = 559
  * slot instead of rejecting it - so every extra region aliases onto the same entry and the tabs
  * show each other's contents.
  */
+/** The per-species region slot the client keeps the National number in (no tab reads it). */
+private const val NATIONAL_REGION = 5
+private const val LAST_RETAIL_DEX = 649
+private const val LAST_NATIONAL_DEX = 1025
+/** A species id no record uses: the section 11 loader skips it, so the list position still counts. */
+private const val UNRESOLVED_SPECIES_ID = 0xFFFF
+
 private val DEX_REGIONS =
     listOf(
         6 to 650..721,
@@ -858,6 +1153,34 @@ object TmPlan {
           .flatten()
           .toSortedSet()
           .toList()
+
+  /** A real TM to clone: TM Thunderbolt, measured live (teaches 85) and always present. */
+  const val DONOR_ITEM_ID = 5351
+
+  /** The client's own tools, item id to taught move (codegen ClientTools, shared with the server). */
+  val retailTools: Map<Int, Int>
+    get() = de.fiereu.openmmo.items.ClientTools.itemToMove
+
+  /** The client's own tool that teaches [moveId], or null (codegen ClientTools). */
+  fun retailToolFor(moveId: Int): Int? = de.fiereu.openmmo.items.ClientTools.toolFor(moveId)
+
+  /**
+   * The TMs this plan creates, id to move: only moves no retail TM or HM already teaches (project
+   * owner: never duplicate a retail item). Ids stay each move's position in [taughtMoves], so an
+   * item a player already holds keeps its id; a skipped move leaves its id unused.
+   */
+  fun created(expansionRoot: java.nio.file.Path): List<Pair<Int, Int>> {
+    val retailMoves = retailTools.values.toSet()
+    return taughtMoves(expansionRoot).mapIndexedNotNull { index, move ->
+      if (move in retailMoves) null else (FIRST_ITEM_ID + index) to move
+    }
+  }
+
+  /** Each skipped TM's id to the retail tool that replaces it, for inventories that hold one. */
+  fun retiredToRetail(expansionRoot: java.nio.file.Path): Map<Int, Int> =
+      taughtMoves(expansionRoot)
+          .mapIndexedNotNull { index, move -> retailToolFor(move)?.let { (FIRST_ITEM_ID + index) to it } }
+          .toMap()
 }
 
 /**
@@ -875,8 +1198,11 @@ object EvoItemPlan {
   const val NAME_STRING_BASE = 710000
   const val DESC_STRING_BASE = 730000
 
-  /** A real stone to copy: Water Stone, a ROM item the registry always holds. */
-  const val DONOR_ITEM_ID = 84
+  /**
+   * A real stone to copy: Water Stone, the client's Gen 5 item 5084 (its ROM item 84 in the 5000
+   * band). The desktop patch looks this up as given and then minus nothing, so 5084 serves both.
+   */
+  const val DONOR_ITEM_ID = 5084
 
   val ITEMS =
       listOf(
@@ -902,8 +1228,20 @@ object EvoItemPlan {
           "ITEM_METAL_ALLOY" to "Metal Alloy",
       )
 
+  /**
+   * Listed items that are never created (project owner, 2026-09-13). The Linking Cord only stands in
+   * for a trade, and this game trades, so its evolutions keep their trade method. It keeps its slot:
+   * ids are positions in [ITEMS], and removing it would renumber every item after it.
+   */
+  val NOT_CREATED = setOf("ITEM_LINKING_CORD")
+
+  /** The listed items that exist in the game, with their ids. */
+  val CREATED: List<Pair<Int, Pair<String, String>>>
+    get() = ITEMS.mapIndexedNotNull { index, item -> if (item.first in NOT_CREATED) null else (FIRST_ITEM_ID + index) to item }
+
   fun itemId(symbol: String): Int? =
-      ITEMS.indexOfFirst { it.first == symbol }.takeIf { it >= 0 }?.let { FIRST_ITEM_ID + it }
+      if (symbol in NOT_CREATED) null
+      else ITEMS.indexOfFirst { it.first == symbol }.takeIf { it >= 0 }?.let { FIRST_ITEM_ID + it }
 
   /** The value an evolution entry carries for this item, before the client's +5000 shift. */
   fun evolutionParam(symbol: String): Int? = itemId(symbol)?.minus(5000)

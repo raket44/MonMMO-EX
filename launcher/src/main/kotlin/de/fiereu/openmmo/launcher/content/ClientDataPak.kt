@@ -27,6 +27,10 @@ class ClientDataPak private constructor(val version: Int, private val sections: 
 
   fun payloadOf(type: Int): ByteArray? = sections.firstOrNull { it.type == type }?.payload
 
+  /** Section types in file order. */
+  val sectionTypes: List<Int>
+    get() = sections.map { it.type }
+
   /** Replaces one section's payload, keeping section order and everything else untouched. */
   fun with(type: Int, payload: ByteArray): ClientDataPak =
       ClientDataPak(

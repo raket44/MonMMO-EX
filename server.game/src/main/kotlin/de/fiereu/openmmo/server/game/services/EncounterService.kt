@@ -4,6 +4,8 @@ import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
 import de.fiereu.openmmo.net.game.packets.Value16Group
 import de.fiereu.openmmo.common.enums.EncounterMethod
+import de.fiereu.openmmo.common.enums.MapType
+import de.fiereu.openmmo.server.game.battle.EncounterContext
 import de.fiereu.openmmo.common.enums.TileBehavior
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.WildEncounterSlot
@@ -82,6 +84,7 @@ constructor(
 
     val decompTable = map.encounterTable(if (waterStep) EncounterMethod.WATER else EncounterMethod.LAND)
     val lead = abilities.leadOf(characterStore, charId)
+    val encounter = EncounterContext(surfing = waterStep, cave = map.mapType == MapType.UNDERGROUND)
 
     // Retail tables first: they carry season, time of day and retail-accurate rarity. The decomp
     // table stays as the fallback for maps the retail dump does not know.
@@ -108,7 +111,7 @@ constructor(
             "species ${slot.dexId} level $level"
       }
       freeze(session, charId, map, x, y)
-      battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
+      battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), encounter)
       return
     }
 
@@ -126,7 +129,7 @@ constructor(
       "Wild encounter for char=$charId at ($x, $y): species ${slot.speciesId} level $level"
     }
     freeze(session, charId, map, x, y)
-    battleService.startWildBattle(session, slot.speciesId, level, abilities.hints(lead, slot.speciesId, random))
+    battleService.startWildBattle(session, slot.speciesId, level, abilities.hints(lead, slot.speciesId, random), encounter)
   }
 
   /**
@@ -213,7 +216,7 @@ constructor(
     if (repelBlocks(charId, lead, level)) return
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
-    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random))
+    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = ndsLand.isCaveFloor(type)))
   }
 
   /**
@@ -245,7 +248,11 @@ constructor(
           BattleService.OpponentSpec(slot.dexId, random.nextInt(slot.minLevel, slot.maxLevel + 1), emptyList(), hints = abilities.hints(lead, slot.dexId, random))
         }
     log.info { "Horde of ${ready.count} x ${slot.dexId} for char=$charId: levels ${specs.joinToString { it.level.toString() }}" }
-    battleService.startHordeBattle(session, specs)
+    // The same terrain read hordePlan made: a DS tile that is not grass scents the Cave table.
+    val cave =
+        if (map != null) map.mapType == MapType.UNDERGROUND
+        else ndsLand.typeAt(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt()).let { it == null || !ndsLand.isGrass(it) }
+    battleService.startHordeBattle(session, specs, EncounterContext(surfing = state.surfing, cave = cave))
     return null
   }
 

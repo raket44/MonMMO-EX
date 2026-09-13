@@ -70,8 +70,8 @@ constructor(
       session.send(emptyForecast(p.ownPokemonEntityId, p.partnerPokemonEntityId))
       return
     }
-    val defA = speciesRegistry.get(first.dexId)
-    val defB = speciesRegistry.get(second.dexId)
+    val defA = speciesRegistry.forMonster(first)
+    val defB = speciesRegistry.forMonster(second)
     val incompatible = incompatibilityReason(first, second, defA, defB)
     if (defA == null || defB == null || incompatible != null) {
       log.info {

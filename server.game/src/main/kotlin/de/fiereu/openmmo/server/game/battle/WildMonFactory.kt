@@ -45,12 +45,20 @@ constructor(
     // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
     // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
     // are the same monster server-side. Ids for genuinely new species (650+) keep the offset.
-    val dexId =
+    val collapsedDexId =
         if (requestedDexId >= EXPANSION_SERVER_SPECIES_BASE &&
             requestedDexId - EXPANSION_SERVER_SPECIES_BASE in 1..LAST_RETAIL_DEX)
             requestedDexId - EXPANSION_SERVER_SPECIES_BASE
         else requestedDexId
-    val def = species.get(dexId) ?: return null
+    // A form the retail client owns is its species under the client's form number, never the
+    // Expansion's copy (Rotom Heat is 479 form 1, with retail record 657's data).
+    val (speciesId, form) =
+        de.fiereu.openmmo.pokemon.expansion.RetailFormIdentity.normalize(collapsedDexId, 0)
+    val dexId = speciesId
+    val def =
+        de.fiereu.openmmo.pokemon.retail.RetailForms.recordOf(speciesId, form)?.let(species::get)
+            ?: species.get(speciesId)
+            ?: return null
     val ivs =
         IVs().apply {
           hp = rng.ivRoll()
@@ -101,9 +109,16 @@ constructor(
             isRaidEncounter = false,
             caughtAt = LocalDateTime.now(),
             // The dex's wild held items: 50% the common one, 5% the rare one (60 / 20 under Compound Eyes).
-            heldItem = heldItems.roll(dexId, rng.pick(100), hints?.compoundEyes == true),
+            // Keyed by client species id, like the dex that lists them (a new species' server id is not).
+            heldItem =
+                heldItems.roll(
+                    de.fiereu.openmmo.common.clientSpeciesId(dexId), rng.pick(100), hints?.compoundEyes == true),
         )
-    return mon.copy(hp = StatCalculator.computeAll(def, mon).hp.toShort())
+    // First or second ability 50/50, fixed for the monster's life (project owner, 2026-09-13). Rolled
+    // last so every earlier roll keeps its place in a seeded sequence. The hidden slot is never
+    // rolled; only something that grants a hidden ability sets it.
+    return mon.copy(
+        hp = StatCalculator.computeAll(def, mon).hp.toShort(), abilitySlot = rng.pick(2), form = form)
   }
 
   /**

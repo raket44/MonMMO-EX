@@ -38,7 +38,7 @@ object PorymovesLearnsets {
    * renamed "Snowscape", Expansion adds 809 as a new id): modern dumps teach 809, older dumps teach
    * 258, and unioning both duplicated the move and minted a ghost "TM Snowscape".
    */
-  private val CANONICAL_MOVE_IDS = mapOf(809 to 258)
+  private val CANONICAL_MOVE_IDS = mapOf(809 to 258, 567 to 1000, 680 to 1019)
 
   data class Learnsets(
       val taught: Map<String, List<Int>>,

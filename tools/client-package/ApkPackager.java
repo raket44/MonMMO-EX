@@ -68,7 +68,10 @@ public class ApkPackager {
 
   public static void main(String[] args) throws Exception {
     if (args.length >= 7 && args[0].equals("prepare")) {
-      prepare(Path.of(args[1]), Path.of(args[2]), args[3], args[4], Path.of(args[5]), Path.of(args[6]));
+      prepare(
+          Path.of(args[1]), Path.of(args[2]), args[3], args[4], Path.of(args[5]), Path.of(args[6]),
+          args.length > 7 ? args[7] : "-", args.length > 8 ? args[8] : "-",
+          args.length > 9 ? args[9] : "-", args.length > 10 ? args[10] : "-");
     } else if (args.length >= 6 && args[0].equals("finish")) {
       finish(Path.of(args[1]), Path.of(args[2]), Path.of(args[3]), Path.of(args[4]), args[5]);
     } else {
@@ -80,7 +83,26 @@ public class ApkPackager {
 
   // ---------------------------------------------------------------- prepare
 
-  static void prepare(Path in, Path out, String host, String mod, Path gamePem, Path chatPem)
+  static final String DATA_PAK_ENTRY = "assets/data/data.pak";
+  static final String STRINGS_EN_ENTRY = "assets/data/strings/strings_en.xml";
+
+  /**
+   * [dataPak] and [stringsEn] replace the APK's own copies when not "-". They come from staging the
+   * Expansion content against this APK's r32645 data - the species the character select resolves,
+   * learnsets, details and names. Without them the stock client knows only dex 1-649 and crashes the
+   * moment a party holds anything newer. Each keeps the original entry's compression method, since
+   * the asset loader may memory-map a stored entry.
+   *
+   * [classesDex], when not "-", is a classes.dex rebuilt with smali from the APK's own code plus
+   * MonMMO-EX edits (Fairy in the type enum, badge tables, Pokedex regions). It replaces the APK's
+   * classes.dex BEFORE the server-key swap, so the same key patch and checksum repair apply to it.
+   *
+   * [overlayDir], when not "-", holds files laid out by APK path (assets/...): each replaces the
+   * entry of the same name or is added - e.g. the sprite atlas with the hand-drawn Fairy badge page.
+   */
+  static void prepare(
+      Path in, Path out, String host, String mod, Path gamePem, Path chatPem,
+      String dataPak, String stringsEn, String classesDex, String overlayDir)
       throws Exception {
     byte[] file = Files.readAllBytes(in);
     Map<String, String> keys = new LinkedHashMap<>();
@@ -88,6 +110,7 @@ public class ApkPackager {
     keys.put(RETAIL_CHAT_KEY, pemBody(chatPem));
 
     List<Entry> result = new ArrayList<>();
+    List<String> replaced = new ArrayList<>();
     boolean dexPatched = false;
     int dropped = 0;
     for (Entry e : read(file)) {
@@ -100,8 +123,17 @@ public class ApkPackager {
         throw new IllegalStateException("retail APK unexpectedly ships " + n);
       }
       if (n.equals(MOD_ENTRY)) continue;
+      String replacement =
+          n.equals(DATA_PAK_ENTRY) ? dataPak : n.equals(STRINGS_EN_ENTRY) ? stringsEn : "-";
+      if (!replacement.equals("-")) {
+        byte[] bytes = Files.readAllBytes(Path.of(replacement));
+        result.add(e.method() == 0 ? stored(n, bytes) : deflated(n, bytes));
+        replaced.add(n);
+        continue;
+      }
       if (n.equals("classes.dex")) {
-        byte[] dex = content(e);
+        byte[] dex = classesDex.equals("-") ? content(e) : Files.readAllBytes(Path.of(classesDex));
+        if (!classesDex.equals("-")) replaced.add(n + " (rebuilt)");
         patchDex(dex, keys);
         result.add(deflated(n, dex));
         dexPatched = true;
@@ -110,6 +142,29 @@ public class ApkPackager {
       result.add(e);
     }
     if (!dexPatched) throw new IllegalStateException("no classes.dex in " + in);
+    for (String[] want : new String[][] {{dataPak, DATA_PAK_ENTRY}, {stringsEn, STRINGS_EN_ENTRY}}) {
+      if (!want[0].equals("-") && !replaced.contains(want[1])) {
+        throw new IllegalStateException("asked to replace " + want[1] + " but the APK has no such entry");
+      }
+    }
+    if (!overlayDir.equals("-")) {
+      Path root = Path.of(overlayDir);
+      List<Path> files;
+      try (var walk = Files.walk(root)) {
+        files = walk.filter(Files::isRegularFile).sorted().toList();
+      }
+      for (Path p : files) {
+        String name = root.relativize(p).toString().replace('\\', '/');
+        if (!name.startsWith("assets/")) {
+          throw new IllegalStateException("overlay may only touch assets/, not " + name);
+        }
+        byte[] bytes = Files.readAllBytes(p);
+        boolean existed = result.removeIf(x -> x.name().equals(name));
+        result.add(name.endsWith(".png") ? stored(name, bytes) : deflated(name, bytes));
+        replaced.add(name + (existed ? " (overlay)" : " (added)"));
+      }
+    }
+    if (!replaced.isEmpty()) System.out.println("[apk] replaced " + replaced);
 
     String props =
         "# MonMMO-EX: points the client at our server instead of the official one.\n"

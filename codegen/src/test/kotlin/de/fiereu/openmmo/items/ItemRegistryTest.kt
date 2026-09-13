@@ -22,10 +22,21 @@ class ItemRegistryTest :
         r.idOf(r.byScriptConstant("ITEM_HM05")!!) shouldBe 343
         r.byScriptConstant("ITEM_HM05")!!.name shouldBe "HM Flash"
         r.idOf(r.byScriptConstant("ITEM_HM01")!!) shouldBe 339
-        // TM03 is Water Pulse (Misty), not Gen 5's Psyshock.
-        r.byScriptConstant("ITEM_TM03")!!.name shouldBe "TM Water Pulse"
-        r.byScriptConstant("ITEM_TM39")!!.name shouldBe "TM Rock Tomb"
-        r.byScriptConstant("ITEM_TM50")!!.name shouldBe "TM Overheat"
+        // TM03 is Water Pulse (Misty), not Gen 5's Psyshock. Each resolves to the client's OWN tool
+        // for that move - the imported "TM <move>" duplicates are no longer created (2026-09-13).
+        fun taught(constant: String) = ClientTools.itemToMove[r.idOf(r.byScriptConstant(constant)!!)]
+        taught("ITEM_TM03") shouldBe 352 // Water Pulse, PokeMMO's 1601
+        taught("ITEM_TM39") shouldBe 317 // Rock Tomb, Gen 5 TM39 (5366)
+        taught("ITEM_TM50") shouldBe 315 // Overheat (5377)
+        r.idOf(r.byScriptConstant("ITEM_TM03")!!) shouldBe 1601
+      }
+
+      test("the client's own tools resolve by id, copies included (Route 4 hands out 1710 and 1709)") {
+        val r = registry()
+        r.get(1710)!!.name shouldBe "TM Mega Punch"
+        r.get(1709)!!.name shouldBe "TM Mega Kick"
+        r.get(7710) shouldBe r.get(1710)
+        r.idOf(r.get(7710)!!) shouldBe 1710
       }
 
       test("resolves the ids the live client sends") {

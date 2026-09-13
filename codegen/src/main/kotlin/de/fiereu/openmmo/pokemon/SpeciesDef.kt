@@ -41,6 +41,11 @@ data class SpeciesDef(
     val ability1Id: Int = ability1.ordinal,
     val ability2Id: Int = ability2.ordinal,
     val abilityMechanicsSupported: Boolean = true,
+    /** The hidden ability (a monster's slot 2), [Ability.NONE] when the species has none. */
+    val hiddenAbility: Ability = Ability.NONE,
+    val hiddenAbilityId: Int = 0,
+    /** Hectograms (0.1 kg), as the dex stores it; 0 when no source knows the species' weight. */
+    val weight: Int = 0,
 ) {
   val types: Set<PokemonType> = setOf(type1, type2)
 

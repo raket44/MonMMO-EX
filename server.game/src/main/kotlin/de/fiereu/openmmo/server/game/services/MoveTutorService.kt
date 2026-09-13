@@ -8,6 +8,9 @@ import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.moves.MoveRegistry
 import de.fiereu.openmmo.net.game.packets.battle.moves.MoveLearnPromptPacket
+import de.fiereu.openmmo.server.game.services.TutorCompatibility.Companion.BLAST_BURN
+import de.fiereu.openmmo.server.game.services.TutorCompatibility.Companion.FRENZY_PLANT
+import de.fiereu.openmmo.server.game.services.TutorCompatibility.Companion.HYDRO_CANNON
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -29,9 +32,8 @@ private val log = KotlinLogging.logger {}
  * client's own forget dialog - the same one level-up moves open, answered through the same reply
  * packet (see [BattleService.offerMove]).
  *
- * Compatibility comes from each ROM's tutor_learnsets.h (`monmmo/tutor-learnsets-<region>.csv`:
- * national dex id, then the move ids that ROM's tutors can teach it). The three starter moves
- * (Frenzy Plant, Blast Burn, Hydro Cannon) are gated on the final evolutions like party_menu.c.
+ * Compatibility comes from each ROM's tutor_learnsets.h for retail species and from the Expansion's
+ * own taught lists for Expansion species - see [TutorCompatibility].
  */
 @Singleton
 class MoveTutorService
@@ -43,8 +45,7 @@ constructor(
     private val battles: BattleService,
     private val emitter: BattlePacketEmitter,
 ) {
-  private val kantoLearnsets: Map<Int, Set<Int>> by lazy { load("/monmmo/tutor-learnsets-kanto.csv") }
-  private val hoennLearnsets: Map<Int, Set<Int>> by lazy { load("/monmmo/tutor-learnsets-hoenn.csv") }
+  private val compatibility: TutorCompatibility by lazy { TutorCompatibility.load() }
 
   /** The move a tutor index names in [region]'s ROM, or null when the index is unknown there. */
   fun moveFor(regionId: Int, tutorIndex: Int): Int? =
@@ -65,7 +66,7 @@ constructor(
       log.warn { "char=$charId: no tutor move for index $tutorIndex in region ${state.regionId}" }
       return false
     }
-    val learnsets = if (Region.byId(state.regionId) == Region.HOENN) hoennLearnsets else kantoLearnsets
+    val region = Region.byId(state.regionId)
     while (true) {
       val party = characterStore.getCharacter(charId)?.pokemon ?: return false
       if (party.isEmpty()) return false
@@ -77,20 +78,12 @@ constructor(
         mon.isEgg -> dialog.showAndWait(session, state, EGG_TEXT, NPC_BOX, npcEntityId)
         mon.moves.any { it.id.toInt() == moveId } ->
             dialog.showAndWait(session, state, CANNOT_TEACH_TEXT, NPC_BOX, npcEntityId)
-        !canLearn(learnsets, mon.dexId, moveId) ->
+        !compatibility.canLearn(region, mon.dexId, moveId) ->
             dialog.showAndWait(session, state, CANNOT_TEACH_TEXT, NPC_BOX, npcEntityId)
         else -> return teach(session, charId, mon.id, moveId)
       }
     }
   }
-
-  private fun canLearn(learnsets: Map<Int, Set<Int>>, dexId: Int, moveId: Int): Boolean =
-      when (moveId) {
-        FRENZY_PLANT -> dexId == VENUSAUR
-        BLAST_BURN -> dexId == CHARIZARD
-        HYDRO_CANNON -> dexId == BLASTOISE
-        else -> learnsets[dexId]?.contains(moveId) == true
-      }
 
   /** [teach] for a script that can wait on the forget dialog. */
   private suspend fun teach(session: SessionContext, charId: Long, monId: Long, moveId: Int): Boolean {
@@ -132,20 +125,6 @@ constructor(
     return true
   }
 
-  private fun load(resource: String): Map<Int, Set<Int>> {
-    val stream = MoveTutorService::class.java.getResourceAsStream(resource)
-    if (stream == null) {
-      log.warn { "missing tutor learnset table $resource" }
-      return emptyMap()
-    }
-    return stream.bufferedReader().useLines { lines ->
-      lines
-          .filter { it.isNotBlank() && !it.startsWith("#") }
-          .map { line -> line.split(',').map { it.trim().toInt() } }
-          .associate { it.first() to it.drop(1).toSet() }
-    }
-  }
-
   private companion object {
     /** Client string "Which {mon} should be tutored?" - the retail tutor's own prompt. */
     const val WHICH_MON_TEXT = 16779003
@@ -156,13 +135,6 @@ constructor(
     /** Dialog action type of an npc speech box. */
     const val NPC_BOX = 4
     const val FORGET_DIALOG_TIMEOUT_MILLIS = 180_000L
-
-    const val FRENZY_PLANT = 338
-    const val BLAST_BURN = 307
-    const val HYDRO_CANNON = 308
-    const val VENUSAUR = 3
-    const val CHARIZARD = 6
-    const val BLASTOISE = 9
 
     /** pokefirered MOVETUTOR_* order (include/constants/moves.h) -> move id. */
     val KANTO_TUTOR_MOVES =

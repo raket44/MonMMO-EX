@@ -49,6 +49,8 @@ constructor(
       /** Null keeps the level-up moves the roll produced (gift monsters). */
       moveIds: List<Int>?,
       isShiny: Boolean = false,
+      /** The form number on [dexId] (retail forms are species + form, never separate species). */
+      form: Int = 0,
   ): Pokemon? {
     val characterId = state.characterId ?: return null
     val stored = characters.getCharacter(characterId) ?: return null
@@ -62,12 +64,13 @@ constructor(
             ot = stored.info.name,
             moves = moveIds?.let(::paddedMoves) ?: rolled.moves,
             isShiny = isShiny,
+            form = form,
         )
     // Only tell the client about it once the database has it.
     if (!characters.addPokemon(characterId, pokemon)) return null
     // Send the granted Pokemon's full record.
     session.send(SocialListEntryAddPacket(pokemon))
-    species.get(dexId)?.let { session.send(acquiredMonsterDelta(pokemon, it)) }
+    species.forMonster(pokemon)?.let { session.send(acquiredMonsterDelta(pokemon, it)) }
     session.send(
         PokemonContainerPacket(
             container = PokemonContainer.PARTY,
@@ -142,7 +145,7 @@ constructor(
     val stored = characters.getCharacter(characterId) ?: return
     val healed =
         stored.pokemon.map { pokemon ->
-          val definition = species.get(pokemon.dexId) ?: return@map pokemon
+          val definition = species.forMonster(pokemon) ?: return@map pokemon
           pokemon.copy(
               hp = StatCalculator.computeAll(definition, pokemon).hp.toShort(),
               status = de.fiereu.openmmo.common.StatusCondition.NONE,

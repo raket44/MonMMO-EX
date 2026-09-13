@@ -21,7 +21,31 @@ class ItemRegistry @Inject constructor() {
     // Gen 5-numbered 5450. Registering 360 on the same item makes it the id scripts hand out
     // (idOf takes the lowest), so there is one Bicycle, not two.
     register(de.fiereu.openmmo.items.generated.Items.BICYCLE, 360)
+    registerClientTools()
   }
+
+  /**
+   * Every tool the client defines itself (ClientTools) that the catalogue does not list - PokeMMO's
+   * 1600-1782 block and its 7600 copies - as "TM <move>" / "HM <move>" at its client id, one item per
+   * move. Scripts hand these out now that our duplicates are gone (Route 4's Mega Punch is 1710).
+   */
+  private fun registerClientTools() {
+    val moveNames by lazy { de.fiereu.openmmo.moves.MoveRegistry().all().associate { it.id to it.name } }
+    ClientTools.itemToMove.entries
+        .filter { (itemId, _) -> !byId.containsKey(itemId) }
+        .groupBy({ it.value }, { it.key })
+        .forEach { (moveId, itemIds) ->
+          val name = moveNames[moveId] ?: return@forEach
+          val canonical = ClientTools.toolFor(moveId)
+          val existing = canonical?.let(byId::get)
+          val item = existing ?: ItemDef("${if (itemIds.any(::isHmId)) "HM" else "TM"} $name", 0)
+          register(item, *itemIds.sorted().toIntArray())
+        }
+  }
+
+  /** The client's HM blocks (f/ls0.jU0). */
+  private fun isHmId(id: Int): Boolean =
+      id in 339..346 || id in 5420..5425 || id in 8420..8427 || id in 1297..1298 || id in 9420..9427
 
   /**
    * GBA story key items the modern catalogue dropped. Their wire id addresses the client's
@@ -126,7 +150,10 @@ class ItemRegistry @Inject constructor() {
    * Coat, name for name across the whole band). An id from that mirror band that nothing claims
    * resolves to the 5000-band item, so a held 6233 is a Metal Coat to battle and evolution alike.
    */
-  fun get(id: Int): ItemDef? = byId[id] ?: if (id in MIRROR_ITEM_BAND) byId[id - 1000] else null
+  fun get(id: Int): ItemDef? =
+      byId[id]
+          ?: byId[ItemIdAliases.canonical(id)].takeIf { ItemIdAliases.canonical(id) != id }
+          ?: if (id in MIRROR_ITEM_BAND) byId[id - 1000] else null
 
   fun idsOf(item: ItemDef): List<Int> = idsByItem[item].orEmpty()
 
@@ -154,7 +181,14 @@ class ItemRegistry @Inject constructor() {
       val index = m.groupValues[2].toInt() - 1
       if (m.groupValues[1] == "HM") return byGbaConstant[constant]
       val move = GEN3_TM_MOVES.getOrNull(index) ?: return null
-      return byConstantName.value["TM_" + mangle(move)] ?: byGbaConstant[constant]
+      return byConstantName.value["TM_" + mangle(move)] ?: clientTool(move) ?: byGbaConstant[constant]
+    }
+    // A machine named by its move (the Expansion's ITEM_TM_FACADE, Norman's gym reward): the
+    // client's own tool for that move, now that our "TM <move>" duplicates are not created.
+    MOVE_MACHINE.matchEntire(constant)?.let { match ->
+      (byConstantName.value[constant] ?: clientTool(match.groupValues[1]))?.let {
+        return it
+      }
     }
     // The aliases run BOTH ways: FRLG scripts spell gen-3 (ITEM_PARLYZ_HEAL) against modern
     // catalogue names, while pret's Emerald uses modern constants (ITEM_PARALYZE_HEAL) against
@@ -164,6 +198,24 @@ class ItemRegistry @Inject constructor() {
         ?: alias?.let { byConstantName.value[it] }
         ?: byGbaConstant[constant]
         ?: alias?.let { byGbaConstant[it] }
+  }
+
+  /**
+   * The client's own tool for the move named [moveName] (ClientTools): the retail TM we would
+   * otherwise have duplicated - Water Pulse is PokeMMO's 1601, Rock Tomb Gen 5's TM39 (5366). A tool
+   * the catalogue does not list is registered as "TM <move>" at its client id.
+   */
+  private fun clientTool(moveName: String): ItemDef? {
+    val moveId = moveIdsByName.value[mangle(moveName)] ?: return null
+    val toolId = ClientTools.toolFor(moveId) ?: return null
+    byId[toolId]?.let {
+      return it
+    }
+    return ItemDef("TM $moveName", 0).also { register(it, toolId) }
+  }
+
+  private val moveIdsByName = lazy {
+    de.fiereu.openmmo.moves.MoveRegistry().all().associate { mangle(it.name) to it.id }
   }
 
   // The same mangling ItemDataParser.identifierOf applies, so the script constant for a retail
@@ -181,6 +233,9 @@ class ItemRegistry @Inject constructor() {
     const val GBA_REGION_TABLE = 1000
 
     private val MACHINE = Regex("^(TM|HM)(\\d\\d)$")
+
+    /** TM_FACADE / HM_SURF: a machine constant spelled with its move. */
+    private val MOVE_MACHINE = Regex("^(?:TM|HM)_([A-Z0-9_]+)$")
 
     /** HM01-HM08 in FireRed and Emerald. */
     val GEN3_HM_MOVES = listOf("Cut", "Fly", "Surf", "Strength", "Flash", "Rock Smash", "Waterfall", "Dive")

@@ -36,7 +36,7 @@ constructor(
     val second = if (ocarina) standIn - 4096 else slot
     session.send(WorldActionDispatchPacket(2, moveId.toByte(), listOf(first.toShort(), second.toShort())))
     val who =
-        if (!ocarina) stored.pokemon[slot].let { it.nickname.ifEmpty { species.get(it.dexId)?.name ?: "" } }
+        if (!ocarina) stored.pokemon[slot].let { it.nickname.ifEmpty { species.forMonster(it)?.name ?: "" } }
         else "${stored.info.name}'s summoned ${species.get(standIn)?.name ?: "Pokemon"}"
     session.send(
         ServerMessagePacket(

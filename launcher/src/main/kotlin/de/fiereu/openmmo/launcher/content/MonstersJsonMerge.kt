@@ -227,7 +227,10 @@ private fun entryJson(
             // Item-based methods carry the CLIENT item id, the +5000 shift the ROM loader applies
             // to their parameter - the same rows retail writes as Thunderstone 5083.
             val itemMethod = evo.method in ITEM_EVO_METHODS
-            val value = if (itemMethod) evo.param + CLIENT_ITEM_SHIFT else evo.param
+            // A species parameter (the party member Mantyke needs) names the client's id for it.
+            val value =
+                if (itemMethod) evo.param + CLIENT_ITEM_SHIFT
+                else evo.speciesParamSymbol?.let { wireBySymbol["SPECIES_$it"] } ?: evo.param
             val itemName = if (itemMethod) items.byId(value) else null
             val builder = StringBuilder()
             builder.append("\t\t{\n\t\t\t\"id\": ").append(targetWire)

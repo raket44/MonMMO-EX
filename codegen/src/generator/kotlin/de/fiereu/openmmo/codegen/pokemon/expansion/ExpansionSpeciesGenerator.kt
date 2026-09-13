@@ -29,7 +29,31 @@ data class ParsedExpansionSpecies(
     val weight: Int,
     val assets: ParsedExpansionAssets,
     val clientWireId: Int?,
+    /**
+     * This form's number on its base species - the client's form index (monster record form byte,
+     * the Pokedex "Next Form" order). Null for base species and for forms outside a form table.
+     */
+    val formIndex: Int? = null,
+    /**
+     * Set when the client already owns this form: the client's record id for it (the base species
+     * itself for appearance-only forms such as Unown B, 650-667 for Deoxys/Rotom/... records).
+     * Such a form is never staged as a new species - it IS the retail form.
+     */
+    val retailRecordId: Int? = null,
 )
+
+/** One row of the client's own form catalogue, launcher :stageRetailData -> retail-forms.csv. */
+data class RetailForm(val speciesId: Int, val formId: Int, val recordId: Int, val isCostume: Boolean)
+
+fun parseRetailForms(file: File): List<RetailForm> =
+    file.readLines().mapNotNull { line ->
+      val cells = line.split(';')
+      if (cells.size < 6) return@mapNotNull null
+      val species = cells[0].toIntOrNull() ?: return@mapNotNull null
+      val form = cells[1].toIntOrNull() ?: return@mapNotNull null
+      val record = cells[2].toIntOrNull() ?: return@mapNotNull null
+      RetailForm(species, form, record, cells[4] == "true")
+    }
 
 data class ParsedExpansionLevelUpMove(
     val level: Int,
@@ -53,7 +77,10 @@ data class ParsedExpansionAssets(
     val iconPalIndex: Int = 0,
 )
 
-class ExpansionSpeciesGenerator(private val rootDir: File) {
+class ExpansionSpeciesGenerator(
+    private val rootDir: File,
+    private val retailForms: List<RetailForm> = emptyList(),
+) {
   fun parseAll(): List<ParsedExpansionSpecies> {
     require(rootDir.resolve("include/config/species_enabled.h").isFile) {
       "Not a configured pokeemerald-expansion tree: $rootDir"
@@ -74,7 +101,24 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
         learnsets,
         graphics,
         cries,
+        parseFormSpeciesTables(preprocess("src/data/pokemon/form_species_tables.h")),
+        retailForms,
     )
+  }
+
+  /**
+   * Each form's base species and position in its configured form table (`sXFormSpeciesIdTable`,
+   * entry 0 = the base). Preprocessed first: megas, G-Max and the Gen 9 megas sit behind config
+   * switches, and only the configured entries exist.
+   */
+  internal fun parseFormSpeciesTables(text: String): Map<String, Pair<String, Int>> {
+    val slots = linkedMapOf<String, Pair<String, Int>>()
+    FORM_TABLE.findAll(text).forEach { table ->
+      val members = FORM_MEMBER.findAll(table.groupValues[1]).map { it.value }.toList()
+      val base = members.firstOrNull() ?: return@forEach
+      members.forEachIndexed { index, symbol -> slots.putIfAbsent(symbol, base to index) }
+    }
+    return slots
   }
 
   internal fun parseSpeciesInfo(
@@ -85,6 +129,8 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
       learnsets: Map<String, List<ParsedExpansionLevelUpMove>> = emptyMap(),
       graphics: Map<String, String> = emptyMap(),
       cries: Map<String, String> = emptyMap(),
+      formTables: Map<String, Pair<String, Int>> = emptyMap(),
+      retailForms: List<RetailForm> = emptyList(),
   ): List<ParsedExpansionSpecies> {
     val raw =
         ENTRY_START.findAll(text)
@@ -132,6 +178,37 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
             .withIndex()
             .associate { (index, entry) -> entry.symbol to index }
 
+    // Form numbers, reusing the client's own forms (project owner, 2026-09-13: no duplicates).
+    // For a species the client already has (Dex 1-649), a form table position the client fills with
+    // a non-costume form IS that form: it keeps the client's number and resolves to the client's
+    // record. Every other form of such a species is new and is numbered after the client's highest
+    // form (Charizard's form 1 is the Royal costume, so Mega X becomes 2). Forms of new species keep
+    // their table position.
+    val rawBySymbol = raw.associateBy { it.symbol }
+    val retailFormAt = retailForms.filter { !it.isCostume }.associateBy { it.speciesId to it.formId }
+    val retailHighestForm = retailForms.groupBy { it.speciesId }.mapValues { (_, f) -> f.maxOf { it.formId } }
+    val formIndexBySymbol = HashMap<String, Int>()
+    val retailRecordBySymbol = HashMap<String, Int>()
+    formTables.entries
+        .groupBy({ it.value.first }, { it.key to it.value.second })
+        .forEach { (baseSymbol, members) ->
+          val baseDex = rawBySymbol[baseSymbol]?.nationalDexId
+          val retailSpecies = baseDex != null && baseDex <= LAST_KNOWN_CLIENT_SPECIES
+          var nextNewForm = (baseDex?.let(retailHighestForm::get) ?: 0) + 1
+          members.sortedBy { it.second }.forEach { (symbol, position) ->
+            if (position == 0) return@forEach
+            val retail = if (retailSpecies) retailFormAt[baseDex to position] else null
+            when {
+              retail != null -> {
+                formIndexBySymbol[symbol] = position
+                retailRecordBySymbol[symbol] = retail.recordId
+              }
+              retailSpecies -> formIndexBySymbol[symbol] = nextNewForm++
+              else -> formIndexBySymbol[symbol] = position
+            }
+          }
+        }
+
     return raw.sortedBy { it.originalId }
         .map { entry ->
           val base = entry.nationalDexId?.let(baseByNationalDex::get) ?: entry
@@ -151,7 +228,8 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
               fields = entry.fields,
               typeSymbols = types,
               abilitySymbols = abilities,
-              abilityIds = abilities.mapNotNull(abilityIds::get),
+              abilityIds =
+                  abilities.mapNotNull(abilityIds::get).map { CANONICAL_ABILITY_IDS[it] ?: it },
               eggGroupSymbols = eggGroups,
               levelUpLearnset = learnsetLabel?.let(learnsets::get).orEmpty(),
               evolutionTargetSymbols =
@@ -185,8 +263,13 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
                       cryPath = cryPath(cries, entry.fields),
                       iconPalIndex = entry.fields["iconPalIndex"]?.trim()?.toIntOrNull() ?: 0,
                   ),
+              // A form the client owns speaks the client's record id; every other id is unchanged,
+              // so no existing monster's identity moves.
               clientWireId =
-                  clientWireId(entry, base.symbol == entry.symbol, formOrdinals[entry.symbol]),
+                  retailRecordBySymbol[entry.symbol]
+                      ?: clientWireId(entry, base.symbol == entry.symbol, formOrdinals[entry.symbol]),
+              formIndex = formIndexBySymbol[entry.symbol],
+              retailRecordId = retailRecordBySymbol[entry.symbol],
           )
         }
   }
@@ -481,8 +564,19 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
   )
 
   private companion object {
-    /** Expansion ids that duplicate a CLIENT move under a rename (Snowscape = Hail 258). */
-    val CANONICAL_MOVE_IDS = mapOf(809 to 258)
+    /**
+     * Expansion ids for moves the CLIENT already has (project owner, 2026-09-13: reuse retail):
+     * Snowscape = Hail 258 renamed, and PokeMMO's own Trick-or-Treat 1000 and Bouncy Bubble 1019.
+     */
+    val CANONICAL_MOVE_IDS = mapOf(809 to 258, 567 to 1000, 680 to 1019)
+
+    /**
+     * Expansion ability ids for abilities the CLIENT already has under PokeMMO's own ids (its 500+
+     * block, string 210000 + id): Protean, Competitive, Wind Rider and Sharpness by name, and the
+     * two PokeMMO renamed - Slush Rush is Snow Plow 546, Neutralizing Gas is Koffing's Reactive
+     * Gas 548. monmmo/ability-ids.csv carries the same ids for the server.
+     */
+    val CANONICAL_ABILITY_IDS = mapOf(168 to 547, 172 to 545, 202 to 546, 256 to 548, 274 to 557, 292 to 550)
 
     const val EXPANSION_SERVER_ID_BASE = 0x10000
     /**
@@ -497,6 +591,9 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
     const val RARITY_NONE = 0
     const val RARITY_MYTHICAL = 1
     const val RARITY_LEGENDARY = 2
+    val FORM_TABLE = Regex("""FormSpeciesIdTable\[\]\s*=\s*\{([^}]*)\}""")
+    /** Word-bounded so FORM_SPECIES_END's "SPECIES_END" tail is not read as a member. */
+    val FORM_MEMBER = Regex("""\bSPECIES_[A-Z0-9_]+""")
     val ENTRY_START = Regex("""\[(SPECIES_[A-Z0-9_]+)]\s*=\s*\{""")
     val ENUM_VALUE = Regex("""(?m)^\s*([A-Z][A-Z0-9_]+)\s*(?:=\s*([^,]+))?,""")
     val DISPLAY_NAME = Regex("""_\("([^"]*)"\)""")
@@ -518,7 +615,7 @@ class ExpansionSpeciesGenerator(private val rootDir: File) {
 object ExpansionSpeciesBinary {
   /** Set before encoding: stats can be generation-gated expressions rather than plain numbers. */
   private lateinit var config: ExpansionConfig
-  private const val FORMAT_VERSION = 6
+  private const val FORMAT_VERSION = 7
 
   fun encode(species: List<ParsedExpansionSpecies>, settings: ExpansionConfig): String {
     config = settings
@@ -586,6 +683,8 @@ object ExpansionSpeciesBinary {
         output.writeInt(entry.assets.iconPalIndex)
         output.writeNullableInt(entry.clientWireId)
         output.writeUTF(entry.fields["formChangeTable"]?.trim().orEmpty())
+        output.writeNullableInt(entry.formIndex)
+        output.writeNullableInt(entry.retailRecordId)
       }
     }
     return Base64.getEncoder().encodeToString(bytes.toByteArray())

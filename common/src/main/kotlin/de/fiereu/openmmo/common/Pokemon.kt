@@ -54,6 +54,19 @@ data class Pokemon(
     val friendship: Int = 70,
     /** Non-volatile status as [StatusCondition] bits; persists between battles until healed. */
     val status: Int = StatusCondition.NONE,
+    /**
+     * Which species ability slot the monster carries: 0 first, 1 second, 2 hidden. Rides the monster
+     * record in the byte after the IV word (client k91.WJ0): the summary shows the species' ability
+     * in this slot, falls back to the first when that slot is empty, and treats 2 as hidden only
+     * with [hasHiddenAbility]. Battles resolve the same slot, so the ability shown is the one used.
+     */
+    val abilitySlot: Int = 0,
+    /**
+     * The form number on [dexId] (client k91.Jw1, the monster record's form byte): Unown B is 201
+     * form 1, Rotom Heat is 479 form 1. 0 is the base form. The client resolves species + form to
+     * the form's record itself.
+     */
+    val form: Int = 0,
 ) {
   // seed is an unsigned 32-bit value on the wire, so mask before the modulo to avoid a negative
   // index when the high bit is set.

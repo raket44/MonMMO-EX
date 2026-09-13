@@ -22,6 +22,8 @@ class ExpansionSpeciesCatalogTest :
         report.knownClientMappings shouldBe 1571
         report.requiringClientMapping shouldBe 0
         report.stockClientMappings shouldBe 649
+        // Unown B-?, the Arceus types, Genesect drives, Deoxys/Rotom/Castform records...
+        report.retailFormMappings shouldBe 76
         report.generatedClientMappings shouldBe 675
         expansion.all().map { it.stableId }.shouldBeUnique()
         expansion.all().map { it.serverId }.shouldBeUnique()

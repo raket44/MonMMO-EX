@@ -1318,7 +1318,10 @@ constructor(
           MoveEffect.RETURN -> (attacker.source.friendship * 10 / 25).coerceAtLeast(1)
           MoveEffect.FRUSTRATION -> ((255 - attacker.source.friendship) * 10 / 25).coerceAtLeast(1)
           MoveEffect.HIDDEN_POWER -> hiddenPowerBase(attacker)
-          MoveEffect.LOW_KICK, MoveEffect.HEAT_CRASH -> 60
+          // Low Kick and Grass Knot share LOW_KICK; Heavy Slam and Heat Crash share HEAT_CRASH.
+          MoveEffect.LOW_KICK -> WeightMechanics.lowKickPower(defender.species.weight)
+          MoveEffect.HEAT_CRASH ->
+              WeightMechanics.heavySlamPower(attacker.species.weight, defender.species.weight)
           MoveEffect.MAGNITUDE -> {
             val roll = battle.rng.pick(100)
             when {

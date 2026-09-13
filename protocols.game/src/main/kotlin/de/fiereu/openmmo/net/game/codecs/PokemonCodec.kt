@@ -30,7 +30,7 @@ private const val CQ_SHORTS = "0000000000000000"
 // are written back for every monster. NOT constant across captures: monster_record_32710.bin has
 // 580500 where this writes 040502, so wY0/pub/YJ1 are per-monster fields still modelled as fixed
 // bytes - same width either way, so a wrong value cannot desync the reader.
-private const val TAIL_A_REST = "000000000000040502ffffffff0300"
+private const val TAIL_A_REST = "000000000000040502ffffffff03"
 // Trailer B long that follows the unknown byte, purpose unknown. Species-dependent, so the captured
 // value is written back for now.
 private const val TRAILER_B_LONG = 0x200000L
@@ -137,8 +137,14 @@ object PokemonCodec : PacketCodec<Pokemon>() {
     val evSpAtk = field(U8) { it.eVs.spAtk and 0xFF }
     val evSpDef = field(U8) { it.eVs.spDef and 0xFF }
     field(reserved(TAIL_A_REST)) {}
+    // The form byte (client k91.Jw1, last of that block): species + form picks the form's record and
+    // sprite on the client (k91.K90). It was a constant 0, so every form showed as its base.
+    val form = field(U8) { it.form and 0xFF }
     val ivBits = field(S32LE) { it.iVs.compress() }
-    field(U8) { 0 }
+    // The ability slot (client k91.WJ0, read here by f/tK0.wG): the summary's gT0.In0 looks the
+    // species ability up by it and kd1() == 2 draws the hidden-ability label. It was written as 0,
+    // so every monster showed its first ability while battles used the personality's pick.
+    val abilitySlot = field(U8) { it.abilitySlot and 0xFF }
     field(S64LE) { TRAILER_B_LONG }
     val rarityBits = field(U16LE) { packRarity(it) }
     val caughtAt = field(TimestampLE, Pokemon::caughtAt)
@@ -170,6 +176,8 @@ object PokemonCodec : PacketCodec<Pokemon>() {
         isRaidEncounter = PokemonRarityFlag.RAID_ENCOUNTER.isSet(rarityBits),
         caughtAt = caughtAt,
         isEgg = isEgg,
+        abilitySlot = abilitySlot,
+        form = form,
     )
   }
 }

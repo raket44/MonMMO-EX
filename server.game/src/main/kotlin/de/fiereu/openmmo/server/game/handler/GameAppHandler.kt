@@ -395,9 +395,9 @@ constructor(
           val id = m.groupValues[1].toLongOrNull() ?: return@replace m.value
           val mon = (stored.pokemon + stored.pcStorage).firstOrNull { it.id == id } ?: return@replace m.value
           records += mon
-          val def = speciesRegistry.get(mon.dexId)
+          val def = speciesRegistry.forMonster(mon)
           val gender = if (def == null) de.fiereu.openmmo.server.game.battle.Gender.GENDERLESS else de.fiereu.openmmo.server.game.battle.Gender.of(def.genderRatio, mon.seed)
-          "{O:${mon.id};M:${de.fiereu.openmmo.common.clientSpeciesId(mon.dexId)};G:$gender;F:0;S:${if (mon.isShiny) 1 else 0};A:${if (mon.isAlpha) 1 else 0}}"
+          "{O:${mon.id};M:${de.fiereu.openmmo.common.clientSpeciesId(mon.dexId)};G:$gender;F:${mon.form};S:${if (mon.isShiny) 1 else 0};A:${if (mon.isAlpha) 1 else 0}}"
         }
     // The bag stack code is the client item id in the high 16 bits.
     out = ITEM_LINK.replace(out) { m -> m.groupValues[1].toLongOrNull()?.let { "{I:${it shr 16};C:0}" } ?: m.value }

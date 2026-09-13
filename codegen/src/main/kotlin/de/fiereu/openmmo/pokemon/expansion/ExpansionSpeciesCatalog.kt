@@ -89,7 +89,19 @@ data class ExpansionSpeciesDef(
     val clientWireId: Int?,
     /** The `sXFormChangeTable` symbol the species data names, "" when it has no forms. */
     val formChangeTableSymbol: String = "",
+    /** This form's number on its base species (client form index); null for base species. */
+    val formIndex: Int? = null,
+    /**
+     * The client's own record id when the client already has this form (base id for
+     * appearance-only forms, 650-667 for record forms). Such a form is the retail form, never a
+     * separately staged species.
+     */
+    val retailRecordId: Int? = null,
 ) {
+  /** True when this is a form the retail client already owns - see [retailRecordId]. */
+  val isRetailForm: Boolean
+    get() = retailRecordId != null
+
   val usesClientUnsupportedType: Boolean
     // Fairy is patched into the client's type enum at ordinal 19; Stellar still has no slot.
     get() = typeSymbols.any { it == "TYPE_STELLAR" }
@@ -176,6 +188,9 @@ data class ExpansionSpeciesDef(
         ability1Id = abilityIds[0],
         ability2Id = abilityIds.getOrElse(1) { 0 },
         abilityMechanicsSupported = abilityMechanicsSupported,
+        hiddenAbility = abilities.getOrElse(2) { Ability.NONE },
+        hiddenAbilityId = abilityIds.getOrElse(2) { 0 },
+        weight = weight,
     )
   }
 
@@ -201,6 +216,8 @@ data class ExpansionCompatibilityReport(
     val knownClientMappings: Int,
     val requiringClientMapping: Int,
     val stockClientMappings: Int,
+    /** Expansion forms that resolve to a form the client already owns (never staged). */
+    val retailFormMappings: Int,
     val generatedClientMappings: Int,
     val clientContentCompatible: Int,
     val unsupportedClientTypes: Int,
@@ -213,8 +230,13 @@ class ExpansionSpeciesRegistry @Inject constructor() {
   private val bySymbol = species.associateBy { it.symbol }
   private val byStableId = species.associateBy { it.stableId.lowercase() }
   private val byServerId = species.associateBy { it.serverId }
+  // A form the client already owns shares its base species' client id (Unown B speaks 201, the
+  // Arceus types speak 493), so it must not take that id over: the client id names the species.
   private val byClientWireId =
-      species.mapNotNull { entry -> entry.clientWireId?.let { it to entry } }.toMap()
+      species
+          .filter { !it.isRetailForm }
+          .mapNotNull { entry -> entry.clientWireId?.let { it to entry } }
+          .toMap()
 
   fun all(): List<ExpansionSpeciesDef> = species
 
@@ -258,7 +280,8 @@ class ExpansionSpeciesRegistry @Inject constructor() {
         missingRequiredData = missing,
         knownClientMappings = species.count { it.clientWireId != null },
         requiringClientMapping = species.count { it.clientWireId == null },
-        stockClientMappings = species.count { it.clientWireId in 1..649 },
+        stockClientMappings = species.count { !it.isRetailForm && it.clientWireId in 1..649 },
+        retailFormMappings = species.count { it.isRetailForm },
         generatedClientMappings = species.count { it.isNewToClient },
         clientContentCompatible = species.count { it.clientContentCompatible },
         unsupportedClientTypes = species.count { it.usesClientUnsupportedType },
@@ -274,7 +297,7 @@ object GeneratedExpansionSpeciesCatalog {
 }
 
 private object ExpansionSpeciesDecoder {
-  private const val FORMAT_VERSION = 6
+  private const val FORMAT_VERSION = 7
 
   fun decode(encoded: String): List<ExpansionSpeciesDef> {
     val bytes = Base64.getDecoder().decode(encoded)
@@ -346,6 +369,8 @@ private object ExpansionSpeciesDecoder {
                 ),
             clientWireId = input.readNullableInt(),
             formChangeTableSymbol = input.readUTF(),
+            formIndex = input.readNullableInt(),
+            retailRecordId = input.readNullableInt(),
         )
       }
     }

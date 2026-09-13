@@ -164,8 +164,32 @@ data class SpeciesDetail(
     val heldItems: List<Int>? = null,
     val field080: Int? = null,
     val rarity: Int? = null,
+    /**
+     * Bit 0x400, new in r32645: a count byte then [SPECIAL_VARIANT_BYTES] bytes per entry, kept
+     * verbatim. Retail uses it for the Charmander line ("Royal") and Bidoof/Bibarel ("Almighty"):
+     * `u8, u16 speciesId, u16 formId, u16, i32 descString, i32 nameString, u8, u8`.
+     */
+    val specialVariants: List<Int>? = null,
+    /**
+     * Bit 0x800, read by MonMMO-EX's client code (f/fi7): the ROM personal fields data never
+     * carried, so a species data adds has an exp curve, a base exp yield, a height and a weight.
+     */
+    val romScalars: RomScalars? = null,
+    /** Bit 0x1000, MonMMO-EX client code: evolutions appended to the species' list, linked. */
+    val evolutions: List<ClientEvolution>? = null,
+    /** Bit 0x2000, MonMMO-EX client code: both types, in place (the Fairy retypes). */
+    val types: Pair<Int, Int>? = null,
 ) {
   companion object {
+    const val ROM_SCALARS = 0x800
+    const val EVOLUTIONS = 0x1000
+    const val TYPES = 0x2000
+    /** [FIELD_010]'s meaning: the ROM's EV yield word, two bits per stat (f/zp3.mt, decoded by LU). */
+    const val EV_YIELD = 0x010
+    /** [FIELD_080]'s meaning: the catch rate (f/zp3.bj, the ROM byte after the types). */
+    const val CATCH_RATE = 0x080
+    const val SPECIAL_VARIANTS = 0x400
+    const val SPECIAL_VARIANT_BYTES = 17
     const val EGG_GROUPS = 0x001
     /**
      * Hides the species from the Pokedex. The screen reads it as `zK0.JI` and skips the entry
@@ -192,6 +216,37 @@ data class SpeciesDetail(
     const val RARITY_LEGENDARY = 2
   }
 }
+
+/** Growth rate (the ROM's byte, f/o9 key), base exp yield, height in dm and weight in hg. */
+data class RomScalars(val growthRate: Int, val baseExp: Int, val height: Int, val weight: Int)
+
+/** One evolution: the client method's ROM key, its parameter as stored and the target species id. */
+data class ClientEvolution(
+    val method: Int,
+    val param: Int,
+    val targetId: Int,
+    /**
+     * "day", "night" or null: a time the method key cannot carry (a stone at night). Written as a
+     * byte after the target; the evolution tab draws it as the friendship methods' sun/moon badge.
+     */
+    val time: String? = null,
+)
+
+/** The time byte of a data evolution (MonMMO-EX client code, f/fi7 0x1000): 0 any, 1 day, 2 night. */
+internal fun evolutionTimeCode(time: String?): Int =
+    when (time) {
+      null -> 0
+      "day" -> 1
+      "night" -> 2
+      else -> error("Unknown evolution time $time")
+    }
+
+internal fun evolutionTime(code: Int): String? =
+    when (code) {
+      1 -> "day"
+      2 -> "night"
+      else -> null
+    }
 
 object SpeciesDetailCodec : SectionCodec<SpeciesDetail> {
   override val type = 6
@@ -224,6 +279,25 @@ object SpeciesDetailCodec : SectionCodec<SpeciesDetail> {
                   else null,
               field080 = if (flags and SpeciesDetail.FIELD_080 != 0) reader.short() else null,
               rarity = if (flags and SpeciesDetail.RARITY != 0) reader.byte() else null,
+              specialVariants =
+                  if (flags and SpeciesDetail.SPECIAL_VARIANTS != 0) {
+                    val count = reader.byte()
+                    listOf(count) +
+                        List(count * SpeciesDetail.SPECIAL_VARIANT_BYTES) { reader.byte() }
+                  } else null,
+              romScalars =
+                  if (flags and SpeciesDetail.ROM_SCALARS != 0)
+                      RomScalars(reader.byte(), reader.short(), reader.short(), reader.short())
+                  else null,
+              evolutions =
+                  if (flags and SpeciesDetail.EVOLUTIONS != 0)
+                      List(reader.byte()) {
+                        ClientEvolution(
+                            reader.byte(), reader.short(), reader.short(), evolutionTime(reader.byte()))
+                      }
+                  else null,
+              types =
+                  if (flags and SpeciesDetail.TYPES != 0) reader.byte() to reader.byte() else null,
           )
         }
     check(reader.exhausted()) { "species detail section has ${reader.remaining()} trailing bytes" }
@@ -250,6 +324,26 @@ object SpeciesDetailCodec : SectionCodec<SpeciesDetail> {
               }
               record.field080?.let(::short)
               record.rarity?.let(::byte)
+              record.specialVariants?.forEach(::byte)
+              record.romScalars?.let {
+                byte(it.growthRate)
+                short(it.baseExp)
+                short(it.height)
+                short(it.weight)
+              }
+              record.evolutions?.let { evolutions ->
+                byte(evolutions.size)
+                evolutions.forEach {
+                  byte(it.method)
+                  short(it.param)
+                  short(it.targetId)
+                  byte(evolutionTimeCode(it.time))
+                }
+              }
+              record.types?.let {
+                byte(it.first)
+                byte(it.second)
+              }
             }
           }
           .bytes()

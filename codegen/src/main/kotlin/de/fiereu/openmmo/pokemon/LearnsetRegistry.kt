@@ -27,20 +27,37 @@ constructor(
     learnsets[dexId] = moves
   }
 
-  fun get(dexId: Int): List<LevelUpMove> =
-      // Precedence (operator-directed): EXPANSION learnsets are the modern truth and replace the
-      // counterparts' tables (plain 1-649 ids resolve through the wire-id index too - creation
-      // collapses expansion-offset ids for retail dex numbers to the plain id). The retail dump
-      // (the client's DUMP DEX output, outdated movesets) covers what the expansion cannot
-      // resolve, then the decomp tables.
-      (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
-          ?.levelUpLearnset
-          ?.takeIf { it.isNotEmpty() }
-          ?.map { LevelUpMove(it.level, it.originalMoveId) }
-          ?: de.fiereu.openmmo.pokemon.retail.RetailMonsterData.get(dexId)
-              ?.levelUpLearnset
-              ?.takeIf { it.isNotEmpty() }
-          ?: learnsets[dexId].orEmpty()
+  fun get(dexId: Int): List<LevelUpMove> {
+    val expansionMoves =
+        (expansion.getByServerId(dexId) ?: expansion.getByClientWireId(dexId))
+            ?.levelUpLearnset
+            ?.map { LevelUpMove(it.level, it.originalMoveId) }
+            .orEmpty()
+    val retail = de.fiereu.openmmo.pokemon.retail.RetailMonsterData.get(dexId)?.levelUpLearnset.orEmpty()
+    // Retail species (national dex 1-649) keep PokeMMO's own list and only gain the Expansion moves
+    // they lack - retail plus additions (project owner, 2026-09-12), the same RetailPlusAdditions
+    // rule the client build writes into data.pak, so the summary screen and the server agree.
+    // Levels are clamped the way the client build clamps them: the Expansion's level-0 evolution
+    // moves arrive at level 1 on both sides.
+    if (dexId in RETAIL_DEX_IDS && retail.isNotEmpty()) {
+      return RetailPlusAdditions.levelUp(
+          retail,
+          expansionMoves.map { it.copy(level = it.level.coerceIn(1, 100)) }.sortedBy { it.level },
+          moveId = { it.moveId },
+          level = { it.level },
+      )
+    }
+    // Everything else keeps the old precedence: the Expansion, then the retail dump (its 1000+
+    // form records), then the decomp tables.
+    return expansionMoves.takeIf { it.isNotEmpty() }
+        ?: retail.takeIf { it.isNotEmpty() }
+        ?: learnsets[dexId].orEmpty()
+  }
+
+  private companion object {
+    /** National dex numbers retail PokeMMO ships, which are also the canonical server ids. */
+    val RETAIL_DEX_IDS = 1..649
+  }
 
   fun movesAt(dexId: Int, level: Int): List<Int> =
       get(dexId).filter { it.level == level }.map { it.moveId }

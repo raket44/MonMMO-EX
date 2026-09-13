@@ -32,6 +32,32 @@ fun main(args: Array<String>) {
   var locationCount = 0
   var abilityCount = 0
   var heldItemCount = 0
+  var formCount = 0
+  // The client's OWN form catalogue: species;formId;recordId;name;isCostume;isReleased. A form whose
+  // record id is the species itself is appearance-only (Unown B is 201 form 1); one with its own
+  // record carries its own stats (Deoxys Attack is record 650). Expansion forms the client already
+  // has resolve to these instead of becoming duplicate species.
+  Files.newBufferedWriter(outputDir.resolve("retail-forms.csv")).use { forms ->
+    root.forEach { element ->
+      val mon = element.jsonObject
+      val dexId = mon.getValue("id").jsonPrimitive.content
+      mon["forms"]?.jsonArray?.forEach { form ->
+        val body = form.jsonObject
+        fun text(key: String) = body[key]?.jsonPrimitive?.content.orEmpty()
+        forms.appendLine(
+            listOf(
+                    dexId,
+                    text("form_id"),
+                    text("id"),
+                    text("name").replace(';', ','),
+                    text("is_costume"),
+                    text("is_released"),
+                )
+                .joinToString(";"))
+        formCount++
+      }
+    }
+  }
   Files.newBufferedWriter(outputDir.resolve("retail-locations.csv")).use { locations ->
     Files.newBufferedWriter(outputDir.resolve("retail-abilities.csv")).use { abilities ->
      Files.newBufferedWriter(outputDir.resolve("retail-held-items.csv")).use { heldItems ->
@@ -86,5 +112,5 @@ fun main(args: Array<String>) {
   }
   println(
       "[retail-monsters] species=${root.size} locations=$locationCount abilities=$abilityCount " +
-          "heldItems=$heldItemCount")
+          "heldItems=$heldItemCount forms=$formCount")
 }

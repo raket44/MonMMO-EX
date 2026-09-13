@@ -94,6 +94,8 @@ class BattleMonState(
   var lastDamageTaken: Int = 0
   var lastDamagePhysical: Boolean = true
   var movedThisTurn: Boolean = false
+  /** Turns ended asleep in a row on the field, for the Dream Ball; 0 while awake. */
+  var sleepTurns: Int = 0
 
   /** Everything a switch or a faint forgets: stages and the per-battle flags. */
   fun resetVolatile() {
@@ -131,6 +133,7 @@ class BattleMonState(
     semiInvulnerable = false
     lastDamageTaken = 0
     movedThisTurn = false
+    sleepTurns = 0
   }
 
   /** Per-turn flags, cleared at the end of every turn. */
@@ -142,6 +145,7 @@ class BattleMonState(
     movedThisTurn = false
     movedFirstByItem = 0
     custapReady = false
+    sleepTurns = if (de.fiereu.openmmo.common.StatusCondition.isAsleep(status)) sleepTurns + 1 else 0
   }
 
   val level: Int

@@ -360,7 +360,13 @@ constructor(
   /** True while the character has a battle running, so callers can skip starting another. */
   fun inBattle(charId: Long): Boolean = battles.byChar(charId) != null
 
-  fun startWildBattle(session: SessionContext, dexId: Int, level: Int, hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null) {
+  fun startWildBattle(
+      session: SessionContext,
+      dexId: Int,
+      level: Int,
+      hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
+      encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+  ) {
     // Inside the Safari Game every wild encounter is a safari battle: no moves, Ball / Bait / Rock.
     val charId = session.attributes[PLAYER_STATE]?.characterId
     val game = safari?.get()?.takeIf { charId != null && it.isActive(charId) }
@@ -373,7 +379,7 @@ constructor(
                 escapeFactor = (def.safariZoneFleeRate * 100 / 1275).coerceAtLeast(2),
             )
         else null
-    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints)
+    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints, encounter = encounter)
     if (battle != null && charId != null) encounterTracker?.onWildEncounter(session, charId, dexId)
   }
 
@@ -441,8 +447,12 @@ constructor(
   }
 
   /** A horde: several wild monsters on the opposing field at once (Sweet Scent). */
-  fun startHordeBattle(session: SessionContext, specs: List<OpponentSpec>): BattleInstance? {
-    val battle = createBattle(session, specs, catchable = true, escapable = true)
+  fun startHordeBattle(
+      session: SessionContext,
+      specs: List<OpponentSpec>,
+      encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+  ): BattleInstance? {
+    val battle = createBattle(session, specs, catchable = true, escapable = true, encounter = encounter)
     // Hordes are Sweet Scent's: the tracker's "Wild Sweet Scent" kind, one hit per monster.
     val charId = session.attributes[PLAYER_STATE]?.characterId
     if (battle != null && charId != null) {
@@ -482,8 +492,9 @@ constructor(
       moveIds: List<Int> = emptyList(),
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
       hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
+      encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
   ): BattleInstance? =
-      createBattle(session, listOf(OpponentSpec(dexId, level, moveIds, hints = hints)), catchable, escapable, safari = safari)
+      createBattle(session, listOf(OpponentSpec(dexId, level, moveIds, hints = hints)), catchable, escapable, safari = safari, encounter = encounter)
 
   private fun createBattle(
       session: SessionContext,
@@ -496,6 +507,7 @@ constructor(
       partner: TrainerDef? = null,
       partnerDefeatTextId: Int? = null,
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
+      encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {
@@ -509,7 +521,7 @@ constructor(
     }
     val party = mutableListOf<BattleMonState>()
     for ((index, mon) in stored.pokemon.withIndex()) {
-      val def = speciesRegistry.get(mon.dexId)
+      val def = speciesRegistry.forMonster(mon)
       if (def == null) {
         session.send(notice("Your party has a species the battle data does not cover yet."))
         return null
@@ -603,6 +615,7 @@ constructor(
     battle.opponentSeen.addAll(battle.opponentPositions.filter { it >= 0 })
     for (mon in battle.actives()) engine.prepareIllusion(battle, mon)
     battle.safari = safari
+    battle.encounter = encounter
     interestManager.join(session, battle.key)
     emitter.sendStart(
         battle,
@@ -770,8 +783,8 @@ constructor(
     val shakes =
         when {
           item == Items.MASTER_BALL -> 4
-          game != null && item == Items.SAFARI_BALL -> shakesFor(battle, wild, (game.catchFactor * 1275 / 100).coerceIn(0, 255), 15)
-          else -> shakesFor(battle, wild, wild.species.catchRate, ballMultiplier(battle, item, wild))
+          game != null && item == Items.SAFARI_BALL -> shakesFor(battle, wild, (game.catchFactor * 1275 / 100).coerceIn(0, 255), 150)
+          else -> shakesFor(battle, wild, wild.species.catchRate, ballMultiplier(battle, item, wild, stored.storyVars))
         }
     if (shakes >= 4) {
       catchWild(battle, itemId)
@@ -795,29 +808,39 @@ constructor(
     afterTurn(battle)
   }
 
-  /** sBallCatchBonuses and the special balls, in tenths; a Master Ball never rolls. */
-  private fun ballMultiplier(battle: BattleInstance, item: de.fiereu.openmmo.items.ItemDef, wild: BattleMonState): Int =
-      when (item) {
-        Items.ULTRA_BALL -> 20
-        Items.GREAT_BALL, Items.SAFARI_BALL -> 15
-        Items.NET_BALL -> if (wild.species.types.any { it == de.fiereu.openmmo.common.enums.PokemonType.WATER || it == de.fiereu.openmmo.common.enums.PokemonType.BUG }) 30 else 10
-        Items.NEST_BALL -> if (wild.level < 40) (40 - wild.level).coerceAtLeast(10) else 10
-        Items.TIMER_BALL -> (battle.turn + 10).coerceAtMost(40)
-        else -> 10
-      }
+  /** PokeMMO's bonus for [item] in hundredths (CatchModifiers); a Master Ball never rolls. */
+  private fun ballMultiplier(battle: BattleInstance, item: de.fiereu.openmmo.items.ItemDef, wild: BattleMonState, storyVars: Map<String, Int>): Int {
+    val user = battle.activeMon()
+    val target = wild.originalSpecies
+    val targetWire = de.fiereu.openmmo.common.clientSpeciesId(wild.source.dexId)
+    val context =
+        de.fiereu.openmmo.server.game.battle.CatchModifiers.BallContext(
+            turn = battle.turn,
+            targetLevel = wild.level,
+            userLevel = user.level,
+            targetTypes = target.types,
+            targetBaseSpeed = target.baseSpeed,
+            targetWeight = target.weight,
+            targetGender = wild.gender.toInt(),
+            userGender = user.gender.toInt(),
+            sameEvolutionFamily = EvolutionTable.sameFamily(targetWire, de.fiereu.openmmo.common.clientSpeciesId(user.source.dexId)),
+            familyEvolvesByMoonStone = EvolutionTable.familyEvolvesByItem(targetWire, items.idOf(Items.MOON_STONE)),
+            familyEvolvesByFriendship = EvolutionTable.familyEvolvesByFriendship(targetWire),
+            night = WorldClock.timeOfDay() == TimeOfDay.NIGHT,
+            encounter = battle.encounter,
+            targetSleepTurns = wild.sleepTurns,
+            repeatChain = de.fiereu.openmmo.server.game.battle.RepeatBallStreak.chainFor(storyVars, wild.source.dexId, java.time.LocalDate.now()),
+        )
+    return de.fiereu.openmmo.server.game.battle.CatchModifiers.ballRate(item, context)
+  }
 
   /**
-   * The ball's shakes, 4 = caught: odds = catch rate * bonus / 10 * (3 max hp - 2 hp) / (3 max hp),
-   * doubled asleep or frozen, * 1.5 with any other status; 255 catches outright, else each of
-   * four shakes rolls under 1048560 / sqrt(sqrt(16711680 / odds)).
+   * The ball's shakes, 4 = caught: the odds are CatchModifiers.odds (catch rate, the ball's bonus in
+   * hundredths, hp and status); 255 catches outright, else each of four shakes rolls under
+   * 1048560 / sqrt(sqrt(16711680 / odds)).
    */
   private fun shakesFor(battle: BattleInstance, wild: BattleMonState, catchRate: Int, multiplier: Int): Int {
-    val maxHp = wild.maxHp.coerceAtLeast(1)
-    var odds = (catchRate * multiplier / 10) * (maxHp * 3 - wild.currentHp * 2) / (maxHp * 3)
-    val status = wild.status
-    if (status and de.fiereu.openmmo.common.StatusCondition.SLEEP_MASK != 0 || status and de.fiereu.openmmo.common.StatusCondition.FREEZE != 0) odds *= 2
-    else if (status != 0) odds = odds * 15 / 10
-    odds = odds.coerceAtLeast(1)
+    val odds = de.fiereu.openmmo.server.game.battle.CatchModifiers.odds(catchRate, multiplier, wild.maxHp, wild.currentHp, wild.status)
     if (odds >= 255) return 4
     val shakeOdds = 1048560 / isqrt(isqrt(16711680 / odds))
     var shakes = 0
@@ -987,6 +1010,10 @@ constructor(
     if (!characterStore.addPokemon(battle.charId, caught)) {
       log.error { "Could not persist the monster char=${battle.charId} just caught" }
     }
+    // Any catch extends or restarts the Repeat Ball chain, whatever ball made it.
+    de.fiereu.openmmo.server.game.battle.RepeatBallStreak
+        .recordCatch(stored.storyVars, battle.opponentMon().source.dexId, java.time.LocalDate.now())
+        .forEach { (key, value) -> characterStore.setStoryVar(battle.charId, key, value) }
     // Owning is derived from holdings, so a catch just needs the tiers pushed again.
     dexProgress.refresh(battle.session, battle.charId)
     endBattle(battle, BattleResult.CAUGHT)
@@ -1116,7 +1143,7 @@ constructor(
       val mon = state.source
       if (mon.heldItem in BreedingService.EVERSTONES) continue
       val wire = clientSpeciesId(mon.dexId)
-      val def = speciesRegistry.get(mon.dexId) ?: continue
+      val def = speciesRegistry.forMonster(mon) ?: continue
       val female = Gender.of(def.genderRatio, mon.seed) == Gender.FEMALE
       val target =
           EvolutionTable.levelEvolution(
@@ -1130,6 +1157,8 @@ constructor(
                   heldItem = mon.heldItem,
                   friendship = mon.friendship,
                   daytime = java.time.LocalTime.now().hour in 6..17,
+                  moves = mon.moves.map { it.id.toInt() }.toSet(),
+                  partyWires = battle.party.map { clientSpeciesId(it.source.dexId) }.toSet(),
               ),
           ) ?: continue
       val evolvedDef = speciesRegistry.get(target) ?: continue

@@ -7,9 +7,13 @@ import de.fiereu.openmmo.server.game.script.Script
 import de.fiereu.openmmo.server.game.script.ScriptContext
 import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 
-/** Our imported TM items (monmmo/imported-items.csv) for the two Gen 1 techniques. */
-private const val TM_MEGA_PUNCH = 20000
-private const val TM_MEGA_KICK = 20011
+/**
+ * The client's own TMs for the two Gen 1 techniques (monmmo/tool-moves.csv: 1710 teaches Mega Punch,
+ * 1709 Mega Kick). Our imported 20000 and 20011 duplicated them and are no longer created
+ * (project owner, 2026-09-13: never duplicate a retail item).
+ */
+private const val TM_MEGA_PUNCH = 1710
+private const val TM_MEGA_KICK = 1709
 
 /**
  * Retail's Route 4 karate brothers: no party menu here - the one you side with hands over the

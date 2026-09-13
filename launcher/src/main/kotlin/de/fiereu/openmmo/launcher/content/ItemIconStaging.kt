@@ -56,9 +56,7 @@ object ItemIconStaging {
           }
           .onFailure { missing += "tm:$moveId ($type)" }
     }
-    EvoItemPlan.ITEMS.forEachIndexed { index, (symbol, _) ->
-      stageSymbol(EvoItemPlan.FIRST_ITEM_ID + index, symbol.removePrefix("ITEM_"))
-    }
+    EvoItemPlan.CREATED.forEach { (itemId, item) -> stageSymbol(itemId, item.first.removePrefix("ITEM_")) }
     ItemImportPlan.compute(expansionRoot).forEach { item ->
       stageSymbol(item.itemId, item.symbol.removePrefix("ITEM_"))
     }

@@ -19,10 +19,21 @@ import de.fiereu.openmmo.pokemon.SpeciesDef
  */
 object Abilities {
 
-  /** The ability a monster carries: slot from the personality's low bit, as the cartridges do. */
+  /**
+   * The ability a monster carries: the species ability in the monster's stored slot, resolved the
+   * way the client's summary resolves it (gT0.In0 / tK0.wG) - an empty slot falls back to the first
+   * ability, and slot 2 is the hidden ability only when the monster has one. This used to pick by
+   * the personality's low bit while the client showed slot 0, so a Miltank showed Thick Fat and
+   * battled with Scrappy.
+   */
   fun of(species: SpeciesDef, mon: Pokemon): Ability {
-    val second = species.ability2.takeIf { it != Ability.NONE && it != species.ability1 }
-    return if (second != null && (mon.seed and 1) == 1) second else species.ability1
+    val inSlot =
+        when (mon.abilitySlot) {
+          1 -> species.ability2
+          2 -> if (mon.hasHiddenAbility) species.hiddenAbility else Ability.NONE
+          else -> species.ability1
+        }
+    return inSlot.takeIf { it != Ability.NONE } ?: species.ability1
   }
 
   /** Mold Breaker and its two colours ignore the target's protective abilities. */

@@ -54,6 +54,16 @@ constructor(
     return species[id]
   }
 
+  /**
+   * The definition a monster battles and displays with: its form's own record when the form has one
+   * (Rotom 479 form 1 -> retail record 657, Deoxys 386 form 3 -> 652), otherwise its species.
+   * Appearance-only forms (Unown B) and costumes share the species' definition.
+   */
+  fun forMonster(mon: de.fiereu.openmmo.common.Pokemon): SpeciesDef? =
+      (if (mon.form > 0) de.fiereu.openmmo.pokemon.retail.RetailForms.recordOf(mon.dexId, mon.form) else null)
+          ?.let(::get)
+          ?: get(mon.dexId)
+
   fun all(): Collection<SpeciesDef> = species.values
 
   fun size(): Int = species.size
@@ -120,7 +130,40 @@ constructor(
                 eggGroup1 = retailGroups[0],
                 eggGroup2 = retailGroups.getOrElse(1) { retailGroups[0] },
             )
-    return withGroups.copy(expYield = expYield, catchRate = catchRate)
+    // Abilities are retail-first for retail species (project owner, 2026-09-13), for the same reason
+    // as egg groups: the client's summary shows the ability from ITS species table - retail's three
+    // slots - so battles must read those slots too, or a monster shows one ability and uses another.
+    // The Expansion supplies abilities only for species retail never had. Retail writes a missing
+    // second slot as the primary again and a missing hidden one as id 0.
+    val withAbilities =
+        if (retail == null || id !in RETAIL_DEX_IDS) withGroups
+        else
+            withGroups.copy(
+                ability1 = AbilityWireIds.ability(retail.primaryAbilityId) ?: withGroups.ability1,
+                ability1Id = retail.primaryAbilityId,
+                ability2 = AbilityWireIds.ability(retail.secondaryAbilityId) ?: withGroups.ability2,
+                ability2Id = retail.secondaryAbilityId,
+                hiddenAbility =
+                    if (retail.hiddenAbilityId == 0) Ability.NONE
+                    else AbilityWireIds.ability(retail.hiddenAbilityId) ?: withGroups.hiddenAbility,
+                hiddenAbilityId = retail.hiddenAbilityId,
+            )
+    // Growth rate and gender ratio are retail-first too: the client's exp bar and the summary's
+    // gender both read retail's table, and the Expansion copy had quietly replaced them for 1-649.
+    // Weight is retail-first for retail species like the rest of the dex page; the Expansion
+    // supplies it for species retail never had. A zero is no data, never a weight.
+    val weight =
+        retail?.weight?.takeIf { id in RETAIL_DEX_IDS && it > 0 }
+            ?: withAbilities.weight.takeIf { it > 0 }
+            ?: decomp?.weight
+            ?: 0
+    return withAbilities.copy(
+        expYield = expYield,
+        catchRate = catchRate,
+        growthRate = retail?.growthRate ?: withAbilities.growthRate,
+        genderRatio = retail?.genderRatio ?: withAbilities.genderRatio,
+        weight = weight,
+    )
   }
 
   private fun mergeRetail(
@@ -173,6 +216,15 @@ constructor(
         safariZoneFleeRate = base?.safariZoneFleeRate ?: 0,
         bodyColor = base?.bodyColor ?: de.fiereu.openmmo.common.enums.BodyColor.RED,
         noFlip = base?.noFlip ?: false,
+        ability1Id = retail.primaryAbilityId,
+        ability2Id = retail.secondaryAbilityId,
+        hiddenAbility =
+            if (retail.hiddenAbilityId == 0) Ability.NONE else ability(retail.hiddenAbilityId, null),
+        hiddenAbilityId = retail.hiddenAbilityId,
+        weight = retail.weight.takeIf { it > 0 } ?: base?.weight ?: 0,
     )
   }
 }
+
+/** National dex numbers retail PokeMMO ships, which are also the canonical server ids. */
+private val RETAIL_DEX_IDS = 1..649

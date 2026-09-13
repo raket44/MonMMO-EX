@@ -37,7 +37,11 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
   // pristine copy beside it, and staging reads that so the task stays repeatable.
   val stock = File("$install/stock-backup")
   val client = if (stock.isDirectory) stock.path else install
-  val output = layout.buildDirectory.dir("expansion-client").get().asFile
+  // -Pexpansion.outputDir stages somewhere else - the Android build uses its own directory so it
+  // never overwrites the desktop outputs.
+  val output =
+      (project.findProperty("expansion.outputDir") as String?)?.let { File(it) }
+          ?: layout.buildDirectory.dir("expansion-client").get().asFile
   args(
       "$client/data/data.pak",
       File(output, "data/data.pak").path,
@@ -45,6 +49,24 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
       File(output, "data/strings/strings_en.xml").path,
       rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
       rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
+  )
+}
+
+tasks.register<JavaExec>("checkRetailPreserved") {
+  group = "openmmo"
+  description = "Fails when a staged data.pak or string table changed or removed any retail record"
+  dependsOn("classes")
+  mainClass.set("de.fiereu.openmmo.launcher.content.RetailPreservationCheckMainKt")
+  classpath(sourceSets.main.get().runtimeClasspath)
+  maxHeapSize = "1g"
+  // Both are client roots holding data/data.pak and data/strings/strings_en.xml.
+  val stock = project.findProperty("retail.stock") as String? ?: ""
+  val staged = project.findProperty("retail.staged") as String? ?: ""
+  args(
+      "$stock/data/data.pak",
+      "$staged/data/data.pak",
+      "$stock/data/strings/strings_en.xml",
+      "$staged/data/strings/strings_en.xml",
   )
 }
 
@@ -74,6 +96,22 @@ tasks.register<JavaExec>("stageRetailData") {
           .absolutePath,
       rootProject.layout.projectDirectory
           .dir("codegen/src/main/resources/monmmo")
+          .asFile
+          .absolutePath,
+  )
+}
+
+tasks.register<JavaExec>("stageTutorLearnsets") {
+  group = "openmmo"
+  description = "Writes the Expansion species' move tutor compatibility table for the game server"
+  dependsOn("classes")
+  mainClass.set("de.fiereu.openmmo.launcher.content.TutorLearnsetsMain")
+  classpath(sourceSets.main.get().runtimeClasspath)
+  maxHeapSize = "2g"
+  args(
+      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory
+          .file("server.game/src/main/resources/monmmo/tutor-learnsets-expansion.csv")
           .asFile
           .absolutePath,
   )

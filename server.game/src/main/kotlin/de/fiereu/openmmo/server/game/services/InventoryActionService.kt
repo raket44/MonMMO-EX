@@ -173,7 +173,7 @@ constructor(
         ctx.reply("$itemName cannot revive a fainted monster.")
         return
       }
-      val definition = species.get(target.dexId)
+      val definition = species.forMonster(target)
       val maxHp = definition?.let { StatCalculator.computeAll(it, target).hp } ?: target.hp.toInt()
       if (target.hp >= maxHp) {
         ctx.reply("It would have no effect.")
@@ -519,10 +519,11 @@ constructor(
  * method, item parameter (before the client's +5000 shift), target wire id per line.
  */
 object EvolutionTable {
-  private data class Entry(val from: Int, val method: Int, val param: Int, val to: Int)
+  /** [time] is "day", "night" or null (any time) - a condition the method key does not carry. */
+  private data class Entry(val from: Int, val method: Int, val param: Int, val to: Int, val time: String? = null)
 
-  /** ROM methods where the player uses an item on the monster directly. */
-  private val ITEM_METHODS = setOf(8, 16, 17)
+  /** ROM methods where the player uses an item on the monster directly: ITEM, ITEM_MALE, ITEM_FEMALE. */
+  private val ITEM_METHODS = setOf(8, 17, 18)
 
   /** The client's second copy of the 5000-band items, each at its 5000-band id + 1000. */
   private val MIRROR_ITEM_BAND = 6000..6999
@@ -588,15 +589,32 @@ object EvolutionTable {
                   lines
                       .mapNotNull { line ->
                         val parts = line.split(':')
-                        if (parts.size != 4) return@mapNotNull null
-                        val numbers = parts.map { it.toIntOrNull() ?: return@mapNotNull null }
-                        Entry(numbers[0], numbers[1], numbers[2], numbers[3])
+                        if (parts.size !in 4..5) return@mapNotNull null
+                        val numbers = parts.take(4).map { it.toIntOrNull() ?: return@mapNotNull null }
+                        Entry(numbers[0], numbers[1], numbers[2], numbers[3], time = parts.getOrNull(4)?.ifBlank { null })
                       }
                       .toList()
                 } ?: emptyList())
-            .filter { Triple(it.from, it.method, it.to) !in known }
-    fromJson + fromCsv
+    // The csv's time of day also governs the json's row for the same evolution: a new species'
+    // row sits in both, and only the csv knows Hisuian Decidueye is Dartrix's night branch.
+    val timeByKey =
+        fromCsv.filter { it.time != null }.associate { Triple(it.from, it.method, it.to) to it.time }
+    fromJson.map { it.copy(time = timeByKey[Triple(it.from, it.method, it.to)]) } +
+        fromCsv.filter { Triple(it.from, it.method, it.to) !in known }
   }
+
+  /**
+   * Of the entries whose conditions are met, one for the current time of day wins over one for any
+   * time, and one for the other time never fires. That is how a split evolution decides (project
+   * owner, 2026-09-13): a Thunder Stone makes Pikachu an Alolan Raichu at night, a Raichu by day.
+   */
+  private fun pick(candidates: List<Entry>, daytime: Boolean): Entry? {
+    val now = if (daytime) "day" else "night"
+    return candidates.firstOrNull { it.time == now } ?: candidates.firstOrNull { it.time == null }
+  }
+
+  /** The server clock's day, 6:00-17:59 - the same hours the level-up check uses. */
+  fun isDaytime(): Boolean = java.time.LocalTime.now().hour in 6..17
 
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
 
@@ -661,6 +679,34 @@ object EvolutionTable {
     return wire
   }
 
+  private val evolutionsFrom: Map<Int, List<Int>> by lazy { entries.groupBy({ it.from }, { it.to }) }
+
+  /** Every species in [wire]'s evolution family (wire ids): its base form and all that grows from it. */
+  fun family(wire: Int): Set<Int> {
+    val family = linkedSetOf<Int>()
+    val queue = ArrayDeque(listOf(baseForm(wire)))
+    while (queue.isNotEmpty()) {
+      val next = queue.removeFirst()
+      if (family.add(next)) queue.addAll(evolutionsFrom[next].orEmpty())
+    }
+    return family + wire
+  }
+
+  /** True when [a] and [b] share an evolution family (the Love Ball's "same species tree"). */
+  fun sameFamily(a: Int, b: Int): Boolean = baseForm(a) == baseForm(b)
+
+  /** True when any member of [wire]'s family evolves through friendship (HAPPINESS, _DAY, _NIGHT). */
+  fun familyEvolvesByFriendship(wire: Int): Boolean {
+    val members = family(wire)
+    return entries.any { it.from in members && it.method in 1..3 }
+  }
+
+  /** True when any member of [wire]'s family evolves by using client item [itemId] on it. */
+  fun familyEvolvesByItem(wire: Int, itemId: Int): Boolean {
+    val members = family(wire)
+    return entries.any { it.from in members && it.method in ITEM_METHODS && itemMatches(itemId, it.param) }
+  }
+
   /** Facts about the monster that level-driven evolution conditions read. */
   data class LevelContext(
       val level: Int,
@@ -671,6 +717,10 @@ object EvolutionTable {
       val heldItem: Int,
       val friendship: Int = 0,
       val daytime: Boolean = true,
+      /** Move ids the monster knows (LEVEL_WITH_SKILL). */
+      val moves: Set<Int> = emptySet(),
+      /** Client species ids in the party (LEVEL_WITH_MONSTER). */
+      val partyWires: Set<Int> = emptySet(),
   )
 
   /** The cartridge happiness threshold for the friendship evolutions. */
@@ -683,14 +733,18 @@ object EvolutionTable {
    * and location methods need systems that do not exist yet and never match here.
    */
   fun levelEvolution(fromWire: Int, context: LevelContext): Int? =
-      entries
-          .firstOrNull { entry ->
+      pick(
+          entries.filter { entry ->
             entry.from == fromWire &&
                 when (entry.method) {
                   1 -> context.friendship >= FRIENDSHIP_EVOLUTION // HAPPINESS
                   2 -> context.friendship >= FRIENDSHIP_EVOLUTION && context.daytime
                   3 -> context.friendship >= FRIENDSHIP_EVOLUTION && !context.daytime
-                  4 -> context.level >= entry.param // LEVEL
+                  // LEVEL. A 0 is no level: the Expansion's special conditions used to arrive as
+                  // level 0 and evolved on any level-up.
+                  4 -> entry.param > 0 && context.level >= entry.param
+                  21 -> entry.param in context.moves // LEVEL_WITH_SKILL (Tangela, Primeape)
+                  22 -> entry.param in context.partyWires // LEVEL_WITH_MONSTER (Mantyke)
                   9 -> context.level >= entry.param && context.attack > context.defense
                   10 -> context.level >= entry.param && context.attack == context.defense
                   11 -> context.level >= entry.param && context.attack < context.defense
@@ -703,16 +757,19 @@ object EvolutionTable {
                   24 -> context.level >= entry.param && context.female // LEVEL_FEMALE
                   else -> false
                 }
-          }
-          ?.to
+          },
+          context.daytime,
+      )?.to
 
-  /** The wire id this species becomes when [clientItemId] is used on it, or null. */
-  fun itemEvolution(fromWire: Int, clientItemId: Int): Int? =
-      entries
-          .firstOrNull {
-            it.from == fromWire &&
-                it.method in ITEM_METHODS &&
-                itemMatches(clientItemId, it.param)
-          }
-          ?.to
+  /**
+   * The wire id this species becomes when [clientItemId] is used on it, or null. [daytime] decides a
+   * split evolution (see [pick]).
+   */
+  fun itemEvolution(fromWire: Int, clientItemId: Int, daytime: Boolean = isDaytime()): Int? =
+      pick(
+          entries.filter {
+            it.from == fromWire && it.method in ITEM_METHODS && itemMatches(clientItemId, it.param)
+          },
+          daytime,
+      )?.to
 }

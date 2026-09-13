@@ -142,6 +142,9 @@ class BattleInstance(
   /** The Safari Game's counters when this is a safari battle (SafariService), else null. */
   var safari: SafariBattleState? = null
 
+  /** Where the wild monster was met, for the Dive, Dusk and Lure Balls. */
+  var encounter: EncounterContext = EncounterContext()
+
   var weather: Weather? = null
   var weatherTurns: Int = 0
   val playerSide = SideState()

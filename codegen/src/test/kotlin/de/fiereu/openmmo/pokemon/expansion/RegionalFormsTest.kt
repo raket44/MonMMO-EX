@@ -30,4 +30,12 @@ class RegionalFormsTest :
         RegionalForms.baseWireOf(def("SPECIES_WOOPER_PALDEA").clientWireId!!) shouldBe 194
         RegionalForms.baseWireOf(37).shouldBeNull()
       }
+
+      test("every other form is an alternate form of its base, never a dex entry of its own") {
+        RegionalForms.alternateFormBaseOf(def("SPECIES_CHARIZARD_MEGA_X").clientWireId!!) shouldBe 6
+        RegionalForms.alternateFormBaseOf(def("SPECIES_RATICATE_ALOLA_TOTEM").clientWireId!!) shouldBe
+            def("SPECIES_RATICATE").clientWireId
+        RegionalForms.alternateFormBaseOf(def("SPECIES_VULPIX_ALOLA").clientWireId!!).shouldBeNull()
+        RegionalForms.alternateFormBaseOf(37).shouldBeNull()
+      }
     })

@@ -14,6 +14,7 @@ import org.xml.sax.InputSource
  * unchanged, or changed only in a way the project owner approved (2026-09-12):
  * - learnsets: retail plus additions. A retail list may gain moves, never lose or reorder one.
  * - species detail: the Fairy retypes may change a retail species' egg groups, nothing else.
+ * - moves: Sweet Kiss, Charm and Moonlight may become Fairy, nothing else (2026-09-13).
  * - strings: the rewordings named in [APPROVED_STRING_CHANGES].
  *
  * Anything else that differs fails. Records the build adds are counted, never judged. A section
@@ -44,7 +45,9 @@ fun main(args: Array<String>) {
             pairwise(b, a, ::onlyAdditions)
           },
           compareKeyed(RegionalDexCodec, stock, staged, key = { "region${it.regionId}" }),
-          compareKeyed(MoveCodec, stock, staged, key = { it.moveId.toString() }),
+          compareKeyed(MoveCodec, stock, staged, key = { it.moveId.toString() }) { b, a ->
+            pairwise(b, a) { retail, built -> built == retail || isApprovedFairyRetype(retail, built) }
+          },
           compareKeyed(MoveExtraCodec, stock, staged, key = { it.moveId.toString() }),
       )
   val codecTypes = setOf(10, 1, 2, 6, 11, 4, 12)
@@ -164,7 +167,18 @@ private fun romSpeciesAdditions(stock: ClientDataPak, staged: ClientDataPak): Re
   )
 }
 
-private const val FAIRY_TYPE = 19
+private const val FAIRY_TYPE = RetailMerge.FAIRY_TYPE
+
+/**
+ * A retail move record changed only by the approved Fairy retype (project owner, 2026-09-13): the id
+ * is one of [RetailMerge.APPROVED_FAIRY_MOVE_RETYPES], retail's type was the ROM's (unflagged) or
+ * Normal, and the staged record is retail's with bit 0x8 and type 19 - category, every other flag,
+ * payload and effect unchanged. Any other move change still fails.
+ */
+internal fun isApprovedFairyRetype(retail: MoveRecord, built: MoveRecord): Boolean =
+    retail.moveId in RetailMerge.APPROVED_FAIRY_MOVE_RETYPES &&
+        (retail.type == null || retail.type == RetailMerge.NORMAL_TYPE) &&
+        built == retail.copy(flags = retail.flags or MoveRecord.TYPE, type = FAIRY_TYPE)
 
 /** The ROM defines species 1-649 and the form records 650-667. */
 private const val LAST_ROM_SPECIES_ID = 667

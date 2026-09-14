@@ -24,7 +24,7 @@ object RenderUtil {
     return "MoveDef(id = ${m.id}, name = ${escapeString(m.name)}, effect = ${m.effect}," +
         " power = ${m.power}, type = ${m.type}, accuracy = ${m.accuracy}, pp = ${m.pp}," +
         " secondaryEffectChance = ${m.secondaryEffectChance}, target = ${m.target}," +
-        " priority = ${m.priority}, flags = $flags$argument$extras$strikes$crit)"
+        " priority = ${m.priority}, flags = $flags$argument$extras$strikes$crit, category = DamageCategory.${m.category})"
   }
 
   /** The enum constant for a `MOVE_EFFECT_*` token; anything the enum lacks renders as UNKNOWN. */

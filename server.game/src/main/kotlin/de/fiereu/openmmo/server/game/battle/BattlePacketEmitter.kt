@@ -67,6 +67,8 @@ private const val PROTECTED_TARGET_MOVE: Short = 0x80
 // line from the move id ("{00} flew up high!", "burrowed its way under the ground!", ...).
 private const val CHARGING_TARGET_MOVE: Short = 0x40
 private const val DEFAULT_TARGET_MOVE: Short = 0
+/** The record rarity flag word's shiny bit (BattleActiveDetail.SHINY_FLAG), for the transform event. */
+private const val SHINY_RARITY_FLAG: Short = 1
 private const val SUPER_EFFECTIVE_BIT = 0x20
 private const val NOT_VERY_EFFECTIVE_BIT = 0x10
 
@@ -199,6 +201,31 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                 BattleEntityDeltaPacket(
                     entityId = event.targetId,
                     species = de.fiereu.openmmo.net.game.packets.battle.Species(event.wireSpecies.toShort(), 0)))
+        is BattleEvent.RecordHp ->
+            broadcast(battle, BattleEntityDeltaPacket(entityId = event.targetId, currentHp = event.hp.toShort()))
+        is BattleEvent.SwitchedIn -> {
+          flush()
+          if (event.playerSide) sendSwitchIn(battle, event.position, event.oldIndex, event.fullBlock, event.kind.toByte())
+          else sendOpponentSwitchIn(battle, event.position, event.oldIndex, event.fullBlock, event.kind.toByte())
+        }
+        is BattleEvent.BlownAway ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(event.targetId, event.attackerId, BattleEventBody.BlownAway(event.moveId.toShort()))
+        // The client's transform event (sub-event 31): entityA the monster copied, entityB the transformer.
+        is BattleEvent.Transformed ->
+            target(event.copiedId).subEvents +=
+                BattleActionEvent(
+                    event.copiedId,
+                    event.transformerId,
+                    BattleEventBody.Transform(
+                        species = event.wireSpecies.toShort(),
+                        personality = event.personality,
+                        moves = List(4) { event.moves.getOrElse(it) { 0 } },
+                        abilityId = de.fiereu.openmmo.pokemon.AbilityWireIds.of(event.ability).toShort(),
+                        rarityFlags = if (event.shiny) SHINY_RARITY_FLAG else 0,
+                        stages = packStages(event.stages),
+                        type1 = event.type1.ordinal.toByte(),
+                        type2 = event.type2.ordinal.toByte()))
         // Only the owner's client lists the moves; a foe's stay hidden.
         is BattleEvent.MovesChanged ->
             if (battle.isPlayerSide(event.targetId)) battle.session.send(moveSlotsDelta(event.targetId, event.moves, 0))
@@ -258,6 +285,17 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     flush()
   }
 
+  /**
+   * The transform event's stage word (r32645 r59.f7): eight nibbles, lowest first, each the stage
+   * plus 6 - hp (always 0), attack, defense, speed, sp. attack, sp. defense, accuracy, evasion.
+   */
+  internal fun packStages(stages: Map<BattleStat, Int>): Int {
+    val order =
+        listOf(null, BattleStat.ATTACK, BattleStat.DEFENSE, BattleStat.SPEED, BattleStat.SP_ATTACK, BattleStat.SP_DEFENSE,
+            BattleStat.ACCURACY, BattleStat.EVASION)
+    return order.foldIndexed(0) { i, word, stat -> word or (((stat?.let { stages[it] } ?: 0) + 6) shl (4 * i)) }
+  }
+
   private class EventGroup(val sourceId: Long, val moveId: Short) {
     val targets = LinkedHashMap<Long, TargetAccumulator>()
   }
@@ -269,7 +307,7 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
     fun build(): BattleEffectTarget = BattleEffectTarget(entityId, outcome, subEvents.toList())
   }
 
-  fun sendSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean) {
+  fun sendSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean, kind: Byte = 0) {
     val slot = battle.playerPositions[position]
     broadcast(
         battle,
@@ -282,12 +320,13 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             oldSlot = oldSlot,
             mon = battle.party[slot].toBlock(slot = slot, movesPresent = true),
             fullBlock = fullBlock,
+            kind = kind,
         ),
     )
   }
 
   /** The opposing side sends out its next monster. Its moves stay hidden from the player. */
-  fun sendOpponentSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean) {
+  fun sendOpponentSwitchIn(battle: BattleInstance, position: Int, oldSlot: Int, fullBlock: Boolean, kind: Byte = 0) {
     val index = battle.opponentPositions[position]
     broadcast(
         battle,
@@ -297,6 +336,7 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             mon = battle.opponent[index].toBlock(localSlot(battle, index), movesPresent = false),
             fullBlock = fullBlock,
             side = OPPONENT_SIDE,
+            kind = kind,
             owner = if (battle.partner != null && TWO_TRAINER_HEADER) ownerOf(battle, index) else null,
         ),
     )
@@ -356,13 +396,15 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
   }
 
   /** Opens the party switch screen after the active mon faints, in place of the action prompt. */
+  // r32645 f/db4 reads the slot through r61.kG1: position in the high nibble, side (0 = the
+  // player's) in the low one. The raw position put a doubles position 1 on side 1.
   fun sendSwitchPrompt(battle: BattleInstance, position: Int = 0) {
-    broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = false))
+    broadcast(battle, BattleSlotFlagEventPacket(slot = (position shl 4).toByte(), flag = false, immediate = false))
   }
 
-  /** Confirms the forced replacement choice just before its switch-in. */
+  /** Closes the switch screen once the choice arrived (f/db4 immediate), letting the queued switch finish. */
   fun sendSwitchConfirm(battle: BattleInstance, position: Int = 0) {
-    broadcast(battle, BattleSlotFlagEventPacket(slot = position.toByte(), flag = false, immediate = true))
+    broadcast(battle, BattleSlotFlagEventPacket(slot = (position shl 4).toByte(), flag = false, immediate = true))
   }
 
   /** The battle simply ends - no prize, no line of the client's own (the safari packet said "Wild {mon} fled!" already). */

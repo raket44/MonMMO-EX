@@ -1,0 +1,555 @@
+# Fling power per item and Natural Gift type/power per berry, extracted from pokeemerald-expansion src/data/items.h (.flingPower) and src/berry.c (.naturalGiftType/.naturalGiftPower).
+name,fling_power,natural_gift_type,natural_gift_power
+Ability Shield,30,,0
+Abomasite,80,,0
+Absolite Z,80,,0
+Absolite,80,,0
+Absorb Bulb,30,,0
+Adamant Crystal,60,,0
+Adamant Mint,10,,0
+Adamant Orb,60,,0
+Adrenaline Orb,30,,0
+Aerodactylite,80,,0
+Aggronite,80,,0
+Aguav Berry,10,DRAGON,80
+Air Balloon,10,,0
+Alakazite,80,,0
+Altarianite,80,,0
+Amaze Mulch,30,,0
+Ampharosite,80,,0
+Amulet Coin,30,,0
+Antidote,30,,0
+Apicot Berry,10,GROUND,100
+Armor Fossil,100,,0
+Armorite Ore,30,,0
+Aspear Berry,10,ICE,80
+Assault Vest,80,,0
+Audinite,80,,0
+Auspicious Armor,30,,0
+Awakening,30,,0
+Babiri Berry,10,STEEL,80
+Balm Mushroom,30,,0
+Banettite,80,,0
+Barbaracite,80,,0
+Baxcalibrite,80,,0
+Beedrillite,80,,0
+Belue Berry,10,ELECTRIC,100
+Berry Juice,30,,0
+Berry Sweet,10,,0
+Berserk Gene,10,,0
+Big Bamboo Shoot,30,,0
+Big Malasada,30,,0
+Big Mushroom,30,,0
+Big Nugget,813080,,0
+Big Pearl,30,,0
+Big Root,10,,0
+Binding Band,30,,0
+Black Augurite,30,,0
+Black Belt,30,,0
+Black Flute,30,,0
+Black Glasses,30,,0
+Black Sludge,30,,0
+Blastoisinite,80,,0
+Blazikenite,80,,0
+Blue Flute,30,,0
+Blue Scarf,10,,0
+Blue Shard,30,,0
+Bluk Berry,10,FIRE,90
+Blunder Policy,80,,0
+Bold Mint,10,,0
+Boost Mulch,30,,0
+Booster Energy,30,,0
+Bottle Cap,30,,0
+Brave Mint,10,,0
+Bright Powder,10,,0
+Bug Memory,50,,0
+Burn Drive,70,,0
+Burn Heal,30,,0
+Calcium,30,,0
+Calm Mint,10,,0
+Cameruptite,80,,0
+Carbos,30,,0
+Careful Mint,10,,0
+Casteliacone,30,,0
+Cell Battery,30,,0
+Chandelurite,80,,0
+Charcoal,30,,0
+Charizardite X,80,,0
+Charizardite Y,80,,0
+Charti Berry,10,ROCK,80
+Cheri Berry,10,FIRE,80
+Chesnaughtite,80,,0
+Chesto Berry,10,WATER,80
+Chilan Berry,10,NORMAL,80
+Chill Drive,70,,0
+Chimechite,80,,0
+Chipped Pot,80,,0
+Choice Band,10,,0
+Choice Scarf,10,,0
+Choice Specs,10,,0
+Chople Berry,10,FIGHTING,80
+Claw Fossil,100,,0
+Cleanse Tag,30,,0
+Clear Amulet,30,,0
+Clefablite,80,,0
+Clever Feather,20,,0
+Clever Mochi,30,,0
+Clover Sweet,10,,0
+Coba Berry,10,FLYING,80
+Colbur Berry,10,DARK,80
+Comet Shard,30,,0
+Cornn Berry,10,BUG,90
+Cover Fossil,100,,0
+Covert Cloak,30,,0
+Crabominite,80,,0
+Cracked Pot,80,,0
+Custap Berry,10,GHOST,100
+Damp Mulch,30,,0
+Damp Rock,60,,0
+Dark Memory,50,,0
+Darkranite,80,,0
+Dawn Stone,80,,0
+Deep Sea Scale,30,,0
+Deep Sea Tooth,90,,0
+Delphoxite,80,,0
+Destiny Knot,10,,0
+Diancite,80,,0
+Dire Hit,30,,0
+Dome Fossil,100,,0
+Douse Drive,70,,0
+Draco Plate,90,,0
+Dragalgite,80,,0
+Dragon Fang,70,,0
+Dragon Memory,50,,0
+Dragon Scale,30,,0
+Dragoninite,80,,0
+Drampanite,80,,0
+Dread Plate,90,,0
+Dubious Disc,50,,0
+Durin Berry,10,WATER,100
+Dusk Stone,80,,0
+Dynamax Candy,30,,0
+Dynite Ore,30,,0
+Earth Plate,90,,0
+Eelektrossite,80,,0
+Eject Button,30,,0
+Eject Pack,50,,0
+Electirizer,80,,0
+Electric Memory,50,,0
+Electric Seed,10,,0
+Elixir,30,,0
+Emboarite,80,,0
+Energy Powder,30,,0
+Energy Root,30,,0
+Enigma Berry,10,BUG,100
+Escape Rope,30,,0
+Ether,30,,0
+Everstone,30,,0
+Eviolite,40,,0
+Excadrite,80,,0
+Exp. Candy L,30,,0
+Exp. Candy M,30,,0
+Exp. Candy S,30,,0
+Exp. Candy XL,30,,0
+Exp. Candy XS,30,,0
+Exp. Share,30,,0
+Expert Belt,10,,0
+Fairy Feather,10,,0
+Fairy Memory,50,,0
+Falinksite,80,,0
+Feraligite,80,,0
+Fighting Memory,50,,0
+Figy Berry,10,BUG,80
+Fine Remedy,30,,0
+Fire Memory,50,,0
+Fire Stone,30,,0
+Fist Plate,90,,0
+Flame Orb,30,,0
+Flame Plate,90,,0
+Float Stone,30,,0
+Floettite,80,,0
+Flower Sweet,10,,0
+Fluffy Tail,30,,0
+Flying Memory,50,,0
+Focus Band,10,,0
+Focus Sash,10,,0
+Fossilized Bird,100,,0
+Fossilized Dino,100,,0
+Fossilized Drake,100,,0
+Fossilized Fish,100,,0
+Fresh Water,30,,0
+Fresh-Start Mochi,30,,0
+Froslassite,80,,0
+Full Heal,30,,0
+Full Incense,10,,0
+Full Restore,30,,0
+Galarica Cuff,30,,0
+Galarica Twig,30,,0
+Galarica Wreath,30,,0
+Galladite,80,,0
+Ganlon Berry,10,ICE,100
+Garchompite Z,80,,0
+Garchompite,80,,0
+Gardevoirite,80,,0
+Gengarite,80,,0
+Genius Feather,20,,0
+Genius Mochi,30,,0
+Gentle Mint,10,,0
+Ghost Memory,50,,0
+Glalitite,80,,0
+Glimmoranite,80,,0
+Gold Bottle Cap,30,,0
+Golisopite,80,,0
+Golurkite,80,,0
+Gooey Mulch,30,,0
+Grass Memory,50,,0
+Grassy Seed,10,,0
+Green Scarf,10,,0
+Green Shard,30,,0
+Greninjite,80,,0
+Grepa Berry,10,FLYING,90
+Grip Claw,90,,0
+Griseous Core,60,,0
+Griseous Orb,60,,0
+Ground Memory,50,,0
+Growth Mulch,30,,0
+Guard Spec.,30,,0
+Gyaradosite,80,,0
+HP Up,30,,0
+Haban Berry,10,DRAGON,80
+Hard Stone,100,,0
+Hasty Mint,10,,0
+Hawluchanite,80,,0
+Heal Powder,30,,0
+Health Feather,20,,0
+Health Mochi,30,,0
+Heart Scale,30,,0
+Heat Rock,60,,0
+Heatranite,80,,0
+Heavy-Duty Boots,80,,0
+Helix Fossil,100,,0
+Heracronite,80,,0
+Hondew Berry,10,GROUND,90
+Honey,30,,0
+Houndoominite,80,,0
+Hyper Potion,30,,0
+Iapapa Berry,10,DARK,80
+Ice Heal,30,,0
+Ice Memory,50,,0
+Ice Stone,30,,0
+Icicle Plate,90,,0
+Icy Rock,40,,0
+Impish Mint,10,,0
+Insect Plate,90,,0
+Iron Ball,130,,0
+Iron Plate,90,,0
+Iron,30,,0
+Jaboca Berry,10,DRAGON,100
+Jaw Fossil,100,,0
+Jolly Mint,10,,0
+Jubilife Muffin,30,,0
+Kangaskhanite,80,,0
+Kasib Berry,10,GHOST,80
+Kebia Berry,10,POISON,80
+Kee Berry,10,FAIRY,100
+Kelpsy Berry,10,FIGHTING,90
+King's Rock,30,,0
+Lagging Tail,10,,0
+Lansat Berry,10,FLYING,100
+Latiasite,80,,0
+Latiosite,80,,0
+Lava Cookie,30,,0
+Lax Incense,10,,0
+Lax Mint,10,,0
+Leaf Stone,30,,0
+Leek,60,,0
+Leftovers,10,,0
+Lemonade,30,,0
+Leppa Berry,10,FIGHTING,80
+Liechi Berry,10,GRASS,100
+Life Orb,30,,0
+Light Ball,30,,0
+Light Clay,30,,0
+Linking Cord,30,,0
+Loaded Dice,30,,0
+Lonely Mint,10,,0
+Lopunnite,80,,0
+Love Sweet,10,,0
+Lucarionite Z,80,,0
+Lucarionite,80,,0
+Luck Incense,10,,0
+Lucky Egg,30,,0
+Lucky Punch,40,,0
+Lum Berry,10,FLYING,80
+Luminous Moss,30,,0
+Lumiose Galette,30,,0
+Lure,30,,0
+Lustrous Globe,60,,0
+Lustrous Orb,60,,0
+Macho Brace,60,,0
+Magearnite,80,,0
+Magmarizer,80,,0
+Magnet,30,,0
+Mago Berry,10,GHOST,80
+Magost Berry,10,ROCK,90
+Malamarite,80,,0
+Malicious Armor,30,,0
+Manectite,80,,0
+Maranga Berry,10,,0
+Masterpiece Teacup,80,,0
+Mawilite,80,,0
+Max Elixir,30,,0
+Max Ether,30,,0
+Max Honey,30,,0
+Max Lure,30,,0
+Max Mushrooms,30,,0
+Max Potion,30,,0
+Max Repel,30,,0
+Max Revive,30,,0
+Meadow Plate,90,,0
+Medichamite,80,,0
+Meganiumite,80,,0
+Mental Herb,10,,0
+Meowsticite,80,,0
+Metagrossite,80,,0
+Metal Coat,30,,0
+Metal Powder,10,,0
+Metronome,30,,0
+Mewtwonite X,80,,0
+Mewtwonite Y,80,,0
+Micle Berry,10,ROCK,100
+Mild Mint,10,,0
+Mind Plate,90,,0
+Miracle Seed,30,,0
+Mirror Herb,30,,0
+Misty Seed,10,,0
+Modest Mint,10,,0
+Moomoo Milk,30,,0
+Moon Stone,30,,0
+Muscle Band,10,,0
+Muscle Feather,20,,0
+Muscle Mochi,30,,0
+Mystic Water,30,,0
+Naive Mint,10,,0
+Nanab Berry,10,WATER,90
+Naughty Mint,10,,0
+Never-Melt Ice,30,,0
+Nomel Berry,10,DRAGON,90
+Nugget,30,,0
+Occa Berry,10,FIRE,80
+Odd Incense,10,,0
+Odd Keystone,80,,0
+Old Amber,100,,0
+Old Gateau,30,,0
+Oran Berry,10,POISON,80
+Oval Stone,80,,0
+PP Max,30,,0
+PP Up,30,,0
+Pamtre Berry,10,STEEL,90
+Paralyze Heal,30,,0
+Passho Berry,10,WATER,80
+Payapa Berry,10,PSYCHIC,80
+Pearl String,30,,0
+Pearl,30,,0
+Peat Block,30,,0
+Pecha Berry,10,ELECTRIC,80
+Persim Berry,10,GROUND,80
+Petaya Berry,10,POISON,100
+Pewter Crunchies,30,,0
+Pidgeotite,80,,0
+Pinap Berry,10,GRASS,90
+Pink Nectar,10,,0
+Pink Scarf,10,,0
+Pinsirite,80,,0
+Pixie Plate,90,,0
+Plume Fossil,100,,0
+Poison Barb,70,,0
+Poison Memory,50,,0
+Poké Doll,30,,0
+Poké Toy,30,,0
+Pomeg Berry,10,ICE,90
+Potion,30,,0
+Power Anklet,70,,0
+Power Band,70,,0
+Power Belt,70,,0
+Power Bracer,70,,0
+Power Herb,10,,0
+Power Lens,70,,0
+Power Weight,70,,0
+Pretty Feather,20,,0
+Prism Scale,30,,0
+Protective Pads,30,,0
+Protector,80,,0
+Protein,30,,0
+Psychic Memory,50,,0
+Psychic Seed,10,,0
+Punching Glove,30,,0
+Pure Incense,10,,0
+Purple Nectar,10,,0
+Pyroarite,80,,0
+Qualot Berry,10,POISON,90
+Quick Claw,80,,0
+Quick Powder,10,,0
+Quiet Mint,10,,0
+Rabuta Berry,10,GHOST,90
+Rage Candy Bar,30,,0
+Raichunite X,80,,0
+Raichunite Y,80,,0
+Rare Bone,100,,0
+Rare Candy,30,,0
+Rash Mint,10,,0
+Rawst Berry,10,GRASS,80
+Razor Claw,80,,0
+Razor Fang,30,,0
+Razz Berry,10,STEEL,80
+Reaper Cloth,10,,0
+Red Card,10,,0
+Red Flute,30,,0
+Red Nectar,10,,0
+Red Scarf,10,,0
+Red Shard,30,,0
+Relaxed Mint,10,,0
+Relic Band,30,,0
+Relic Copper,30,,0
+Relic Crown,30,,0
+Relic Gold,30,,0
+Relic Silver,30,,0
+Relic Statue,30,,0
+Relic Vase,30,,0
+Remedy,30,,0
+Repel,30,,0
+Resist Feather,20,,0
+Resist Mochi,30,,0
+Revival Herb,30,,0
+Revive,30,,0
+Ribbon Sweet,10,,0
+Rich Mulch,30,,0
+Rindo Berry,10,GRASS,80
+Ring Target,10,,0
+Rock Incense,10,,0
+Rock Memory,50,,0
+Rocky Helmet,60,,0
+Room Service,100,,0
+Root Fossil,100,,0
+Rose Incense,10,,0
+Roseli Berry,10,FAIRY,80
+Rowap Berry,10,DARK,100
+Sablenite,80,,0
+Sachet,80,,0
+Sacred Ash,30,,0
+Safety Goggles,80,,0
+Sail Fossil,100,,0
+Salac Berry,10,FIGHTING,100
+Salamencite,80,,0
+Sassy Mint,10,,0
+Sceptilite,80,,0
+Scizorite,80,,0
+Scolipite,80,,0
+Scope Lens,30,,0
+Scovillainite,80,,0
+Scraftinite,80,,0
+Sea Incense,10,,0
+Serious Mint,10,,0
+Shalour Sable,30,,0
+Sharp Beak,50,,0
+Sharpedonite,80,,0
+Shed Shell,10,,0
+Shell Bell,30,,0
+Shiny Stone,30,,0
+Shoal Salt,30,,0
+Shoal Shell,30,,0
+Shock Drive,70,,0
+Shuca Berry,10,GROUND,80
+Silk Scarf,10,,0
+Silver Powder,10,,0
+Sitrus Berry,10,PSYCHIC,80
+Skarmorite,80,,0
+Skull Fossil,100,,0
+Sky Plate,90,,0
+Slowbronite,80,,0
+Smoke Ball,30,,0
+Smooth Rock,10,,0
+Snowball,30,,0
+Soda Pop,30,,0
+Soft Sand,10,,0
+Soothe Bell,10,,0
+Soul Dew,30,,0
+Spell Tag,30,,0
+Spelon Berry,10,DARK,90
+Splash Plate,90,,0
+Spooky Plate,90,,0
+Stable Mulch,30,,0
+Star Piece,30,,0
+Star Sweet,10,,0
+Staraptite,80,,0
+Stardust,30,,0
+Starf Berry,10,PSYCHIC,100
+Starminite,80,,0
+Steel Memory,50,,0
+Steelixite,80,,0
+Sticky Barb,80,,0
+Stone Plate,90,,0
+Strange Souvenir,30,,0
+Strawberry Sweet,10,,0
+Sun Stone,30,,0
+Super Lure,30,,0
+Super Potion,30,,0
+Super Repel,30,,0
+Superb Remedy,30,,0
+Surprise Mulch,30,,0
+Swampertite,80,,0
+Sweet Apple,30,,0
+Sweet Heart,30,,0
+Swift Feather,20,,0
+Swift Mochi,30,,0
+Syrupy Apple,30,,0
+Tamato Berry,10,PSYCHIC,90
+Tanga Berry,10,BUG,80
+Tart Apple,30,,0
+Tatsugirinite,80,,0
+Terrain Extender,60,,0
+Thick Club,90,,0
+Throat Spray,30,,0
+Thunder Stone,30,,0
+Timid Mint,10,,0
+Tiny Bamboo Shoot,30,,0
+Tiny Mushroom,30,,0
+Toxic Orb,30,,0
+Toxic Plate,90,,0
+Twisted Spoon,30,,0
+Tyranitarite,80,,0
+Unremarkable Teacup,80,,0
+Upgrade,30,,0
+Utility Umbrella,60,,0
+Venusaurite,80,,0
+Victreebelite,80,,0
+Wacan Berry,10,ELECTRIC,80
+Water Memory,50,,0
+Water Stone,30,,0
+Watmel Berry,10,FIRE,100
+Wave Incense,10,,0
+Weakness Policy,80,,0
+Wepear Berry,10,ELECTRIC,90
+Whipped Dream,80,,0
+White Flute,30,,0
+White Herb,10,,0
+Wide Lens,10,,0
+Wiki Berry,10,ROCK,80
+Wise Glasses,10,,0
+Wishing Piece,50,,0
+X Accuracy,30,,0
+X Attack,30,,0
+X Defense,30,,0
+X Sp. Atk,30,,0
+X Sp. Def,30,,0
+X Speed,30,,0
+Yache Berry,10,ICE,80
+Yellow Flute,30,,0
+Yellow Nectar,10,,0
+Yellow Scarf,10,,0
+Yellow Shard,30,,0
+Zap Plate,90,,0
+Zeraorite,80,,0
+Zinc,30,,0
+Zoom Lens,10,,0
+Zygardite,80,,0

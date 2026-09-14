@@ -23,6 +23,8 @@ object MoveText {
       val power: Int,
       val accuracy: Int,
       val pp: Int,
+      /** Signed; the client stores it as a byte (`f/hu6.xx1`) and prints `+n` for n > 0. */
+      val priority: Int,
       val category: String,
       val flags: Set<String>,
       val recoilPercent: Int?,
@@ -93,7 +95,8 @@ object MoveText {
               power = numeric(body, "power", updatedThrough) ?: 0,
               accuracy = numeric(body, "accuracy", updatedThrough) ?: 0,
               pp = numeric(body, "pp", updatedThrough) ?: 0,
-              category = field(body, "category") ?: "DAMAGE_CATEGORY_STATUS",
+              priority = numeric(body, "priority", updatedThrough) ?: 0,
+              category = raw(body, "category")?.let { resolveToken(it, config) } ?: "DAMAGE_CATEGORY_STATUS",
               flags = flags(body, config),
               recoilPercent = argument(body, "recoilPercentage", updatedThrough),
               absorbPercent = argument(body, "absorbPercentage", updatedThrough),
@@ -294,6 +297,22 @@ object MoveText {
 
   private fun field(body: String, name: String): String? =
       Regex("""\.$name\s*=\s*([A-Za-z0-9_]+)""").find(body)?.groupValues?.get(1)
+
+  /**
+   * A symbol that may be generation-gated, resolved the way the server's codegen does
+   * (`ExpansionMoveParser.resolveToken`). Water Shuriken is written `.category = B_UPDATED_MOVE_DATA
+   * >= GEN_7 ? DAMAGE_CATEGORY_SPECIAL : DAMAGE_CATEGORY_PHYSICAL`; reading the first identifier
+   * gives `B_UPDATED_MOVE_DATA`, which is no category at all.
+   */
+  private fun resolveToken(expression: String, config: ExpansionConfig): String {
+    val ternary = SYMBOL_TERNARY.find(expression) ?: return expression.trim()
+    val generation = ternary.groupValues[2].toInt()
+    val setting = config.value(ternary.groupValues[1]) ?: LATEST_GENERATION
+    return if (setting >= generation) ternary.groupValues[3] else ternary.groupValues[4]
+  }
+
+  private val SYMBOL_TERNARY =
+      Regex("""(\w+)\s*>=\s*GEN_(\d+)\s*\)?\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")
 
   private fun clean(text: String): String =
       WHITESPACE.replace(CONTROL.replace(text, " ").replace("\\", ""), " ").trim()

@@ -209,11 +209,15 @@ constructor(
       val target = switch.partyIndex
       val mon = battle.party.getOrNull(target)
       if (mon == null || mon.fainted || target in battle.playerPositions) continue
+      // A foe with Pursuit catches the monster on its way out; a knocked-out one never leaves.
+      val leaving = battle.party[battle.playerPositions[switch.position]]
+      emitter.sendEvents(battle, engine.pursuit(battle, leaving))
+      if (leaving.fainted) continue
       performSwitch(battle, switch.position, target)
     }
     val events = engine.resolveTurn(battle, actions.filter { it.kind == ChosenAction.Kind.MOVE })
     emitter.sendEvents(battle, events)
-    afterTurn(battle)
+    if (!interruptedByMove(battle)) afterTurn(battle)
   }
 
   /**
@@ -664,6 +668,28 @@ constructor(
     }
   }
 
+  /**
+   * A move cut the turn short: Roar or Teleport ended the battle (closed here like a flight), or a
+   * U-turn / Baton Pass by the player's monster owes a pick (the switch screen opens and the turn
+   * waits for [forcedSwitch]). True when the turn must not go on to [afterTurn].
+   */
+  private fun interruptedByMove(battle: BattleInstance): Boolean {
+    battle.moveEnded?.let { ending ->
+      persistParty(battle)
+      when (ending) {
+        de.fiereu.openmmo.server.game.battle.MoveEnding.BLOWN_AWAY -> emitter.sendSilentEnd(battle)
+        de.fiereu.openmmo.server.game.battle.MoveEnding.PLAYER_FLED -> emitter.sendFled(battle)
+        de.fiereu.openmmo.server.game.battle.MoveEnding.WILD_FLED -> emitter.sendWildFled(battle)
+      }
+      battle.pendingResult = BattleResult.FLED
+      return true
+    }
+    val pending = battle.pendingSelfSwitch ?: return false
+    battle.forcedSwitchPositions += pending.position
+    emitter.sendSwitchPrompt(battle, pending.position)
+    return true
+  }
+
   /** The replacement for a fainted position. Replacing does not spend a turn. */
   private suspend fun forcedSwitch(battle: BattleInstance, position: Int, target: Int) {
     val mon = battle.party.getOrNull(target)
@@ -675,6 +701,18 @@ constructor(
     // A forced switch confirms the choice before the switch-in. The captures pair the confirm with
     // a full block for a new mon and with a return block for a mon that was already active.
     emitter.sendSwitchConfirm(battle, position)
+    // The pick a U-turn or Baton Pass paused the turn for: swap in, then run the rest of the turn.
+    val selfSwitch = battle.pendingSelfSwitch?.takeIf { it.position == position }
+    if (selfSwitch != null) {
+      battle.pendingSelfSwitch = null
+      battle.forcedSwitchPositions -= position
+      val events = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+      engine.swapIn(battle, true, position, target, 0, selfSwitch.batonPass, events)
+      events += engine.resumeTurn(battle)
+      emitter.sendEvents(battle, events)
+      if (!interruptedByMove(battle)) afterTurn(battle)
+      return
+    }
     performSwitch(battle, position, target)
     battle.forcedSwitchPositions -= position
     if (battle.forcedSwitchPositions.isEmpty()) {
@@ -705,25 +743,13 @@ constructor(
   }
 
   private fun performSwitch(battle: BattleInstance, position: Int, target: Int) {
-    val oldSlot = battle.playerPositions[position]
-    val fullBlock = target !in battle.seenActive
-    // Stages, confusion, Leech Seed and the rest stay on the field, not on the monster.
-    val outgoing = battle.party[oldSlot]
-    if (!outgoing.fainted) {
-      if (outgoing.ability == de.fiereu.openmmo.common.enums.Ability.NATURAL_CURE) outgoing.status = 0
-      if (outgoing.ability == de.fiereu.openmmo.common.enums.Ability.REGENERATOR)
-          outgoing.currentHp = (outgoing.currentHp + outgoing.maxHp / 3).coerceAtMost(outgoing.maxHp)
+    log.info {
+      "Switch char=${battle.charId} position $position slot ${battle.playerPositions[position]} -> $target (fullBlock=${target !in battle.seenActive})"
     }
-    engine.switchOut(battle, outgoing)
-    outgoing.resetVolatile()
-    battle.playerPositions[position] = target
-    battle.seenActive.add(target)
-    engine.prepareIllusion(battle, battle.party[target])
-    log.info { "Switch char=${battle.charId} position $position slot $oldSlot -> $target (fullBlock=$fullBlock)" }
-    emitter.sendSwitchIn(battle, position, oldSlot, fullBlock)
-    val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
-    engine.switchIn(battle, battle.party[target], entering)
-    emitter.sendEvents(battle, entering)
+    // Stages, confusion, Leech Seed and the rest stay on the field, not on the monster.
+    val events = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+    engine.swapIn(battle, true, position, target, 0, false, events)
+    emitter.sendEvents(battle, events)
   }
 
   /**
@@ -803,7 +829,7 @@ constructor(
     }
     // The wild monster gets its move after a failed throw.
     emitter.sendEvents(battle, engine.resolveSwitchTurn(battle))
-    afterTurn(battle)
+    if (!interruptedByMove(battle)) afterTurn(battle)
   }
 
   /** PokeMMO's bonus for [item] in hundredths (CatchModifiers); a Master Ball never rolls. */
@@ -951,7 +977,7 @@ constructor(
           battle.activeMon().entityId, de.fiereu.openmmo.net.game.packets.battle.BattleLine.NO_ESCAPE)
       emitter.sendEvents(battle, events)
       emitter.sendEvents(battle, engine.resolveSwitchTurn(battle))
-      afterTurn(battle)
+      if (!interruptedByMove(battle)) afterTurn(battle)
       return
     }
     emitter.sendFled(battle)
@@ -1221,8 +1247,8 @@ constructor(
               hp = state.currentHp.toShort(),
               status = persistedStatus(state),
               heldItem = state.heldItem,
-              // A transformed monster keeps its own moves; the copied ones never leave the battle.
-              moves = (state.transformedFrom ?: state.moves).map { PokemonMove(it.id, it.pp) },
+              // Transform's and Mimic's copies never leave the battle; Sketch's does, as it should.
+              moves = state.ownMoves(),
           )
       characterStore.updatePokemon(battle.charId, updated)
     }

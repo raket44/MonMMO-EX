@@ -90,6 +90,37 @@ sealed interface BattleEvent {
   /** The monster now shows as [wireSpecies]: an Illusion dropping or a form change. */
   data class SpeciesShown(val targetId: Long, val wireSpecies: Int) : BattleEvent
 
+  /**
+   * Transform or Imposter: [transformerId] became a copy of [copiedId]. The client's own
+   * transform event (sub-event 31) redraws the sprite and panel, sets the moves, ability, types
+   * and stages, and prints the line; the values are captured as the copy is made.
+   */
+  data class Transformed(
+      val transformerId: Long,
+      val copiedId: Long,
+      val wireSpecies: Int,
+      val personality: Int,
+      val moves: List<Short>,
+      val ability: de.fiereu.openmmo.common.enums.Ability,
+      val stages: Map<BattleStat, Int>,
+      val type1: de.fiereu.openmmo.common.enums.PokemonType,
+      val type2: de.fiereu.openmmo.common.enums.PokemonType,
+      val shiny: Boolean,
+  ) : BattleEvent
+
+  /**
+   * A monster came onto [position] of one side mid-turn (U-turn, Roar, Baton Pass, a voluntary
+   * switch): the client's switch-in, placed in order among the other events. [kind] 0 recalls the
+   * monster still standing there first, 5 skips that.
+   */
+  data class SwitchedIn(val playerSide: Boolean, val position: Int, val oldIndex: Int, val fullBlock: Boolean, val kind: Int) : BattleEvent
+
+  /** A benched monster's hp changed (Revival Blessing): its record is updated, nothing animates. */
+  data class RecordHp(val targetId: Long, val hp: Int) : BattleEvent
+
+  /** Roar, Whirlwind, Dragon Tail or Circle Throw sent [targetId] packing ("fled from battle" / "blew away"). */
+  data class BlownAway(val attackerId: Long, val targetId: Long, val moveId: Int) : BattleEvent
+
   /** A monster's moveset changed mid-battle (Transform): the owner's move menu follows it. */
   data class MovesChanged(val targetId: Long, val moves: List<Pair<Short, Byte>>) : BattleEvent
 
@@ -119,4 +150,5 @@ enum class CantMoveReason {
   FLINCHED,
   CONFUSED,
   RECHARGING,
+  INFATUATED,
 }

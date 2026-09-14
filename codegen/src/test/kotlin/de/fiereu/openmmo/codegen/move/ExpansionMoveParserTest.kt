@@ -84,4 +84,11 @@ class ExpansionMoveParserTest :
             )
         moves.getValue(45).flags.contains("MoveFlag.MAGIC_COAT_AFFECTED") shouldBe true
       }
+
+      test("the damage category is the move's own, not its type's") {
+        if (moves.isEmpty()) return@test
+        moves.getValue(247).category shouldBe "SPECIAL" // Shadow Ball, a Ghost move
+        moves.getValue(242).category shouldBe "PHYSICAL" // Crunch, a Dark move
+        moves.getValue(45).category shouldBe "STATUS" // Growl
+      }
     })

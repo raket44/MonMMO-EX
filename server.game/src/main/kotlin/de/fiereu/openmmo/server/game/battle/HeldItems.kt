@@ -16,11 +16,47 @@ import de.fiereu.openmmo.moves.MoveDef
  */
 class HeldItems(private val registry: ItemRegistry) {
 
-  /** The item [mon] gets the effect of: none under Klutz, none once consumed. */
+  /** The item [mon] gets the effect of: none under Klutz, Embargo or Magic Room, none once consumed. */
   fun of(mon: BattleMonState): ItemDef? {
-    if (mon.heldItem == 0 || mon.ability == Ability.KLUTZ) return null
+    if (mon.heldItem == 0 || mon.ability == Ability.KLUTZ || mon.embargoTurns > 0 || mon.inMagicRoom) return null
     return registry.get(mon.heldItem)
   }
+
+  private class ItemBattleData(val flingPower: Int, val giftType: PokemonType?, val giftPower: Int)
+
+  /** Fling power and Natural Gift type/power by item name, extracted from the Expansion (monmmo/item-battle-data.csv). */
+  private val battleData: Map<String, ItemBattleData> by lazy {
+    val stream = HeldItems::class.java.getResourceAsStream("/monmmo/item-battle-data.csv") ?: return@lazy emptyMap()
+    stream.bufferedReader().useLines { lines ->
+      lines
+          .filter { it.isNotBlank() && !it.startsWith("#") && !it.startsWith("name,") }
+          .associate { line ->
+            val cols = line.split(",")
+            val type = cols.getOrNull(2)?.takeIf { it.isNotEmpty() }?.let { runCatching { PokemonType.valueOf(it) }.getOrNull() }
+            cols[0] to ItemBattleData(cols.getOrNull(1)?.toIntOrNull() ?: 0, type, cols.getOrNull(3)?.toIntOrNull() ?: 0)
+          }
+    }
+  }
+
+  /** Fling's power with [item]; 0 when it cannot be flung. */
+  fun flingPower(item: ItemDef?): Int = item?.let { battleData[it.name]?.flingPower } ?: 0
+
+  /** Natural Gift's type and power with the berry [item], or null for anything else. */
+  fun naturalGift(item: ItemDef?): Pair<PokemonType, Int>? =
+      item?.let { battleData[it.name] }?.let { data -> data.giftType?.let { it to data.giftPower } }
+
+  /** Judgment's type: the held plate's. */
+  fun plateType(item: ItemDef?): PokemonType? = if (item != null && item.name.endsWith(" Plate")) boostedType(item) else null
+
+  /** Techno Blast's type: the held drive's. */
+  fun driveType(item: ItemDef?): PokemonType? =
+      when (item) {
+        Items.DOUSE_DRIVE -> PokemonType.WATER
+        Items.SHOCK_DRIVE -> PokemonType.ELECTRIC
+        Items.BURN_DRIVE -> PokemonType.FIRE
+        Items.CHILL_DRIVE -> PokemonType.ICE
+        else -> null
+      }
 
   fun isBerry(item: ItemDef?): Boolean = item != null && item.name.endsWith(" Berry")
 

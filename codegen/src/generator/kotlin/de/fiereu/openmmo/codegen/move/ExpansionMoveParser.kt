@@ -52,6 +52,9 @@ class ExpansionMoveParser(private val rootDir: File) {
               additionalEffects = additionalEffects(body, config, updatedThrough),
               strikeCount = numeric(body, "strikeCount", updatedThrough) ?: 0,
               criticalHitStage = numeric(body, "criticalHitStage", updatedThrough) ?: 0,
+              // The Gen 4+ physical/special split is per move; the type no longer decides it.
+              category =
+                  (raw(body, "category")?.let { resolveToken(it, config) } ?: "DAMAGE_CATEGORY_STATUS").removePrefix("DAMAGE_CATEGORY_"),
           )
         }
         .toList()
@@ -113,6 +116,16 @@ class ExpansionMoveParser(private val rootDir: File) {
       if (on("damagesUnderwater")) add("FLAG_DAMAGES_UNDERWATER")
       if (on("alwaysHitsInRain")) add("FLAG_ALWAYS_HITS_IN_RAIN")
       if (on("alwaysHitsInHailSnow")) add("FLAG_ALWAYS_HITS_IN_HAIL")
+      if (on("ignoresSubstitute")) add("FLAG_IGNORES_SUBSTITUTE")
+      if (on("metronomeBanned")) add("FLAG_METRONOME_BANNED")
+      if (on("copycatBanned")) add("FLAG_COPYCAT_BANNED")
+      if (on("assistBanned")) add("FLAG_ASSIST_BANNED")
+      if (on("sleepTalkBanned")) add("FLAG_SLEEP_TALK_BANNED")
+      if (on("instructBanned")) add("FLAG_INSTRUCT_BANNED")
+      if (on("mimicBanned")) add("FLAG_MIMIC_BANNED")
+      if (on("encoreBanned")) add("FLAG_ENCORE_BANNED")
+      if (on("meFirstBanned")) add("FLAG_ME_FIRST_BANNED")
+      if (on("sketchBanned")) add("FLAG_SKETCH_BANNED")
     }
   }
 
@@ -193,10 +206,8 @@ class ExpansionMoveParser(private val rootDir: File) {
                 token.endsWith("_MINUS") -> "MOVE_EFFECT_STAT_MINUS"
                 else -> token
               }
-          val stats =
-              STATS.mapNotNull { (field, name) ->
-                Regex("""\.$field\s*=\s*(\d+)""").find(text)?.let { name to it.groupValues[1].toInt() }
-              }
+          // Stage counts can be generation ternaries too (Sweet Scent's evasion drop).
+          val stats = STATS.mapNotNull { (field, name) -> numeric(text, field, updatedThrough)?.let { name to it } }
           ParsedAdditionalEffect(
               effect = effect,
               chance = numeric(text, "chance", updatedThrough)?.takeIf { it > 0 } ?: 100,
@@ -278,8 +289,9 @@ class ExpansionMoveParser(private val rootDir: File) {
     val DECLARATION =
         Regex("""^\s*MOVE_([A-Z0-9][A-Z0-9_]*)\s*(?:=\s*([^,]+))?,""", RegexOption.MULTILINE)
     val NAME = Regex("""\.name\s*=\s*(?:COMPOUND_STRING|_)\("([^"]*)"\)""")
+    // The condition may be bracketed: `.evasion = (B_UPDATED_MOVE_DATA >= GEN_6) ? 2 : 1`.
     val NUMBER_TERNARY =
-        Regex("""B_UPDATED_MOVE_DATA\s*>=\s*GEN_(\d+)\s*\?\s*(-?\d+)\s*:\s*(-?\d+)""")
+        Regex("""\(?\s*B_UPDATED_MOVE_DATA\s*>=\s*GEN_(\d+)\s*\)?\s*\?\s*(-?\d+)\s*:\s*(-?\d+)""")
     val SYMBOL_TERNARY =
         Regex("""(\w+)\s*>=\s*GEN_(\d+)\s*\?\s*([A-Za-z0-9_]+)\s*:\s*([A-Za-z0-9_]+)""")
     val STAT_DIRECTION =

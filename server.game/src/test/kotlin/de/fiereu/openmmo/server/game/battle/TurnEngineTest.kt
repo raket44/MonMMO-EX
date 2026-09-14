@@ -98,8 +98,8 @@ class TurnEngineTest :
       }
 
       test("damage stays inside the gen 3 bounds for the setup") {
-        // Bulbasaur level 20 Swift versus Snorlax level 20. Swift is Normal, so the gen 3 type
-        // split makes it physical, and the target is bulky enough that no roll can faint it and
+        // Bulbasaur level 20 Swift versus Snorlax level 20. Swift is a special move (the per-move
+        // split, not its Normal type), and the target is bulky enough that no roll can faint it and
         // clamp the damage.
         repeat(30) { i ->
           val player = state(1, 20, listOf(SWIFT), PLAYER_ID)
@@ -109,7 +109,7 @@ class TurnEngineTest :
           val hit =
               events.filterIsInstance<BattleEvent.DamageDealt>().first { it.targetId == WILD_ID }
           val dealt = before - hit.newHp
-          val base = (2 * 20 / 5 + 2) * 60 * player.stats.atk / wild.stats.def / 50 + 2
+          val base = (2 * 20 / 5 + 2) * 60 * player.stats.spAtk / wild.stats.spDef / 50 + 2
           val bound = if (hit.crit) base * 2 else base
           dealt shouldBeGreaterThan bound * 85 / 100 - 1
           (dealt <= bound).shouldBeTrue()
@@ -121,7 +121,8 @@ class TurnEngineTest :
         var normalMax = 0
         for (seed in 0L until 200L) {
           val player = state(1, 50, listOf(SWIFT), PLAYER_ID)
-          val wild = state(19, 30, listOf(TACKLE), WILD_ID)
+          // Bulky enough that neither a roll nor a crit reaches its hp and clamps.
+          val wild = state(143, 30, listOf(TACKLE), WILD_ID)
           val before = wild.currentHp
           val events = engine.resolveTurn(battle(player, wild, seed), SWIFT)
           val hit =
@@ -237,14 +238,24 @@ class TurnEngineTest :
             .shouldBeTrue()
       }
 
+      // Ally Switch needs a partner, which a singles battle never has.
       test("an effect outside the core fails gracefully") {
-        val player = state(1, 5, listOf(SPLASH), PLAYER_ID)
+        val allySwitch: Short = 502
+        val player = state(1, 5, listOf(allySwitch), PLAYER_ID)
         val wild = state(19, 3, listOf(TACKLE), WILD_ID)
         val before = wild.currentHp
-        val events = engine.resolveTurn(battle(player, wild, seed = 9), SPLASH)
+        val events = engine.resolveTurn(battle(player, wild, seed = 9), allySwitch)
 
         events.filterIsInstance<BattleEvent.MoveFailed>().shouldNotBeEmpty()
         wild.currentHp shouldBe before
         wild.stage(BattleStat.ATTACK) shouldBe 0
+      }
+
+      test("Splash does nothing, without failing") {
+        val player = state(1, 5, listOf(SPLASH), PLAYER_ID)
+        val wild = state(19, 3, listOf(TACKLE), WILD_ID)
+        val events = engine.resolveTurn(battle(player, wild, seed = 9), SPLASH)
+
+        events.filterIsInstance<BattleEvent.MoveFailed>().filter { it.attackerId == PLAYER_ID } shouldBe emptyList()
       }
     })

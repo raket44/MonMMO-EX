@@ -5,6 +5,7 @@
 @param List<List<ParsedMove>> chunks
 package de.fiereu.openmmo.moves.generated
 
+import de.fiereu.openmmo.common.enums.DamageCategory
 import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
 import de.fiereu.openmmo.common.enums.MoveEffect
 import de.fiereu.openmmo.common.enums.MoveFlag

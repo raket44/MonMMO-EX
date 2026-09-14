@@ -60,6 +60,103 @@ class BattleMonState(
   val transformed: Boolean
     get() = transformedFrom != null
 
+  // Move-made volatile state (the Expansion's volatiles), cleared when the monster leaves the field.
+  /** Hp left in a Substitute; 0 = none. */
+  var substituteHp: Int = 0
+  var tauntTurns: Int = 0
+  var encoreTurns: Int = 0
+  var encoreMoveId: Int = 0
+  var disableTurns: Int = 0
+  var disabledMoveId: Int = 0
+  var tormented: Boolean = false
+  /** Attract: the monster it fell for. */
+  var infatuatedWith: BattleMonState? = null
+  var destinyBond: Boolean = false
+  /** Perish Song: end-of-turns left, fainting when it reaches 0; 0 = not counting. */
+  var perishCount: Int = 0
+  var aquaRing: Boolean = false
+  var magnetRiseTurns: Int = 0
+  var healBlockTurns: Int = 0
+  /** Smack Down pulled it to the ground. */
+  var grounded: Boolean = false
+  /** Stockpile count and the stages it actually added, which Spit Up and Swallow take back. */
+  var stockpile: Int = 0
+  var stockpileDef: Int = 0
+  var stockpileSpDef: Int = 0
+  /** The last move it used and whether it failed (Encore, Disable, Torment, Stomping Tantrum). */
+  var lastMoveId: Int = 0
+  var lastMoveFailed: Boolean = false
+  /** Successful uses of [lastMoveId] in a row (Fury Cutter, Rollout). */
+  var consecutive: Int = 0
+  /** Every move used since it came in (Last Resort). */
+  val usedMoves: MutableSet<Int> = mutableSetOf()
+  /** Full turns spent on the field; Fake Out only works on the first. */
+  var turnsOnField: Int = 0
+  /** Healing Wish and the entry hazards have already met it this stay. */
+  var arrived: Boolean = false
+  // Per-turn move state.
+  var helpingHand: Boolean = false
+  var centerOfAttention: Boolean = false
+  /** Soak, Conversion, Reflect Type, Burn Up: the types it has for the rest of its stay, over its species'. */
+  var typeOverride: Pair<de.fiereu.openmmo.common.enums.PokemonType, de.fiereu.openmmo.common.enums.PokemonType>? = null
+  val type1: de.fiereu.openmmo.common.enums.PokemonType
+    get() = typeOverride?.first ?: species.type1
+  val type2: de.fiereu.openmmo.common.enums.PokemonType
+    get() = typeOverride?.second ?: species.type2
+
+  fun hasType(type: de.fiereu.openmmo.common.enums.PokemonType): Boolean = type1 == type || type2 == type || thirdType == type
+
+  /** Charge: the next Electric attack hits twice as hard. */
+  var charged: Boolean = false
+  /** No Retreat was used: it cannot be used again, nor can the monster flee. */
+  var noRetreat: Boolean = false
+  /** Embargo: its held item does nothing for these many more turns. */
+  var embargoTurns: Int = 0
+  /** Magic Room is up: no held item works (kept in step with the field). */
+  var inMagicRoom: Boolean = false
+  /** Forest's Curse and Trick-or-Treat: a type added on top of the other two. */
+  var thirdType: de.fiereu.openmmo.common.enums.PokemonType? = null
+  /** Hits taken this battle, switches included (Rage Fist). */
+  var timesHit: Int = 0
+  /** A stat of it was lowered this turn (Lash Out). */
+  var statLoweredThisTurn: Boolean = false
+  /** Heating its beak for Beak Blast this turn: contact burns the attacker. */
+  var beakBlast: Boolean = false
+  /** Which party member's strike Beat Up is on. */
+  var beatUpIndex: Int = 0
+  /** Mimic: the slot it copied into and the move that sat there, back when it leaves the field. */
+  var mimicked: Pair<Int, PokemonMove>? = null
+  /** Imprison: foes cannot use any move this monster knows. */
+  var imprisoning: Boolean = false
+  /** Grudge: the move that knocks it out loses all its pp; holds until it moves again. */
+  var grudge: Boolean = false
+  /** Octolock: the monster holding it, lowering its defenses each turn. */
+  var octolockedBy: BattleMonState? = null
+  var telekinesisTurns: Int = 0
+  /** Dragon Cheer: extra critical-hit stages. */
+  var critBoost: Int = 0
+  // Per-turn move state.
+  var snatching: Boolean = false
+  var magicCoat: Boolean = false
+  var electrified: Boolean = false
+  var powdered: Boolean = false
+  var meFirst: Boolean = false
+  /** Pursuit is catching it on its way out. */
+  var pursued: Boolean = false
+
+  /** Gives Mimic's slot its own move back. */
+  fun restoreMimic() {
+    mimicked?.let { (slot, original) -> if (slot < moves.size) moves[slot] = PokemonMove(original.id, original.pp) }
+    mimicked = null
+  }
+
+  /** Its own moves as the store keeps them: before Transform, with Mimic's slot given back. */
+  fun ownMoves(): List<PokemonMove> {
+    val own = (transformedFrom ?: moves).map { PokemonMove(it.id, it.pp) }.toMutableList()
+    mimicked?.let { (slot, original) -> if (transformedFrom == null && slot < own.size) own[slot] = PokemonMove(original.id, original.pp) }
+    return own
+  }
+
   /** Turns of Toxic so far, which scales its damage; resets when the monster leaves the field. */
   var toxicCounter: Int = 0
 
@@ -108,6 +205,7 @@ class BattleMonState(
       moves += own
     }
     transformedFrom = null
+    restoreMimic()
     stages.clear()
     toxicCounter = 0
     ability = Abilities.of(species, source)
@@ -143,6 +241,43 @@ class BattleMonState(
     lastDamageTaken = 0
     movedThisTurn = false
     sleepTurns = 0
+    substituteHp = 0
+    tauntTurns = 0
+    encoreTurns = 0
+    encoreMoveId = 0
+    disableTurns = 0
+    disabledMoveId = 0
+    tormented = false
+    infatuatedWith = null
+    destinyBond = false
+    perishCount = 0
+    aquaRing = false
+    magnetRiseTurns = 0
+    healBlockTurns = 0
+    grounded = false
+    stockpile = 0
+    stockpileDef = 0
+    stockpileSpDef = 0
+    lastMoveId = 0
+    lastMoveFailed = false
+    consecutive = 0
+    usedMoves.clear()
+    turnsOnField = 0
+    arrived = false
+    helpingHand = false
+    centerOfAttention = false
+    charged = false
+    noRetreat = false
+    typeOverride = null
+    thirdType = null
+    embargoTurns = 0
+    imprisoning = false
+    grudge = false
+    octolockedBy = null
+    telekinesisTurns = 0
+    critBoost = 0
+    // Power Trick, Speed Swap and the splits change the stats themselves; they end with the stay.
+    stats = StatCalculator.computeAll(species, source).copy(hp = stats.hp)
   }
 
   /** Per-turn flags, cleared at the end of every turn. */
@@ -154,6 +289,16 @@ class BattleMonState(
     movedThisTurn = false
     movedFirstByItem = 0
     custapReady = false
+    helpingHand = false
+    centerOfAttention = false
+    statLoweredThisTurn = false
+    beakBlast = false
+    snatching = false
+    magicCoat = false
+    electrified = false
+    powdered = false
+    meFirst = false
+    turnsOnField++
     sleepTurns = if (de.fiereu.openmmo.common.StatusCondition.isAsleep(status)) sleepTurns + 1 else 0
   }
 
@@ -166,6 +311,41 @@ class BattleMonState(
   val maxHp: Int
     get() = stats.hp
 
+  /** What Baton Pass hands to the monster coming in: the stages and the effects that go with them. */
+  class Passed(
+      val stages: Map<BattleStat, Int>,
+      val substituteHp: Int,
+      val confusionTurns: Int,
+      val focusEnergy: Boolean,
+      val leechSeeded: Boolean,
+      val perishCount: Int,
+      val aquaRing: Boolean,
+      val magnetRiseTurns: Int,
+      val embargoTurns: Int,
+      val healBlockTurns: Int,
+      val ingrained: Boolean,
+      val cursed: Boolean,
+  )
+
+  fun batonPass(): Passed =
+      Passed(stages.toMap(), substituteHp, confusionTurns, focusEnergy, leechSeeded, perishCount, aquaRing, magnetRiseTurns,
+          embargoTurns, healBlockTurns, ingrained, cursed)
+
+  fun receive(passed: Passed) {
+    stages.putAll(passed.stages)
+    substituteHp = passed.substituteHp
+    confusionTurns = passed.confusionTurns
+    focusEnergy = passed.focusEnergy
+    leechSeeded = passed.leechSeeded
+    perishCount = passed.perishCount
+    aquaRing = passed.aquaRing
+    magnetRiseTurns = passed.magnetRiseTurns
+    embargoTurns = passed.embargoTurns
+    healBlockTurns = passed.healBlockTurns
+    ingrained = passed.ingrained
+    cursed = passed.cursed
+  }
+
   fun stage(stat: BattleStat): Int = stages[stat] ?: 0
 
   /** Clamp to the stage limits and return the delta that was actually applied. */
@@ -173,6 +353,7 @@ class BattleMonState(
     val old = stage(stat)
     val new = (old + delta).coerceIn(StatStages.MIN, StatStages.MAX)
     stages[stat] = new
+    if (new < old) statLoweredThisTurn = true
     return new - old
   }
 

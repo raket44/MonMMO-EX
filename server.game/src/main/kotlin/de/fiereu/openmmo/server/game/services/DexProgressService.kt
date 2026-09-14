@@ -94,11 +94,18 @@ class DexProgressService @Inject constructor(private val characters: CharacterSt
 
     /**
      * A regional form also counts for its base species' National entry, as in the games - an
-     * Alolan Vulpix is #037 (project owner, 2026-09-13). Derived when the tiers are sent, so a
-     * monster caught before this rule counts too.
+     * Alolan Vulpix is #037 (project owner, 2026-09-13). Every other form (Mega, Gigantamax,
+     * gender, cosmetic) counts ONLY on its base: its own bit stays clear, because the client lists
+     * a hidden species once it is seen, and those forms belong behind the base's form toggle, not in
+     * the lists. Derived when the tiers are sent, so a monster caught before these rules counts too.
      */
     fun withBaseSpecies(wireIds: Collection<Int>): Set<Int> =
-        (wireIds + wireIds.mapNotNull(de.fiereu.openmmo.pokemon.expansion.RegionalForms::baseWireOf))
+        wireIds
+            .flatMap { id ->
+              val alternateBase = de.fiereu.openmmo.pokemon.expansion.RegionalForms.alternateFormBaseOf(id)
+              if (alternateBase != null) listOf(alternateBase)
+              else listOfNotNull(id, de.fiereu.openmmo.pokemon.expansion.RegionalForms.baseWireOf(id))
+            }
             .filter { it in 1..LAST_WIRE_ID }
             .toSet()
 

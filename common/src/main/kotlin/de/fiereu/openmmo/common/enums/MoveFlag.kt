@@ -32,4 +32,16 @@ enum class MoveFlag(val bit: Int) {
   ALWAYS_HITS_IN_RAIN(1 shl 20),
   /** Never misses in hail (Blizzard). */
   ALWAYS_HITS_IN_HAIL(1 shl 21),
+  /** Goes straight past a Substitute (the Expansion's `ignoresSubstitute`). */
+  IGNORES_SUBSTITUTE(1 shl 22),
+  // Moves the move-calling and move-copying moves may not pick (the Expansion's *Banned booleans).
+  METRONOME_BANNED(1 shl 23),
+  COPYCAT_BANNED(1 shl 24),
+  ASSIST_BANNED(1 shl 25),
+  SLEEP_TALK_BANNED(1 shl 26),
+  INSTRUCT_BANNED(1 shl 27),
+  MIMIC_BANNED(1 shl 28),
+  ENCORE_BANNED(1 shl 29),
+  ME_FIRST_BANNED(1 shl 30),
+  SKETCH_BANNED(1 shl 31),
 }

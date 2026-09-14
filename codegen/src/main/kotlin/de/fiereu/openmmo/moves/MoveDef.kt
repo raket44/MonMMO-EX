@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.moves
 
+import de.fiereu.openmmo.common.enums.DamageCategory
 import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
 import de.fiereu.openmmo.common.enums.MoveEffect
 import de.fiereu.openmmo.common.enums.MoveFlag
@@ -30,6 +31,8 @@ data class MoveDef(
     val strikeCount: Int = 0,
     /** Extra critical-hit stages (Slash 1); 0 for an ordinary move. */
     val criticalHitStage: Int = 0,
+    /** Physical, special or status: which attack and defense the damage uses. */
+    val category: DamageCategory = DamageCategory.STATUS,
 ) {
   fun hasFlag(flag: MoveFlag): Boolean = flag in flags
 

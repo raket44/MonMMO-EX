@@ -123,7 +123,67 @@ sealed interface BattleEventBody {
       val moveId: Int = 0,
       val itemId: Int = 0,
   ) : BattleEventBody
+
+  /**
+   * Event 31, Transform (r32645 f/cb, bytecode-verified 2026-09-13). Sent with entityA = the
+   * monster copied and entityB = the one transforming; the client rebuilds the transformer as
+   * [species] with these moves (pp min(move pp, 5)), ability, types and stages, redraws its
+   * sprite and panel and prints "{00} transformed into {01}!". [personality] is on the wire only
+   * for Spinda (327). [rarityFlags] is the record flag word (&9 shiny); [gender] -128 keeps the
+   * transformer's own. [stages] packs eight nibbles, low first, of stage + 6: hp, attack,
+   * defense, speed, sp. attack, sp. defense, accuracy, evasion. Types are PokemonType ordinals.
+   */
+  data class Transform(
+      val species: Short,
+      val form: Byte = 0,
+      val personality: Int = 0,
+      val moves: List<Short>,
+      val abilityId: Short,
+      val rarityFlags: Short = 0,
+      val gender: Byte = -128,
+      val stages: Int = NEUTRAL_STAGES,
+      val type1: Byte,
+      val type2: Byte,
+  ) : BattleEventBody {
+    companion object {
+      const val SPINDA: Short = 327
+      const val NEUTRAL_STAGES = 0x66666666
+    }
+  }
+
+  /**
+   * Event 33 (r32645 f/wz2, bytecode-verified 2026-09-13), with entityA = the target and entityB =
+   * the attacker: move 46 (Roar) prints "{target} fled from battle!", any other move "{attacker}
+   * blew away {target}!". Text only - ending the battle or bringing a replacement is up to the server.
+   */
+  data class BlownAway(val moveId: Short) : BattleEventBody
 }
+
+private val TransformBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val species = field(S16LE) { (it as BattleEventBody.Transform).species }
+        val form = field(S8) { (it as BattleEventBody.Transform).form }
+        val personality =
+            if (species == BattleEventBody.Transform.SPINDA) field(S32LE) { (it as BattleEventBody.Transform).personality } else 0
+        val moves = List(4) { i -> field(S16LE) { (it as BattleEventBody.Transform).moves.getOrElse(i) { 0 } } }
+        val ability = field(S16LE) { (it as BattleEventBody.Transform).abilityId }
+        val rarity = field(S16LE) { (it as BattleEventBody.Transform).rarityFlags }
+        val gender = field(S8) { (it as BattleEventBody.Transform).gender }
+        val stages = field(S32LE) { (it as BattleEventBody.Transform).stages }
+        val type1 = field(S8) { (it as BattleEventBody.Transform).type1 }
+        val type2 = field(S8) { (it as BattleEventBody.Transform).type2 }
+        return BattleEventBody.Transform(species, form, personality, moves, ability, rarity, gender, stages, type1, type2)
+      }
+    }
+
+private val BlownAwayBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val moveId = field(S16LE) { (it as BattleEventBody.BlownAway).moveId }
+        return BattleEventBody.BlownAway(moveId)
+      }
+    }
 
 private val AbilityPopupBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
@@ -401,7 +461,9 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   EVOLUTION(id = 107, codec = EvolutionBodyCodec),
   SAFARI_BAIT(id = -33, codec = SafariBaitBodyCodec),
   CLIENT_LINE(id = 76, codec = ClientLineBodyCodec),
-  FREE_LINE(id = -22, codec = FreeLineBodyCodec);
+  FREE_LINE(id = -22, codec = FreeLineBodyCodec),
+  TRANSFORM(id = 31, codec = TransformBodyCodec),
+  BLOWN_AWAY(id = 33, codec = BlownAwayBodyCodec);
 
   companion object {
     fun ofId(id: Int): BattleEventType = entries.first { it.id == id }
@@ -421,6 +483,8 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.SafariBait -> SAFARI_BAIT
           is BattleEventBody.ClientLine -> CLIENT_LINE
           is BattleEventBody.FreeLine -> FREE_LINE
+          is BattleEventBody.Transform -> TRANSFORM
+          is BattleEventBody.BlownAway -> BLOWN_AWAY
           is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }

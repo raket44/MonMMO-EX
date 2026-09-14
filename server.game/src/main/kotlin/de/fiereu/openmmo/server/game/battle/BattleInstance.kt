@@ -149,6 +149,18 @@ class BattleInstance(
   var weatherTurns: Int = 0
   val playerSide = SideState()
   val opponentSide = SideState()
+  val field = FieldEffects()
+  val delayedAttacks = mutableListOf<DelayedAttack>()
+  /** The move each monster set out to use this turn (Upper Hand reads the target's). */
+  val plannedMoves = mutableMapOf<BattleMonState, de.fiereu.openmmo.moves.MoveDef>()
+  /** U-turn or Baton Pass by the player's monster: the switch screen is open and the turn waits. */
+  var pendingSelfSwitch: SelfSwitch? = null
+  /** The actions of the paused turn still to run once the pick is in. */
+  internal var turnResume: TurnResume? = null
+  /** Set when a move ended the battle; the service closes it instead of opening the next turn. */
+  var moveEnded: MoveEnding? = null
+  /** After You (true: act next) or Quash (false: act last) moved this monster's action. */
+  var reorder: Pair<BattleMonState, Boolean>? = null
 
   /** The monster on the player's first filled position (the only one in singles). */
   fun activeMon(): BattleMonState = party[playerPositions.firstOrNull { it >= 0 } ?: 0]

@@ -28,6 +28,12 @@ data class BattleSwitchInPacket(
     val side: Byte = 0,
     /** Two-trainer battles: owner key of the entering monster (record head + active detail). */
     val owner: Int? = null,
+    /**
+     * Send-out kind (r32645 q94, via cs2.gB): 0 recalls a monster still standing at the position
+     * ("come back!" and the withdraw animation) before the send-out; 5 skips the recall - the
+     * dragged-in switch of Roar and Dragon Tail.
+     */
+    val kind: Byte = 0,
 )
 
 private val NO_MOVES = List(BattleMonBlock.MOVE_SLOTS) { 0.toShort() }
@@ -37,7 +43,7 @@ object BattleSwitchInPacketCodec : PacketCodec<BattleSwitchInPacket>() {
     val packed = field(U8) { (it.newSlot shl 4) or (it.side.toInt() and 0x0F) }
     val side = (packed and 0x0F).toByte()
     val newSlot = (packed ushr 4) and 0x0F
-    field(U8) { 0 } // send-out kind; zero is the plain send-out
+    val kind = field(U8) { it.kind.toInt() and 0xFF }.toByte()
     // Decoded against both the client's parser (f/n8.qP1 -> ns0 -> NQ1) and the captured retail
     // switch-in, which agree byte for byte:
     // - the flag byte says whether the ns0 block follows; the original codec mislabelled it
@@ -70,6 +76,6 @@ object BattleSwitchInPacketCodec : PacketCodec<BattleSwitchInPacket>() {
                 moveIds = NO_MOVES,
             )
     return BattleSwitchInPacket(
-        newSlot = newSlot, oldSlot = -1, mon = mon, fullBlock = fullBlock, side = side)
+        newSlot = newSlot, oldSlot = -1, mon = mon, fullBlock = fullBlock, side = side, kind = kind)
   }
 }

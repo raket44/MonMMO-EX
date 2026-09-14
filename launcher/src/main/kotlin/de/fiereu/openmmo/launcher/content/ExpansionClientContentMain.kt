@@ -65,6 +65,9 @@ fun main(args: Array<String>) {
   // 1-559 from the ROMs, and section 4 is where everything past that has to be written.
   val moveIds = MoveText.ids(expansionRoot)
   val moveData = MoveText.parse(expansionRoot, moveIds).associateBy { it.id }
+  // Retail moves keep the client's numbers but take the Expansion's Gen 6 Fairy typing (project
+  // owner, 2026-09-13), written into retail's own section 4 record. See RetailMerge.moves.
+  val fairyMoveRetypes = RetailMerge.fairyMoveRetypes(moveData.mapValues { it.value.type }, LAST_CLIENT_MOVE_ID)
   // The per-game dumps keep learn methods apart, so tools, egg and prevo each land in the
   // category the client means. The old single-file source lumped them together, which is how a
   // pre-evolution level-up move ended up in the tools tab as a nameless TM.
@@ -348,12 +351,7 @@ fun main(args: Array<String>) {
           .edit(SpeciesCodec) { stock -> stock + checkNoCollisions(stock, records) }
           .edit(LevelUpLearnsetCodec) { stock -> RetailMerge.levelUp(stock, learnsets) }
           .edit(ExtraLearnsetCodec) { stock -> RetailMerge.extra(stock, extra) }
-          .edit(MoveCodec) { stock ->
-            val occupied = stock.map { it.moveId }.toSet()
-            val clashes = moveRecords.map { it.moveId }.filter(occupied::contains)
-            require(clashes.isEmpty()) { "Move ids already defined by the client: $clashes" }
-            stock + moveRecords
-          }
+          .edit(MoveCodec) { stock -> RetailMerge.moves(stock, fairyMoveRetypes, moveRecords) }
           .edit(RegionalDexCodec) { stock ->
             val taken = stock.map { it.regionId }.toSet()
             val clashes = dexRegions.map { it.regionId }.filter(taken::contains)
@@ -408,6 +406,9 @@ fun main(args: Array<String>) {
   println(
       "[expansion-client] ${retyped.size} Fairy retypes written in place: " +
           retyped.joinToString { it.symbol.removePrefix("SPECIES_").lowercase() })
+  println(
+      "[expansion-client] retail moves retyped to Fairy in place: " +
+          fairyMoveRetypes.joinToString { "$it ${moveData[it]?.name}" })
   println(
       "[expansion-client] move definitions written: ${moveRecords.size} " +
           "(ids ${newMoves.firstOrNull()?.id}-${newMoves.lastOrNull()?.id})")
@@ -605,9 +606,11 @@ private fun detail(
       speciesId = speciesId,
       flags =
           SpeciesDetail.EGG_GROUPS or
-              // Deliberately not HIDDEN_FROM_DEX: section 10 sets that on every species it
-              // creates, and the Pokedex skips any entry carrying it.
-              // Nor EXCLUDED_FROM_DEX, the second flag the screen checks alongside it.
+              // An alternate form (Mega, Gigantamax, gender, cosmetic) is hidden the way retail's
+              // own form records are: f/aq.xx0 drops a species carrying it while it is unseen, and
+              // the server never marks those ids seen (DexProgressService), so they live only behind
+              // the base's form toggle. Species and regional forms stay listable (their regional tab).
+              (if (entry.isForm && regionalDexRegion(entry) == null) SpeciesDetail.HIDDEN_FROM_DEX else 0) or
               SpeciesDetail.FLAG_200 or
               SpeciesDetail.EV_YIELD or
               SpeciesDetail.CATCH_RATE or
@@ -663,31 +666,46 @@ internal fun formEntry(formIndex: Int, recordId: Int, descriptionStringId: Int, 
 /**
  * A move the ROMs never had, written out in full.
  *
- * Only the four fields whose meaning is settled are flagged: accuracy, power, PP and type. The
+ * Only the fields whose meaning is settled are flagged: accuracy, power, PP, type and priority. The
  * others stay unset rather than being filled with zeroes we cannot justify. The attribute lines the
  * client prints beneath a move come from [MoveAttributes], which is measured against the 559 moves
  * the client already ships rather than assumed.
+ *
+ * Priority is bit 0x20: r32645 `f/fi7` case 4 reads it with `ByteBuffer.get()` (signed byte) into
+ * `f/hu6.xx1`, after the 0x10 int and before the 0x40 byte; the ROM path (`f/v67`) fills the same
+ * field from the waza record, and `f/tq` prints it as the move's priority. A new record starts from
+ * `f/hu6`'s default of 0, so the bit is only set when there is something to say.
  */
-private fun moveRecord(move: MoveText.Move): MoveRecord =
+internal fun moveRecord(move: MoveText.Move): MoveRecord =
     MoveRecord(
         moveId = move.id,
         category = moveCategory(move.category),
         flags =
-            MoveRecord.FIELD_001 or MoveRecord.FIELD_002 or MoveRecord.FIELD_004 or MoveRecord.TYPE,
+            MoveRecord.FIELD_001 or
+                MoveRecord.FIELD_002 or
+                MoveRecord.FIELD_004 or
+                MoveRecord.TYPE or
+                (if (move.priority != 0) MoveRecord.FIELD_020 else 0),
         // The client spells a never-miss move 101; the decomp spells it 0.
         field001 = if (move.accuracy == 0) NEVER_MISS_ACCURACY else move.accuracy,
         field002 = move.power,
         field004 = move.pp,
         type = clientType(move.type),
+        field020 = move.priority.takeIf { it != 0 },
         effects = MoveAttributes.of(move),
     )
 
-/** `f/wF`, the client's damage category enum. */
+/**
+ * `f/dd9`, the client's damage category enum (0 physical, 1 special, 2 status). An unresolved
+ * symbol is an error: falling back to status is how Water Shuriken's generation-gated category
+ * quietly became a status move.
+ */
 private fun moveCategory(symbol: String): Int =
     when (symbol) {
       "DAMAGE_CATEGORY_PHYSICAL" -> 0
       "DAMAGE_CATEGORY_SPECIAL" -> 1
-      else -> 2
+      "DAMAGE_CATEGORY_STATUS" -> 2
+      else -> error("Unresolved move category $symbol")
     }
 
 private fun clientType(symbol: String): Int =

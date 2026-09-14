@@ -20,6 +20,8 @@ data class ParsedMove(
     val strikeCount: Int = 0,
     /** Extra critical-hit stages (Slash 1); 0 for an ordinary move. */
     val criticalHitStage: Int = 0,
+    /** PHYSICAL, SPECIAL or STATUS, from `.category = DAMAGE_CATEGORY_*`. */
+    val category: String = "STATUS",
 )
 
 /**

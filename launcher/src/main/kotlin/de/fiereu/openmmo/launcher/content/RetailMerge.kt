@@ -72,6 +72,67 @@ object RetailMerge {
     return merged + expansion.filter { it.speciesId !in lastRetail }
   }
 
+  /**
+   * The retail moves staged as Fairy: 186 Sweet Kiss, 204 Charm, 236 Moonlight (project owner,
+   * 2026-09-13: "client's numbers but our move retyping"). They are the ONLY retail move records
+   * staging changes, and only in their type.
+   *
+   * The builder does not take this set on trust, it derives it ([fairyMoveRetypes]): a move the Gen 5
+   * ROMs number that the Expansion types TYPE_FAIRY can only be a Gen 6 retype, because the ROMs
+   * predate the type - moves_info.h spells each one `B_UPDATED_MOVE_TYPES >= GEN_6 ? TYPE_FAIRY :
+   * TYPE_NORMAL`. The derived set has to equal this one, so an Expansion update that retypes another
+   * move stops the build until it is approved here, and `:launcher:checkRetailPreserved` allows
+   * exactly these ids.
+   */
+  val APPROVED_FAIRY_MOVE_RETYPES: Set<Int> = setOf(186, 204, 236)
+
+  /** `f/eb6` ordinals: NORMAL is retail's, FAIRY the one the client Fairy patch adds. */
+  const val NORMAL_TYPE = 0
+  const val FAIRY_TYPE = 19
+
+  /** ROM-numbered moves (1..[lastRomMoveId]) the Expansion types Fairy, checked against the approval. */
+  fun fairyMoveRetypes(expansionTypes: Map<Int, String>, lastRomMoveId: Int): Set<Int> {
+    val derived =
+        expansionTypes.filter { (id, type) -> id in 1..lastRomMoveId && type == "TYPE_FAIRY" }.keys.toSortedSet()
+    require(derived == APPROVED_FAIRY_MOVE_RETYPES) {
+      "Expansion Fairy retypes of retail moves are $derived, approved are " +
+          "${APPROVED_FAIRY_MOVE_RETYPES.sorted()}: approve the change in RetailMerge first"
+    }
+    return derived
+  }
+
+  /**
+   * Section 4: retail's records with [fairyRetypes] applied in place, then [added] (moves the client
+   * has no record for).
+   *
+   * r32645 `f/fi7` case 4 looks each id up in the table the ROM built and overwrites only what the
+   * record's flags carry (the category always), so a retype is retail's own record with bit 0x8 set
+   * and type 19 - every other byte stays. Appending a second record instead would re-assign the
+   * category and every flagged field from whatever that record says. As with the learnsets, when
+   * retail lists an id twice only the last record, the one the client ends up with, is edited.
+   */
+  fun moves(stock: List<MoveRecord>, fairyRetypes: Set<Int>, added: List<MoveRecord>): List<MoveRecord> {
+    val lastRetail = stock.indices.associateBy { stock[it].moveId }
+    val missing = fairyRetypes.filter { it !in lastRetail }
+    require(missing.isEmpty()) { "No retail move record to retype in place for ids $missing" }
+    val clashes = added.map { it.moveId }.filter(lastRetail::containsKey)
+    require(clashes.isEmpty()) { "Move ids already defined by the client: $clashes" }
+    val merged =
+        stock.mapIndexed { index, retail ->
+          if (retail.moveId in fairyRetypes && lastRetail[retail.moveId] == index) fairyRetype(retail)
+          else retail
+        }
+    return merged + added
+  }
+
+  /** Retail's record as Fairy: bit 0x8 and type 19, nothing else. Only a Normal move is retyped. */
+  fun fairyRetype(retail: MoveRecord): MoveRecord {
+    require(retail.type == null || retail.type == NORMAL_TYPE) {
+      "Retail move ${retail.moveId} is explicitly type ${retail.type}, not Normal; refusing to retype it"
+    }
+    return retail.copy(flags = retail.flags or MoveRecord.TYPE, type = FAIRY_TYPE)
+  }
+
   /** The detail bits an addition may set on a retail species. */
   const val ADDITIVE_BITS =
       SpeciesDetail.EGG_GROUPS or

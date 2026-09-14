@@ -7,7 +7,7 @@ private const val SAFARI = 0x2
 private const val VALUE_4 = 0x4
 private const val VALUE_8 = 0x8
 private const val VALUE_16 = 0x10
-private const val VALUE_32 = 0x20
+private const val BATTLE_POINTS = 0x20
 private const val VALUE_64 = 0x40
 private const val STATUS_CONDITIONS = 0x80
 private const val VALUE_256 = 0x100
@@ -32,7 +32,11 @@ data class LocalCharacterDeltaPacket(
     val value4: Short? = null,
     val value8: Value8Group? = null,
     val value16: Value16Group? = null,
-    val value32: Int? = null,
+    /**
+     * The Battle Points balance: client f/jc3 bit 0x20 -> f/eu6.pI0, the number the trainer card
+     * labels with string 1605. Read as an unnamed int until 2026-09-14.
+     */
+    val battlePoints: Int? = null,
     val value64: Value64Group? = null,
     val statusConditions: List<Byte>? = null,
     val value256: Byte? = null,
@@ -45,7 +49,7 @@ private fun LocalCharacterDeltaPacket.mask(): Short {
   if (value4 != null) m = m or VALUE_4
   if (value8 != null) m = m or VALUE_8
   if (value16 != null) m = m or VALUE_16
-  if (value32 != null) m = m or VALUE_32
+  if (battlePoints != null) m = m or BATTLE_POINTS
   if (value64 != null) m = m or VALUE_64
   if (statusConditions != null) m = m or STATUS_CONDITIONS
   if (value256 != null) m = m or VALUE_256
@@ -74,7 +78,7 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
         if (m and VALUE_16 != 0)
             Value16Group(field(S16LE) { it.value16!!.a }, field(S16LE) { it.value16!!.b })
         else null
-    val value32 = optionalField(m and VALUE_32 != 0, S32LE) { it.value32 }
+    val battlePoints = optionalField(m and BATTLE_POINTS != 0, S32LE) { it.battlePoints }
     val value64 =
         if (m and VALUE_64 != 0) {
           val kind = field(S8) { it.value64!!.kind }
@@ -96,7 +100,7 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
         value4 = value4,
         value8 = value8,
         value16 = value16,
-        value32 = value32,
+        battlePoints = battlePoints,
         value64 = value64,
         statusConditions = statusConditions,
         value256 = value256,

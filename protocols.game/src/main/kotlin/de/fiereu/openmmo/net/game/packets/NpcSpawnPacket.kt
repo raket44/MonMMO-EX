@@ -31,6 +31,13 @@ data class NpcSpawnPacket(
      */
     val unk6: Int,
     val look: NpcLook? = null,
+    /**
+     * Option bit 4: the sprite's width and height overrides (f/o85.Uu0/Hp0 -> f/dw2.vg/Br0, read by
+     * dw2.QX()/oy()). Without the bit both stay 0, which a ROM sprite is fine with but a region-10
+     * file sprite takes as a zero size and is drawn a tile right and two down of its entity
+     * (Crystal Onix, 2026-09-14). -1 means "no override": the client's own sprite table decides.
+     */
+    val spriteSize: Pair<Byte, Byte>? = null,
 )
 
 object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
@@ -47,7 +54,18 @@ object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
     val y = field(U16LE) { it.y }
     val unk5 = field(U8) { it.unk5 }
     val facing = field(U8) { it.facing }
-    val flags = field(U16LE) { (it.unk6 and LOOK_BIT.inv()) or (if (it.look != null) LOOK_BIT else 0) }
+    val flags =
+        field(U16LE) {
+          (it.unk6 and (LOOK_BIT or SIZE_BIT).inv()) or
+              (if (it.look != null) LOOK_BIT else 0) or
+              (if (it.spriteSize != null) SIZE_BIT else 0)
+        }
+    // Option payloads follow the flags in bit order; bit 1 (a short and two bytes) is never sent,
+    // so the size bytes come first.
+    val spriteSize =
+        if (flags and SIZE_BIT != 0) {
+          field(S8) { it.spriteSize!!.first } to field(S8) { it.spriteSize!!.second }
+        } else null
     val look =
         if (flags and LOOK_BIT != 0) {
           val gender = field(S8) { it.look!!.gender }
@@ -67,9 +85,11 @@ object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
         y,
         facing,
         unk5,
-        flags and LOOK_BIT.inv(),
-        look)
+        flags and (LOOK_BIT or SIZE_BIT).inv(),
+        look,
+        spriteSize)
   }
 
   private const val LOOK_BIT = 8192
+  private const val SIZE_BIT = 4
 }

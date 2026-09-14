@@ -147,11 +147,11 @@ constructor(
       return
     }
     // Without this the species stays a silhouette in the Pokedex even while it sits in the party.
-    ctx.session.send(PokedexSpeciesUnlockPacket(wireId.toShort()))
-    // A regional form unlocks its base species' National entry too (Alolan Vulpix is #037).
-    de.fiereu.openmmo.pokemon.expansion.RegionalForms.baseWireOf(wireId)?.let {
-      ctx.session.send(PokedexSpeciesUnlockPacket(it.toShort()))
-    }
+    // An alternate form unlocks its base species' entry, never its own; a regional form unlocks its
+    // own and its base species' National entry too (Alolan Vulpix is #037).
+    val forms = de.fiereu.openmmo.pokemon.expansion.RegionalForms
+    ctx.session.send(PokedexSpeciesUnlockPacket((forms.alternateFormBaseOf(wireId) ?: wireId).toShort()))
+    forms.baseWireOf(wireId)?.let { ctx.session.send(PokedexSpeciesUnlockPacket(it.toShort())) }
     log.info {
       "[ExpansionClient] SENT ${entry.stableId} expansionId=${entry.originalId} " +
           "serverId=${entry.serverId} wireId=$wireId stage=party"

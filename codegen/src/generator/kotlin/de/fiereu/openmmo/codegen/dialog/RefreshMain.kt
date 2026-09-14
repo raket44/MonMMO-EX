@@ -75,7 +75,16 @@ private fun refreshRegion(
       }
 
   val file = DialogTable.file(dataDir, region)
-  DialogTable.write(file, region, gameCode, lines)
+  // A text the ROM search cannot place keeps the id already committed for it instead of vanishing.
+  // Erika's intro is one: its id was worked out from its neighbours on 2026-09-09, and the refresh of
+  // 2026-09-11 dropped it, so her gym battle fell back to the unported Kotlin stub.
+  val resolved = lines.associateBy { it.label }
+  val committed = DialogTable.read(file).orEmpty().associateBy { it.label }
+  val merged = texts.mapNotNull { t -> resolved[t.label] ?: committed[t.label] }
+  val kept = merged.filter { it.label !in resolved }
+  kept.forEach { println("[dialog] $region: kept committed ${it.label} = ${it.textId} (not resolved from the ROM)") }
+  DialogTable.write(file, region, gameCode, merged)
   println(
-      "[dialog] $region: wrote ${lines.size} lines to $file (skipped $unencodable unencodable, $notFound not in ROM)")
+      "[dialog] $region: wrote ${merged.size} lines to $file (skipped $unencodable unencodable, " +
+          "$notFound not in ROM, ${kept.size} of those kept from the committed table)")
 }

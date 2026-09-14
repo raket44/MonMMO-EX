@@ -99,4 +99,13 @@ class BattleEntityDeltaPacketTest :
             LocalCharacterDeltaPacket(money = 1900)
         LocalCharacterDeltaPacketCodec.assertBytesRoundtrip(bytes)
       }
+
+      test("a local character delta puts Battle Points under bit 0x20") {
+        val packet = LocalCharacterDeltaPacket(battlePoints = 2500)
+
+        // Mask 0x0020, then the balance as an s32 (client f/jc3 -> f/eu6.pI0).
+        LocalCharacterDeltaPacketCodec.encodeToBytes(packet).toList() shouldBe
+            listOf<Byte>(0x20, 0x00, 0xC4.toByte(), 0x09, 0x00, 0x00)
+        LocalCharacterDeltaPacketCodec.assertValueRoundtrip(packet)
+      }
     })

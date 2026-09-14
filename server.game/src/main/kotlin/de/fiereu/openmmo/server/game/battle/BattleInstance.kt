@@ -145,6 +145,9 @@ class BattleInstance(
   /** Where the wild monster was met, for the Dive, Dusk and Lure Balls. */
   var encounter: EncounterContext = EncounterContext()
 
+  /** The Crystal Onix raid's phase state, when this battle is the raid. */
+  var raid: RaidBossState? = null
+
   var weather: Weather? = null
   var weatherTurns: Int = 0
   val playerSide = SideState()
@@ -199,6 +202,21 @@ class BattleInstance(
   /** The monsters facing [mon] that are still standing. */
   fun foesOf(mon: BattleMonState): List<BattleMonState> =
       (if (isPlayerSide(mon.entityId)) opponentActives() else playerActives()).filter { !it.fainted }
+
+  /**
+   * Whether [attacker] can reach [target] from its field position. Only a triple battle limits
+   * reach: neighbours only. Position p stands across from the other side's same position p; the
+   * mirrored mapping (slots - 1 - p) was the wrong way round on the client for both sides
+   * (project owner, 2026-09-14). A benched monster, or one in singles, doubles or a horde,
+   * reaches everyone.
+   */
+  fun reaches(attacker: BattleMonState, target: BattleMonState): Boolean {
+    if (format != BattleFormat.TRIPLES) return true
+    val from = positionOf(attacker)
+    val to = positionOf(target)
+    if (from < 0 || to < 0) return true
+    return kotlin.math.abs(from - to) <= 1
+  }
 
   /** [mon]'s partners on the field, itself excluded. */
   fun alliesOf(mon: BattleMonState): List<BattleMonState> =

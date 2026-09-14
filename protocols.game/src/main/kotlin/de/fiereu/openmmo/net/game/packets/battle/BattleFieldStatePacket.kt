@@ -24,6 +24,8 @@ enum class OpposingSide(val wireValue: Byte) {
 enum class BattleFormat(val wireValue: Byte, val playerSlots: Int, val opponentSlots: Int) {
   SINGLES(0, 1, 1),
   DOUBLES(1, 2, 2),
+  /** Three a side (client f/t7 ordinal 5); the Crystal Onix raid is fought in it. */
+  TRIPLES(5, 3, 3),
   HORDE(6, 1, 5);
 
   companion object {

@@ -62,6 +62,8 @@ class BattleRewards @Inject constructor(private val items: de.fiereu.openmmo.ite
     val rate = winner.species.growthRate
     val cap = ExpCurves.totalXpFor(rate, ExpCurves.MAX_LEVEL)
     val newXp = minOf(winner.source.xp + gained, cap)
+    // At the cap nothing is gained, and the reward line must not claim otherwise.
+    gained = (newXp - winner.source.xp).coerceAtLeast(0)
     val newLevel = maxOf(winner.level, ExpCurves.levelFor(rate, newXp))
     val leveled = newLevel > winner.level
     val newEvs = addYields(winner.source.eVs, defeated, machoBrace = held == Items.MACHO_BRACE, powerStat = POWER_ITEM_STATS[held])

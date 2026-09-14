@@ -71,7 +71,7 @@ class ExpansionAssetStaging(
     ZipOutputStream(Files.newOutputStream(archive)).use { zip ->
       // The client refuses an archive with no directory entries as a "flattened zip structure",
       // so every folder it will read from is declared before the files land in it.
-      listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/", "sprites/itemicons/")
+      listOf("sprites/", "$SPRITES/", "$ICONS/", "$FOLLOWERS/", "$CRIES/", "sprites/itemicons/", "$NPC_SPRITES/", "$NPC_SPRITES/10/")
           .forEach { zip.directory(it) }
       zip.write("info.xml", INFO_XML.toByteArray())
       // Alternate block grids the server swaps in with s2c 0x2D (ClientMapFooters).
@@ -92,7 +92,15 @@ class ExpansionAssetStaging(
               val front = indexed(entry.assets.frontPicPath)
               val back = indexed(entry.assets.backPicPath)
               val icon = indexed(entry.assets.iconPath)
-              val iconPalette = palette("$ICON_PALETTES/pal${entry.assets.iconPalIndex}.pal")
+              // MonMMO-EX's own species (codegen/custom-species) can carry animated battle GIFs
+              // and an icon palette of their own beside the decomp-style art.
+              val artDir = Path.of(entry.assets.frontPicPath).parent?.let(expansionRoot::resolve)
+              fun customArt(name: String): Path? = artDir?.resolve(name)?.takeIf(Files::isRegularFile)
+              val customFront = customArt("monmmo_front.gif")
+              val customBack = customArt("monmmo_back.gif")
+              val iconPalette =
+                  customArt("monmmo_icon.pal")?.let { palette(it.toString()) }
+                      ?: palette("$ICON_PALETTES/pal${entry.assets.iconPalIndex}.pal")
 
               // anim_front.png stacks the animation frames; the Expansion's own playback script
               // turns them into an animated GIF, which the client plays as-is. Sprites the
@@ -105,14 +113,17 @@ class ExpansionAssetStaging(
               // Battle sprites, best source first per side: Showdown's animated GIF (normal sides
               // only - there are no shiny animations), the operator's Gen 5-style still, Showdown's
               // still, and finally the Expansion's own art. Stills get the idle bounce.
+              // A custom species' own animation wins; it has no shiny art, so both sides use it.
               val frontN =
-                  online?.aniFront?.let { reencodeGif(it) to ANI }
+                  customFront?.let { reencodeGif(it) to ANI }
+                      ?: online?.aniFront?.let { reencodeGif(it) to ANI }
                       ?: packed?.front?.let { packGif(it) to PACK }
                       ?: online?.front?.let { packGif(it) to SHOWDOWN }
                       ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
                       else idleGif(front, normal, FRAME)) to EXPANSION
               val frontS =
-                  online?.let { o ->
+                  customFront?.let { reencodeGif(it) to ANI }
+                      ?: online?.let { o ->
                     if (o.aniFront != null && o.front != null && o.frontShiny != null)
                         shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
                     else null
@@ -122,12 +133,14 @@ class ExpansionAssetStaging(
                       ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
                       else idleGif(front, shiny, FRAME)) to EXPANSION
               val backN =
-                  online?.aniBack?.let { reencodeGif(it) to ANI }
+                  customBack?.let { reencodeGif(it) to ANI }
+                      ?: online?.aniBack?.let { reencodeGif(it) to ANI }
                       ?: packed?.back?.let { packGif(it) to PACK }
                       ?: online?.back?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, normal, FRAME) to EXPANSION
               val backS =
-                  online?.let { o ->
+                  customBack?.let { reencodeGif(it) to ANI }
+                      ?: online?.let { o ->
                     if (o.aniBack != null && o.back != null && o.backShiny != null)
                         shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY
                     else null
@@ -158,6 +171,22 @@ class ExpansionAssetStaging(
               // icon.png stacks the two idle-bounce frames the party UI alternates between.
               zip.write("$ICONS/$wireId-0.png", png(icon, iconPalette, ICON, 0))
               zip.write("$ICONS/$wireId-1.png", png(icon, iconPalette, ICON, ICON))
+
+              // A custom species that stands in the overworld as a plain file-sprite npc names its
+              // sprite slot in monmmo_npc_sprite.txt as "region id" (the Crystal Onix raid boss no
+              // longer does: it is drawn with its follower sheet, CrystalOnixRaidPlacement). The
+              // client reads overworldsprites/<region>/<id>-<F>.png, F the GBA frame (0 face
+              // south, 1 north, 2 west, 3-4 / 5-6 / 7-8 walking); the strip is the Expansion's
+              // overworld layout, cells 0,1 south, 2,3 north, 4,5 west.
+              customArt("monmmo_npc_sprite.txt")?.let { slotFile ->
+                val (region, spriteId) =
+                    Files.readString(slotFile).trim().split(WHITESPACE).map(String::toInt)
+                val strip = indexed(artDir!!.resolve("overworld.png").toString())
+                val colours = palette(artDir.resolve("overworld_normal.pal").toString())
+                NPC_FRAME_CELLS.forEachIndexed { frame, cell ->
+                  zip.write("$NPC_SPRITES/$region/$spriteId-$frame.png", overworldFrame(strip, colours, cell))
+                }
+              }
 
               // Follower sprites: the overworld sheet that walks behind the player. The client
               // exits with a fatal error when the lead party member has no follower sheet at all,
@@ -593,6 +622,19 @@ class ExpansionAssetStaging(
 
   private operator fun <T> List<T>.component2(): T = this[1]
 
+  /** One square cell of an overworld strip as a transparent PNG. */
+  private fun overworldFrame(strip: IndexedImage, palette: IntArray, cell: Int): ByteArray {
+    val size = strip.height
+    val target = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+    for (y in 0 until size) {
+      for (x in 0 until size) {
+        val index = strip.index(cell * size + x, y)
+        if (index != TRANSPARENT_INDEX && index < palette.size) target.setRGB(x, y, palette[index])
+      }
+    }
+    return encode(target, "png")
+  }
+
   /** A static 4x4 grid of the party icon: not pretty, but the client never crashes over it. */
   private fun followerFromIcon(icon: IndexedImage, palette: IntArray): ByteArray {
     val target = BufferedImage(ICON * 4, ICON * 4, BufferedImage.TYPE_INT_ARGB)
@@ -753,6 +795,9 @@ class ExpansionAssetStaging(
     const val EXPANSION = "expansion"
     const val ICONS = "sprites/monstericons"
     const val FOLLOWERS = "sprites/followsprites"
+    const val NPC_SPRITES = "sprites/overworldsprites"
+    /** Strip cell for each GBA frame 0-8: face S/N/W, then the step cells of S, N, W twice. */
+    val NPC_FRAME_CELLS = listOf(0, 2, 4, 1, 1, 3, 3, 5, 5)
     const val CRIES = "cries"
     val SPECIES_ENTRY =
         Regex(

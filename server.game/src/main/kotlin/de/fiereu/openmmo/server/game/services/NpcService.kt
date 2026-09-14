@@ -26,6 +26,7 @@ constructor(
     private val mapManager: MapManager,
     private val characterStore: CharacterStore,
     private val ferry: FerryPlacements = FerryPlacements(mapManager),
+    private val raid: CrystalOnixRaidPlacement = CrystalOnixRaidPlacement(mapManager),
     private val scope: kotlinx.coroutines.CoroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
 ) {
@@ -114,6 +115,22 @@ constructor(
     ferry.at(regionId, bankId, mapId)?.let { p ->
       ctx.send(buildSpawnPacket(p.npc(), entityIdFor(regionId, bankId, mapId, FerryPlacements.LOCAL_ID), regionId, bankId, mapId, look = p.look))
     }
+    // The Crystal Onix raid boss, gone for the rest of the day once this character has beaten it.
+    if (raid.isHere(regionId, bankId, mapId) &&
+        !de.fiereu.openmmo.server.game.battle.CrystalOnixRaid.beatenToday(storyVars, java.time.LocalDate.now())) {
+      ctx.send(
+          buildSpawnPacket(
+              raid.npc(), entityIdFor(regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID), regionId, bankId, mapId,
+              spriteRegionId = CrystalOnixRaidPlacement.SPRITE_REGION,
+              // The hit box, in tiles (f/ni6 adds dw2.QX()/oy() to the tile position). The follower
+              // graphics id has no sprite of its own in the set, so the size is given: one tile.
+              spriteSize = 1.toByte() to 1.toByte()))
+    }
+  }
+
+  /** Takes the raid boss off the map once it has been beaten (it returns the next day). */
+  fun despawnRaidBoss(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    despawnNpc(ctx, regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID)
   }
 
   /**
@@ -420,6 +437,10 @@ constructor(
       bankId: Int,
       mapId: Int,
       look: de.fiereu.openmmo.net.game.packets.NpcLook? = null,
+      /** The sprite set graphicsId indexes: the map's region's ROM set, or 10 for the client's own. */
+      spriteRegionId: Int = regionId,
+      /** Width/height overrides (NpcSpawnPacket.spriteSize); a region-10 sprite needs (-1, -1). */
+      spriteSize: Pair<Byte, Byte>? = null,
   ): NpcSpawnPacket {
     val region = requireNotNull(Region.byId(regionId)) { "Unknown region id $regionId" }
     val movementId = npc.movementType.forRegion(region).id
@@ -445,7 +466,7 @@ constructor(
         }
     return NpcSpawnPacket(
         entityId = entityId,
-        spriteRegionId = regionId,
+        spriteRegionId = spriteRegionId,
         graphicsId = npc.graphicsId,
         unk3 = unk3,
         unk4 = unk4,
@@ -458,6 +479,7 @@ constructor(
         unk5 = elevation,
         unk6 = 8,
         look = look,
+        spriteSize = spriteSize,
     )
   }
 

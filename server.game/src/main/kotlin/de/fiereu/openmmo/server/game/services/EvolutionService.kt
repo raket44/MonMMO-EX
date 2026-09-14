@@ -104,11 +104,11 @@ constructor(
               pokemon = party,
           ))
     }
-    ctx.send(PokedexSpeciesUnlockPacket(pending.targetWire.toShort()))
-    // A regional form unlocks its base species' National entry too (Alolan Marowak is #105).
-    de.fiereu.openmmo.pokemon.expansion.RegionalForms.baseWireOf(pending.targetWire)?.let {
-      ctx.send(PokedexSpeciesUnlockPacket(it.toShort()))
-    }
+    // An alternate form (Hisuian Typhlosion, a Mega) unlocks its base species' entry, never its own;
+    // a regional form unlocks its own and its base species' National entry (Alolan Marowak is #105).
+    val forms = de.fiereu.openmmo.pokemon.expansion.RegionalForms
+    ctx.send(PokedexSpeciesUnlockPacket((forms.alternateFormBaseOf(pending.targetWire) ?: pending.targetWire).toShort()))
+    forms.baseWireOf(pending.targetWire)?.let { ctx.send(PokedexSpeciesUnlockPacket(it.toShort())) }
     dexProgress.refresh(ctx, charId)
     characters.flushCharacterAsync(charId)
     ctx.send(notice("$fromName evolved into $toName!"))

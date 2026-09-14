@@ -34,6 +34,9 @@ private val log = KotlinLogging.logger {}
 /** The permission bits of a freshly created character on an ordinary account. */
 private const val DEFAULT_PERMISSIONS = 8
 
+/** The saved var holding a character's Battle Points balance. */
+const val BATTLE_POINTS_KEY = "monmmo.battle_points"
+
 private val FLUSH_TICK = 5.seconds
 private val FLUSH_DEBOUNCE = 10.seconds
 
@@ -135,7 +138,10 @@ constructor(
     repository.insertAggregate(stored)
     characters[id] = stored
     persisted[id] = stored
-    charactersByUser.computeIfAbsent(userId) { CopyOnWriteArrayList() }.add(id)
+    // Only an index that already lists the account's characters takes the new one. Creating the
+    // index here held just the new character, and every older one then vanished from the
+    // character list; with no index the next list loads them all from the database, this one too.
+    charactersByUser[userId]?.add(id)
     return stored
   }
 
@@ -186,12 +192,21 @@ constructor(
   suspend fun getCharactersByUser(userId: Int): List<StoredCharacter> {
     val cachedIds: List<Long>? = charactersByUser[userId]
     if (cachedIds != null) {
-      cachedIds.forEach { pendingUnload.remove(it) }
-      return cachedIds.mapNotNull { characters[it] }
+      val cached = cachedIds.mapNotNull { characters[it] }
+      if (cached.size == cachedIds.size) {
+        cachedIds.forEach { pendingUnload.remove(it) }
+        return cached
+      }
+      // An eviction raced a load (a disconnect's unload landing while the same account logged in
+      // again) and left ids whose characters are no longer cached. Mapping them away used to hide
+      // the account's characters on every login until a restart - the list showed only NEW
+      // CHARACTER (2026-09-14, after a deploy's mass reconnect). Rebuild the index instead;
+      // cache() keeps any copy still in memory, so an online character's unsaved state survives.
+      charactersByUser.remove(userId, cachedIds)
     }
     val loaded = repository.loadByUser(userId).map { cache(it) }
     loaded.forEach { pendingUnload.remove(it.info.id) }
-    charactersByUser.putIfAbsent(userId, CopyOnWriteArrayList(loaded.map { it.info.id }))
+    charactersByUser[userId] = CopyOnWriteArrayList(loaded.map { it.info.id })
     return loaded
   }
 
@@ -396,6 +411,21 @@ constructor(
           // of the same character survives.
           rollback = { it.copy(info = it.info.copy(money = it.info.money - amount)) },
       )
+
+  /**
+   * Add Battle Points, kept in the saved vars under [BATTLE_POINTS_KEY]. False when the change could
+   * not be written, in which case the balance is left as it was.
+   */
+  suspend fun addBattlePoints(characterId: Long, amount: Int): Boolean {
+    fun shifted(stored: StoredCharacter, delta: Int): StoredCharacter {
+      val vars = stored.storyVars.toMutableMap()
+      val balance = (vars[BATTLE_POINTS_KEY] ?: 0) + delta
+      if (balance == 0) vars.remove(BATTLE_POINTS_KEY) else vars[BATTLE_POINTS_KEY] = balance
+      return stored.copy(storyVars = vars)
+    }
+    return mutateDurably(
+        characterId, apply = { shifted(it, amount) }, rollback = { shifted(it, -amount) })
+  }
 
   /** Add (or remove with a negative amount) one persisted bag stack. */
   /** False when the bag would go negative, or when the change could not be written. */

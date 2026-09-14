@@ -723,6 +723,11 @@ constructor(
     // exists and creates nothing, so it goes out again here, where the HUD is up and its refresh
     // builds the frame (2026-09-11). The tracker's sets go first so the frame reads them.
     characterStore.getCharacter(charId)?.let { stored ->
+      // Battle Points come only through the character delta, and the client drops that packet
+      // until it is in-world (logcat: "0x0C, AUTHED" at login), so the balance goes out here.
+      ctx.send(
+          de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket(
+              battlePoints = stored.storyVars[de.fiereu.openmmo.server.game.storage.BATTLE_POINTS_KEY] ?: 0))
       if (HallOfFame.FLAG in stored.storyFlags) {
         if (!state.trackerStateSent) {
           state.trackerStateSent = true

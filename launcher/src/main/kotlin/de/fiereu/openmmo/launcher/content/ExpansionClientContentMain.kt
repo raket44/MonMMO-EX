@@ -4,6 +4,7 @@ package de.fiereu.openmmo.launcher.content
 
 import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesDef
 import de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry
+import de.fiereu.openmmo.pokemon.expansion.RegionalForms
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.xml.parsers.DocumentBuilderFactory
@@ -140,12 +141,8 @@ fun main(args: Array<String>) {
         if (moves.isEmpty()) null else LevelUpLearnset(checkNotNull(entry.clientWireId), moves)
       }
 
-  // A species with no dex entry cannot be opened in the Pokedex at all. The client keeps six
-  // per-region slots and the stock file fills five, so everything new shares the last one, listed
-  // in National Dex order.
-  // One Pokedex region per national dex range the imported species fall into. The client shipped
-  // with five and its species record only had six slots for region numbers; the classpath overlay
-  // widens both, and a tab's name is string id 250000 + region, so nothing else is needed here.
+  // The Pokedex lists (section 11). The client's widened species record keeps a number per tab, and a
+  // tab's name is string id 250000 + region.
   //
   // A species is a member of a region precisely when its number there is at least 1 - the list is
   // built by filtering on that and sorting by it - so writing the number is writing the membership.
@@ -156,32 +153,40 @@ fun main(args: Array<String>) {
   // Retail 1-649 get their own ids back (the value they already had); a national number with no
   // staged species gets an id nothing resolves, which the loader skips while keeping positions.
   val nationalByDex = selected.filter { !it.isForm }.associateBy { it.nationalDexId }
-  val nationalDex =
-      RegionalDex(
-          NATIONAL_REGION,
-          (1..LAST_NATIONAL_DEX).map { dex ->
-            if (dex <= LAST_RETAIL_DEX) dex
-            else nationalByDex[dex]?.clientWireId ?: UNRESOLVED_SPECIES_ID
-          },
-      )
+  fun speciesWire(dex: Int): Int =
+      if (dex <= LAST_RETAIL_DEX) dex else nationalByDex[dex]?.clientWireId ?: UNRESOLVED_SPECIES_ID
+  // A region's own form of a species takes that species' place in the region's dex - Alola's Raichu
+  // is Alolan Raichu, its Pikachu stays Pikachu - one per species (RegionalForms picks which).
+  val regionalFormAt =
+      selected
+          .mapNotNull { form ->
+            regionalDexRegion(form)?.let { region -> (region to checkNotNull(form.nationalDexId)) to form }
+          }
+          .toMap()
+  regionalFormAt.forEach { (slot, form) ->
+    require(slot.second in RegionalForms.dexOrder(slot.first)) {
+      "${form.symbol} has no place in tab ${slot.first}'s dex (monmmo/regional-dexes.csv)"
+    }
+  }
+  // The National list: 1-1025. Regional forms stay out of it and are listed in their region's tab
+  // only (project owner, 2026-09-14).
+  val nationalDex = RegionalDex(NATIONAL_REGION, (1..LAST_NATIONAL_DEX).map(::speciesWire))
+  // Each new tab lists its region's additions only - the generation's new species and the region's
+  // own forms - in the order its real dex (latest, with DLC) puts them; older species it lists stay
+  // out (project owner, 2026-09-14). A new species that dex never lists (a mythical such as Meltan)
+  // follows at the end in National order, so every addition has its tab.
   val dexRegions =
       listOf(nationalDex) +
-      DEX_REGIONS.map { (region, range) ->
-        RegionalDex(
-            region,
-            selected
-                // Forms sit above the last contiguous id, so the Pokedex copy never reaches them.
-                .filter { !it.isForm && (it.nationalDexId ?: 0) in range }
-                .sortedBy { it.nationalDexId }
-                .mapNotNull { it.clientWireId } +
-                // Regional forms are entries of their region's tab, after its own species, in
-                // National order (Alolan Rattata before Alolan Raticate).
-                selected
-                    .filter { regionalDexRegion(it) == region }
-                    .sortedWith(compareBy({ it.nationalDexId }, { it.clientWireId }))
-                    .mapNotNull { it.clientWireId },
-        )
-      }
+          DEX_REGIONS.map { region ->
+            val additions = NEW_SPECIES_RANGES.getValue(region)
+            val order = RegionalForms.dexOrder(region)
+            RegionalDex(
+                region,
+                order.mapNotNull { dex ->
+                  regionalFormAt[region to dex]?.clientWireId ?: speciesWire(dex).takeIf { dex in additions }
+                } + additions.filter { it !in order }.map(::speciesWire),
+            )
+          }
   // Egg, taught and pre-evolution moves, each in the category the client means. The tools tab is
   // built from the tool registry against the tools category; the tutor category is the client's
   // home for moves a pre-evolution knew - exactly the set the per-game dumps list as PreEvoMoves.
@@ -222,6 +227,27 @@ fun main(args: Array<String>) {
   val bySymbol = expansion.associateBy { it.symbol.removePrefix("SPECIES_") }
   val itemNames = ItemNames(expansionRoot)
   val evolutionSource = ExpansionEvolutions.parse(expansionRoot)
+  // Megas and Primals belong on their species' evolution tab (project owner, 2026-09-14). They are
+  // battle form changes the server never performs as an evolution, so each is a method 0 (SPECIAL)
+  // entry whose badge byte carries the symbol and label: Mega, alpha (Primal Kyogre, Blue Orb) or
+  // omega (Primal Groudon, Red Orb).
+  val formChanges = de.fiereu.openmmo.pokemon.expansion.FormChangeRegistry()
+  fun battleFormChanges(entry: ExpansionSpeciesDef): List<Pair<ExpansionSpeciesDef, String>> =
+      if (entry.isForm) emptyList()
+      else
+          formChanges.of(entry.serverId).mapNotNull { change ->
+            val badge =
+                when (change.kind) {
+                  "FORM_CHANGE_BATTLE_MEGA_EVOLUTION_ITEM", "FORM_CHANGE_BATTLE_MEGA_EVOLUTION_MOVE" -> "mega"
+                  "FORM_CHANGE_BATTLE_PRIMAL_REVERSION" ->
+                      if ("ITEM_BLUE_ORB" in change.params) "alpha" else "omega"
+                  else -> return@mapNotNull null
+                }
+            val target = bySymbol[change.targetSymbol.removePrefix("SPECIES_")] ?: return@mapNotNull null
+            target to badge
+          }
+  /** Every Mega and Primal record: evolution-tab entries, so not Next Form entries as well. */
+  val battleFormIds = expansion.flatMap(::battleFormChanges).mapTo(HashSet()) { it.first.stableId }
   fun clientEvolutions(entry: ExpansionSpeciesDef, newTargetsOnly: Boolean): List<ClientEvolution> =
       evolutionSource[entry.symbol.removePrefix("SPECIES_")].orEmpty().mapNotNull { evo ->
         val target = bySymbol[evo.targetSymbol] ?: return@mapNotNull null
@@ -238,7 +264,12 @@ fun main(args: Array<String>) {
               ClientEvolution(evo.method, evo.param + ROM_ITEM_SHIFT, targetId, evo.time)
           else -> ClientEvolution(evo.method, speciesParam ?: evo.param, targetId, evo.time)
         }
-      }
+      } +
+          battleFormChanges(entry).mapNotNull { (target, badge) ->
+            // A Mega or Primal record is always one this build stages.
+            val targetId = target.clientWireId?.takeIf { target.stableId in stagedIds } ?: return@mapNotNull null
+            ClientEvolution(ExpansionEvolutions.SPECIAL, 0, targetId, badge)
+          }
 
   // The dex detail text the ROM has no rows for, at the string ids the client code in f/gt0.tt1
   // reads in their place. Category and paragraph are the Expansion's; height and weight use the
@@ -265,7 +296,8 @@ fun main(args: Array<String>) {
   // caps and cosplay belong to the costume system instead.
   val nextForms =
       selected
-          .filter { it.isForm && !isCostumeForm(it) }
+          // Megas and Primals are on the evolution tab instead (battleFormIds).
+          .filter { it.isForm && !isCostumeForm(it) && it.stableId !in battleFormIds }
           .groupBy { it.baseSpeciesStableId }
           .mapValues { (_, forms) -> forms.sortedWith(compareBy({ it.formIndex ?: Int.MAX_VALUE }, { it.clientWireId })) }
   fun variantsOf(base: ExpansionSpeciesDef, newBase: Boolean): List<Int>? {
@@ -602,15 +634,22 @@ private fun detail(
   val growth = GROWTH_ORDER.indexOf(entry.growthRateSymbol.removePrefix("GROWTH_"))
   require(growth >= 0) { "Species $speciesId has growth rate ${entry.growthRateSymbol}" }
   val rare = entry.rarity != 0
+  // Section 10 creates every record hidden, as retail does for its reserved block, so a species we
+  // add is listed explicitly: a species in the National list, a regional form only in its region's
+  // tab (project owner, 2026-09-14). An alternate form (Mega, Gigantamax, gender, cosmetic, Hisuian,
+  // a further breed) is not listed at all - it lives behind its base species, and the server counts
+  // its progress on the base (DexProgressService).
+  val listing =
+      when {
+        !entry.isForm -> SpeciesDetail.LISTED
+        regionalDexRegion(entry) != null -> SpeciesDetail.LISTED_OUTSIDE_NATIONAL
+        else -> null
+      }
   return SpeciesDetail(
       speciesId = speciesId,
       flags =
           SpeciesDetail.EGG_GROUPS or
-              // An alternate form (Mega, Gigantamax, gender, cosmetic) is hidden the way retail's
-              // own form records are: f/aq.xx0 drops a species carrying it while it is unseen, and
-              // the server never marks those ids seen (DexProgressService), so they live only behind
-              // the base's form toggle. Species and regional forms stay listable (their regional tab).
-              (if (entry.isForm && regionalDexRegion(entry) == null) SpeciesDetail.HIDDEN_FROM_DEX else 0) or
+              (if (listing != null) SpeciesDetail.DEX_LISTING else 0) or
               SpeciesDetail.FLAG_200 or
               SpeciesDetail.EV_YIELD or
               SpeciesDetail.CATCH_RATE or
@@ -627,6 +666,7 @@ private fun detail(
       specialVariants = variants,
       romScalars = RomScalars(growth, entry.expYield, entry.height, entry.weight),
       evolutions = evolutions.ifEmpty { null },
+      dexListing = listing,
   )
 }
 
@@ -962,6 +1002,31 @@ private fun patchNames(
   // strings_en.xml no longer carries - so they are staged here in FireRed's words
   // (src/battle_message.c), with the placeholders the client fills: {06} the monster, {23} the
   // trainer, {0F} the monster that fled.
+  // The evolution tab's labels for the battle form changes it lists (MonMMO-EX client code, f/j67).
+  FORM_CHANGE_LABELS.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId is taken; pick another for the form-change label" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
+        })
+  }
+  RAID_STRINGS.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId is taken; pick another for the raid line" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
+        })
+  }
+  RAID_ABILITY_NAMES.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId is taken; pick another ability id for the raid power" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
+        })
+  }
   SAFARI_STRINGS.forEach { (stringId, value) ->
     require(stringId !in occupied) { "Client string $stringId is taken; pick another for the Safari line" }
     root.appendChild(
@@ -989,6 +1054,46 @@ private fun patchNames(
 
 /** "{00} have defeated {01}!" (single line and boxed): reworded to "{00} defeated {01}!". */
 private val DEFEATED_STRING_IDS = setOf(5017, 5018)
+
+/** Evolution tab labels for badge codes 3 (Mega) and 4-5 (Primal), right after the stock method labels 2550-2577. */
+private val FORM_CHANGE_LABELS = mapOf(2578 to "Mega Evolution", 2579 to "Primal Reversion")
+
+/**
+ * The Crystal Onix raid's overworld dialog (server CrystalOnixRaid), in a block free of client
+ * strings (16790000+; the ferry's own block is 16780100-16780109). {00} is a raw string argument.
+ */
+private val RAID_STRINGS =
+    mapOf(
+        // The owner's words (2026-09-14). The client wraps long lines itself; "\n\n" starts a new
+        // page, as in the client's own dialogue strings.
+        16790000 to "A great Onix lies coiled in the rock, its body grown through with crystal. The only light in this tunnel burns inside it.",
+        16790001 to "Wake the Crystal Onix?",
+        16790003 to "Only dull shards are left where it lay. Somewhere under the stone, the crystal is growing back.\\n\\nYou earned {00} Battle Points.",
+        16790004 to "Something in the rubble is still glowing...\\n\\nYou found {00}!",
+        16790005 to "Its eyes open. The walls start to shake.",
+        // In-battle lines, battle event kind 76 shape 0 (plain string, no name placeholders), each
+        // after its power's ability banner (RAID_ABILITY_NAMES).
+        16790010 to "The crystal glowed and closed its wounds!",
+        16790011 to "The crystal cracked open!\\nIts power is spilling out!",
+        16790012 to "Crystal shards tore across your side!",
+        16790013 to "The Crystal Onix drew light from the stone!",
+        16790014 to "Its glow washed the field clean!",
+        16790015 to "The Crystal Onix held on inside its crystal!",
+    )
+
+/**
+ * The Crystal Onix's powers as abilities (server CrystalOnixRaid.CRYSTAL_SHELL..CLEAR_LIGHT): the
+ * client's ability banner names ability id N by string 210000 + N. Retail names end at 210318.
+ */
+private val RAID_ABILITY_NAMES =
+    mapOf(
+        210400 to "Crystal Shell",
+        210401 to "Living Crystal",
+        210402 to "Crystal Break",
+        210403 to "Shard Storm",
+        210404 to "Last Light",
+        210405 to "Clear Light",
+    )
 
 /**
  * The GBA-region strings of the client's safari packet (f/L6 fallbacks; see SafariEventPacket),
@@ -1040,6 +1145,8 @@ private fun clientDisplayName(entry: ExpansionSpeciesDef): String {
       suffix.split('_').joinToString(" ") { part ->
         part.lowercase().replaceFirstChar(Char::uppercase)
       }
+  // A name that already carries its form ("Crystal Onix") is not labelled a second time.
+  if (entry.displayName.contains(label, ignoreCase = true)) return entry.displayName
   return "${entry.displayName} ($label)"
 }
 
@@ -1096,13 +1203,11 @@ private const val LAST_NATIONAL_DEX = 1025
 /** A species id no record uses: the section 11 loader skips it, so the list position still counts. */
 private const val UNRESOLVED_SPECIES_ID = 0xFFFF
 
-private val DEX_REGIONS =
-    listOf(
-        6 to 650..721,
-        7 to 722..809,
-        8 to 810..905,
-        9 to 906..1025,
-    )
+/** The new tabs - Kalos, Alola, Galar, Paldea - each built from its region's own dex order. */
+private val DEX_REGIONS = RegionalForms.DEX_TABS
+
+/** The National numbers each new tab's generation introduced: its additions. */
+private val NEW_SPECIES_RANGES = mapOf(6 to 650..721, 7 to 722..809, 8 to 810..905, 9 to 906..1025)
 
 /** Fairy is 19 once the classpath overlay patches the type enum. */
 private const val MAX_CLIENT_TYPE = 19

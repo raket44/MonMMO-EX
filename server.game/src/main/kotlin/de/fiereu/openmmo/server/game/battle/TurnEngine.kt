@@ -545,14 +545,14 @@ constructor(
     if (halfHeal > 0 && half) {
       consumeItem(mon, events)
       mon.currentHp = (mon.currentHp + ripen(mon, halfHeal)).coerceAtMost(mon.maxHp)
-      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(mon.currentHp, itemId))
+      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(itemId, mon.currentHp))
       return
     }
     val quarterHeal = items.quarterHpHeal(item, mon.maxHp)
     if (quarterHeal > 0 && pinch) {
       consumeItem(mon, events)
       mon.currentHp = (mon.currentHp + ripen(mon, quarterHeal)).coerceAtMost(mon.maxHp)
-      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(mon.currentHp, itemId))
+      events += BattleEvent.Line(mon.entityId, BattleLine.ITEM_HEAL, listOf(itemId, mon.currentHp))
       return
     }
     if (!pinch) return
@@ -630,6 +630,7 @@ constructor(
     battle.playerSide.roundUsedThisTurn = false
     battle.opponentSide.roundUsedThisTurn = false
     battle.field.ionDeluge = false
+    battle.raid?.let { raidTurnStart(battle, it, events) }
     val actions = mutableListOf<TurnAction>()
     for (choice in chosen) {
       if (choice.kind != ChosenAction.Kind.MOVE) continue
@@ -650,7 +651,8 @@ constructor(
       // One that already acted this turn (Pursuit on a switch) has nothing left to do.
       if (enemy.fainted || enemy.movedThisTurn) continue
       val move = chooseMove(battle, enemy, pickEnemyMove(battle, enemy))
-      val victims = battle.foesOf(enemy)
+      // A foe out of reach (the far corner of a triple battle) is not a target.
+      val victims = battle.foesOf(enemy).filter { battle.reaches(enemy, it) }.ifEmpty { battle.foesOf(enemy) }
       val target = if (victims.isEmpty()) null else victims[battle.rng.pick(victims.size)]
       actions += targetsFor(battle, enemy, move, target)
     }
@@ -735,10 +737,17 @@ constructor(
   private fun targetsFor(battle: BattleInstance, mon: BattleMonState, move: MoveDef?, chosen: BattleMonState?): List<TurnAction> {
     val fallback = chosen?.takeIf { !it.fainted } ?: battle.opponentOf(mon)
     if (move == null) return listOf(TurnAction(mon, fallback, null))
+    // In a triple battle a spread only reaches neighbours, and the raid's side never hits its own.
+    val raidSide = battle.raid != null && !battle.isPlayerSide(mon.entityId)
     val targets =
         when (move.target) {
-          MoveTarget.BOTH, MoveTarget.OPPONENTS_FIELD -> battle.foesOf(mon)
-          MoveTarget.FOES_AND_ALLY, MoveTarget.ALL_BATTLERS -> battle.foesOf(mon) + battle.alliesOf(mon)
+          // Spikes, Toxic Spikes, Stealth Rock and Sticky Web (the only OPPONENTS_FIELD moves, all
+          // status) lay one hazard on the foe's side: one action, or every further target failed.
+          MoveTarget.OPPONENTS_FIELD -> return listOf(TurnAction(mon, fallback, move))
+          MoveTarget.BOTH -> battle.foesOf(mon).filter { battle.reaches(mon, it) }
+          MoveTarget.FOES_AND_ALLY, MoveTarget.ALL_BATTLERS ->
+              battle.foesOf(mon).filter { battle.reaches(mon, it) } +
+                  (if (raidSide) emptyList() else battle.alliesOf(mon).filter { battle.reaches(mon, it) })
           // Coaching and Aromatic Mist go to the partner, never to a foe.
           MoveTarget.ALLY ->
               return listOf(
@@ -754,7 +763,10 @@ constructor(
     // A target that fell, or left the field in the meantime (U-turn, Roar), is replaced.
     if ((!action.defender.fainted && battle.positionOf(action.defender) >= 0) || action.defender === action.attacker) return action
     if (action.spread) return null
-    val replacement = battle.foesOf(action.attacker).firstOrNull() ?: return null
+    val replacement =
+        battle.foesOf(action.attacker).firstOrNull { battle.reaches(action.attacker, it) }
+            ?: battle.foesOf(action.attacker).firstOrNull()
+            ?: return null
     return action.copy(defender = replacement)
   }
 
@@ -1001,7 +1013,16 @@ constructor(
       events += BattleEvent.MoveFailed(attacker.entityId, 0)
       return
     }
-    if (!canMove(battle, attacker, move, events)) return
+    // A spread move's later targets ride on the first target's checks (sleep, paralysis, flinch,
+    // confusion...): rolled once per use, not once per target. Rolling them again let a paralysed
+    // boss "fail to move" twice after its Earthquake had already gone off (2026-09-14).
+    if (action.followUp && attacker.leadChecked) {
+      if (attacker.leadLost) return
+    } else {
+      attacker.leadChecked = true
+      attacker.leadLost = !canMove(battle, attacker, move, events)
+      if (attacker.leadLost) return
+    }
 
     if (attacker.movedFirstByItem != 0) {
       events += BattleEvent.TurnEffect(attacker.entityId)
@@ -1476,6 +1497,7 @@ constructor(
       var endured = false
       var sturdy = false
       var sashKind = 0
+      var crystalShell = false
       if (damage >= defender.currentHp) {
         sturdy = defender.currentHp == defender.maxHp && Abilities.sturdy(defender, attacker)
         val item = items.of(defender)
@@ -1487,7 +1509,10 @@ constructor(
             sashKind = 1
           }
         }
-        val survive = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring || sturdy || sashKind != 0
+        val heldByItsOwn = move.effect == MoveEffect.FALSE_SWIPE || defender.enduring || sturdy || sashKind != 0
+        // Only the crystal kept it standing: that is the one the banner names.
+        crystalShell = !heldByItsOwn && battle.raid?.endures(defender) == true
+        val survive = heldByItsOwn || crystalShell
         endured = survive && defender.enduring
         damage = if (survive) (defender.currentHp - 1).coerceAtLeast(0) else defender.currentHp
       }
@@ -1500,12 +1525,15 @@ constructor(
       lastCrit = result.crit
       struck++
       events += BattleEvent.DamageDealt(defender.entityId, defender.currentHp, result.crit, effectiveness)
+      // Any landed hit counts, even one the crystal held to nothing (a boss already at 1 hp).
+      battle.raid?.takeIf { it.isBoss(defender) }?.hurtThisTurn = true
       if (endured) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(0))
       if (sturdy) {
         events += BattleEvent.AbilityShown(defender.entityId, Ability.STURDY)
         events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(2))
       }
       if (sashKind != 0) events += BattleEvent.Line(defender.entityId, BattleLine.ENDURED, listOf(sashKind))
+      if (crystalShell) raidBanner(defender, CrystalOnixRaid.CRYSTAL_SHELL, CrystalOnixRaid.SHELL_LINE, events)
       if (defender.illusionOf != null) {
         defender.illusionOf = null
         events += BattleEvent.SpeciesShown(defender.entityId, defender.wireSpeciesId().toInt())
@@ -1744,7 +1772,7 @@ constructor(
             val id = defender.heldItem
             consumeItem(defender, events)
             defender.currentHp = (defender.currentHp + ripen(defender, defender.maxHp / 4)).coerceAtMost(defender.maxHp)
-            events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_HEAL, listOf(defender.currentHp, id))
+            events += BattleEvent.Line(defender.entityId, BattleLine.ITEM_HEAL, listOf(id, defender.currentHp))
           }
       I.ABSORB_BULB -> if (type == PokemonType.WATER && !defender.fainted) { consumeItem(defender, events); ownStage(defender, BattleStat.SP_ATTACK, 1, events) }
       I.CELL_BATTERY -> if (type == PokemonType.ELECTRIC && !defender.fainted) { consumeItem(defender, events); ownStage(defender, BattleStat.ATTACK, 1, events) }
@@ -3342,7 +3370,91 @@ constructor(
   // ---------------------------------------------------------------------------------------------
   // End of turn
 
+  /** The Crystal Onix raid's turn opening: on [CrystalOnixRaid.CRACK_TURN] the crystal breaks. */
+  private fun raidTurnStart(battle: BattleInstance, raid: RaidBossState, events: MutableList<BattleEvent>) {
+    raid.hurtThisTurn = false
+    if (raid.cracked || battle.turn < CrystalOnixRaid.CRACK_TURN) return
+    val boss = battle.opponent.firstOrNull { raid.isBoss(it) }?.takeIf { !it.fainted } ?: return
+    raid.cracked = true
+    raidPower(boss, CrystalOnixRaid.CRYSTAL_BREAK, CrystalOnixRaid.CRACK_LINE, events)
+    ownStage(boss, BattleStat.DEFENSE, 2, events)
+    ownStage(boss, BattleStat.SP_DEFENSE, 2, events)
+    healHp(boss, boss.maxHp / 2, events)
+    raidSandstorm(battle, events)
+    boss.moves.clear()
+    CrystalOnixRaid.CRACKED_MOVES.forEach { id ->
+      boss.moves += PokemonMove(id.toShort(), (moves.get(id)?.pp ?: 0).toByte())
+    }
+    events += BattleEvent.MovesChanged(boss.entityId, boss.moves.map { it.id to it.pp })
+  }
+
+  /** The raid's end of turn, before weather: the mending, the rally, the shards and the cleanse. */
+  private fun raidEndOfTurn(battle: BattleInstance, raid: RaidBossState, events: MutableList<BattleEvent>) {
+    val boss = battle.opponent.firstOrNull { raid.isBoss(it) }?.takeIf { !it.fainted } ?: return
+    if (!raid.cracked && raid.hurtThisTurn) {
+      raidPower(boss, CrystalOnixRaid.LIVING_CRYSTAL, CrystalOnixRaid.MEND_LINE, events)
+      healHp(boss, boss.maxHp / 2, events)
+    }
+    if (!raid.rallied && boss.currentHp * 4 < boss.maxHp) {
+      raid.rallied = true
+      raidPower(boss, CrystalOnixRaid.LAST_LIGHT, CrystalOnixRaid.RALLY_LINE, events)
+      healHp(boss, boss.maxHp / 2, events)
+      ownStage(boss, BattleStat.DEFENSE, 1, events)
+      ownStage(boss, BattleStat.SP_DEFENSE, 1, events)
+    }
+    if (battle.turn % CrystalOnixRaid.SHARD_EVERY == 0) {
+      raidPower(boss, CrystalOnixRaid.SHARD_STORM, CrystalOnixRaid.SHARDS_LINE, events)
+      for (mon in battle.playerActives()) {
+        if (mon.fainted) continue
+        mon.currentHp = (mon.currentHp - (mon.maxHp / 3).coerceAtLeast(1)).coerceAtLeast(0)
+        events += BattleEvent.TurnEffect(mon.entityId)
+        events += BattleEvent.HpChanged(mon.entityId, mon.currentHp)
+        if (mon.fainted) events += BattleEvent.Fainted(mon.entityId)
+      }
+      raidSandstorm(battle, events)
+    }
+    if (battle.turn % CrystalOnixRaid.CLEANSE_EVERY == 0) {
+      raidPower(boss, CrystalOnixRaid.CLEAR_LIGHT, CrystalOnixRaid.CLEANSE_LINE, events)
+      for (mon in battle.playerActives()) {
+        if (mon.fainted) continue
+        for (stat in BattleStat.entries) if (mon.stage(stat) > 0) resetStage(mon, stat, events)
+      }
+      for (stat in BattleStat.entries) if (boss.stage(stat) < 0) resetStage(boss, stat, events)
+      cureStatus(boss, events)
+    }
+  }
+
+  /** Raid Sandstorm: raised, or already raging and wound back to its full length. */
+  private fun raidSandstorm(battle: BattleInstance, events: MutableList<BattleEvent>) {
+    if (battle.weather == Weather.SANDSTORM) battle.weatherTurns = WEATHER_TURNS
+    else setWeather(battle, Weather.SANDSTORM, events)
+  }
+
+  /**
+   * A raid power in its own event group on the (standing) boss, so the client always finds the
+   * group's attacker: the power's ability banner, its line, then whatever heal or stage changes are
+   * queued after it land on the boss's panel.
+   */
+  private fun raidPower(boss: BattleMonState, abilityId: Int, stringId: Int, events: MutableList<BattleEvent>) {
+    events += BattleEvent.TurnEffect(boss.entityId)
+    raidBanner(boss, abilityId, stringId, events)
+  }
+
+  /** The power's banner and line under the event group already open (a hit's, or the power's own). */
+  private fun raidBanner(boss: BattleMonState, abilityId: Int, stringId: Int, events: MutableList<BattleEvent>) {
+    events += BattleEvent.RaidAbilityShown(boss.entityId, abilityId)
+    events += BattleEvent.ClientLine(boss.entityId, stringId, shape = 0)
+  }
+
+  /** Puts one stage back to 0, reported the way any stage change is. */
+  private fun resetStage(mon: BattleMonState, stat: BattleStat, events: MutableList<BattleEvent>) {
+    val applied = mon.changeStage(stat, -mon.stage(stat))
+    val value = if (stat == BattleStat.ACCURACY || stat == BattleStat.EVASION) 0 else mon.effective(stat)
+    events += BattleEvent.StageChanged(mon.entityId, stat, mon.stage(stat), value, applied, applied == 0)
+  }
+
   private fun endOfTurn(battle: BattleInstance, events: MutableList<BattleEvent>) {
+    battle.raid?.let { raidEndOfTurn(battle, it, events) }
     val order = battle.actives().filter { !it.fainted }.sortedByDescending { speedOf(battle, it) }
 
     // Weather: counts down, then hurts whoever it hurts.
@@ -3526,7 +3638,7 @@ constructor(
           // f/N00(byte kind, short MOVE, short HP): the move comes first, the hp goes to the base
           // class. Sent the other way round, the client named the hp as a move ("hurt by Defense
           // Curl" at 111 hp) and set the hp to the move id - Bind left a Pokemon at 20 (2026-09-08).
-          events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.trappingMoveId, mon.currentHp))
+          events += BattleEvent.Line(mon.entityId, BattleLine.TRAP, listOf(2, mon.trappingMoveId))
           mon.trappingMoveId = 0
         } else {
           hurt(mon.maxHp / (mon.trapDamageDivisor * 2), BattleLine.TRAP, prefix = listOf(1, mon.trappingMoveId))

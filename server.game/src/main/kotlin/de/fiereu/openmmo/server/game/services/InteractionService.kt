@@ -37,6 +37,8 @@ constructor(
     private val scriptMovement: ScriptMovementService,
     private val ocarinas: OcarinaService,
     private val banners: FieldMoveBanners,
+    private val raidPlacement: CrystalOnixRaidPlacement,
+    private val raid: CrystalOnixRaidService,
 ) {
 
   /**
@@ -125,6 +127,11 @@ constructor(
         runScript(session, state, ferryTravel.script(stored, p), npcEntityId)
         return
       }
+    }
+    if (raidPlacement.isHere(regionId, bankId, mapId) &&
+        npcService.getNpcEntityId(regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID) == npcEntityId) {
+      runScript(session, state, raid.script(stored), npcEntityId)
+      return
     }
 
     for (npc in currentMap.npcs) {

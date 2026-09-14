@@ -133,6 +133,12 @@ sealed interface BattleEvent {
       val itemId: Int = 0,
   ) : BattleEvent
 
+  /**
+   * A raid boss power shown as an ability the client has no entry for: the banner alone, named by
+   * client string 210000 + [abilityId] (see CrystalOnixRaid.CRYSTAL_SHELL).
+   */
+  data class RaidAbilityShown(val targetId: Long, val abilityId: Int) : BattleEvent
+
   /** The Safari Zone's bait line on the wild (client kind -33): see BattleEventBody.SafariBait. */
   data class SafariBait(val targetId: Long, val kind: Int, val thrower: String? = null) : BattleEvent
 

@@ -718,6 +718,11 @@
             "text": "あっ そう$"
         },
         {
+            "label": "CeladonCity_Gym_Text_ErikaIntro",
+            "id": 1667348,
+            "text": "Hello…\\nLovely weather, isn't it?\\lIt's so pleasant…\\p…Oh, dear…\\nI must have dozed off. Welcome.\\pMy name is ERIKA.\\nI am the LEADER of CELADON GYM.\\pI am a student of the art of\\nflower arranging.\\pMy POKéMON are solely of the\\nGRASS type.\\p…Oh, I'm sorry, I had no idea that\\nyou wished to challenge me.\\pVery well, but I shall not lose.{PLAY_BGM MUS_ENCOUNTER_GYM_LEADER}$"
+        },
+        {
             "label": "CeladonCity_Gym_Text_ErikaDefeat",
             "id": 1667680,
             "text": "Oh!\\nI concede defeat.\\lYou are remarkably strong.\\pI must confer on you the\\nRAINBOWBADGE.$"

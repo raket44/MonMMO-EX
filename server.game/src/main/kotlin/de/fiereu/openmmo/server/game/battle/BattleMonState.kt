@@ -195,6 +195,10 @@ class BattleMonState(
   var lastDamageTaken: Int = 0
   var lastDamagePhysical: Boolean = true
   var movedThisTurn: Boolean = false
+  /** This turn's move checks (sleep, paralysis, flinch...) ran for the first target of a use. */
+  var leadChecked: Boolean = false
+  /** ...and the monster lost its action there, so a spread's later targets are not hit either. */
+  var leadLost: Boolean = false
   /** Turns ended asleep in a row on the field, for the Dream Ball; 0 while awake. */
   var sleepTurns: Int = 0
 
@@ -282,6 +286,8 @@ class BattleMonState(
 
   /** Per-turn flags, cleared at the end of every turn. */
   fun endTurn() {
+    leadChecked = false
+    leadLost = false
     flinched = false
     protectedThisTurn = false
     enduring = false

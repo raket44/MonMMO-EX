@@ -216,6 +216,10 @@ constructor(
       performSwitch(battle, switch.position, target)
     }
     val events = engine.resolveTurn(battle, actions.filter { it.kind == ChosenAction.Kind.MOVE })
+    // The raid logs every turn it plays, so a broken fight can be read back from the server log.
+    if (battle.raid != null) {
+      log.info { "Raid turn ${battle.turn} char=${battle.charId}: ${events.joinToString(" | ")}" }
+    }
     emitter.sendEvents(battle, events)
     if (!interruptedByMove(battle)) afterTurn(battle)
   }
@@ -468,6 +472,25 @@ constructor(
     return battle.completion.await()
   }
 
+  /**
+   * The Crystal Onix raid ([de.fiereu.openmmo.server.game.battle.CrystalOnixRaid]): the boss
+   * between two summoned Onix, three a side, no catching and no running. Past the prize money
+   * the rewards are the raid service's, once this returns a victory.
+   */
+  suspend fun startRaidBattle(session: SessionContext): BattleResult {
+    val raid = de.fiereu.openmmo.server.game.battle.CrystalOnixRaid
+    val boss = expansionSpecies.get(raid.SPECIES_SYMBOL) ?: return BattleResult.FAILED
+    val specs =
+        listOf(OpponentSpec(boss.serverId, raid.BOSS_LEVEL, raid.OPENING_MOVES, iv = 31)) +
+            List(raid.HELPERS) { OpponentSpec(raid.HELPER_DEX, raid.HELPER_LEVEL, raid.HELPER_MOVES) }
+    val battle =
+        createBattle(session, specs, catchable = false, escapable = false, formatOverride = BattleFormat.TRIPLES, raid = true)
+            ?: return BattleResult.FAILED
+    return battle.completion.await()
+  }
+
+  private val expansionSpecies by lazy { de.fiereu.openmmo.pokemon.expansion.ExpansionSpeciesRegistry() }
+
   /** Resolves the original pret TRAINER_* constant inside one region's generated trainer table. */
   fun resolveTrainer(region: Region, constant: String): TrainerDef? = trainers.get(region, constant)
 
@@ -508,6 +531,9 @@ constructor(
       partnerDefeatTextId: Int? = null,
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+      formatOverride: BattleFormat? = null,
+      /** The Crystal Onix raid: [opponents] opens with the boss, then its summoned Onix. */
+      raid: Boolean = false,
   ): BattleInstance? {
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return null
     if (battles.byChar(charId) != null) {
@@ -596,6 +622,7 @@ constructor(
     val alive = party.indices.filter { !party[it].fainted }
     val format =
         when {
+          formatOverride != null -> formatOverride
           (trainer?.doubleBattle == true || partner != null) && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
           trainer == null && enemies.size >= 2 -> BattleFormat.HORDE
           else -> BattleFormat.SINGLES
@@ -611,6 +638,13 @@ constructor(
             format)
     for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
     for (position in 0 until format.opponentSlots) battle.opponentPositions[position] = if (position < enemies.size) position else -1
+    if (raid && format.opponentSlots == 3 && enemies.size >= 3) {
+      // The boss stands in the middle, a summoned Onix on either side.
+      battle.opponentPositions[0] = 1
+      battle.opponentPositions[1] = 0
+      battle.opponentPositions[2] = 2
+      battle.raid = de.fiereu.openmmo.server.game.battle.RaidBossState(enemies[0].entityId)
+    }
     battle.seenActive.clear()
     battle.seenActive.addAll(battle.playerPositions.filter { it >= 0 })
     battle.opponentSeen.clear()
@@ -639,16 +673,41 @@ constructor(
   private suspend fun afterTurn(battle: BattleInstance) {
     // Every opponent that fell this turn pays out once, before the field is tidied.
     for (foe in battle.opponentActives()) {
-      if (foe.fainted && battle.rewardedFaints.add(foe.entityId)) awardXp(battle, foe)
+      // The raid's summoned Onix pay nothing: they are revived and called again, and would farm.
+      val summoned = battle.raid?.let { !it.isBoss(foe) } == true
+      if (foe.fainted && battle.rewardedFaints.add(foe.entityId) && !summoned) awardXp(battle, foe)
     }
+    val raid = battle.raid
     when {
       battle.opponent.all { it.fainted } -> endVictory(battle)
+      // The raid is won on the boss alone, whatever it summoned is still standing.
+      raid != null && battle.opponent.first { raid.isBoss(it) }.fainted -> endVictory(battle)
       battle.party.all { it.fainted } -> endDefeat(battle)
       else -> {
-        // A trainer refills an emptied position from the bench; a wild horde just thins out.
+        // A trainer refills an emptied position from the bench, and the raid boss calls another
+        // Onix; a wild horde just thins out.
         for ((position, index) in battle.opponentPositions.withIndex()) {
           if (index < 0 || !battle.opponent[index].fainted) continue
-          if (battle.trainer != null) sendOutNextOpponent(battle, position) else battle.opponentPositions[position] = -1
+          if (raid != null) {
+            // The client announces the call itself ("called for help!" / "Onix joined the fight!")
+            // when the switch-in lands. The client's party array is six long, so the raid cannot
+            // bring more monsters than it opened with: with the bench spent, a fallen helper
+            // answers the call again, fresh.
+            val benched = battle.opponent.indices.any { !battle.opponent[it].fainted && it !in battle.opponentPositions }
+            if (!benched) {
+              battle.opponent.indices
+                  .firstOrNull { i -> i != index && battle.opponent[i].fainted && !raid.isBoss(battle.opponent[i]) && i !in battle.opponentPositions }
+                  ?.let { i ->
+                    val helper = battle.opponent[i]
+                    helper.resetVolatile()
+                    helper.status = 0
+                    helper.currentHp = helper.maxHp
+                    // Unseen again, so it returns with a full block that carries its restored hp.
+                    battle.opponentSeen.remove(i)
+                  }
+            }
+          }
+          if (battle.trainer != null || raid != null) sendOutNextOpponent(battle, position) else battle.opponentPositions[position] = -1
         }
         // Fainted positions owe a replacement while the bench has one; the switch screen opens
         // for each instead of the action prompt, and the replacements arrive as SWITCH actions.
@@ -1049,6 +1108,8 @@ constructor(
     var prize = battle.trainer?.let { rewards.trainerPrize(it, battle.trainer.party.lastOrNull()?.level ?: battle.opponent.last().level) } ?: 0
     // The second trainer of a double sighting pays too, off its own last monster.
     prize += battle.partner?.let { rewards.trainerPrize(it, it.party.lastOrNull()?.level ?: 1) } ?: 0
+    // The raid pays its purse like a prize, so the Amulet Coin below doubles it too.
+    if (battle.raid != null) prize += de.fiereu.openmmo.server.game.battle.CrystalOnixRaid.PRIZE_MONEY
     // An Amulet Coin anywhere in the party doubles the prize money.
     if (prize > 0 && battle.party.any { items.get(it.heldItem) == de.fiereu.openmmo.items.generated.Items.AMULET_COIN })
         prize *= 2

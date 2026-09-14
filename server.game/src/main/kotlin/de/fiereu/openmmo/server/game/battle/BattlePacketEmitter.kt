@@ -193,6 +193,10 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
                         other = event.otherId,
                         moveId = event.moveId,
                         itemId = event.itemId))
+        is BattleEvent.RaidAbilityShown ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(
+                    null, null, BattleEventBody.AbilityPopup(abilityId = event.abilityId, kind = 0, self = event.targetId, other = 0L))
         is BattleEvent.ItemChanged ->
             broadcast(battle, BattleEntityDeltaPacket(entityId = event.targetId, heldItem = event.itemId.toShort()))
         is BattleEvent.SpeciesShown ->
@@ -449,6 +453,8 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
   }
 
   fun sendVictoryDelta(battle: BattleInstance, entityId: Long, reward: RewardResult) {
+    // A level-100 monster gains nothing: no bar move and no "gained 0 Exp. Points!" line.
+    if (reward.xpGained == 0 && !reward.leveled) return
     broadcast(
         battle,
         BattleEntityDeltaPacket(

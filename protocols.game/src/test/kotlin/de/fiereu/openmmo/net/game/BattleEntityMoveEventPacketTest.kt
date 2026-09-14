@@ -75,4 +75,26 @@ class BattleEntityMoveEventPacketTest :
         bytes.toHex() shouldContain "df"
         BattleEntityMoveEventPacketCodec.decodeBytes(bytes) shouldBe packet
       }
+
+      // f/ko1 kind 76 reads shape, form and flag bytes, then the int string id: a fourth byte
+      // before the id made the client drop every packet with a raid line (2026-09-14).
+      test("the client string line is shape, form 1, flag 1, then the string id") {
+        val packet =
+            BattleEntityMoveEventPacket(
+                sourceEntity = 1L,
+                sourceMove = 0,
+                kind = 1,
+                targets =
+                    listOf(
+                        BattleEffectTarget(
+                            entityId = 2L,
+                            targetMove = 0,
+                            subEvents = listOf(BattleActionEvent(null, null, BattleEventBody.ClientLine(0, 16790010))))))
+
+        val hex = BattleEntityMoveEventPacketCodec.encodeToBytes(packet).toHex()
+        // Kind 76 (0x4c), the event's flags byte (no entities), then shape 00, form 01, flag 01 and
+        // 16790010 = 0x010031FA little-endian.
+        hex shouldContain "4c00000101fa310001"
+        BattleEntityMoveEventPacketCodec.decodeBytes(BattleEntityMoveEventPacketCodec.encodeToBytes(packet)) shouldBe packet
+      }
     })

@@ -114,6 +114,8 @@ class HeldItemTest :
         val events = engine.resolveTurn(battle(player, wild, 1), TACKLE)
         val heal = events.filterIsInstance<BattleEvent.Line>().first { it.line == de.fiereu.openmmo.net.game.packets.battle.BattleLine.ITEM_HEAL }
         heal.targetId shouldBe WILD_ID
+        // The client's line 55 reads the item first, then the hp.
+        heal.values shouldBe listOf(itemId(Items.SITRUS_BERRY), wild.currentHp)
         wild.heldItem shouldBe 0
         wild.currentHp shouldBeGreaterThan wild.maxHp / 2 + 1 - player.maxHp
       }

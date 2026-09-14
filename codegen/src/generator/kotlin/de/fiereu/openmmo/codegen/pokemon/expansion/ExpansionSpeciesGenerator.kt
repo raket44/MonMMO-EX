@@ -80,28 +80,38 @@ data class ParsedExpansionAssets(
 class ExpansionSpeciesGenerator(
     private val rootDir: File,
     private val retailForms: List<RetailForm> = emptyList(),
+    /** MonMMO-EX's own species (codegen/custom-species), appended after the Expansion's. */
+    private val customDir: File? = null,
 ) {
   fun parseAll(): List<ParsedExpansionSpecies> {
     require(rootDir.resolve("include/config/species_enabled.h").isFile) {
       "Not a configured pokeemerald-expansion tree: $rootDir"
     }
-    val speciesIds = parseEnum(preprocess("include/constants/species.h"), "SPECIES_")
+    val custom = customDir?.resolve(CUSTOM_SPECIES_FILE)?.takeIf { it.isFile }?.readText().orEmpty()
+    val speciesIds = parseEnum(preprocess("include/constants/species.h"), "SPECIES_").toMutableMap()
+    // Numbered after everything the Expansion defines, so a custom entry is always the last form
+    // ordinal and never shifts an existing client wire id.
+    var nextCustomId = speciesIds.values.max() + 1
+    ENTRY_START.findAll(custom).forEach { speciesIds.putIfAbsent(it.groupValues[1], nextCustomId++) }
     val nationalDex = parseEnum(preprocess("include/constants/pokedex.h"), "NATIONAL_DEX_")
     val abilityIds = parseEnum(preprocess("include/constants/abilities.h"), "ABILITY_")
     val moveIds = parseEnum(preprocess("include/constants/moves.h"), "MOVE_")
     val learnsets = parseLevelUpLearnsets(configuredLearnsetFile(), moveIds)
+    val customGraphics =
+        parseGraphicsPaths(custom).mapValues { customDir!!.resolve(it.value).absolutePath }
     val graphics =
-        parseGraphicsPaths(preprocess("src/data/graphics/pokemon.h")).filterValues { present(it) }
+        (parseGraphicsPaths(preprocess("src/data/graphics/pokemon.h")) + customGraphics)
+            .filterValues { present(it) }
     val cries = parseCryPaths(rootDir.resolve(CRY_DATA).readText()).filterValues { present(it) }
     return parseSpeciesInfo(
-        preprocess("src/data/pokemon/species_info.h"),
+        preprocess("src/data/pokemon/species_info.h") + "\n" + custom,
         speciesIds,
         nationalDex,
         abilityIds,
         learnsets,
         graphics,
         cries,
-        parseFormSpeciesTables(preprocess("src/data/pokemon/form_species_tables.h")),
+        parseFormSpeciesTables(preprocess("src/data/pokemon/form_species_tables.h") + "\n" + custom),
         retailForms,
     )
   }
@@ -603,6 +613,7 @@ class ExpansionSpeciesGenerator(
     val CRY_LABEL = Regex("""^\s*Cry_([A-Za-z0-9_]+)::""")
     val INCBIN_PATH = Regex("""\.incbin\s+"([^"]+)"""")
     const val CRY_DATA = "sound/direct_sound_data.inc"
+    const val CUSTOM_SPECIES_FILE = "species_info.h"
     val LEARNSET =
         Regex(
             """static\s+const\s+struct\s+LevelUpMove\s+(s[A-Za-z0-9_]+)\[\]\s*=\s*\{(.*?)\};""",

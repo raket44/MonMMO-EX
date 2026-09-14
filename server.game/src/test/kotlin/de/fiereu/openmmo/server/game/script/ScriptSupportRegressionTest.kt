@@ -21,6 +21,9 @@ class ScriptSupportRegressionTest :
                 "ViridianCity_PokemonCenter_1F_EventScript_Nurse",
                 "ViridianCity_Mart_EventScript_Clerk",
                 "PewterCity_Gym_EventScript_Brock",
+                "CeruleanCity_Gym_EventScript_Misty",
+                "VermilionCity_Gym_EventScript_LtSurge",
+                "CeladonCity_Gym_EventScript_Erika",
                 "SilphCo_11F_EventScript_BattleGiovanni",
                 "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton",
                 "CinnabarIsland_EventScript_GymDoorLocked",
@@ -76,6 +79,20 @@ class ScriptSupportRegressionTest :
           val support = analyzer.analyze(script)
           withClue("$label: ${support.reason}") { support.complete shouldBe true }
         }
+      }
+
+      // 2026-09-11: a dialog table refresh dropped Erika's intro and her battle never started.
+      test("every FireRed trainer battle has its texts in the dialog table") {
+        val firered = InterpretedScripts.sources.first { it.corpus.source == "firered" }
+        val missing =
+            firered.scriptsByLabel.values.flatMap { script ->
+              script.program.instructions
+                  .filter { it.command.startsWith("trainerbattle") }
+                  .flatMap { it.args.filterIsInstance<de.fiereu.openmmo.script.TextArg>() }
+                  .map { it.token }
+                  .filter { it !in script.textBindings }
+            }
+        missing.distinct().sorted() shouldBe emptyList()
       }
 
       test("the emerald braille signs interpret through the braille dialog") {

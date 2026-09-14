@@ -179,11 +179,19 @@ data class SpeciesDetail(
     val evolutions: List<ClientEvolution>? = null,
     /** Bit 0x2000, MonMMO-EX client code: both types, in place (the Fairy retypes). */
     val types: Pair<Int, Int>? = null,
+    /**
+     * Bit 0x4000, MonMMO-EX client code: u8 dex listing for a species data adds - [LISTED], or
+     * [LISTED_OUTSIDE_NATIONAL] for a regional form. Without it the record keeps section 10's hide.
+     */
+    val dexListing: Int? = null,
 ) {
   companion object {
     const val ROM_SCALARS = 0x800
     const val EVOLUTIONS = 0x1000
     const val TYPES = 0x2000
+    const val DEX_LISTING = 0x4000
+    const val LISTED = 1
+    const val LISTED_OUTSIDE_NATIONAL = 2
     /** [FIELD_010]'s meaning: the ROM's EV yield word, two bits per stat (f/zp3.mt, decoded by LU). */
     const val EV_YIELD = 0x010
     /** [FIELD_080]'s meaning: the catch rate (f/zp3.bj, the ROM byte after the types). */
@@ -192,11 +200,10 @@ data class SpeciesDetail(
     const val SPECIAL_VARIANT_BYTES = 17
     const val EGG_GROUPS = 0x001
     /**
-     * Hides the species from the Pokedex. The screen reads it as `zK0.JI` and skips the entry
-     * outright, which is how the client keeps its own reserved 1000-1052 block out of the dex.
-     *
-     * Section 10 sets it on everything it creates, so a species we add is hidden unless this bit is
-     * left clear here - section 6 runs afterwards and assigns the field from it either way.
+     * Hides the species from the Pokedex (r32645 `zp3.Nm1`): the screen drops a hidden species while
+     * it is unseen. Section 10 already hides everything it creates - retail's reserved 1000-1052
+     * block stays out of the lists that way - and this bit only ever sets the field, never clears
+     * it, so a species we add is listed through [DEX_LISTING].
      */
     const val HIDDEN_FROM_DEX = 0x002
     const val STATS = 0x004
@@ -226,18 +233,26 @@ data class ClientEvolution(
     val param: Int,
     val targetId: Int,
     /**
-     * "day", "night" or null: a time the method key cannot carry (a stone at night). Written as a
-     * byte after the target; the evolution tab draws it as the friendship methods' sun/moon badge.
+     * The badge byte after the target (see [evolutionTimeCode]): "day" or "night", a time the method
+     * key cannot carry (a stone at night), drawn as the friendship methods' sun/moon badge; or
+     * "mega", "alpha", "omega" for a Mega or Primal on the evolution tab, drawn as its symbol.
      */
     val time: String? = null,
 )
 
-/** The time byte of a data evolution (MonMMO-EX client code, f/fi7 0x1000): 0 any, 1 day, 2 night. */
+/**
+ * The badge byte of a data evolution (MonMMO-EX client code, f/fi7 0x1000; drawn by f/j67): 0 none,
+ * 1 day, 2 night, and for the battle form changes on the evolution tab 3 Mega Evolution, 4 alpha
+ * (Primal Kyogre), 5 omega (Primal Groudon), which also relabel the entry.
+ */
 internal fun evolutionTimeCode(time: String?): Int =
     when (time) {
       null -> 0
       "day" -> 1
       "night" -> 2
+      "mega" -> 3
+      "alpha" -> 4
+      "omega" -> 5
       else -> error("Unknown evolution time $time")
     }
 
@@ -245,6 +260,9 @@ internal fun evolutionTime(code: Int): String? =
     when (code) {
       1 -> "day"
       2 -> "night"
+      3 -> "mega"
+      4 -> "alpha"
+      5 -> "omega"
       else -> null
     }
 
@@ -298,6 +316,7 @@ object SpeciesDetailCodec : SectionCodec<SpeciesDetail> {
                   else null,
               types =
                   if (flags and SpeciesDetail.TYPES != 0) reader.byte() to reader.byte() else null,
+              dexListing = if (flags and SpeciesDetail.DEX_LISTING != 0) reader.byte() else null,
           )
         }
     check(reader.exhausted()) { "species detail section has ${reader.remaining()} trailing bytes" }
@@ -344,6 +363,7 @@ object SpeciesDetailCodec : SectionCodec<SpeciesDetail> {
                 byte(it.first)
                 byte(it.second)
               }
+              record.dexListing?.let(::byte)
             }
           }
           .bytes()

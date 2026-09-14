@@ -264,7 +264,11 @@ enum class BattleLine(val id: Int, val shape: LineShape) {
   ITEM_CURED_STATUS(52, LineShape.SHORT),
   /** 82 f/mO1: item id: "{00} restored its status using its {01}!" */
   ITEM_RESTORED_STATUS(82, LineShape.SHORT),
-  /** 55 f/wp1: new hp, item id: "{00} restored its health using its {01}!" */
+  /**
+   * 55: ITEM id, then the new hp: "{00} restored its health using its {01}!" (r32645 f/ko1 reads two
+   * shorts into f/fw0(item, hp), bytecode 2026-09-14). Sent hp-first, the berry's hp printed as an
+   * item (22 = Parlyz Heal) and the item id became the hp the bar animated towards.
+   */
   ITEM_HEAL(55, LineShape.SHORT_SHORT),
   /** 83 f/Ph1: new hp, item id: "{00} restored a little HP using its {01}!" */
   ITEM_HEAL_SMALL(83, LineShape.SHORT_SHORT),
@@ -292,6 +296,9 @@ enum class BattleLine(val id: Int, val shape: LineShape) {
   }
 }
 
+/** [BattleLine.TRAP]'s kind that carries the new hp. */
+private const val TRAP_HURT = 1
+
 private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEventBody>() {
   override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
     fun value(i: Int): (BattleEventBody) -> Int = { (it as BattleEventBody.Line).values.getOrElse(i) { 0 } }
@@ -313,11 +320,14 @@ private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEv
                   field(S16LE) { value(0)(it).toShort() }.toInt(),
                   field(S8) { value(1)(it).toByte() }.toInt(),
                   field(S16LE) { value(2)(it).toShort() }.toInt())
-          LineShape.BYTE_SHORT_SHORT ->
-              listOf(
-                  field(S8) { value(0)(it).toByte() }.toInt(),
-                  field(S16LE) { value(1)(it).toShort() }.toInt(),
-                  field(S16LE) { value(2)(it).toShort() }.toInt())
+          LineShape.BYTE_SHORT_SHORT -> {
+            val kind = field(S8) { value(0)(it).toByte() }.toInt()
+            val second = field(S16LE) { value(1)(it).toShort() }.toInt()
+            // r32645 f/ko1 case 24 reads the trap's hp short only for kind 1 (hurt); a "freed"
+            // line (kind 2) ends after the move id, so writing the hp there shifts every later byte.
+            if (line == BattleLine.TRAP && kind != TRAP_HURT) listOf(kind, second)
+            else listOf(kind, second, field(S16LE) { value(2)(it).toShort() }.toInt())
+          }
         }
     return BattleEventBody.Line(line, values)
   }
@@ -438,10 +448,12 @@ private val FreeLineBodyCodec: Codec<BattleEventBody> =
 private val ClientLineBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        // f/ko1 kind 76 reads exactly three bytes (shape, form, flag) and then the int string id when
+        // the form is non-zero. A fourth byte here made every packet carrying the line underflow on
+        // the client ("Buffer underflow for wF1 0x33"), dropping the whole group (2026-09-14).
         val shape = field(S8) { (it as BattleEventBody.ClientLine).shape }
         val form = field(S8) { 1 }
         require(form.toInt() == 1) { "kind 76 bank-line form is not modelled" }
-        field(S8) { 1 }
         field(S8) { 1 }
         val id = field(S32LE) { (it as BattleEventBody.ClientLine).stringId }
         return BattleEventBody.ClientLine(shape, id)

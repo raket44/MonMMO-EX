@@ -217,6 +217,23 @@ constructor(
             (map.mapId.toLong() and 0xFF)
   }
 
+  /**
+   * A completed step on a DS map: the ROM's step trigger on that tile when its var matches, the
+   * same rule [onStep] applies to a GBA map's coord events.
+   */
+  fun onNdsStep(session: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Boolean {
+    if (state.blocksNewScript) {
+      if (entryScripts.hasNdsCoordinate(regionId, bankId, mapId, x, y)) {
+        log.info { "DS floor trigger at ($x, $y) skipped: dialog=${state.dialogVisible} script=${state.scriptRunning}" }
+      }
+      return false
+    }
+    val charId = state.characterId ?: return false
+    val script = entryScripts.atNdsCoordinate(charId, regionId, bankId, mapId, x, y) ?: return false
+    scriptRunner.run(session, state, script, entityId = -1)
+    return true
+  }
+
   /** Run the matching conditional coordinate script after a completed player step. */
   fun onStep(
       session: SessionContext,

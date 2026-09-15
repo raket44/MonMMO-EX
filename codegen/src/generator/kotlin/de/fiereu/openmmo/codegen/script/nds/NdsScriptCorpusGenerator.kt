@@ -70,6 +70,9 @@ class NdsScriptCorpusGenerator {
 
     /** The header's warp tiles whose destination is the dynamic (elevator) header, as (x, y). */
     fun dynamicExits(header: MapHeader): List<Pair<Int, Int>> = emptyList()
+
+    /** Item tokens as the catalogue names them: Gen 4 TMs by move (ITEM_TM70 -> ITEM_TM_FLASH). */
+    fun itemAliases(): Map<String, String> = emptyMap()
   }
 
   class Macro(val params: List<String>, val body: List<String>)
@@ -90,6 +93,10 @@ class NdsScriptCorpusGenerator {
     constants["TRUE"] = 1
     constants["FALSE"] = 0
     constants["VAR_RESULT"] = 0x800C
+    // Renamed item tokens keep their number for value positions (setvar VAR_0x8004, ITEM_TM27).
+    for ((from, to) in dialect.itemAliases()) constants[from]?.let { constants.putIfAbsent(to, it) }
+    constants.entries.filter { it.key.startsWith("ITEM_") && "__" in it.key }.toList()
+        .forEach { (key, value) -> constants.putIfAbsent(key.replace("__", "_"), value) }
 
     val failures = linkedMapOf<String, Int>()
     val samples = linkedMapOf<String, MutableList<String>>()
@@ -126,6 +133,24 @@ class NdsScriptCorpusGenerator {
       val owners = headersByScript[fileName].orEmpty()
       val objectIds = owners.firstOrNull()?.let(dialect::objectIdsFor).orEmpty()
       indexedLabels += parsed.blocks.size
+      // MessageVar prints an entry of the script's own text bank (the loader the file was built
+      // with): the bank of the first text token the file names.
+      val fileTextBase =
+          parsed.blocks.asSequence().flatMap { it.lines.asSequence() }.flatMap { it.drop(1).asSequence() }
+              .firstNotNullOfOrNull { dialect.textId(it) }?.let { it and 0xFFFF.inv() }
+      // Blocks that open a naming screen or Mom's bank, and blocks that jump straight into one: the
+      // owner drops the questions leading there (nicknames, the rival's name, Mom's savings).
+      val namingLabels = parsed.blocks.filter { b -> b.lines.any { isDroppedSystemLine(it) } }.mapTo(HashSet()) { it.label }
+      // The nickname offers among them: the only questions whose own text goes with the screen.
+      val nicknameLabels = parsed.blocks.filter { b -> b.lines.any { it[0] in NICKNAME_COMMANDS } }.mapTo(HashSet()) { it.label }
+      repeat(2) {
+        for (set in listOf(namingLabels, nicknameLabels)) {
+          parsed.blocks
+              // The block's first way out is an unconditional jump there (HeartGold _0A59: msg, GoTo, End).
+              .filter { b -> b.lines.firstOrNull { it[0] in TERMINAL }?.let { it[0] == "GoTo" && it.getOrNull(1) in set } == true }
+              .forEach { set += it.label }
+        }
+      }
 
       for (block in parsed.blocks) {
         if (block.movement) {
@@ -140,7 +165,11 @@ class NdsScriptCorpusGenerator {
           continue
         }
         val extra = mutableListOf<Pair<String, List<String>>>()
-        val commands = transpile(block.lines, dialect, block.label, extra, owners.firstOrNull()?.msgBank, constants)
+        // The server saves as things happen: the games' "Would you like to save?" routines are a
+        // silent success (owner, 2026-09-15) - the scene carries on with nothing shown.
+        val commands =
+            if (block.label in SILENT_SAVE_ROUTINES) listOf("setvar VAR_RESULT, 1", "return")
+            else transpile(block.lines, dialect, block.label, extra, owners.firstOrNull()?.msgBank, constants, fileTextBase, namingLabels, nicknameLabels)
         for ((label, body) in listOf(block.label to commands) + extra) {
           try {
             val program =
@@ -228,6 +257,7 @@ class NdsScriptCorpusGenerator {
     val textIds = referencedText.mapNotNull { token -> dialect.textId(token)?.let { token to it } }.toMap()
     val missingText = referencedText.count { dialect.textId(it) == null }
     if (missingText > 0) failure("text id unresolved", "$missingText text tokens have no bank/entry")
+    val coordTriggers = coordTriggerRows(spec, dialect, constants, referencedTokens)
 
     return BuiltScriptCorpus(
         spec = spec,
@@ -243,7 +273,44 @@ class NdsScriptCorpusGenerator {
         parseFailureSamples = samples.mapValues { it.value.toList() },
         dynamicExits = dynamicExits,
         headerFloors = headerFloors,
+        coordTriggers = coordTriggers,
     )
+  }
+
+  /**
+   * The DS maps' step triggers (the ROM's coord events: the rival waiting upstairs in Twinleaf, the
+   * Route 201 grass...) as `bank;map;x;y;width;height;VAR;value;script` rows. They come from the ROM
+   * event tables beside the server (tools/nds, `coord;region;bank;map;idx;script;x;y;w;h;height;val;var`),
+   * which carry the var's NUMBER; the story store keys vars by the token the scripts use, so the
+   * number is named here from the same constants the scripts were built with (a name the scripts
+   * reference wins, `VAR_0x....` when the game has none - Unova, whose scripts name every var that
+   * way). Unova's rows come from tools/nds/Triggers5 (White's 22-byte trigger records).
+   */
+  private fun coordTriggerRows(
+      spec: ScriptCorpusSpec,
+      dialect: Dialect,
+      constants: Map<String, Int>,
+      referenced: Set<String>,
+  ): List<String> {
+    if (dialect.region !in 2..4) return emptyList()
+    // Unova's "decomp" directory IS server.game (the ROM extracts live there); the decomps sit two
+    // levels under the repository, beside server.game.
+    val file =
+        if (dialect.region == 2) File(spec.decompDir, "nds-npcs-2.txt")
+        else File(spec.decompDir.absoluteFile.parentFile?.parentFile, "server.game/nds-npcs-${dialect.region}.txt")
+    if (!file.isFile) return emptyList()
+    val names = constants.entries.filter { it.key.startsWith("VAR_") }.groupBy({ it.value }, { it.key })
+    fun varName(number: Int): String {
+      val candidates = names[number].orEmpty()
+      return candidates.firstOrNull { it in referenced } ?: candidates.minOrNull() ?: "VAR_0x" + number.toString(16).uppercase()
+    }
+    return file.readLines().filter { it.startsWith("coord;") }.mapNotNull { line ->
+      val p = line.split(';')
+      if (p.size < 13) return@mapNotNull null
+      // p: kind, region, bank, map, idx, script, x, y, w, h, height, value, var
+      val n = p.subList(5, 13).map { it.toIntOrNull() ?: return@mapNotNull null }
+      "${p[2]};${p[3]};${n[1]};${n[2]};${n[3]};${n[4]};${varName(n[7])};${n[6]};${n[0]}"
+    }
   }
 
   // ---------------------------------------------------------------- source parsing
@@ -261,12 +328,21 @@ class NdsScriptCorpusGenerator {
     val stem = file.nameWithoutExtension
     // Local labels get the file as namespace; the Gen 4 result var takes the GBA name the
     // interpreter's own commands write to (vars are keyed by token, not number).
-    fun localize(token: String) =
-        when {
-          LOCAL_LABEL.matches(token) -> "${stem}_$token"
-          token == "VAR_SPECIAL_RESULT" || token == "VAR_0x800C" -> "VAR_RESULT"
-          else -> token
-        }
+    val itemAliases = dialect.itemAliases()
+    // File-local names: Platinum `#define LOCAL_VAR_PARTY_SLOT VAR_0x8002` / `#define KINSEY 22`,
+    // HeartGold `.set GATE_OPEN, 1` - the assembler substitutes them, so this does too.
+    val defines = HashMap<String, String>()
+    fun localize(token: String): String {
+      var t = token
+      repeat(4) { t = defines[t] ?: return@repeat }
+      return when {
+        LOCAL_LABEL.matches(t) -> "${stem}_$t"
+        t == "VAR_SPECIAL_RESULT" || t == "VAR_0x800C" -> "VAR_RESULT"
+        // HeartGold spells "S.S. Ticket" ITEM_S_S__TICKET; the catalogue mangles it to S_S_TICKET.
+        t.startsWith("ITEM_") -> itemAliases[t] ?: t.replace("__", "_")
+        else -> t
+      }
+    }
     val entries = mutableListOf<String>()
     val blocks = mutableListOf<Block>()
     var current: Block? = null
@@ -274,7 +350,18 @@ class NdsScriptCorpusGenerator {
     val source = ArrayDeque(file.readLines())
     while (source.isNotEmpty()) {
       val raw = source.removeFirst()
-      val line = raw.substringBefore("//").substringBefore(';').trim()
+      val line = raw.replace(BLOCK_COMMENT, "").substringBefore("//").substringBefore(';').trim()
+      Regex("^#define\\s+(\\w+)\\s+(\\S+)").find(line)?.let { defines[it.groupValues[1]] = it.groupValues[2] }
+      Regex("^\\.(?:set|equ)\\s+(\\w+)\\s*,\\s*(\\S+)").find(line)?.let { defines[it.groupValues[1]] = it.groupValues[2] }
+      // HeartGold keeps a map's local names in a sibling header (`#include ".../event_D37R0104.h"`).
+      Regex("^#include\\s+\"([^\"]+)\"").find(line)?.let { inc ->
+        val sibling = File(file.parentFile, inc.groupValues[1].substringAfterLast('/'))
+        if (sibling.isFile && sibling != file) {
+          sibling.readLines().forEach { h ->
+            Regex("^#define\\s+(\\w+)\\s+(\\S+)").find(h.replace(BLOCK_COMMENT, "").substringBefore("//").trim())?.let { defines.putIfAbsent(it.groupValues[1], it.groupValues[2]) }
+          }
+        }
+      }
       if (line.isEmpty() || line.startsWith("#") || line.startsWith(".")) continue
       val macroName = line.substringBefore(' ').substringBefore('\t')
       val macro = macros[macroName]
@@ -326,6 +413,9 @@ class NdsScriptCorpusGenerator {
       extra: MutableList<Pair<String, List<String>>>,
       msgBank: Int?,
       constants: Map<String, Int>,
+      fileTextBase: Int? = null,
+      namingLabels: Set<String> = emptySet(),
+      nicknameLabels: Set<String> = emptySet(),
   ): List<String> {
     val out = mutableListOf<String>()
     // HeartGold standard messages: GetStdMsgNaix puts a message file id in a var, MsgBoxExtern
@@ -338,6 +428,7 @@ class NdsScriptCorpusGenerator {
     var menuCursor = "0"
     var menuStdBank = false
     val menuItems = mutableListOf<Pair<String, String>>()
+    var genderBlocks = 0
     var i = 0
     while (i < lines.size) {
       val line = lines[i]
@@ -350,7 +441,9 @@ class NdsScriptCorpusGenerator {
         name.startsWith("Buffer") ->
             when (name) {
               "BufferPlayerName", "BufferPlayersName" -> out += "ds_buffer ${a[0]}, player"
-              "BufferRivalName", "BufferRivalsName", "BufferCounterpartName" -> out += "ds_buffer ${a[0]}, rival"
+              "BufferRivalName", "BufferRivalsName" -> out += "ds_buffer ${a[0]}, rival"
+              // Platinum StringTemplate_SetCounterpartName: the professor's other assistant (Lucas / Dawn).
+              "BufferCounterpartName" -> out += "ds_buffer ${a[0]}, counterpart"
               "BufferItemName", "BufferItemNameWithArticle", "BufferItemNamePlural", "BufferItemNameIndef" ->
                   if (a.size >= 2) out += "ds_buffer ${a[0]}, item, ${a[1]}"
               "BufferNumber", "BufferInt", "BufferFloorNumber", "BufferDeptStoreFloorNo" ->
@@ -396,7 +489,9 @@ class NdsScriptCorpusGenerator {
         "ClearFlag" -> out += "clearflag ${a[0]}"
         "SetVar", "SetVarFromValue" -> {
           if (a[0] == "VAR_SPECIAL_x8004") lastVar8004 = a[1].toIntOrNull()
-          out += "setvar ${a[0]}, ${a[1]}"
+          // A text entry as a value (the nurse's greeting for MessageVar): its index in the bank.
+          val entry = dialect.textId(a[1])?.let { it and 0xFFFF }
+          out += "setvar ${a[0]}, ${entry ?: a[1]}"
         }
         "AddVar" -> out += "addvar ${a[0]}, ${a[1]}"
         "SubVar" -> out += "subvar ${a[0]}, ${a[1]}"
@@ -411,15 +506,39 @@ class NdsScriptCorpusGenerator {
         // -- text
         "Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage",
         "NPCMsg", "NonNPCMsg", "MessageVar", "NPCMsgVar", "NonNPCMsgVar" -> {
-          if (dialect.textId(a[0]) == null) out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
+          val bankBase = msgBank?.let { dialect.textId("msg_%04d_MAP_%05d".format(it, 0)) } ?: fileTextBase
+          if (name.endsWith("Var") && a.size == 1 && a[0].startsWith("VAR_") && bankBase != null) {
+            // MessageVar: the var holds an entry of the script's own bank.
+            out += "ds_messagevar ${a[0]}, $bankBase"
+            out += "waitmessage"
+          } else if (dialect.textId(a[0]) == null) out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
           else {
             // A yes/no prompt right after the text (Platinum ShowYesNoMenu, HeartGold's {YESNO}
-            // text + GetMenuChoice) is one GBA MSGBOX_YESNO; Gen 4 answers 0 = yes, 1 = no.
-            val prompt = (1..3).firstOrNull { k ->
-              val l = lines.getOrNull(i + k) ?: return@firstOrNull false
-              if (l[0] in YESNO_COMMANDS) true else if (l[0] in PROMPT_FILLER) false else return@firstOrNull false
+            // text + GetMenuChoice) is one GBA MSGBOX_YESNO; Gen 4 answers 0 = yes, 1 = no. The
+            // question is the LAST text before it: another message in between owns the prompt.
+            var prompt: Int? = null
+            for (k in 1..3) {
+              val l = lines.getOrNull(i + k) ?: break
+              if (l[0] in YESNO_COMMANDS) {
+                prompt = k
+                break
+              }
+              if (l[0] in PROMPT_MESSAGES) break
             }
-            if (prompt != null) {
+            val skipped = prompt?.let { skippedQuestion(lines, i + prompt + 1, lines[i + prompt].getOrNull(1), namingLabels, constants, nicknameLabels) }
+            if (skipped != null) {
+              // "Give it a nickname?" / "So his name was X?" / Mom's savings: nicknames and names
+              // are not given in the story here and Mom keeps no bank, so the question is skipped
+              // and the script takes the other answer. The line itself still shows unless it is
+              // the nickname offer.
+              if (skipped.keepMessage) {
+                out += "message ${a[0]}"
+                out += "waitmessage"
+              }
+              skipped.goto?.let { out += "goto $it" }
+              skipped.call?.let { out += "call $it" }
+              i = skipped.last
+            } else if (prompt != null) {
               out += "msgbox ${a[0]}, MSGBOX_YESNO"
               out += "ds_yesno ${lines[i + prompt][1]}"
               i += prompt
@@ -439,8 +558,18 @@ class NdsScriptCorpusGenerator {
           }
         }
         "GetMenuChoice" -> {
-          out += "yesnobox 0, 0"
-          out += "ds_yesno ${a[0]}"
+          val skipped = skippedQuestion(lines, i + 1, a[0], namingLabels, constants, nicknameLabels)
+          if (skipped != null) {
+            // The question was shown by the message before it; a dropped nickname offer takes its
+            // shown text back out.
+            if (!skipped.keepMessage && out.size >= 2 && out.last() == "waitmessage" && out[out.size - 2].startsWith("message ")) repeat(2) { out.removeAt(out.size - 1) }
+            skipped.goto?.let { out += "goto $it" }
+            skipped.call?.let { out += "call $it" }
+            i = skipped.last
+          } else {
+            out += "yesnobox 0, 0"
+            out += "ds_yesno ${a[0]}"
+          }
         }
         "GetPlayerMapPos", "GetPlayerCoords" -> out += "getplayerxy ${a[0]}, ${a[1]}"
         "SetObjectEventPos" -> out += "setobjectxy ${a[0]}, ${a[1]}, ${a[2]}"
@@ -462,6 +591,152 @@ class NdsScriptCorpusGenerator {
         "GiveBadge" -> out += "setflag FLAG_DS_BADGE_${badge(a[0], constants)}"
         "CountBadgesAcquired" -> out += "ds_countbadges ${a[0]}"
         "HealParty" -> out += "special HealPlayerParty"
+        // Platinum's briefcase (choose_starter_app): STARTER_OPTION_0..2 with bank 360's "Now choose!"
+        // (entry 7) and one question per ball (entries 1-3); the pick lands in VAR_PLAYER_STARTER
+        // (SystemVars_SetPlayerStarter), which SaveChosenStarter would store.
+        "StartChooseStarterScene" -> {
+          val species = listOf("SPECIES_TURTWIG", "SPECIES_CHIMCHAR", "SPECIES_PIPLUP").map { constants[it] }
+          val texts = listOf(7, 1, 2, 3).map { dialect.textId("pl_msg_00000360_%05d".format(it)) }
+          if (species.any { it == null } || texts.any { it == null }) out += "ds_startchoosestarterscene"
+          else out += "ds_startchoosestarterscene VAR_PLAYER_STARTER, ${species.joinToString(", ")}, ${texts.joinToString(", ")}"
+        }
+        "SaveChosenStarter" -> {}
+        "GetPlayerStarterSpecies" -> out += "copyvar ${a[0]}, VAR_PLAYER_STARTER"
+        // The macro compares each value in turn (asm/macros/scrcmd.inc): lower..upper inclusive.
+        "GoToIfInRange" -> {
+          val lower = constants[a[1]] ?: a[1].toIntOrNull()
+          val upper = constants[a[2]] ?: a[2].toIntOrNull()
+          if (lower == null || upper == null || upper - lower > 64) out += "ds_gotoifinrange ${a.joinToString(", ")}"
+          else for (v in lower..upper) {
+            out += "compare ${a[0]}, $v"
+            out += "goto_if_eq ${a[3]}"
+          }
+        }
+        // One dex for the whole game (the owner's rule for an MMO, the same one Kanto's
+        // GetPokedexCount follows): every rating, count and completion check is the NATIONAL one -
+        // Pokedex_GetRatingMessageID_National's bands over the caught count, Oak's lines.
+        "LoadLocalDexRating", "LoadNationalDexRating" -> {
+          val entries = NATIONAL_DEX_RATING_TEXTS.map { dialect.textId(it)?.and(0xFFFF) }
+          if (entries.any { it == null }) out += "ds_${name.lowercase()} ${a.joinToString(", ")}"
+          else out += "ds_dexrating ${a[0]}, ${entries.joinToString(", ")}"
+        }
+        "GetLocalDexSeenCount", "GetNationalDexSeenCount" -> out += "ds_dexcount seen, ${a[0]}"
+        "GetLocalDexCaughtCount_Unused", "GetNationalDexCaughtCount" -> out += "ds_dexcount caught, ${a[0]}"
+        "CheckLocalDexCompleted", "CheckNationalDexCompleted" -> out += "ds_dexcompleted ${a[0]}"
+        // The National Dex is a story flag, the same one FireRed's EnableNationalPokedex sets.
+        "GetNationalDexEnabled" -> out += "ds_flagtovar FLAG_SYS_NATIONAL_DEX, ${a[0]}"
+        "SetNationalDexEnabled" -> out += "setflag FLAG_SYS_NATIONAL_DEX"
+        "GiveRunningShoes" -> out += "setflag FLAG_DS_RUNNING_SHOES"
+        // -- in-game trades, the same npc-trade service Kanto's Cerulean/Vermilion traders use.
+        // Platinum: SelectPokemonToTrade -> InitNPCTrade id -> GetNPCTradeRequestedSpecies VAR ->
+        // StartNPCTrade slot -> FinishNPCTrade. HeartGold: PartySelectUI/GetPartySelection ->
+        // LoadNPCTrade n -> NPCTradeGetReqSpecies VAR -> NPCTradeExec slot -> NPCTradeEnd.
+        "SelectPokemonToTrade" -> out += "ds_choosepartymon VAR_RESULT, trade"
+        "InitNPCTrade", "LoadNPCTrade" -> out += "ds_npctrade_init ${constants[a[0]] ?: a[0]}"
+        "GetNPCTradeRequestedSpecies", "NPCTradeGetReqSpecies" -> out += "ds_npctrade_species ${a[0]}"
+        "StartNPCTrade", "NPCTradeExec" -> out += "ds_npctrade_exec ${a[0]}"
+        "FinishNPCTrade", "NPCTradeEnd" -> {}
+        "SetMonMove" -> out += "ds_setmonmove ${a[0]}, ${a[1]}, ${constants[a[2]] ?: a[2]}"
+        // -- scripted wild battles ride the GBA wild-battle path; the outcome reads like the games'.
+        // Platinum's CheckWonBattle (CheckPlayerWonBattle: FALSE only for LOSE/DRAW) copies VAR_RESULT.
+        // PokeMMO's story legendaries do not battle at all (the scene carries on as if won) except
+        // the bosses - Ho-Oh, Giratina - which are boss fights still to be built, and Zekrom's
+        // required catch; the owner's rule, verified on the PokeMMO wiki (memory pokemmo-story-legendaries).
+        "StartLegendaryBattle" -> {
+          when (legendaryKind(constants[a[0]] ?: a[0].toIntOrNull())) {
+            "boss" -> out += "ds_bossbattle ${a[0]}, ${a[1]}"
+            "none" -> out += "ds_wildoutcome VAR_RESULT, won"
+            else -> {
+              out += "setwildbattle ${a[0]}, ${a[1]}, ITEM_NONE"
+              out += "dowildbattle"
+              out += "ds_wildoutcome VAR_RESULT, won"
+            }
+          }
+        }
+        // HeartGold: the BATTLE_OUTCOME_* code (1 win, 2 lose, 4 caught, 5 fled);
+        // StaticWildWonOrCaughtCheck answers TRUE when the monster is still out there (not won, not caught).
+        "GetStaticEncounterOutcome" -> out += "ds_wildoutcome ${a[0]}, outcome"
+        "StaticWildWonOrCaughtCheck" -> out += "ds_wildoutcome ${a[0]}, escaped"
+        // -- party, dex, money, PC, world: the Kanto mechanics.
+        "HideObject" -> out += "removeobject ${a[0]}"
+        "ShowObject" -> out += "addobject ${a[0]}"
+        "GetFirstNonEggInParty" -> out += "ds_firstnonegg ${a[0]}"
+        "FindPartySlotWithMove", "GetPartySlotWithMove" -> out += "ds_partyslotwithmove ${a[0]}, ${constants[a[1]] ?: a[1]}"
+        "GetDayOfWeek" -> out += "ds_getweekday ${a[0]}"
+        "CheckGameCompleted" -> out += "ds_gamecompleted ${a[0]}"
+        "SetPlayerBike" -> out += "ds_setbike ${constants[a[0]] ?: a[0]}"
+        // Saving is the server's: every save prompt finds a quick save that succeeds.
+        "CheckSaveType" -> out += "setvar ${a[0]}, ${constants["SAVE_TYPE_QUICK_SAVE"] ?: 3}"
+        "TrySaveGame" -> out += "setvar ${a[0]}, 1"
+        "PlayerHasSpecies" -> out += "ds_partyhasspecies ${a[0]}, ${constants[a[1]] ?: a[1]}"
+        "CheckPartyHasFatefulEncounterRegigigas" -> out += "ds_partyhasspecies ${a[0]}, ${constants["SPECIES_REGIGIGAS"] ?: 486}, fateful"
+        "Random" -> {
+          out += "random ${a[1]}"
+          resultCopy(out, a[0])
+        }
+        "SubMoneyVar" -> out += "removemoney ${a[0]}, 0"
+        "MovePerson" -> out += "setobjectxy ${OBJECT_ALIASES[a[0]] ?: a[0]}, ${a[1]}, ${a[2]}"
+        // NatDexFlagAction 1 = enable, 2 = query; one dex for the whole game, so it is the Kanto flag.
+        "NatDexFlagAction" -> if (a[0] == "1") { out += "setflag FLAG_SYS_NATIONAL_DEX"; out += "setvar ${a[1]}, 0" } else out += "ds_flagtovar FLAG_SYS_NATIONAL_DEX, ${a[1]}"
+        "CountPCEmptySpace" -> out += "ds_pcemptyspace ${a[0]}"
+        "CountAliveMonsAndPC" -> out += "ds_countalive ${a[0]}"
+        // MonHasMove VAR, move, slot; GetPartyMonFriendship VAR, slot (the HeartGold shape).
+        "MonHasMove" -> out += "ds_monhasmove ${a[0]}, ${constants[a[1]] ?: a[1]}, ${a[2]}"
+        "GetPartyMonFriendship" -> out += "ds_mongetfriendship ${a[0]}, ${a[1]}"
+        // Rotom's forms: count of transformed Rotom and the first slot (Platinum count, slot; HeartGold count, slot).
+        "GetPartyRotomCountAndFirst", "CountTranformedRotomsInParty" -> out += "ds_rotomcount ${a[0]}, ${a[1]}"
+        "CheckPartyHasSpecies2" -> out += "ds_partyhasspecies ${a[1]}, ${constants[a[0]] ?: a[0]}"
+        "CheckDidNotCapture" -> out += "ds_wildoutcome ${a[0]}, notcaught"
+        "GetCurrentMapID" -> out += "ds_currentmapid ${a[0]}"
+        "CheckSeenAllLetterUnown" -> out += "ds_unownforms ${a[0]}, all"
+        // GoToIfNotEnoughMoney value, offset: CheckMoney into VAR_RESULT, branch on FALSE.
+        "GoToIfNotEnoughMoney" -> {
+          out += "checkmoney ${a[0]}, 0"
+          out += "compare VAR_RESULT, 0"
+          out += "goto_if_eq ${a[1]}"
+        }
+        "SaveGameNormal" -> out += "setvar ${a[0]}, 1"
+        "GetUnownFormsSeenCount" -> out += "ds_unownforms ${a[0]}"
+        // The Safari Game is the same one Kanto plays (SafariService): balls, steps, the exit warp.
+        "SafariZoneAction" -> out += if (a[0] == "0") "special EnterSafariMode" else "special ExitSafariMode"
+        "StartEndSafariGame" -> out += if ((constants[a[0]] ?: a[0].toIntOrNull()) == 0 && !a[0].contains("INACTIVE")) "special EnterSafariMode" else "special ExitSafariMode"
+        "EndSafariGame" -> out += "special ExitSafariMode"
+        "MessageFromBank" -> {
+          out += "ds_messagefrombank ${a[0]}, ${a[1]}"
+          out += "waitmessage"
+        }
+        // No Griseous Orb to hand back, no forms to reset on the way into the daycare.
+        "DaycareSanitizeMon" -> out += "setvar ${a[1]}, 0"
+        // HeartGold's Elm's lab (src/choose_starter.c): Chikorita, Cyndaquil, Totodile at level 5,
+        // msg_0190 entry 7 "Once you've decided, touch a Poke Ball!", entries 1-3 per ball. The app
+        // puts the pick in the party itself; the script reads it back with GetPartyMonSpecies.
+        "ChooseStarter" -> {
+          val species = listOf("SPECIES_CHIKORITA", "SPECIES_CYNDAQUIL", "SPECIES_TOTODILE").map { constants[it] }
+          val texts = listOf(7, 1, 2, 3).map { dialect.textId("msg_0190_%05d".format(it)) }
+          if (species.any { it == null } || texts.any { it == null }) out += "ds_choosestarter"
+          else {
+            out += "ds_startchoosestarterscene VAR_DS_CHOSEN_STARTER, ${species.joinToString(", ")}, ${texts.joinToString(", ")}"
+            out += "givemon VAR_DS_CHOSEN_STARTER, 5, ITEM_NONE"
+          }
+        }
+        // Save_VarsFlags_SetStarter / GetStarter: VAR_PLAYER_STARTER (src/sys_vars.c).
+        "SetStarterChoice" -> out += "copyvar VAR_PLAYER_STARTER, ${a[0]}"
+        "GetStarterChoice" -> out += "copyvar ${a[0]}, VAR_PLAYER_STARTER"
+        "GetFriendSprite" -> out += "ds_getfriendsprite ${a[0]}"
+        "GetPersonCoords" -> out += "ds_getpersoncoords ${a[0]}, ${a[1]}, ${a[2]}"
+        "MonGetFriendship" -> out += "ds_mongetfriendship ${a[0]}, ${a[1]}"
+        "GetPartyMonForm2" -> out += "ds_getpartymonform ${a[0]}, ${a[1]}"
+        "HasEnoughMoneyVar" -> out += "ds_hasenoughmoney ${a[0]}, ${a[1]}"
+        "PartySelectUI" -> {}
+        "GetPartySelection" -> out += "ds_choosepartymon ${a[0]}"
+        "GetPartyLeadAlive", "GetFollowPokePartyIndex" -> out += "ds_getpartyleadalive ${a[0]}"
+        "PartyCountNotEgg" -> out += "ds_countpartynoneggs ${a[0]}"
+        "TakeItemNoCheck" -> out += "removeitem ${a[0]}, ${a.getOrElse(1) { "1" }}"
+        // The rival keeps his canonical name: no naming screen, and a result that never re-asks.
+        "NameRival" -> out += "setvar ${a[0]}, 0"
+        // No mail in the catalogue, no ribbons on this server's monsters: the checks answer no
+        // into their FIRST argument (KenyaCheck VAR, slot, kind / MonHasRibbon VAR, slot, ribbon).
+        "KenyaCheck", "MonHasRibbon" -> out += "setvar ${a[0]}, 0"
         // Marts: the badge-tiered common shelf, or a specialty shelf by the game's mart index.
         "PokeMartCommon", "MartBuy" -> out += "ds_martcommon"
         "MartSell", "PokeMartDecor", "PokeMartSeal", "ShowAccessoryShop" -> {}
@@ -502,8 +777,16 @@ class NdsScriptCorpusGenerator {
           out += "goto_if_eq ${a[1]}"
         }
         "WildBattle", "RocketTrapBattle" -> {
-          out += "setwildbattle ${a[0]}, ${a.getOrElse(1) { "5" }}, ITEM_NONE"
-          out += "dowildbattle"
+          // HeartGold's static legendaries (Ho-Oh, Lugia, Suicune, Kyogre/Groudon...) follow the same
+          // PokeMMO rule as Platinum's StartLegendaryBattle: no battle, or a boss fight to come.
+          when (legendaryKind(constants[a[0]] ?: a[0].toIntOrNull())) {
+            "boss" -> out += "ds_bossbattle ${a[0]}, ${a.getOrElse(1) { "5" }}"
+            "none" -> {}
+            else -> {
+              out += "setwildbattle ${a[0]}, ${a.getOrElse(1) { "5" }}, ITEM_NONE"
+              out += "dowildbattle"
+            }
+          }
         }
         "ClearTrainerFlag" -> out += "ds_cleartrainerflag ${a[0]}"
         "Switch" -> out += "switch ${a[0]}"
@@ -525,7 +808,7 @@ class NdsScriptCorpusGenerator {
           val target = OBJECT_ALIASES[a[0]] ?: a[0]
           if (target != "LOCALID_PLAYER") out += "addobject $target"
         }
-        "SetObjectEventDir" -> {
+        "SetObjectEventDir", "SetObjectFacing" -> {
           val face = FACE_MOVEMENTS[a[1]]
           val target = OBJECT_ALIASES[a[0]] ?: a[0]
           if (face != null) out += "applymovement $target, $face"
@@ -536,19 +819,27 @@ class NdsScriptCorpusGenerator {
           out += "setobjectxy $target, ${a[1]}, ${a[2]}"
           FACE_MOVEMENTS[a[4]]?.let { out += "applymovement $target, $it" }
         }
-        "GenderMsgBox" -> {
-          // Two texts, one per player gender; checkplayergender leaves MALE = 0 in VAR_RESULT.
-          val female = "${label}_female"
-          val done = "${label}_gender_done"
-          out += "checkplayergender"
-          out += "compare VAR_RESULT, 1"
-          out += "goto_if_eq $female"
-          out += "message ${a[0]}"
-          out += "waitmessage"
-          out += "goto $done"
-          extra += female to listOf("message ${a[1]}", "waitmessage", "goto $done")
-          extra += done to listOf("return")
-          out += "end"
+        // Two texts, one per player gender.
+        "GenderMsgBox" -> genderedMessage(out, extra, "${label}_g${genderBlocks++}", a[0], a[1])
+        // A Pokegear call from a map script (PhoneCall contact, 2, n): the ROM's call app prints the
+        // contact's n-th scripted line straight away (these contacts have no greeting row, phone
+        // book unkC = 255), waits for A, and hangs up. The line is ROM text in the contact's own
+        // bank, so it is a dialog box here.
+        "PhoneCall" -> {
+          val call = if (a.getOrNull(1) == "2") HEARTGOLD_SCRIPTED_CALLS[a[0]]?.getOrNull(a.getOrNull(2)?.toIntOrNull() ?: -1) else null
+          if (call == null) out += "ds_phonecall ${a.joinToString(", ")}"
+          else {
+            out += "ds_buffer 0, player"
+            genderedMessage(out, extra, "${label}_call${genderBlocks++}", call.male, call.female)
+            out += "waitbuttonpress"
+            out += "closemessage"
+            call.followUp?.let {
+              out += "message $it"
+              out += "waitmessage"
+              out += "waitbuttonpress"
+              out += "closemessage"
+            }
+          }
         }
         in STUB_QUERIES.keys -> {
           val target = a.lastOrNull { it.startsWith("VAR_") }
@@ -558,7 +849,7 @@ class NdsScriptCorpusGenerator {
         "GetWeekday" -> out += "ds_getweekday ${a[0]}"
         "CallCommonScript" -> out += "call NDS_CHUNK_${a[0].removePrefix("0x").toIntOrNull(if (a[0].startsWith("0x")) 16 else 10) ?: a[0]}"
         "CallStd" -> {
-          val id = constants[a[0]] ?: a[0].toIntOrNull()
+          val id = constants[a[0]] ?: a[0].toIntOrNull() ?: a[0].removePrefix("0x").toIntOrNull(16).takeIf { a[0].startsWith("0x") }
           when (id) {
             2011 -> out += "ds_martcommon"
             2052 -> {
@@ -595,7 +886,13 @@ class NdsScriptCorpusGenerator {
         }
         "ShowMenu", "ShowListMenu", "ShowMenuMultiColumn", "MenuExec" -> {
           val target = menuVar
-          if (target != null && menuItems.isNotEmpty()) out += "ds_menu $target, $menuCursor, " + menuItems.joinToString(", ") { "${it.first}, ${it.second}" }
+          val exit = target?.let { droppedMenuExit(lines, i + 1, it, namingLabels) }
+          if (exit != null) {
+            // A menu whose choices lead into Mom's bank: her line stays, the menu goes, and the
+            // script takes the Switch's own way out.
+            out += "goto ${exit.first}"
+            i = exit.second
+          } else if (target != null && menuItems.isNotEmpty()) out += "ds_menu $target, $menuCursor, " + menuItems.joinToString(", ") { "${it.first}, ${it.second}" }
           else if (target != null) out += "setvar $target, 127"
           menuItems.clear()
         }
@@ -623,8 +920,16 @@ class NdsScriptCorpusGenerator {
         "CloseMessage", "CloseMsg", "CloseMessageWithoutErasing", "HoldMsg", "OpenMessage", "OpenMsg" ->
             if (name.startsWith("Open")) {} else out += "closemessage"
         "ShowYesNoMenu", "YesNo" -> {
-          out += "yesnobox 0, 0"
-          out += "ds_yesno ${a[0]}"
+          val skipped = skippedQuestion(lines, i + 1, a[0], namingLabels, constants, nicknameLabels)
+          if (skipped != null) {
+            if (!skipped.keepMessage && out.size >= 2 && out.last() == "waitmessage" && out[out.size - 2].startsWith("message ")) repeat(2) { out.removeAt(out.size - 1) }
+            skipped.goto?.let { out += "goto $it" }
+            skipped.call?.let { out += "call $it" }
+            i = skipped.last
+          } else {
+            out += "yesnobox 0, 0"
+            out += "ds_yesno ${a[0]}"
+          }
         }
         // -- movement
         "ApplyMovement" -> {
@@ -633,8 +938,8 @@ class NdsScriptCorpusGenerator {
         }
         "WaitMovement" -> out += "waitmovement 0"
         "WaitTime", "Wait" -> out += "delay ${a.getOrElse(0) { "1" }}"
-        "AddObject", "ShowPerson" -> out += "addobject ${a[0]}"
-        "RemoveObject", "HidePerson" -> out += "removeobject ${a[0]}"
+        "AddObject", "ShowPerson" -> if (a[0] !in IGNORED_OBJECTS) out += "addobject ${a[0]}"
+        "RemoveObject", "HidePerson" -> if (a[0] !in IGNORED_OBJECTS) out += "removeobject ${a[0]}"
         // -- items, money, monsters
         "AddItem", "GiveItem" -> {
           out += "giveitem ${a[0]}, ${a.getOrElse(1) { "1" }}"
@@ -692,6 +997,132 @@ class NdsScriptCorpusGenerator {
     return out
   }
 
+  /**
+   * One message per player gender (checkplayergender leaves MALE = 0 in VAR_RESULT), as two called
+   * blocks so the script carries on after it. The earlier goto-to-a-return form underflowed the call
+   * stack in every top-level script (Elm's lab never reached its scene var).
+   */
+  private fun genderedMessage(out: MutableList<String>, extra: MutableList<Pair<String, List<String>>>, label: String, male: String, female: String) {
+    if (male == female) {
+      out += "message $male"
+      out += "waitmessage"
+      return
+    }
+    out += "checkplayergender"
+    out += "compare VAR_RESULT, 1"
+    out += "call_if_eq ${label}_female"
+    out += "call_if_ne ${label}_male"
+    extra += "${label}_female" to listOf("message $female", "waitmessage", "return")
+    extra += "${label}_male" to listOf("message $male", "waitmessage", "return")
+  }
+
+  /**
+   * The way past a dropped question: jump to [goto], or call [call] and carry on, or just carry on.
+   * [keepMessage]: the question's text still shows (as a statement) - it is dropped only when the
+   * question itself offers the missing thing ("Give it a nickname?"), never when it confirms
+   * something and only its NO would have re-opened it ("So Silver was his name?").
+   */
+  private data class SkippedQuestion(val goto: String?, val call: String?, val last: Int, val keepMessage: Boolean)
+
+  /** A line that only exists for a naming screen or a system PokeMMO does not have (Mom's bank). */
+  private fun isDroppedSystemLine(line: List<String>): Boolean =
+      line[0] in NAMING_COMMANDS || line[0] in BANK_COMMANDS || (line[0] == "SetFlag" && line.getOrNull(1) == "FLAG_SYS_MOMS_SAVINGS")
+
+  /** The lines from [from] up to the block's next jump or end reach a dropped-system line. */
+  private fun inlineReachesDroppedSystem(lines: List<List<String>>, from: Int): Boolean {
+    for (k in from until lines.size) {
+      if (isDroppedSystemLine(lines[k])) return true
+      if (lines[k][0] in TERMINAL) return false
+    }
+    return false
+  }
+
+  /**
+   * The branch lines after a yes/no into [answerVar] (answers 0 = yes, 1 = no): Platinum
+   * `GoToIfEq VAR, MENU_NO, L`, HeartGold `Compare VAR, 0` + `GoToIfNe L` / `CallIfEq L`, then an
+   * optional `GoTo L`. When exactly one answer leads to a naming screen or Mom's bank
+   * ([avoidLabels], or the inline lines that follow), the question is skipped and the script takes
+   * the other answer; else null.
+   */
+  private fun skippedQuestion(
+      lines: List<List<String>>,
+      start: Int,
+      answerVar: String?,
+      avoidLabels: Set<String>,
+      constants: Map<String, Int>,
+      namingOfferLabels: Set<String> = emptySet(),
+  ): SkippedQuestion? {
+    if (answerVar == null) return null
+    // answer -> (label, isCall)
+    val branches = HashMap<Int, Pair<String, Boolean>>()
+    var trailingGoto: String? = null
+    var last = start - 1
+    var compared: Int? = null
+    var k = start
+    while (k < lines.size && k < start + 8) {
+      val l = lines[k]
+      when {
+        l[0] in QUESTION_FILLER -> {}
+        (l[0] == "GoToIfEq" || l[0] == "GoToIfNe") && l.size >= 4 && l[1] == answerVar -> {
+          val value = constants[l[2]] ?: l[2].toIntOrNull() ?: return null
+          branches.putIfAbsent(if (l[0] == "GoToIfEq") value else 1 - value, l[3] to false)
+          last = k
+        }
+        (l[0] == "Compare" || l[0] == "CompareVarToValue") && l.size >= 3 && l[1] == answerVar -> {
+          compared = constants[l[2]] ?: l[2].toIntOrNull() ?: return null
+        }
+        l[0] in setOf("GoToIfEq", "GoToIfNe", "CallIfEq", "CallIfNe") && l.size == 2 && compared != null -> {
+          val value = compared!!
+          branches.putIfAbsent(if (l[0].endsWith("Eq")) value else 1 - value, l[1] to l[0].startsWith("Call"))
+          compared = null
+          last = k
+        }
+        l[0] == "GoTo" && l.size >= 2 && branches.isNotEmpty() -> {
+          trailingGoto = l[1]
+          last = k
+          break
+        }
+        else -> break
+      }
+      k++
+    }
+    if (branches.isEmpty() || branches.keys.any { it !in 0..1 }) return null
+    fun path(answer: Int): Pair<String?, Boolean> = branches[answer] ?: (trailingGoto to false)
+    fun avoided(answer: Int): Boolean {
+      val (label, isCall) = path(answer)
+      return if (label == null) inlineReachesDroppedSystem(lines, last + 1)
+      else label in avoidLabels || (isCall && inlineReachesDroppedSystem(lines, last + 1))
+    }
+    val take =
+        when {
+          avoided(0) && !avoided(1) -> 1
+          avoided(1) && !avoided(0) -> 0
+          else -> return null
+        }
+    // The YES answer opens a naming screen: the offer itself is dropped. Anything else keeps its text.
+    val offersNaming = take == 1 && path(0).first.let { it != null && it in namingOfferLabels }
+    val (label, isCall) = path(take)
+    return if (isCall) SkippedQuestion(null, label, last, !offersNaming) else SkippedQuestion(label, null, last, !offersNaming)
+  }
+
+  /**
+   * The `Switch VAR` / `Case n, L` rows / `GoTo exit` after a menu into [menuVar]: when a case leads
+   * into Mom's bank ([avoidLabels]), the exit label and the index of its line; else null.
+   */
+  private fun droppedMenuExit(lines: List<List<String>>, start: Int, menuVar: String, avoidLabels: Set<String>): Pair<String, Int>? {
+    var k = start
+    while (k < lines.size && lines[k][0] in QUESTION_FILLER) k++
+    if (lines.getOrNull(k)?.let { it[0] == "Switch" && it.getOrNull(1) == menuVar } != true) return null
+    k++
+    val cases = mutableListOf<String>()
+    while (k < lines.size && lines[k][0] == "Case" && lines[k].size >= 3) {
+      cases += lines[k][2]
+      k++
+    }
+    val exit = lines.getOrNull(k)?.takeIf { it[0] == "GoTo" && it.size >= 2 } ?: return null
+    return if (cases.any { it in avoidLabels }) exit[1] to k else null
+  }
+
   /** Gen 4 commands write their result into a named var; the GBA ones into VAR_RESULT. */
   private fun resultCopy(out: MutableList<String>, target: String?) {
     if (target == null || target == "VAR_RESULT" || target == "VAR_SPECIAL_RESULT" || target == "VAR_0x800C") return
@@ -714,6 +1145,10 @@ class NdsScriptCorpusGenerator {
   // ---------------------------------------------------------------- dialects
 
   private class Platinum(private val root: File) : Dialect {
+    private val machineAliases by lazy { gen4MachineAliases(File(root.absoluteFile.parentFile, "pokeheartgold"), PLATINUM_HM_MOVES) }
+
+    override fun itemAliases(): Map<String, String> = machineAliases
+
     override val region = 3
     private val json = Json { ignoreUnknownKeys = true }
     override val scriptFiles: List<File> =
@@ -791,6 +1226,8 @@ class NdsScriptCorpusGenerator {
     override fun constants(): Map<String, Int> {
       val out = HashMap(ConstantsIndex.build(root))
       File(root, "generated").listFiles { f -> f.extension == "txt" }?.sortedBy { it.name }?.forEach { out += enumFile(it, out) }
+      // C enums in include/constants (NPC_TRADE_*): the #define index skips them.
+      File(root, "include/constants").listFiles { f -> f.extension == "h" }?.forEach { out += enumConstants(it.readText(), out) }
       return out
     }
 
@@ -851,6 +1288,10 @@ class NdsScriptCorpusGenerator {
   }
 
   private class HeartGold(private val root: File) : Dialect {
+    private val machineAliases by lazy { gen4MachineAliases(root) }
+
+    override fun itemAliases(): Map<String, String> = machineAliases
+
     override val region = 4
     private val json = Json { ignoreUnknownKeys = true }
     private val scriptDir = File(root, "files/fielddata/script/scr_seq")
@@ -1247,6 +1688,9 @@ class NdsScriptCorpusGenerator {
     const val HEARTGOLD_STD_MENU_BANK = 191
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
     const val HEARTGOLD_DYNAMIC_HEADER = 4095
+    val BLOCK_COMMENT = Regex("/\\*.*?\\*/")
+    /** Platinum's CommonScript_TrySaveGame and HeartGold's std_prompt_save body (scr_seq_0003 _0646): VAR_RESULT 1 = saved. */
+    val SILENT_SAVE_ROUTINES = setOf("CommonScript_TrySaveGame", "scr_seq_0003__0646")
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
     val TERMINAL = setOf("End", "Return", "GoTo", "EndMovement")
     /** ov01_022067C8 in pokeheartgold src/field/scrcmd_message.c. */
@@ -1258,13 +1702,65 @@ class NdsScriptCorpusGenerator {
     val FACE_MOVEMENTS = mapOf("DIR_NORTH" to "NDS_FACE_UP", "DIR_SOUTH" to "NDS_FACE_DOWN", "DIR_WEST" to "NDS_FACE_LEFT", "DIR_EAST" to "NDS_FACE_RIGHT",
         "0" to "NDS_FACE_UP", "1" to "NDS_FACE_DOWN", "2" to "NDS_FACE_LEFT", "3" to "NDS_FACE_RIGHT")
     /** Queries with a fixed answer on this server: the var they fill and the value. */
+    /** Commands that open the naming keyboard: the questions leading to them are skipped. */
+    val NICKNAME_COMMANDS = setOf("OpenPokemonNamingScreen", "NicknameInput", "RenamePokemon")
+    val NAMING_COMMANDS = NICKNAME_COMMANDS + "NameRival"
+
+    /** One Pokegear call line per gender, plus a follow-up line (Mom's answer to her own question). */
+    data class ScriptedCall(val male: String, val female: String, val followUp: String? = null)
+
+    /**
+     * HeartGold `PhoneCall contact, 2, n`: src/application/pokegear/phone/scripts - Elm's
+     * sPhoneCallData_ProfElm_MapScripts[n] -> PHONE_SCRIPT_002..006, Oak's scripted call is
+     * PHONE_SCRIPT_082, Baoba's PHONE_SCRIPT_141 (phone_script_defs.c msgIds, banks per contact
+     * in src/phonebook_dat.c). Mom's scripted call prints msg_0664 entry 22 and asks about her
+     * savings; there is no bank here, so her "I won't save your money" answer (26) follows.
+     */
+    val HEARTGOLD_SCRIPTED_CALLS: Map<String, List<ScriptedCall>> =
+        mapOf(
+            "PHONE_CONTACT_PROF__ELM" to
+                listOf(33 to 34, 35 to 36, 37 to 38, 39 to 40, 41 to 42).map { (m, f) -> ScriptedCall("msg_0716_%05d".format(m), "msg_0716_%05d".format(f)) },
+            "PHONE_CONTACT_PROF__OAK" to listOf(ScriptedCall("msg_0666_00012", "msg_0666_00012")),
+            "PHONE_CONTACT_MOTHER" to listOf(ScriptedCall("msg_0664_00022", "msg_0664_00022", "msg_0664_00026")),
+            "PHONE_CONTACT_BAOBA" to listOf(ScriptedCall("msg_0667_00002", "msg_0667_00003")),
+        )
+    /** HeartGold's Mom's bank (scr_seq_0845_T20R0201.s): PokeMMO has no such bank. */
+    val BANK_COMMANDS = setOf("BankTransaction", "CheckBankBalance", "BankOrWalletIsFull")
+    /** Lines between a question and the branches on its answer that change nothing about them. */
+    val QUESTION_FILLER = setOf("CloseMsg", "CloseMessage", "TouchscreenMenuShow", "TouchscreenMenuHide")
+    /** Text commands: a yes/no prompt belongs to the last of them before it. */
+    val PROMPT_MESSAGES = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage",
+        "NPCMsg", "NonNPCMsg", "MessageVar", "NPCMsgVar", "NonNPCMsgVar")
+    /**
+     * Pokedex_GetRatingMessageID_National's answers in order (src/unk_0205DFC4.c): caught bands
+     * under 40, 40, 60, 90, 120, 150, 190, 230, 270, 310, 350, 380; 410 male / female; 430, 450,
+     * 460, 470, 476; complete male / female.
+     */
+    val NATIONAL_DEX_RATING_TEXTS =
+        listOf("Under40", "40", "60", "90", "120", "150", "190", "230", "270", "310", "350", "380", "410_Male", "410_Female", "430", "450", "460", "470", "476")
+            .map { "PokedexRatings_Text_OakPokemonCaught$it" } +
+            listOf("PokedexRatings_Text_OakCompleteNationalDex_Male", "PokedexRatings_Text_OakCompleteNationalDex_Female")
+    // CheckPartyPokerus: no Pokerus on this server (IsPokerusInParty answers 0 in Kanto too).
+    // GetSwarmMapAndSpecies: no daily swarms are modelled; the species var reads 0.
     val STUB_QUERIES = mapOf(
-        "GetNationalDexEnabled" to 1, "GetGameVersion" to 0, "GetPartyLeadAlive" to 1, "DressUpPhotoHasData" to 0,
+        "CheckPartyPokerus" to 0, "GetSwarmMapAndSpecies" to 0, "PartyHasPokerus" to 0,
+        // HeartGold: trainer card stars start at 0; no Shiny Leaves; Kenya carries mail, which the
+        // catalogue does not have (KenyaCheckPartyOrMailbox VAR / GetShinyLeafCount slot, VAR /
+        // CheckReturnLoanMon trade, slot, VAR all answer in their last var).
+        "GetTrcardStars" to 0, "GetShinyLeafCount" to 0, "KenyaCheckPartyOrMailbox" to 0, "CheckReturnLoanMon" to 0,
+        // No distribution events, no bad eggs, no contest photos, no unused trade flag.
+        "CheckDistributionEvent" to 0, "CheckPartyHasBadEgg" to 0, "ContestPhotoHasData" to 0, "GetNPCTradeUnusedFlag" to 0,
+        // No Poketch, no bad eggs, no apricorn box, no coins to fill, no Battle Points to spend,
+        // no follower-event monsters: the checks answer no (CheckGiveCoins: room for more, yes).
+        "CheckPoketchEnabled" to 0, "PartyLegalCheck" to 0, "GetTotalApricornCount" to 0, "CheckBattlePoints" to 0,
+        "FollowerPokeIsEventTrigger" to 0, "CheckGiveCoins" to 1,
+        "GetGameVersion" to 0, "DressUpPhotoHasData" to 0,
         "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "CheckItemIsPlate" to 0, "GetTimeOfDay" to 1, "CheckPartyHasSpecies" to 0, "CheckPoketchAppRegistered" to 0, "GetTrCardStars" to 0, "CountAliveMonsExcept" to 1, "GetMovementType" to 0, "CheckIsTrainerDoubleBattle" to 0, "CheckHasTwoAliveMons" to 1, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
         "CheckPlayerOnBike" to 0, "PlayerOnBikeCheck" to 0, "CheckRegisteredPhoneNumber" to 0, "GetPhoneBookRematch" to 0,
         "GetRematchTrainerID" to 0, "IsItemTMHM" to 0, "ItemIsTMOrHM" to 0, "GetCoinsAmount" to 0, "GetCoinAmount" to 0,
     )
-    val IGNORED_OBJECTS = setOf("obj_partner_poke", "LOCALID_FOLLOWER", "obj_follower", "OBJ_FOLLOWER")
+    // LOCALID_DP_FOLLOWER (254, scripts_route_201.s): the partner walking behind the player.
+    val IGNORED_OBJECTS = setOf("obj_partner_poke", "LOCALID_FOLLOWER", "obj_follower", "OBJ_FOLLOWER", "LOCALID_DP_FOLLOWER")
     val DROPPED =
         setOf(
             "PlaySE", "StopSE", "WaitSE", "PlayCry", "WaitCry", "PlayFanfare", "WaitFanfare", "PlayMusic", "StopMusic",
@@ -1292,6 +1788,37 @@ class NdsScriptCorpusGenerator {
             "BlackOutFromBattle", "Whiteout", "WhiteOut", "PlayTrainerEncounterBGM", "SetMoveCodeForFacingDirection",
             // A lost battle already whited the player out server-side.
             "BlackoutFromBattle", "Whiteout",
+            // Platinum presentation with no server counterpart: the hand-over pose, camera and
+            // volume, animation unloads, the menu's side, a dummy command, game records.
+            "SetPlayerState", "ChangePlayerState", "AddFreeCamera", "ApplyFreeCameraMovement", "RestoreCamera",
+            "AddCameraOverrideObject", "RemoveCameraOverrideObject", "SetInitialVolumeForSequence", "UnloadAnimation",
+            "SetMenuXOriginToRight", "Dummy1F9", "IncrementGameRecord", "PlayPokecenterHealingAnimation",
+            // Systems PokeMMO does not have: the Poketch, the journal, accessories and contest
+            // backdrops, swarm news. The follow-partner flags only steer the rival walking behind.
+            "RegisterPoketchApp", "GiveJournal", "AddAccessory", "AddContestBackdrop", "EnableSwarms",
+            "SetHasPartner", "SetStepFlag",
+            // The catching demonstration is skipped like Wally's and the Viridian old man's; the
+            // Pokedex itself is FLAG_HAS_POKEDEX, which the script sets right after GivePokedex.
+            "StartCatchingTutorial", "GivePokedex",
+            // HeartGold: the same pose, healing-machine and catching-tutorial presentation; the ball
+            // placement on Elm's desk; the respawn point is the nurse's here (GBA setrespawn too).
+            "SetAvatarBits", "UpdateAvatarState", "PokeCenAnim", "DebugWatch", "CatchingTutorial",
+            "PlaceStarterBallsInElmsLab", "SetSpawn",
+            // HeartGold systems PokeMMO does not have: the Pokegear phone and its cards, Shiny Leaf
+            // crowns and the certificate screen, ribbons, Kenya's mail and the loan Spearow's return.
+            "UnsetPhoneCallTrigger", "RegisterPokegearCard", "TryGiveShinyLeafCrown", "ShowCertificate",
+            "GiveRibbon", "MonGiveMail", "ReturnLoanMon",
+            // Bookkeeping and presentation with no server side: game records and scores, the saving
+            // and waiting icons, the save-info window, the follower's inhibit state, the platform
+            // lift's persisted state, the warp-tile move (Radio Tower) - and coins/Pal Park, which
+            // PokeMMO does not have.
+            "IncrementTrainerScore", "IncrementTrainerScore2", "AddSpecialGameStat", "AddSpecialGameStat2", "NopVar490",
+            "ShowSavingIcon", "HideSavingIcon", "OpenSaveInfo", "CloseSaveInfo", "AddWaitingIcon", "SetFollowMonInhibitState",
+            "InitPersistedMapFeaturesForPlatformLift", "MoveWarp", "TakeCoins", "PalParkAction", "ShowSaveStats", "HideSaveStats",
+            // Save-data and link housekeeping, the HM cut-in, the transition wait, a bg event's tile,
+            // Team Rocket's costume flag (the disguise scene's look).
+            "SaveExtraData", "ClearReceivedTempDataAllPlayers", "PlayHMCutIn", "WaitForTransition", "SetBgEventPos",
+            "RocketCostumeFlagAction",
         )
     val MOVEMENT_STEPS: Map<String, String> = buildMap {
       val dirs = mapOf("North" to "up", "South" to "down", "West" to "left", "East" to "right")
@@ -1353,4 +1880,57 @@ class NdsScriptCorpusGenerator {
 }
 
 /** A badge token as its number, so the eight synthetic flags can be counted. */
+/**
+ * Gen 4 machines by number (pokeheartgold include/constants/items.h `#define TM_FLASH ITEM_TM70`);
+ * Diamond/Pearl/Platinum and HeartGold/SoulSilver share the TM01-92 list. The catalogue resolves a
+ * machine by its move, while its numbered lookup follows the Gen 3 list.
+ */
+private fun gen4MachineAliases(heartGoldRoot: File, hmMoves: List<String>? = null): Map<String, String> {
+  val file = File(heartGoldRoot, "include/constants/items.h")
+  if (!file.isFile) return emptyMap()
+  val text = file.readText()
+  val out = HashMap<String, String>()
+  Regex("#define\\s+TM_(\\w+)\\s+ITEM_TM(\\d\\d)\\b").findAll(text).forEach { out["ITEM_TM${it.groupValues[2]}"] = "ITEM_TM_${it.groupValues[1]}" }
+  // HMs differ between the two games (HeartGold HM05 Whirlpool, Platinum HM05 Defog): the
+  // header's HM_ defines for HeartGold, the caller's list for Platinum. The client keeps each
+  // game's own HM tools (tool-moves.csv 8420-8427 Sinnoh, 9420-9427 Johto), found by move.
+  if (hmMoves == null) Regex("#define\\s+HM_(\\w+)\\s+ITEM_HM(\\d\\d)\\b").findAll(text).forEach { out["ITEM_HM${it.groupValues[2]}"] = "ITEM_HM_${it.groupValues[1]}" }
+  else hmMoves.forEachIndexed { i, move -> out["ITEM_HM%02d".format(i + 1)] = "ITEM_HM_$move" }
+  return out
+}
+
+/**
+ * PokeMMO's story legendaries (national dex ids): "boss" for the two story bosses (Ho-Oh 250,
+ * Giratina 487) and Zekrom's required catch (644), "none" for every other legendary or mythical of
+ * Gens 1-5 (no battle in the story), null for an ordinary species.
+ */
+private fun legendaryKind(species: Int?): String? =
+    when (species) {
+      null -> null
+      250, 487, 644 -> "boss"
+      in 144..146, 150, 151, in 243..245, 249, 251, in 377..386, in 480..493, 494, in 638..649 -> "none"
+      else -> null
+    }
+
+/** The members of every `enum { A = 0, B, ... }` in [text], counting the way C does; known names win. */
+private fun enumConstants(text: String, known: Map<String, Int>): Map<String, Int> {
+  val out = HashMap<String, Int>()
+  for (body in Regex("enum\\s*\\w*\\s*\\{([^}]*)\\}").findAll(text).map { it.groupValues[1] }) {
+    var next = 0
+    for (raw in body.split(',')) {
+      val entry = raw.substringBefore("//").trim()
+      if (entry.isEmpty()) continue
+      val name = entry.substringBefore('=').trim()
+      if (!Regex("[A-Za-z_]\\w*").matches(name)) continue
+      val value = entry.substringAfter('=', "").trim().let { v -> if (v.isEmpty()) next else (v.toIntOrNull() ?: v.removePrefix("0x").toIntOrNull(16) ?: known[v] ?: out[v] ?: next) }
+      if (name !in known) out[name] = value
+      next = value + 1
+    }
+  }
+  return out
+}
+
+/** Platinum's HM01-HM08 moves (the client's Sinnoh HM tools 8420-8427 carry the same order). */
+private val PLATINUM_HM_MOVES = listOf("CUT", "FLY", "SURF", "STRENGTH", "DEFOG", "ROCK_SMASH", "WATERFALL", "ROCK_CLIMB")
+
 private fun badge(token: String, constants: Map<String, Int>): String = (constants[token] ?: token.toIntOrNull())?.toString() ?: token

@@ -250,6 +250,8 @@ class InterpretedScript(
               when (instruction.arg(1).token) {
                 "player" -> RawMessageArg(slot.toByte(), 5, text = ctx.playerName)
                 "rival" -> RawMessageArg(slot.toByte(), 5, text = if (region == 4) "Silver" else "Barry")
+                // Platinum TEXT_BANK_COUNTERPART_NAMES: 0 Lucas, 1 Dawn - the other gender's assistant.
+                "counterpart" -> RawMessageArg(slot.toByte(), 5, text = if (ctx.playerGender() == 0) "Dawn" else "Lucas")
                 "item" -> RawMessageArg(slot.toByte(), 25, shorts = listOf((region * 1000 + valueOf(instruction.arg(2))).toShort()))
                 "number" -> RawMessageArg(slot.toByte(), 5, text = valueOf(instruction.arg(2)).toString())
                 else -> null
@@ -259,6 +261,243 @@ class InterpretedScript(
         }
         "ds_countbadges" -> {
           ctx.setVar(namespaced(varArg(instruction, 0).token), (0 until 16).count { ctx.isFlagSet(namespaced("FLAG_DS_BADGE_$it")) })
+          state.pc++
+        }
+        // ds_startchoosestarterscene VAR, species x3, pick text, confirm text x3: the starter window.
+        "ds_startchoosestarterscene" -> {
+          val species = (1..3).map { value(ctx, instruction.arg(it)) }
+          val confirms = (5..7).map { value(ctx, instruction.arg(it)) }
+          val picked = tracedWait(ctx, "starter choice") { ctx.chooseStarter(value(ctx, instruction.arg(4)), species, confirms) }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), picked)
+          state.pc++
+        }
+        // StartFirstBattle (BATTLE_STATUS_FIRST_BATTLE): the rival on Route 201. A loss does not
+        // white out - the script reads the result and carries on, like the early rival in Kanto.
+        "ds_startfirstbattle" -> {
+          val id = value(ctx, instruction.arg(0))
+          val trainer = ctx.resolveTrainerById(id)
+          val result = tracedWait(ctx, "ds_startfirstbattle $id") { ctx.trainerBattle(trainer, trainerMessage(trainer, 1), whiteoutOnDefeat = false) }
+          val won = result == BattleResult.VICTORY
+          if (won) ctx.setFlag(namespaced("FLAG_DS_TRAINER_$id"))
+          ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
+          state.pc++
+        }
+        // StartTagBattle partner, enemy1, enemy2: both enemy trainers at once. There is no ally
+        // trainer on this server's battles; the player fights the pair the way a double sighting does.
+        "ds_starttagbattle" -> {
+          val first = ctx.resolveTrainerById(value(ctx, instruction.arg(1)))
+          val second = ctx.resolveTrainerById(value(ctx, instruction.arg(2)))
+          ctx.state.pendingPartnerTrainer = second
+          ctx.state.pendingPartnerDefeatTextId = trainerMessage(second, 1)
+          val result = tracedWait(ctx, "ds_starttagbattle ${first.id}") { ctx.trainerBattle(first, trainerMessage(first, 1)) }
+          val won = result == BattleResult.VICTORY
+          if (won) {
+            ctx.setFlag(namespaced("FLAG_DS_TRAINER_${first.id}"))
+            ctx.setFlag(namespaced("FLAG_DS_TRAINER_${second.id}"))
+          }
+          ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
+          state.pc++
+        }
+        // GetPartyMonSpecies slot, VAR: the species in the slot, SPECIES_NONE for an egg.
+        "ds_getpartymonspecies" -> {
+          ctx.setVar(namespaced(varArg(instruction, 1).token), ctx.partySpecies(value(ctx, instruction.arg(0))))
+          state.pc++
+        }
+        "ds_countpartynoneggs" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyNonEggCount())
+          state.pc++
+        }
+        // One dex for the whole game (the owner's MMO rule, the one Kanto's GetPokedexCount
+        // follows): DS dex queries are the national ones. ds_dexcount seen|caught, VAR.
+        "ds_dexcount" -> {
+          val (seen, caught) = ctx.dexCounts(kantoOnly = false)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), if (instruction.arg(0).token == "caught") caught else seen)
+          state.pc++
+        }
+        // Pokedex_NationalDexCompleted: caught >= NATIONAL_DEX_GOAL (493 less the 11 mythicals).
+        "ds_dexcompleted" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.dexCounts(kantoOnly = false).second >= NATIONAL_DEX_GOAL) 1 else 0)
+          state.pc++
+        }
+        // ds_dexrating VAR, 21 entries: Pokedex_GetRatingMessageID_National over the caught count -
+        // 12 bands, then 410 by gender, 430, 450, 460, 470, 476, then complete by gender.
+        "ds_dexrating" -> {
+          val caught = ctx.dexCounts(kantoOnly = false).second
+          val female = ctx.playerGender() == 1
+          val band = NATIONAL_DEX_RATING_BANDS.indexOfFirst { caught <= it }
+          val index =
+              when {
+                band in 0..11 -> band
+                band == 12 -> if (female) 13 else 12
+                band > 12 -> band + 1
+                else -> if (female) 20 else 19
+              }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), value(ctx, instruction.arg(1 + index)))
+          state.pc++
+        }
+        // ds_messagevar VAR, bank: MessageVar - the var names an entry of the script's own bank.
+        // A yes/no or menu right after asks over it, so it is not shown twice.
+        "ds_messagevar" -> {
+          val line = TrainerLine(value(ctx, instruction.arg(1)) or (ctx.getVar(namespaced(varArg(instruction, 0).token)) and 0xFFFF))
+          var next = state.pc + 1
+          while (state.activeProgram.instructions.getOrNull(next)?.command == "waitmessage") next++
+          state.currentMessage = line
+          if (state.activeProgram.instructions.getOrNull(next)?.command == "yesnobox" || multichoiceFollows(state)) {
+            state.skipNextWaitMessage = true
+          } else {
+            ctx.showMessage(line)
+          }
+          state.pc++
+        }
+        // HeartGold GetFriendSprite VAR: the friend is the other gender - SPRITE_HEROINE (97) for a
+        // boy, SPRITE_HERO (0) for a girl (include/constants/sprites.h).
+        "ds_getfriendsprite" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.playerGender() == 0) 97 else 0)
+          state.pc++
+        }
+        // GetPersonCoords person, X, Y: the npc's tile, 255/255 when it is not on the map. The
+        // person is a map object token (obj_T20R0101_doctor) or its number.
+        "ds_getpersoncoords" -> {
+          val person = instruction.arg(0)
+          val localId =
+              if (person is IntArg || person is VarArg) value(ctx, person)
+              else (resolveMovementTarget(ctx, state.activeProgram, instruction, ObjectArg(person.token), true) as? MovementTarget.Npc)?.localId ?: -1
+          val (x, y) = ctx.ndsNpcXy(localId) ?: (255 to 255)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), x)
+          ctx.setVar(namespaced(varArg(instruction, 2).token), y)
+          state.pc++
+        }
+        // -- DS in-game trades on Kanto's npc-trade service: the table is the game's own
+        // (codegen GeneratedNdsNpcTrades), the flow InitNPCTrade / requested species / trade slot.
+        "ds_npctrade_init" -> {
+          state.dsTrade = value(ctx, instruction.arg(0))
+          ctx.inGameTradeInfo(state.dsTrade, dsTrades())
+          state.pc++
+        }
+        "ds_npctrade_species" -> {
+          val trade = dsTrades().getOrNull(state.dsTrade)
+          check(trade != null) { "Script ${program.id.stable} reads a trade before ds_npctrade_init" }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), trade.requestedDexId)
+          state.pc++
+        }
+        "ds_npctrade_exec" -> {
+          val slot = value(ctx, instruction.arg(0))
+          val index = state.dsTrade
+          val done = tracedWait(ctx, "npc trade $index") { ctx.inGameTrade(index, slot, dsTrades()) }
+          check(done) { "Script ${program.id.stable} could not complete in-game trade $index" }
+          state.pc++
+        }
+        // SetMonMove slot, index, move (the traded Bonsly's Thunder Fang).
+        "ds_setmonmove" -> {
+          ctx.setPartyMove(value(ctx, instruction.arg(0)), value(ctx, instruction.arg(1)), value(ctx, instruction.arg(2)))
+          state.pc++
+        }
+        // ds_wildoutcome VAR, won|outcome|escaped after dowildbattle: Platinum's CheckWonBattle
+        // (0 only for a loss), HeartGold's BATTLE_OUTCOME_* code, HeartGold's "still out there".
+        "ds_wildoutcome" -> {
+          val outcome = state.lastBattleOutcome
+          val answer =
+              when (instruction.arg(1).token) {
+                "won" -> if (outcome == B_OUTCOME_LOST) 0 else 1
+                "outcome" -> when (outcome) { B_OUTCOME_WON -> 1; B_OUTCOME_LOST -> 2; B_OUTCOME_CAUGHT -> 4; else -> 5 }
+                "notcaught" -> if (outcome == B_OUTCOME_CAUGHT) 0 else 1
+                else -> if (outcome == B_OUTCOME_WON || outcome == B_OUTCOME_CAUGHT) 0 else 1
+              }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), answer)
+          state.pc++
+        }
+        "ds_firstnonegg" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.firstNonEggSlot())
+          state.pc++
+        }
+        "ds_partyslotwithmove" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partySlotWithMove(value(ctx, instruction.arg(1))))
+          state.pc++
+        }
+        "ds_gamecompleted" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.isGameCompleted()) 1 else 0)
+          state.pc++
+        }
+        "ds_setbike" -> {
+          ctx.setRiding(value(ctx, instruction.arg(0)) != 0)
+          state.pc++
+        }
+        // ds_partyhasspecies VAR, species[, fateful]
+        "ds_partyhasspecies" -> {
+          val fateful = instruction.args.getOrNull(2)?.token == "fateful"
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.partyHasSpecies(value(ctx, instruction.arg(1)), fateful)) 1 else 0)
+          state.pc++
+        }
+        "ds_pcemptyspace" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.pcEmptySpace())
+          state.pc++
+        }
+        // ds_unownforms VAR[, all]: the count, or 1 once all 26 letters are held (CheckSeenAllLetterUnown).
+        "ds_unownforms" -> {
+          val forms = ctx.unownFormsSeen()
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (instruction.args.getOrNull(1)?.token == "all") (if (forms >= 26) 1 else 0) else forms)
+          state.pc++
+        }
+        // ds_rotomcount COUNT, FIRST: transformed Rotom in the party; Platinum's "none" is
+        // PARTY_SLOT_NONE (6), HeartGold's 255 - both scripts only compare against their own.
+        "ds_rotomcount" -> {
+          val (count, first) = ctx.transformedRotoms()
+          ctx.setVar(namespaced(varArg(instruction, 0).token), count)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), if (first < 0) (if (program.id.source == "platinum") 6 else 255) else first)
+          state.pc++
+        }
+        // GetCurrentMapID: the ROM map header id (map * 256 + bank, the client's own pair).
+        "ds_currentmapid" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), (ctx.state.mapId shl 8) or ctx.state.bankId)
+          state.pc++
+        }
+        "ds_countalive" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.aliveMonsAndPc())
+          state.pc++
+        }
+        // MonHasMove VAR, move, slot
+        "ds_monhasmove" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.monHasMove(value(ctx, instruction.arg(2)), value(ctx, instruction.arg(1)))) 1 else 0)
+          state.pc++
+        }
+        // MessageFromBank bank, entry (both usually vars): any entry of any of the game's banks.
+        "ds_messagefrombank" -> {
+          val line = TrainerLine((dsRegion() shl 28) or ((value(ctx, instruction.arg(0)) and 0xFFF) shl 16) or (value(ctx, instruction.arg(1)) and 0xFFFF))
+          var next = state.pc + 1
+          while (state.activeProgram.instructions.getOrNull(next)?.command == "waitmessage") next++
+          state.currentMessage = line
+          if (state.activeProgram.instructions.getOrNull(next)?.command == "yesnobox" || multichoiceFollows(state)) {
+            state.skipNextWaitMessage = true
+          } else {
+            ctx.showMessage(line)
+          }
+          state.pc++
+        }
+        // GetPartyLeadAlive VAR (and GetFollowPokePartyIndex, the walking partner is that monster).
+        "ds_getpartyleadalive" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyLeadAlive())
+          state.pc++
+        }
+        // MonGetFriendship VAR, slot / GetPartyMonForm2 slot, VAR.
+        "ds_mongetfriendship" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyFriendship(value(ctx, instruction.arg(1))))
+          state.pc++
+        }
+        "ds_getpartymonform" -> {
+          ctx.setVar(namespaced(varArg(instruction, 1).token), ctx.partyForm(value(ctx, instruction.arg(0))))
+          state.pc++
+        }
+        // HasEnoughMoneyVar VAR, amount: 1 when the player holds at least the amount.
+        "ds_hasenoughmoney" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.money() >= value(ctx, instruction.arg(1))) 1 else 0)
+          state.pc++
+        }
+        // PartySelectUI + GetPartySelection VAR: the party picker; 255 when closed. A second
+        // argument `trade` (SelectPokemonToTrade) makes the window ask which monster to trade.
+        "ds_choosepartymon" -> {
+          if (instruction.args.getOrNull(1)?.token == "trade") ctx.markTradePick()
+          val slot = tracedWait(ctx, "party choice") { ctx.choosePartyMember() }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (slot >= de.fiereu.openmmo.common.MAX_PARTY_SIZE) 255 else slot)
           state.pc++
         }
         // A DS map header id is the client's bank (low byte) and map (high byte).
@@ -381,7 +620,8 @@ class InterpretedScript(
           val variable = namespaced(varArg(instruction, 0).token)
           ctx.setVar(
               variable,
-              gbaValue(ctx.getVar(variable) + immediateValue(instruction.arg(1), instruction)),
+              // Platinum's AddVar also takes a var as the amount (JubilifeCity_GiveRandomAccessory*).
+              gbaValue(ctx.getVar(variable) + (instruction.arg(1).let { if (it is VarArg) value(ctx, it) else immediateValue(it, instruction) })),
           )
           state.pc++
         }
@@ -898,10 +1138,11 @@ class InterpretedScript(
               resolveMovementTarget(
                   ctx, state.activeProgram, instruction, objectArg(instruction, 0), true)
           if (target is MovementTarget.Npc) {
+            // Platinum's SetObjectEventPos also takes vars (LOCALID_LOOKER, 179, VAR_0x8005).
             ctx.repositionNpc(
                 target.localId,
-                (instruction.arg(1) as IntArg).value,
-                (instruction.arg(2) as IntArg).value,
+                value(ctx, instruction.arg(1)),
+                value(ctx, instruction.arg(2)),
             )
           }
           state.pc++
@@ -1908,6 +2149,9 @@ class InterpretedScript(
               "Script ${program.id.stable} references unknown text label $label from " +
                   "`${instruction.sourceLine}`")
 
+  /** The in-game trade table of this DS source. */
+  private fun dsTrades() = de.fiereu.openmmo.server.game.services.InGameTrades.forSource(program.id.source)
+
   private fun value(ctx: ScriptContext, arg: ScriptArg): Int =
       when (arg) {
         is IntArg -> arg.value
@@ -2065,6 +2309,8 @@ class InterpretedScript(
       var lastBattleOutcome: Int = B_OUTCOME_WON,
       var wildSpecies: Int = 0,
       var wildLevel: Int = 0,
+      /** The DS in-game trade loaded by ds_npctrade_init (InitNPCTrade / LoadNPCTrade), -1 for none. */
+      var dsTrade: Int = -1,
   )
 
   private data class ScriptLocation(
@@ -2160,6 +2406,10 @@ private val SEAGALLOP_NAMES = listOf("VERMILION", "ONE ISLAND", "TWO ISLAND", "T
 
 /** prof_pc.c: 150 caught rates as complete (Mew is the 151st and never required). */
 private const val KANTO_DEX_COUNT = 150
+/** pokeplatinum include/pokedex.h NATIONAL_DEX_GOAL: 493 species less sExcludedMonsNational (11 mythicals). */
+private const val NATIONAL_DEX_GOAL = 493 - 11
+/** Pokedex_GetRatingMessageID_National's caught-count bands (src/unk_0205DFC4.c). */
+private val NATIONAL_DEX_RATING_BANDS = listOf(39, 59, 89, 119, 149, 189, 229, 269, 309, 349, 379, 409, 429, 449, 459, 469, 475, 481)
 
 private const val B_OUTCOME_WON = 1
 

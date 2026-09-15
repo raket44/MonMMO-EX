@@ -118,33 +118,42 @@ internal object NewGameStarts {
       )
 
   /**
-   * Unova (White) — bank 100 map 1 is a verified renderable Unova map on the client; the true
-   * Nuvema Town ids await the NDS map extraction.
+   * White opens in the player's bedroom in Nuvema Town: ROM map header 391 (bank 135, map 1), the
+   * header whose script file (782) runs the opening and the starter gift. White has no decomp to
+   * name the exact start tile, so the player stands on the room's stairs arrival (9,2), where
+   * climbing the stairs lands (nds-map-spawns.txt).
    */
   private fun unova(): NewGameStart =
       NewGameStart(
-          bankId = 100,
+          bankId = 135.toByte(),
           mapId = 1,
-          x = 4,
-          y = 4,
+          x = 9,
+          y = 2,
       )
 
-  /** Sinnoh (Platinum) — placeholder until the NDS map extraction names Twinleaf Town. */
+  /**
+   * Platinum opens upstairs in the player's house in Twinleaf Town, where the rival bursts in:
+   * pokeplatinum src/location.c sPlayerStartLocation = MAP_HEADER_TWINLEAF_TOWN_PLAYER_HOUSE_2F
+   * (header 415 = bank 159, map 1), x 4, z 6.
+   */
   private fun sinnoh(): NewGameStart =
       NewGameStart(
-          bankId = 1,
+          bankId = 159.toByte(),
           mapId = 1,
           x = 4,
-          y = 4,
+          y = 6,
       )
 
-  /** Johto (HeartGold) — placeholder until the NDS map extraction names New Bark Town. */
+  /**
+   * HeartGold opens in the player's room in New Bark Town: pokeheartgold src/location_backup.c
+   * sLocation_PlayerRoom = MAP_NEW_BARK_PLAYER_HOUSE_2F (header 64 = bank 64, map 0), x 6, y 6.
+   */
   private fun johto(): NewGameStart =
       NewGameStart(
-          bankId = 1,
-          mapId = 1,
-          x = 4,
-          y = 4,
+          bankId = 64,
+          mapId = 0,
+          x = 6,
+          y = 6,
           storyFlags = JohtoFlags.initiallySet,
       )
 }

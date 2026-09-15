@@ -158,6 +158,19 @@ constructor(
     state.scriptedNpcPoses[scriptedNpcKey(regionId, bankId, mapId, localId)] = ScriptedNpcPose(end.x, end.y, end.facing)
   }
 
+  /**
+   * Where a DS map npc stands now (HeartGold GetPersonCoords): a scripted walk earlier this visit,
+   * else its place in the ROM event table; null when the map has no such npc.
+   */
+  fun ndsNpcXy(state: PlayerState, localId: Int): Pair<Int, Int>? {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    val pose =
+        scriptedNpcPose(state, localId)
+            ?: ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+            ?: return null
+    return pose.x to pose.y
+  }
+
   /** The tile a script walked this npc to earlier in the visit, if any. */
   fun scriptedNpcPose(state: PlayerState, localId: Int): Pose? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null

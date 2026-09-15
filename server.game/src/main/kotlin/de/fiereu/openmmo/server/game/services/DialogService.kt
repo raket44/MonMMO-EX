@@ -78,6 +78,35 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   }
 
   /**
+   * A DS starter scene in the same starter-pick window: [pickText] over [speciesIds], then the
+   * ROM's own question for the one picked ([confirmTexts], same order), until one is accepted.
+   * Platinum's choose_starter_app: bank 360 entry 7 "Now choose!", entries 1-3 per ball.
+   */
+  suspend fun chooseStarter(
+      session: SessionContext,
+      state: PlayerState,
+      pickText: Int,
+      speciesIds: List<Int>,
+      confirmTexts: List<Int>,
+  ): Int {
+    while (true) {
+      val choice = chooseFromSpecies(session, state, pickText, speciesIds.map { de.fiereu.openmmo.common.clientSpeciesId(it) })
+      if (choice !in 1..speciesIds.size) continue
+      val accepted =
+          showChoiceAndWait(
+                  session = session,
+                  state = state,
+                  textId = confirmTexts[choice - 1],
+                  actionType = YES_NO,
+                  entityId = NO_ENTITY,
+                  contextValue = STARTER_CONTEXT,
+              )
+              .unk != 0
+      if (accepted) return speciesIds[choice - 1]
+    }
+  }
+
+  /**
    * Shows one of the client's BUILT-IN choice menus over the ROM question [textId] and returns the
    * 1-BASED picked option, 0 when the box is closed without choosing. The menus live in the
    * client's own registry (f/Lx.R40 fills category 10; bytecode-verified): the dialog action 0x16

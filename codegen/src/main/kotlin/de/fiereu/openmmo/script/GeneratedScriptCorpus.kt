@@ -29,6 +29,8 @@ data class ScriptSourceCorpus(
     val dynamicExits: List<String> = emptyList(),
     /** DS elevator floor of a map header id (decimal key), from the games' own tables. */
     val headerFloors: Map<String, Int> = emptyMap(),
+    /** DS step triggers (the ROM's coord events), `bank;map;x;y;width;height;VAR;value;script`. */
+    val coordTriggers: List<String> = emptyList(),
 )
 
 /** [dsMenuEntries]: the client's DS menu-entry bank (Platinum bank 361), option text -> entry. */
@@ -45,7 +47,7 @@ object GeneratedScriptCorpus {
 }
 
 private object ScriptCorpusDecoder {
-  private const val FORMAT_VERSION = 5
+  private const val FORMAT_VERSION = 6
 
   fun decode(encoded: String): DecodedScriptCorpus {
     val bytes = Base64.getDecoder().decode(encoded)
@@ -67,6 +69,7 @@ private object ScriptCorpusDecoder {
         val menus = input.readStringListMap()
         val dynamicExits = input.readStringList()
         val headerFloors = input.readStringIntMap()
+        val coordTriggers = input.readStringList()
 
         val programCount = input.readInt()
         val programs =
@@ -119,6 +122,7 @@ private object ScriptCorpusDecoder {
             menus = menus,
             dynamicExits = dynamicExits,
             headerFloors = headerFloors,
+            coordTriggers = coordTriggers,
             diagnostics =
                 ScriptCorpusDiagnostics(
                     indexedLabels = indexed,

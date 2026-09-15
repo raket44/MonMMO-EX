@@ -42,6 +42,9 @@ class ScriptSupportAnalyzer(
   fun analyze(script: InterpretedScript): ScriptSupport =
       cache.computeIfAbsent(script, ::analyzeUncached)
 
+  /** Whether the interpreter executes [command] at all (coverage reports list every missing one). */
+  internal fun supportsCommand(command: String): Boolean = command in SUPPORTED_COMMANDS
+
   private fun analyzeUncached(script: InterpretedScript): ScriptSupport {
     val root = script.program
     if (root.instructions.isEmpty()) return ScriptSupport.incomplete("program has no instructions")
@@ -294,6 +297,30 @@ class ScriptSupportAnalyzer(
           "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
           "ds_countbadges" -> args.size == 1
+          // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts
+          "ds_startchoosestarterscene" -> args.size == 8
+          "ds_startfirstbattle" -> args.size == 1
+          "ds_starttagbattle" -> args.size == 3
+          "ds_getpartymonspecies", "ds_messagevar" -> args.size == 2
+          "ds_countpartynoneggs", "ds_dexcompleted" -> args.size == 1
+          "ds_dexcount" -> args.size == 2
+          // ds_dexrating VAR, 21 national rating text entries
+          "ds_dexrating" -> args.size == 22
+          "ds_getfriendsprite", "ds_getpartyleadalive" -> args.size == 1 && args[0] is VarArg
+          "ds_choosepartymon" -> args.size in 1..2 && args[0] is VarArg
+          "ds_getpersoncoords" -> args.size == 3 && args[1] is VarArg && args[2] is VarArg
+          "ds_npctrade_init", "ds_npctrade_exec", "ds_setbike" -> args.size == 1 && isValue(args[0])
+          "ds_npctrade_species", "ds_firstnonegg", "ds_gamecompleted", "ds_pcemptyspace", "ds_currentmapid", "ds_countalive" -> args.size == 1 && args[0] is VarArg
+          "ds_unownforms" -> args.size in 1..2 && args[0] is VarArg
+          "ds_rotomcount" -> args.size == 2 && args[0] is VarArg && args[1] is VarArg
+          "ds_monhasmove" -> args.size == 3 && args[0] is VarArg && isValue(args[1]) && isValue(args[2])
+          "ds_setmonmove" -> args.size == 3 && args.all { isValue(it) }
+          "ds_wildoutcome" -> args.size == 2 && args[0] is VarArg && args[1].token in setOf("won", "outcome", "escaped", "notcaught")
+          "ds_partyslotwithmove" -> args.size == 2 && args[0] is VarArg && isValue(args[1])
+          "ds_partyhasspecies" -> args.size in 2..3 && args[0] is VarArg && isValue(args[1])
+          "ds_messagefrombank" -> args.size == 2 && isValue(args[0]) && isValue(args[1])
+          "ds_mongetfriendship", "ds_hasenoughmoney" -> args.size == 2 && args[0] is VarArg && isValue(args[1])
+          "ds_getpartymonform" -> args.size == 2 && isValue(args[0]) && args[1] is VarArg
           "trainerbattle_single" -> args.size in setOf(3, 4, 5)
           "trainerbattle_rematch" -> args.size == 3
           "trainerbattle_double" -> args.size in setOf(4, 5, 6)
@@ -381,7 +408,8 @@ class ScriptSupportAnalyzer(
           "addobject",
           "showobjectat",
           "hideobjectat" -> args[0] is ObjectArg
-          "setobjectxy",
+          // Platinum's SetObjectEventPos passes vars as coordinates too.
+          "setobjectxy" -> args[0] is ObjectArg && isValue(args[1]) && isValue(args[2])
           "setobjectxyperm" -> args[0] is ObjectArg && args[1] is IntArg && args[2] is IntArg
           // The parser types the first argument as an object only for a fixed command list; the
           // interpreter rebuilds the ObjectArg from the token (as copyobjectxytoperm does).
@@ -392,6 +420,13 @@ class ScriptSupportAnalyzer(
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
+          "ds_startchoosestarterscene", "ds_dexrating" -> args[0] is VarArg && args.drop(1).all { it is IntArg }
+          "ds_dexcount" -> args[0].token in setOf("seen", "caught") && args[1] is VarArg
+          "ds_startfirstbattle" -> args[0] is IntArg
+          "ds_starttagbattle" -> isValue(args[1]) && isValue(args[2])
+          "ds_getpartymonspecies" -> isValue(args[0]) && args[1] is VarArg
+          "ds_countpartynoneggs", "ds_dexcompleted" -> args[0] is VarArg
+          "ds_messagevar" -> args[0] is VarArg && args[1] is IntArg
           "braillemessage",
           "braillemsgbox",
           "braillemessage_wait" -> args[0] is TextArg
@@ -407,7 +442,7 @@ class ScriptSupportAnalyzer(
           "setorcopyvar" -> args[0] is VarArg && (isValue(args[1]) || args[1] is FlagArg)
           "subvar" -> args[0] is VarArg && isValue(args[1])
           "copyvar" -> args.all { it is VarArg }
-          "addvar" -> args[0] is VarArg && isImmediate(args[1])
+          "addvar" -> args[0] is VarArg && (isImmediate(args[1]) || args[1] is VarArg)
           "compare" -> args.all(::isValue)
           "goto",
           "call" -> args[0] is LabelArg
@@ -612,6 +647,39 @@ class ScriptSupportAnalyzer(
             "ds_buffer",
             "ds_pokemart",
             "ds_countbadges",
+            "ds_startchoosestarterscene",
+            "ds_startfirstbattle",
+            "ds_starttagbattle",
+            "ds_getpartymonspecies",
+            "ds_countpartynoneggs",
+            "ds_dexcount",
+            "ds_dexcompleted",
+            "ds_dexrating",
+            "ds_messagevar",
+            "ds_getfriendsprite",
+            "ds_getpersoncoords",
+            "ds_mongetfriendship",
+            "ds_getpartymonform",
+            "ds_hasenoughmoney",
+            "ds_choosepartymon",
+            "ds_getpartyleadalive",
+            "ds_npctrade_init",
+            "ds_npctrade_species",
+            "ds_npctrade_exec",
+            "ds_setmonmove",
+            "ds_wildoutcome",
+            "ds_firstnonegg",
+            "ds_partyslotwithmove",
+            "ds_gamecompleted",
+            "ds_setbike",
+            "ds_partyhasspecies",
+            "ds_pcemptyspace",
+            "ds_unownforms",
+            "ds_messagefrombank",
+            "ds_rotomcount",
+            "ds_currentmapid",
+            "ds_countalive",
+            "ds_monhasmove",
             "ds_checktrainerflag",
             "settrainerflag",
             "cleartrainerflag",

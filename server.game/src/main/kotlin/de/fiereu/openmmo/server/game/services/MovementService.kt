@@ -380,6 +380,9 @@ constructor(
       }
       // A plain step on a DS map: the ROM's land data says whether it was grass or cave floor,
       // and the region's dex tables roll the encounter.
+      // The ROM's step triggers first (the rival upstairs in Twinleaf, the Route 201 grass), as a
+      // GBA map's coord events run before its trainers look.
+      if (door == null && mapScriptService.onNdsStep(ctx, state, state.regionId, state.bankId, state.mapId, toX, toY)) return
       if (door == null && trainerSight.onNdsStep(ctx, state, state.regionId, state.bankId, state.mapId, toX, toY)) return
       if (door == null) encounterService.onNdsStep(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)
       return

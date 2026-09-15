@@ -17,6 +17,20 @@ data class InGameTrade(
 )
 
 object InGameTrades {
+  /** The DS games' tables (codegen GeneratedNdsNpcTrades), by script source. */
+  fun forSource(source: String): List<InGameTrade> =
+      when (source) {
+        "platinum" -> SINNOH
+        "heartgold" -> JOHTO
+        else -> FIRERED
+      }
+
+  private fun rows(rows: List<de.fiereu.openmmo.trainer.NpcTradeRow>) =
+      rows.map { InGameTrade(it.nickname, it.dexId, it.ivs, it.otName, it.personality, it.requestedDexId, it.heldItem) }
+
+  val SINNOH: List<InGameTrade> by lazy { rows(de.fiereu.openmmo.trainer.generated.GeneratedNdsNpcTrades.SINNOH) }
+  val JOHTO: List<InGameTrade> by lazy { rows(de.fiereu.openmmo.trainer.generated.GeneratedNdsNpcTrades.JOHTO) }
+
   val FIRERED: List<InGameTrade> =
       listOf(
           InGameTrade("MIMIEN", 122, intArrayOf(20, 15, 17, 24, 23, 22), "REYLEY", 0x00009cae, 63),

@@ -199,6 +199,12 @@ internal constructor(
     return dialog.chooseHoennStarter(session, state)
   }
 
+  /** A DS starter scene (Platinum StartChooseStarterScene): the species the player accepted. */
+  suspend fun chooseStarter(pickText: Int, speciesIds: List<Int>, confirmTexts: List<Int>): Int {
+    holdScriptedFacing()
+    return dialog.chooseStarter(session, state, pickText, speciesIds, confirmTexts)
+  }
+
   /**
    * special GetElevatorFloor (src/field_specials.c): the floor index the dynamic warp names, for
    * every FireRed elevator - Silph Co and the Department Store nF = n + 3, Rocket Hideout BnF =
@@ -271,8 +277,8 @@ internal constructor(
    * specialvar GetInGameTradeSpeciesInfo: VAR_0x8004 names the trade; STR_VAR_1 = the species the
    * NPC asks for, STR_VAR_2 = the one they offer; the answer is the requested species.
    */
-  fun inGameTradeInfo(index: Int): Int {
-    val trade = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED.getOrNull(index) ?: return 0
+  fun inGameTradeInfo(index: Int, trades: List<de.fiereu.openmmo.server.game.services.InGameTrade> = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED): Int {
+    val trade = trades.getOrNull(index) ?: return 0
     // The party pick that follows is a trade: its window says so instead of the tutor line.
     tradePickPending = true
     speciesName(trade.requestedDexId)?.let { bufferText(1, it) }
@@ -284,9 +290,85 @@ internal constructor(
   fun partySpecies(slot: Int): Int = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.partySpecies(state, slot)
 
   /** special DoInGameTradeScene: party slot [slot] goes to the NPC, the NPC's monster takes its place. */
-  suspend fun inGameTrade(index: Int, slot: Int): Boolean {
-    val trade = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED.getOrNull(index) ?: return false
+  suspend fun inGameTrade(index: Int, slot: Int, trades: List<de.fiereu.openmmo.server.game.services.InGameTrade> = de.fiereu.openmmo.server.game.services.InGameTrades.FIRERED): Boolean {
+    val trade = trades.getOrNull(index) ?: return false
     return checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.tradeWithNpc(session, state, slot, trade)
+  }
+
+  /** The party pick that follows is a trade: its window says so instead of the tutor line. */
+  fun markTradePick() {
+    tradePickPending = true
+  }
+
+  /** FindPartySlotWithMove / GetPartySlotWithMove: the first non-egg knowing [moveId], PARTY_SIZE when none. */
+  fun partySlotWithMove(moveId: Int): Int {
+    val party = characterId?.let { characters?.getCharacter(it)?.pokemon } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    val index = party.indexOfFirst { mon -> !mon.isEgg && mon.moves.any { it.id.toInt() == moveId } }
+    return if (index < 0) de.fiereu.openmmo.common.MAX_PARTY_SIZE else index
+  }
+
+  /** GetFirstNonEggInParty: the first slot that is not an egg, 0 when the party is all eggs or empty. */
+  fun firstNonEggSlot(): Int =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.indexOfFirst { mon -> !mon.isEgg } }?.takeIf { it >= 0 } ?: 0
+
+  /** HeartGold SetMonMove slot, index, move: overwrite one move of a party monster (the traded Bonsly's Thunder Fang). */
+  fun setPartyMove(slot: Int, moveIndex: Int, moveId: Int) {
+    val charId = characterId ?: return
+    val mon = characters?.getCharacter(charId)?.pokemon?.getOrNull(slot) ?: return
+    if (moveIndex !in 0..3) return
+    val moves = mon.moves.toMutableList()
+    val move = de.fiereu.openmmo.common.PokemonMove(moveId.toShort(), moves.getOrNull(moveIndex)?.pp ?: 5)
+    if (moveIndex < moves.size) moves[moveIndex] = move else moves += move
+    characters?.updatePokemon(charId, mon.copy(moves = moves))
+  }
+
+  /** GetPartyRotomCountAndFirst / CountTranformedRotomsInParty: (count, first slot or -1) of non-egg Rotom in a changed form. */
+  fun transformedRotoms(): Pair<Int, Int> {
+    val party = characterId?.let { characters?.getCharacter(it)?.pokemon } ?: return 0 to -1
+    val slots = party.withIndex().filter { (_, mon) -> !mon.isEgg && mon.dexId == ROTOM && mon.form != 0 }.map { it.index }
+    return slots.size to (slots.firstOrNull() ?: -1)
+  }
+
+  /** CountAliveMonsAndPC: fighting-fit party members plus everything in the PC. */
+  fun aliveMonsAndPc(): Int =
+      usablePartyCount() + (characterId?.let { characters?.getCharacter(it)?.pcStorage?.size } ?: 0)
+
+  /** MonHasMove: the non-egg monster in [slot] knows [moveId]. */
+  fun monHasMove(slot: Int, moveId: Int): Boolean =
+      partyMon(slot)?.let { mon -> !mon.isEgg && mon.moves.any { it.id.toInt() == moveId } } ?: false
+
+  /** CountPcEmptySpace: free PC slots. */
+  fun pcEmptySpace(): Int =
+      de.fiereu.openmmo.server.game.storage.PC_CAPACITY - (characterId?.let { characters?.getCharacter(it)?.pcStorage?.size } ?: 0)
+
+  /** GetUnownFormsSeenCount: the dex keeps no per-form seen list, so the forms the player holds count. */
+  fun unownFormsSeen(): Int {
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return 0
+    return (stored.pokemon + stored.pcStorage).filter { it.dexId == UNOWN }.map { it.form }.distinct().size
+  }
+
+  /** PlayerHasSpecies / CheckPartyHasFatefulEncounterRegigigas: a non-egg party member of [species] ([fateful]: from an event). */
+  fun partyHasSpecies(species: Int, fateful: Boolean = false): Boolean =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.any { mon -> !mon.isEgg && mon.dexId == species && (!fateful || mon.isFatefulEncounter) } } ?: false
+
+  /** CheckGameCompleted: the Hall of Fame has been entered. */
+  fun isGameCompleted(): Boolean = isFlagSet(de.fiereu.openmmo.server.game.services.HallOfFame.FLAG)
+
+  /**
+   * SetPlayerBike: mount or dismount the bicycle from a script (the Cycling Road gates), the way
+   * the bag's Bicycle does (InventoryActionService.rideBike): the BIKE skin is the art (the Red
+   * Bicycle when none was picked), transportation 0x02 on the live entity is the ride.
+   */
+  fun setRiding(on: Boolean) {
+    val charId = characterId ?: return
+    if (state.riding == on) return
+    val store = characters ?: return
+    if (on && store.getCharacter(charId)?.skins?.get(de.fiereu.openmmo.common.enums.SkinSlot.BIKE) == null) {
+      store.setSkin(charId, de.fiereu.openmmo.common.enums.SkinSlot.BIKE, de.fiereu.openmmo.common.Skin(de.fiereu.openmmo.common.enums.SkinSlot.BIKE, 0u, 0u))
+      store.flushCharacterAsync(charId)
+    }
+    state.riding = on
+    movement.announce(session, de.fiereu.openmmo.net.game.packets.EntityTransportationPacket(charId, (if (on) 2 else 0).toByte()))
   }
 
   fun partyContainsSpecies(species: Int): Boolean =
@@ -644,6 +726,29 @@ internal constructor(
   /** Party members that can fight: not an egg, HP above zero. */
   fun usablePartyCount(): Int =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.count { mon -> !mon.isEgg && mon.hp > 0 } } ?: 0
+
+  /** Party members that are not eggs (Platinum CountPartyNonEggs). */
+  fun partyNonEggCount(): Int =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.count { mon -> !mon.isEgg } } ?: 0
+
+  private fun partyMon(slot: Int) = characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) }
+
+  /**
+   * HeartGold Save_GetPartyLeadAlive (asm/unk_0205BB1C.s): the first slot holding a monster that is
+   * not an egg and has HP left, else 0.
+   */
+  fun partyLeadAlive(): Int =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.indexOfFirst { mon -> !mon.isEgg && mon.hp > 0 } }
+          ?.takeIf { it >= 0 } ?: 0
+
+  /** HeartGold MonGetFriendship: the friendship of the monster in [slot], 0 for an empty slot. */
+  fun partyFriendship(slot: Int): Int = partyMon(slot)?.friendship ?: 0
+
+  /** HeartGold GetPartyMonForm2: the form of the monster in [slot], 0 for an empty slot. */
+  fun partyForm(slot: Int): Int = partyMon(slot)?.form ?: 0
+
+  /** A DS map npc's current tile (HeartGold GetPersonCoords); null when the map has no such npc. */
+  fun ndsNpcXy(localId: Int): Pair<Int, Int>? = movement.ndsNpcXy(state, localId)
 
   /**
    * PetalburgGymSetDoorMetatiles (field_specials.c): the sliding door of gym room [room] in its
@@ -1179,6 +1284,8 @@ private const val WHICH_MON_TO_TRADE_TEXT = 16805088
 private const val STR_VAR_SLOT_OFFSET = 1
 
 private const val MAGIKARP = 129
+private const val UNOWN = 201
+private const val ROTOM = 479
 /** Magikarp's Pokedex height in decimeters (GetPokedexHeightWeight). */
 private const val MAGIKARP_HEIGHT = 9
 

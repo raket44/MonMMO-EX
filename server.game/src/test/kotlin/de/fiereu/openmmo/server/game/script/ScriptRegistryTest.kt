@@ -105,6 +105,14 @@ class ScriptRegistryTest :
             registry.forId("gba:firered:BPRE:$supported")
         (registry.forLabel(incomplete, "firered") is InterpretedScript) shouldBe false
       }
+
+      test("the DS daycare chunks fall back to the Kotlin daycare pair in both ROMs") {
+        val registry = ScriptRegistry.generated()
+        for (source in listOf("platinum", "heartgold")) {
+          registry.forLabel("NDS_CHUNK_9500", source) shouldBe DaycareScripts.byLabel.getValue("NDS_CHUNK_9500")
+          registry.forLabel("NDS_CHUNK_9501", source) shouldBe DaycareScripts.byLabel.getValue("NDS_CHUNK_9501")
+        }
+      }
     })
 
 private fun interpreted(

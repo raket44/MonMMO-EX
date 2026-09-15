@@ -308,6 +308,7 @@ class ScriptSupportAnalyzer(
           "ds_dexrating" -> args.size == 22
           "ds_getfriendsprite", "ds_getpartyleadalive" -> args.size == 1 && args[0] is VarArg
           "ds_choosepartymon" -> args.size in 1..2 && args[0] is VarArg
+          "ds_teachmove" -> args.size == 2 && args[0] is VarArg && isValue(args[1])
           "ds_getpersoncoords" -> args.size == 3 && args[1] is VarArg && args[2] is VarArg
           "ds_npctrade_init", "ds_npctrade_exec", "ds_setbike" -> args.size == 1 && isValue(args[0])
           "ds_npctrade_species", "ds_firstnonegg", "ds_gamecompleted", "ds_pcemptyspace", "ds_currentmapid", "ds_countalive" -> args.size == 1 && args[0] is VarArg
@@ -662,6 +663,7 @@ class ScriptSupportAnalyzer(
             "ds_getpartymonform",
             "ds_hasenoughmoney",
             "ds_choosepartymon",
+            "ds_teachmove",
             "ds_getpartyleadalive",
             "ds_npctrade_init",
             "ds_npctrade_species",

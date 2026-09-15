@@ -500,6 +500,16 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (slot >= de.fiereu.openmmo.common.MAX_PARTY_SIZE) 255 else slot)
           state.pc++
         }
+        // ds_teachmove SLOTVAR, move: HeartGold's MoveTutorInit - the move goes to the party slot
+        // through the client's learn/forget dialog (MoveTutorService, as Kanto's tutors). The
+        // following MoveRelearnerGetResult reads VAR_DS_TUTOR_RESULT: 0 learned, 255 backed out.
+        "ds_teachmove" -> {
+          val slot = ctx.getVar(namespaced(varArg(instruction, 0).token))
+          val moveId = value(ctx, instruction.arg(1))
+          val learned = if (slot in 0 until de.fiereu.openmmo.common.MAX_PARTY_SIZE) tracedWait(ctx, "move tutor") { ctx.teachMove(slot, moveId) } else false
+          ctx.setVar(namespaced("VAR_DS_TUTOR_RESULT"), if (learned) 0 else 255)
+          state.pc++
+        }
         // A DS map header id is the client's bank (low byte) and map (high byte).
         // ds_menu VAR, cursor, (textId, value)+: a DS scripted menu as the client's text-button list.
         "ds_menu" -> {

@@ -35,6 +35,9 @@ import kotlinx.coroutines.currentCoroutineContext
 /** What a [Script] uses to talk to the player it interacted with and read or write story state. */
 private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
 
+/** How long a DS tutor waits on the client's forget dialog before the script moves on. */
+private const val TEACH_DIALOG_TIMEOUT_MILLIS = 120_000L
+
 class ScriptContext
 internal constructor(
     internal val session: SessionContext,
@@ -842,6 +845,22 @@ internal constructor(
     val service = tutor ?: return false
     holdScriptedFacing()
     return service.tutor(session, state, entityId, tutorIndex)
+  }
+
+  /**
+   * Teaches [moveId] to the party monster in [slot] through the client's learn/forget dialog (the
+   * DS tutors name their move outright, unlike the Kanto tutor indexes). True once the move sits
+   * in a slot; false for an egg, an empty slot, or a player who backed out of forgetting.
+   */
+  suspend fun teachMove(slot: Int, moveId: Int): Boolean {
+    val service = tutor ?: return false
+    val charId = characterId ?: return false
+    val mon = characters?.getCharacter(charId)?.pokemon?.getOrNull(slot) ?: return false
+    if (mon.isEgg) return false
+    holdScriptedFacing()
+    val answer = kotlinx.coroutines.CompletableDeferred<Boolean>()
+    if (!service.teach(session, charId, mon.id, moveId) { answer.complete(it) }) return false
+    return kotlinx.coroutines.withTimeoutOrNull(TEACH_DIALOG_TIMEOUT_MILLIS) { answer.await() } ?: false
   }
 
   /** checkpartymove: the party slot of the first monster knowing [moveId], PARTY_SIZE (6) if none. */

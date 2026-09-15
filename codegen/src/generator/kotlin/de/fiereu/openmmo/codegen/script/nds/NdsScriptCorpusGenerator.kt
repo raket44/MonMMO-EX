@@ -729,6 +729,13 @@ class NdsScriptCorpusGenerator {
         "HasEnoughMoneyVar" -> out += "ds_hasenoughmoney ${a[0]}, ${a[1]}"
         "PartySelectUI" -> {}
         "GetPartySelection" -> out += "ds_choosepartymon ${a[0]}"
+        // Platinum's party picker (stats judge, tutors): the pick lands in the GetSelectedPartySlot that follows.
+        "SelectMoveTutorPokemon" -> {}
+        "GetSelectedPartySlot" -> out += "ds_choosepartymon ${a[0]}"
+        // HeartGold tutors teach one named move to the chosen slot through the client's own learn/forget
+        // dialog (the Kanto tutors' path); the result var reads 255 when the player backed out.
+        "MoveTutorInit" -> out += "ds_teachmove ${a[0]}, ${constants[a[1]] ?: a[1]}"
+        "MoveRelearnerGetResult" -> out += "copyvar ${a[0]}, VAR_DS_TUTOR_RESULT"
         "GetPartyLeadAlive", "GetFollowPokePartyIndex" -> out += "ds_getpartyleadalive ${a[0]}"
         "PartyCountNotEgg" -> out += "ds_countpartynoneggs ${a[0]}"
         "TakeItemNoCheck" -> out += "removeitem ${a[0]}, ${a.getOrElse(1) { "1" }}"

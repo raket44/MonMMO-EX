@@ -37,6 +37,20 @@ internal object DaycareScripts {
     }
   }
 
+  /**
+   * The DS daycares share one chunk pair in both ROMs (NDS_CHUNK_9500 the man, 9501 the lady;
+   * Platinum's DayCareCommon_Man/Lady, HeartGold's scr_seq_0265_000/001), so the region picks
+   * the ROM's own lines: Platinum bank 547 (day_care_common) entries 15/16/20, HeartGold bank 439
+   * entries 21/22/26 - the lady's "raise a Pokemon?", "which one?", and "oh, fine then".
+   */
+  private fun dsDaycare(man: Boolean) = Script { ctx ->
+    val johto = de.fiereu.openmmo.common.enums.Region.byId(ctx.state.regionId) == de.fiereu.openmmo.common.enums.Region.JOHTO
+    val ask = if (johto) 1102512149 else 841154575
+    val whichMon = if (johto) 1102512150 else 841154576
+    val decline = if (johto) 1102512154 else 841154580
+    if (man) daycareMan(ask, whichMon, decline).run(ctx) else daycareWoman(ask, decline).run(ctx)
+  }
+
   val byLabel: Map<String, Script> = buildMap {
     // FRLG day_care.inc shared texts serve both Kanto daycares.
     val kantoMan = daycareMan(ask = 1832932, whichMon = 1833017, decline = 1833238)
@@ -48,5 +62,7 @@ internal object DaycareScripts {
     put("FourIsland_PokemonDayCare_EventScript_DaycareWoman", kantoWoman)
     put("Route117_EventScript_DaycareMan", hoennMan)
     put("Route117_PokemonDayCare_EventScript_DaycareWoman", hoennWoman)
+    put("NDS_CHUNK_9500", dsDaycare(man = true))
+    put("NDS_CHUNK_9501", dsDaycare(man = false))
   }
 }

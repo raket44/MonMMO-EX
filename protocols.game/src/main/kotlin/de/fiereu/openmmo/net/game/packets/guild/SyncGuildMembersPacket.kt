@@ -1,16 +1,23 @@
 package de.fiereu.openmmo.net.game.packets.guild
 
 import de.fiereu.bytecodec.*
+import de.fiereu.openmmo.net.game.packets.PlayerHead
+import de.fiereu.openmmo.net.game.packets.PlayerSummaryCodec
 
+/**
+ * One team roster row as r32645 reads it (f/vo, f/q74): entity id, rank, join date (epoch seconds),
+ * the player summary (f/ih6.bK1: name, last seen, head) and the online flag (qd6.XD0, which prints
+ * "Online" instead of the last-seen date). The last byte was sent as the leader flag, so only the
+ * leader ever read as online.
+ */
 data class GuildMemberEntry(
     val entityId: Long,
     val rank: Byte,
     val joinedAt: Int,
     val name: String,
-    val online: Boolean,
     val lastSeen: Int,
-    val appearance: List<Short>,
-    val leader: Boolean,
+    val head: PlayerHead = PlayerHead(),
+    val online: Boolean,
 )
 
 data class SyncGuildMembersPacket(
@@ -19,16 +26,16 @@ data class SyncGuildMembersPacket(
 )
 
 private object GuildMemberEntryCodec : PacketCodec<GuildMemberEntry>() {
+  private val summary = PlayerSummaryCodec<GuildMemberEntry>({ it.lastSeen }, { it.head })
+
   override fun CodecScope<GuildMemberEntry>.body(): GuildMemberEntry {
     val entityId = field(S64LE, GuildMemberEntry::entityId)
     val rank = field(S8, GuildMemberEntry::rank)
     val joinedAt = field(S32LE, GuildMemberEntry::joinedAt)
     val name = field(Utf16LeNullTerminated, GuildMemberEntry::name)
+    val (lastSeen, head) = summary.write(this)
     val online = field(Bool, GuildMemberEntry::online)
-    val lastSeen = field(S32LE, GuildMemberEntry::lastSeen)
-    val appearance = field(S16LE.repeat(5), GuildMemberEntry::appearance)
-    val leader = field(Bool, GuildMemberEntry::leader)
-    return GuildMemberEntry(entityId, rank, joinedAt, name, online, lastSeen, appearance, leader)
+    return GuildMemberEntry(entityId, rank, joinedAt, name, lastSeen, head, online)
   }
 }
 

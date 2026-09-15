@@ -912,7 +912,7 @@ constructor(
             night = WorldClock.timeOfDay() == TimeOfDay.NIGHT,
             encounter = battle.encounter,
             targetSleepTurns = wild.sleepTurns,
-            repeatChain = de.fiereu.openmmo.server.game.battle.RepeatBallStreak.chainFor(storyVars, wild.source.dexId, java.time.LocalDate.now()),
+            repeatChain = de.fiereu.openmmo.server.game.battle.RepeatBallStreak.chainFor(storyVars, wild.source.dexId, WorldClock.today()),
         )
     return de.fiereu.openmmo.server.game.battle.CatchModifiers.ballRate(item, context)
   }
@@ -1095,7 +1095,7 @@ constructor(
     }
     // Any catch extends or restarts the Repeat Ball chain, whatever ball made it.
     de.fiereu.openmmo.server.game.battle.RepeatBallStreak
-        .recordCatch(stored.storyVars, battle.opponentMon().source.dexId, java.time.LocalDate.now())
+        .recordCatch(stored.storyVars, battle.opponentMon().source.dexId, WorldClock.today())
         .forEach { (key, value) -> characterStore.setStoryVar(battle.charId, key, value) }
     // Owning is derived from holdings, so a catch just needs the tiers pushed again.
     dexProgress.refresh(battle.session, battle.charId)
@@ -1239,7 +1239,7 @@ constructor(
                   female = female,
                   heldItem = mon.heldItem,
                   friendship = mon.friendship,
-                  daytime = java.time.LocalTime.now().hour in 6..17,
+                  daytime = WorldClock.isDaytime(),
                   moves = mon.moves.map { it.id.toInt() }.toSet(),
                   partyWires = battle.party.map { clientSpeciesId(it.source.dexId) }.toSet(),
               ),

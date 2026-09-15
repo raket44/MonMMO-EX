@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.storage
 
+import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -10,20 +11,26 @@ import javax.inject.Singleton
  */
 @Singleton
 class SocialStore @Inject constructor(private val db: SocialDb? = null) {
-  private val friendsByUser = ConcurrentHashMap<Int, MutableSet<String>>()
+  private val friendsByUser = ConcurrentHashMap<Int, MutableMap<String, LocalDateTime>>()
   private val blockedByUser = ConcurrentHashMap<Int, MutableSet<String>>()
 
-  fun getFriends(userId: Int): Set<String> = friends(userId)
+  fun getFriends(userId: Int): Set<String> = friends(userId).keys
 
-  fun addFriend(userId: Int, name: String) {
-    if (friends(userId).add(name)) db?.addFriend(userId, name)
+  /** Each friend's name with the moment they were added, in list order. */
+  fun friendsSince(userId: Int): Map<String, LocalDateTime> = LinkedHashMap(friends(userId))
+
+  fun addFriend(userId: Int, name: String, addedAt: LocalDateTime = LocalDateTime.now()) {
+    if (friends(userId).putIfAbsent(name, addedAt) == null) db?.addFriend(userId, name, addedAt)
   }
 
   fun removeFriend(userId: Int, name: String): Boolean {
-    val removed = friends(userId).remove(name)
+    val removed = friends(userId).remove(name) != null
     if (removed) db?.removeFriend(userId, name)
     return removed
   }
+
+  /** Last seen and head of each named character, keyed by lowercase name (empty without a database). */
+  fun profiles(names: Collection<String>): Map<String, FriendProfile> = db?.profiles(names).orEmpty()
 
   fun getBlocked(userId: Int): Set<String> = blocked(userId)
 
@@ -37,9 +44,9 @@ class SocialStore @Inject constructor(private val db: SocialDb? = null) {
     return removed
   }
 
-  private fun friends(userId: Int): MutableSet<String> =
+  private fun friends(userId: Int): MutableMap<String, LocalDateTime> =
       friendsByUser.getOrPut(userId) {
-        linkedSetOf<String>().also { set -> db?.friends(userId)?.let(set::addAll) }
+        LinkedHashMap<String, LocalDateTime>().also { map -> db?.friends(userId)?.forEach { (name, since) -> map[name] = since } }
       }
 
   private fun blocked(userId: Int): MutableSet<String> =

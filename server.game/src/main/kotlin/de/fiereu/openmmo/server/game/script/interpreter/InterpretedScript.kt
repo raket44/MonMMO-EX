@@ -148,7 +148,7 @@ class InterpretedScript(
         }
         // Gen 4 weekdays count from Sunday = 0.
         "ds_getweekday" -> {
-          ctx.setVar(namespaced(varArg(instruction, 0).token), java.time.LocalDate.now().dayOfWeek.value % 7)
+          ctx.setVar(namespaced(varArg(instruction, 0).token), de.fiereu.openmmo.server.game.services.WorldClock.today().dayOfWeek.value % 7)
           state.pc++
         }
         "ds_flagtovar" -> {

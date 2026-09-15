@@ -23,9 +23,28 @@ object CharacterPermissions {
    * MOD, 5-6 = GM, 7 = SGM, 8 = HGM, 9 = DEV, 10 = ADM.
    */
   const val CLIENT_STAFF_LEVEL_FULL = 10
+
+  /** Client rank DEV: the lowest staff rank that carries [DEVELOPER]. */
+  const val CLIENT_STAFF_LEVEL_DEVELOPER = 9
+
+  /** The lowest client staff rank that carries [permission], or null when only its bit grants it. */
+  fun minimumStaffLevel(permission: Int): Int? =
+      when (permission) {
+        DEVELOPER -> CLIENT_STAFF_LEVEL_DEVELOPER
+        CLIENT_GM_MENU -> 1
+        else -> null
+      }
 }
 
-fun CharacterInfo.hasPermission(permission: Int): Boolean = permissions and permission == permission
+/**
+ * Whether this character holds [permission]: its bit, or a staff rank at or above the rank that
+ * carries it. Higher ranks inherit everything below them, as the client's own staff checks do
+ * (f.Ot.Hv1: staffLevel >= level), so an ADM runs every developer command without the bit
+ * (project owner, 2026-09-14).
+ */
+fun CharacterInfo.hasPermission(permission: Int): Boolean =
+    permissions and permission == permission ||
+        CharacterPermissions.minimumStaffLevel(permission)?.let { clientStaffLevel >= it } == true
 
 /** The staff level this character presents to the client. */
 val CharacterInfo.clientStaffLevel: Int

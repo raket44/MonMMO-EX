@@ -77,6 +77,7 @@ constructor(
     private val moveTeacher: MoveTutorService,
     private val moves: de.fiereu.openmmo.moves.MoveRegistry,
     private val trades: TradeService,
+    private val links: LinkService,
 ) {
 
   private val consumeScope =
@@ -421,6 +422,8 @@ constructor(
             delete = false,
             pokemon = party,
         ))
+    // A link overlay shows this party's icons: a rearrange or a withdrawal repaints them.
+    links.onPartyChanged(charId)
   }
 
   private fun de.fiereu.network.SessionContext.reply(message: String) {
@@ -613,8 +616,8 @@ object EvolutionTable {
     return candidates.firstOrNull { it.time == now } ?: candidates.firstOrNull { it.time == null }
   }
 
-  /** The server clock's day, 6:00-17:59 - the same hours the level-up check uses. */
-  fun isDaytime(): Boolean = java.time.LocalTime.now().hour in 6..17
+  /** Day on the in-game clock the player sees - the same check the level-up evolutions use. */
+  fun isDaytime(): Boolean = WorldClock.isDaytime()
 
   private val preEvolution: Map<Int, Int> by lazy { entries.associate { it.to to it.from } }
 

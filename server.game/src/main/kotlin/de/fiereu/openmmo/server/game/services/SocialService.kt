@@ -10,13 +10,17 @@ import de.fiereu.openmmo.net.game.packets.FriendListPacket
 import de.fiereu.openmmo.net.game.packets.FriendProfileRequestPacket
 import de.fiereu.openmmo.net.game.packets.PartyMemberJoinPacket
 import de.fiereu.openmmo.net.game.packets.PartyMemberLeavePacket
+import de.fiereu.openmmo.net.game.packets.PlayerHead
 import de.fiereu.openmmo.net.game.packets.RemoveFriendPacket
 import de.fiereu.openmmo.net.game.packets.RequestSocialProfilePacket
 import de.fiereu.openmmo.net.game.packets.UnblockPlayerPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
 import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.server.game.storage.FriendProfile
 import de.fiereu.openmmo.server.game.storage.SocialStore
+import de.fiereu.openmmo.server.game.storage.StoredCharacter
+import de.fiereu.openmmo.server.game.storage.profile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Provider
@@ -108,21 +112,54 @@ constructor(
     log.info { "CancelSocialInteraction from ${event.session.remoteAddress}" }
   }
 
-  private fun buildFriendList(userId: Int): FriendListPacket {
+  /**
+   * The friend list: online friends from memory (their outfit may have changed since the last
+   * save), the rest - last seen and head - from one query. [overrides], by lowercase name, carry a
+   * friend who is leaving right now, whose save may not have landed yet.
+   */
+  private fun buildFriendList(userId: Int, overrides: Map<String, FriendProfile> = emptyMap()): FriendListPacket {
+    val friends = socialStore.friendsSince(userId)
+    val onlineByName =
+        sessionRegistry.onlineCharacterIds()
+            .mapNotNull(characterStore::getCharacter)
+            .associateBy { it.info.name.lowercase() }
+    val online = friends.keys.filter { it.lowercase() in onlineByName }.toSet()
+    val offline = socialStore.profiles(friends.keys.filter { it !in online && it.lowercase() !in overrides })
+    val now = epochSeconds(java.time.LocalDateTime.now())
     val entries =
-        socialStore.getFriends(userId).map { name ->
+        friends.map { (name, since) ->
+          val live = onlineByName[name.lowercase()]
+          val profile = overrides[name.lowercase()] ?: live?.profile() ?: offline[name.lowercase()]
           FriendListEntry(
               player = syntheticId(name),
-              friendsSince = 0,
-              online = isOnlineByName(name),
+              friendsSince = epochSeconds(since),
+              online = live != null,
               name = name,
-              unk = 0,
-              lastSeen = 0,
-              appearance = List(5) { 0 },
+              lastSeen = if (live != null) now else profile?.lastSeen?.let(::epochSeconds) ?: 0,
+              head = profile?.head ?: PlayerHead(),
           )
         }
     return FriendListPacket(mode = 0, entries = entries)
   }
+
+  /**
+   * A character entered or left the world: every online player who lists it as a friend gets a
+   * fresh list. [left] is the leaving character (already unbound) so its last seen and head are current.
+   */
+  fun notifyPresence(name: String, left: StoredCharacter? = null) {
+    val overrides = left?.let { mapOf(name.lowercase() to it.profile()) }.orEmpty()
+    val notified = mutableSetOf<Int>()
+    for (id in sessionRegistry.onlineCharacterIds()) {
+      val session = sessionRegistry.getByCharacterId(id) ?: continue
+      val userId = session.attributes[PLAYER_STATE]?.userId ?: continue
+      if (!notified.add(userId)) continue
+      if (socialStore.getFriends(userId).none { it.equals(name, ignoreCase = true) }) continue
+      session.send(buildFriendList(userId, overrides))
+    }
+  }
+
+  /** Stored times are the server clock's UTC wall time, as the character dates on the wire are. */
+  private fun epochSeconds(time: java.time.LocalDateTime): Int = time.toEpochSecond(java.time.ZoneOffset.UTC).toInt()
 
   private fun isOnlineByName(name: String): Boolean =
       sessionRegistry.onlineCharacterIds().any { id ->

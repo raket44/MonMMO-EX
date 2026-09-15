@@ -24,10 +24,14 @@ import de.fiereu.openmmo.net.game.packets.guild.GuildRankPermissionUpdatePacket
 import de.fiereu.openmmo.net.game.packets.guild.SyncGuildMembersPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
+import de.fiereu.openmmo.net.game.packets.PlayerHead
 import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.server.game.storage.FriendProfile
 import de.fiereu.openmmo.server.game.storage.Guild
 import de.fiereu.openmmo.server.game.storage.GuildMember
 import de.fiereu.openmmo.server.game.storage.GuildStore
+import de.fiereu.openmmo.server.game.storage.StoredCharacter
+import de.fiereu.openmmo.server.game.storage.profile
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Provider
@@ -307,23 +311,51 @@ constructor(
               ),
       )
 
-  private fun buildMemberSync(guild: Guild): SyncGuildMembersPacket =
-      SyncGuildMembersPacket(
-          replace = true,
-          members =
-              guild.members.map { member ->
-                GuildMemberEntry(
-                    entityId = member.id,
-                    rank = member.rank.ordinal.toByte(),
-                    joinedAt = 0,
-                    name = member.name,
-                    online = true,
-                    lastSeen = 0,
-                    appearance = List(5) { 0 },
-                    leader = member.leader,
-                )
-              },
-      )
+  /**
+   * The roster: online members from memory, offline ones (last seen and head) from one query.
+   * [overrides] carry a member who is leaving right now, whose save may not have landed yet.
+   */
+  private fun buildMemberSync(guild: Guild, overrides: Map<Long, FriendProfile> = emptyMap()): SyncGuildMembersPacket {
+    val live = guild.members.mapNotNull { m -> onlineSessionByName(m.name)?.let { (id, _) -> m.id to characterStore.getCharacter(id) } }
+        .filter { it.first !in overrides }
+        .toMap()
+    val offline = guildStore.profiles(guild.members.map { it.id }.filter { it !in live && it !in overrides })
+    val now = epochSeconds(java.time.LocalDateTime.now())
+    return SyncGuildMembersPacket(
+        replace = true,
+        members =
+            guild.members.map { member ->
+              val online = member.id in live
+              val profile = overrides[member.id] ?: live[member.id]?.profile() ?: offline[member.id]
+              GuildMemberEntry(
+                  entityId = member.id,
+                  rank = member.rank.ordinal.toByte(),
+                  joinedAt = member.joinedAt?.let(::epochSeconds) ?: 0,
+                  name = member.name,
+                  lastSeen = if (online) now else profile?.lastSeen?.let(::epochSeconds) ?: 0,
+                  head = profile?.head ?: PlayerHead(),
+                  online = online,
+              )
+            },
+    )
+  }
+
+  /**
+   * A member entered or left the world: every other online member's roster is refreshed. [left] is
+   * the leaving character (already unbound from its session) so its last seen and head are current.
+   */
+  fun notifyPresence(charId: Long, left: StoredCharacter? = null) {
+    val guild = guildStore.getGuildForChar(charId) ?: return
+    val overrides = left?.let { mapOf(charId to it.profile()) }.orEmpty()
+    val roster = buildMemberSync(guild, overrides)
+    for (member in guild.members) {
+      if (member.id == charId) continue
+      sessionRegistry.getByCharacterId(member.id)?.send(roster)
+    }
+  }
+
+  /** Stored times are the server clock's UTC wall time, as the character dates on the wire are. */
+  private fun epochSeconds(time: java.time.LocalDateTime): Int = time.toEpochSecond(java.time.ZoneOffset.UTC).toInt()
 
   private fun buildActivityLog(guild: Guild): GuildActivityLogPacket =
       GuildActivityLogPacket(

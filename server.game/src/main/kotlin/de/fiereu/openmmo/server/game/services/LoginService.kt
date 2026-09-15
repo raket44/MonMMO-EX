@@ -376,6 +376,7 @@ constructor(
     val now = LocalDateTime.now()
     val updatedInfo = info.copy(lastLogin = now)
     characterStore.updateCharacter(updatedInfo)
+    characterStore.startPlaySession(charId)
 
     ctx.send(SelectedCharacterPacket(info.copy(sweetScentPp = ocarinas.ppLeft(stored))))
     // Re-read after the bicycle grant so the join payload carries the current bag, and push the
@@ -745,6 +746,9 @@ constructor(
     socialService.sendFriendList(ctx)
     guildService.sendMembership(ctx)
     linkService.sendTo(ctx, charId)
+    // Friends and team members already online see this character come online.
+    socialService.notifyPresence(info.name)
+    guildService.notifyPresence(charId)
     if (ctx.attributes[PENDING_MAP_LOAD] === pendingLoad) ctx.attributes.remove(PENDING_MAP_LOAD)
     pendingLoad?.complete(Unit)
 

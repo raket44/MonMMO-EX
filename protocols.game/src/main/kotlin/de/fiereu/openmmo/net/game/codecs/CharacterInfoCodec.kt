@@ -25,7 +25,8 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
     val lastLogin = field(EpochSecondsS32LE, CharacterInfo::lastLogin)
     if (withExtraLong) field(S64LE) { 0L }
     val createdAt = field(EpochSecondsS32LE, CharacterInfo::createdAt)
-    field(S32LE) { 0 }
+    // Time played in seconds (client f/ih6.lQ -> eu6.zz; the trainer card shows zz / 3600 hours).
+    val playTimeSeconds = field(S32LE, CharacterInfo::playTimeSeconds)
     field(S8) { 0 }
     field(S32LE) { 0 }
     val money = field(S32LE, CharacterInfo::money)
@@ -77,6 +78,7 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
         rivalSex = rivalSex,
         lastLogin = lastLogin,
         createdAt = createdAt,
+        playTimeSeconds = playTimeSeconds,
         money = money,
         permissions = withClientStaffLevel(0, staffLevel),
         sweetScentPp = sweetScentPp,

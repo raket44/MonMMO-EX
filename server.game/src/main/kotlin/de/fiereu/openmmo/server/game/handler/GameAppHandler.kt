@@ -303,6 +303,14 @@ constructor(
       state.releaseScriptLock()
       presenceService.leave(session)
       sessionRegistry.unbindCharacter(charId)
+      // Before the unload: the last seconds of play time and the last-seen moment go out with it.
+      characterStore.endPlaySession(charId)
+      // Friends and team members still online see this character go offline, with its fresh
+      // last-seen moment (the unload's save has not landed yet).
+      characterStore.getCharacter(charId)?.let { left ->
+        socialService.notifyPresence(left.info.name, left)
+        guildService.notifyPresence(charId, left)
+      }
       characterStore.unloadCharacterAsync(charId)
     }
     multiplayerService.broadcastMessage(

@@ -11,7 +11,6 @@ import de.fiereu.openmmo.server.game.storage.BATTLE_POINTS_KEY
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -41,7 +40,7 @@ constructor(
     val charId = stored.info.id
     val current = characterStore.getCharacter(charId) ?: return
     // A beaten boss is off this character's map until tomorrow; a stale talk just ends.
-    if (CrystalOnixRaid.beatenToday(current.storyVars, LocalDate.now())) return
+    if (CrystalOnixRaid.beatenToday(current.storyVars, WorldClock.today())) return
     ctx.say(line(CrystalOnixRaid.INTRO_TEXT))
     if (!ctx.askYesNo(line(CrystalOnixRaid.CHALLENGE_TEXT))) {
       ctx.closeMessage()
@@ -54,7 +53,7 @@ constructor(
     log.info { "Crystal Onix raid: char=$charId -> $result" }
     if (result != BattleResult.VICTORY) return
 
-    characterStore.setStoryVar(charId, CrystalOnixRaid.WIN_DAY_KEY, LocalDate.now().toEpochDay().toInt())
+    characterStore.setStoryVar(charId, CrystalOnixRaid.WIN_DAY_KEY, WorldClock.today().toEpochDay().toInt())
     val info = current.info
     npcService.despawnRaidBoss(
         ctx.session, info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt())

@@ -16,7 +16,7 @@ class GuildDb @Inject constructor(private val dsl: DSLContext) {
           Guild(r.get(0, Long::class.java), r.get(1, String::class.java), r.get(2, String::class.java), mutableListOf())
         }
     val byId = guilds.associateBy { it.id }
-    dsl.fetch("select guild_id, char_id, name, rank, leader from guild_members order by guild_id, position, char_id")
+    dsl.fetch("select guild_id, char_id, name, rank, leader, joined_at from guild_members order by guild_id, position, char_id")
         .forEach { r ->
           byId[r.get(0, Long::class.java)]
               ?.members
@@ -25,7 +25,8 @@ class GuildDb @Inject constructor(private val dsl: DSLContext) {
                       r.get(1, Long::class.java),
                       r.get(2, String::class.java),
                       rank(r.get(3, Int::class.java)),
-                      r.get(4, Boolean::class.java)))
+                      r.get(4, Boolean::class.java),
+                      r.get(5, java.time.LocalDateTime::class.java)))
         }
     dsl.fetch("select guild_id, rank, permissions from guild_rank_permissions").forEach { r ->
       val bits = r.get(2, Int::class.java)
@@ -46,8 +47,9 @@ class GuildDb @Inject constructor(private val dsl: DSLContext) {
       dsl.fetchOne("insert into guilds (name, tag) values (?, ?) returning id", name, tag)!!.get(0, Long::class.java)
 
   fun saveMember(guildId: Long, member: GuildMember, position: Int) {
+    // The join date is written once: a rank change or an id adoption keeps the original.
     dsl.execute(
-        "insert into guild_members (char_id, guild_id, name, rank, leader, position) values (?, ?, ?, ?, ?, ?) " +
+        "insert into guild_members (char_id, guild_id, name, rank, leader, position, joined_at) values (?, ?, ?, ?, ?, ?, ?) " +
             "on conflict (char_id) do update set guild_id = excluded.guild_id, name = excluded.name, " +
             "rank = excluded.rank, leader = excluded.leader, position = excluded.position",
         member.id,
@@ -55,7 +57,23 @@ class GuildDb @Inject constructor(private val dsl: DSLContext) {
         member.name,
         member.rank.ordinal,
         member.leader,
-        position)
+        position,
+        member.joinedAt ?: java.time.LocalDateTime.now())
+  }
+
+  /** Each character's last-seen moment (last logout, else last login) and head, by character id. */
+  fun profiles(charIds: Collection<Long>): Map<Long, FriendProfile> {
+    if (charIds.isEmpty()) return emptyMap()
+    val ids = charIds.distinct()
+    val rows =
+        dsl.fetch(
+            "select c.id, coalesce(c.last_logout, c.last_login), c.skin_region_selection_index, " +
+                "s.slot, s.skin_type, s.skin_color, s.skin_variant from characters c " +
+                "left join character_skins s on s.character_id = c.id where c.id in (" + ids.joinToString(",") { "?" } + ")",
+            *ids.toTypedArray())
+    return rows
+        .groupBy { it.get(0, Long::class.java) }
+        .mapValues { (_, byId) -> profileOf(byId) }
   }
 
   fun deleteMember(charId: Long) {

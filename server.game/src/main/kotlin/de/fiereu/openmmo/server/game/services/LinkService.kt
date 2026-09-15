@@ -3,11 +3,19 @@ package de.fiereu.openmmo.server.game.services
 import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.net.game.packets.EntityAppearanceInfo
+import de.fiereu.openmmo.net.game.packets.EntityFramesUpdatePacket
 import de.fiereu.openmmo.net.game.packets.EntityGroupMember
 import de.fiereu.openmmo.net.game.packets.EntityGroupMemberRemovePacket
 import de.fiereu.openmmo.net.game.packets.EntityGroupSnapshotPacket
+import de.fiereu.openmmo.common.clientSpeciesId
+import de.fiereu.openmmo.common.enums.PokemonRarityFlag
+import de.fiereu.openmmo.net.game.packets.GroupListFrame
 import de.fiereu.openmmo.net.game.packets.GroupListFrameSet
 import de.fiereu.openmmo.net.game.packets.LinkKickMemberPacket
+import de.fiereu.openmmo.net.game.packets.PARTY_LIST
+import de.fiereu.openmmo.net.game.packets.PlayerHead
+import de.fiereu.openmmo.pokemon.SpeciesRegistry
+import de.fiereu.openmmo.server.game.battle.Gender
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -20,12 +28,12 @@ import javax.inject.Singleton
 private val log = KotlinLogging.logger {}
 
 /**
- * Links: the small party overlay of up to four players. Bytecode-verified wire: s2c 0xD0 (f/r9)
- * is the whole link - present flag, leader entity, then members each as entity + appearance
- * record (f/tK0.QL1: name, byte, int, byte, byte count, count shorts) + party preview frames
- * (f/tK0.Nr1: byte count, [list type, count x (short, byte, byte, short)]); the client builds
- * f/Vc1 and the overlay f/fW from it. 0xD1 adds one member, 0xD2 (removed, leader) drops one.
- * c2s 0xD1 kicks a member by entity id. Links live only in memory, like retail.
+ * Links: the small party overlay of up to four players. r32645 wire (f/vl4): s2c 0xD0 is the whole
+ * link - present flag, leader entity, then members each as entity + player summary (f/ih6.bK1:
+ * name, skipped byte, last-seen int, skin tone, variants, four head slots) + party icons (f/ih6.OW:
+ * count, container byte, count x (monster id, species, form, gender, rarity bits)). 0xD1 (f/n09)
+ * adds one member, 0xDB (f/f5) replaces a member's icons, 0xD2 (removed, leader) drops one. c2s
+ * 0xD1 kicks a member by entity id. Links live only in memory, like retail.
  */
 @Singleton
 class LinkService
@@ -33,6 +41,7 @@ class LinkService
 constructor(
     private val sessionRegistry: SessionRegistry,
     private val characterStore: CharacterStore,
+    private val speciesRegistry: SpeciesRegistry,
 ) {
 
   class Link(val id: Long, var leaderId: Long, val members: MutableList<Long>)
@@ -98,14 +107,47 @@ constructor(
   private fun snapshot(link: Link): EntityGroupSnapshotPacket =
       EntityGroupSnapshotPacket(true, link.leaderId, link.members.map { member(it) })
 
+  /** A link member as the overlay draws it: name, head and the party's icons. */
   private fun member(charId: Long): EntityGroupMember {
-    val name = characterStore.getCharacter(charId)?.info?.name ?: "?"
-    // Appearance fields beyond the name are not modelled yet; the client renders the name and
-    // a default sprite. The count byte must match the shorts that follow (four).
+    val stored = characterStore.getCharacter(charId)
+    val name = stored?.info?.name ?: "?"
+    val head = stored?.let { PlayerHead(it.info.skinRegionSelectionIndex, it.skins) } ?: PlayerHead()
     return EntityGroupMember(
         entityId = charId,
-        appearance = EntityAppearanceInfo(name, 0, 0, 0, 4, List(4) { 0.toShort() }),
-        frames = GroupListFrameSet(null, emptyList()),
+        appearance = EntityAppearanceInfo(name, head),
+        frames = partyFrames(stored?.pokemon.orEmpty()),
+    )
+  }
+
+  /** The party's icons in slot order. */
+  private fun partyFrames(party: List<de.fiereu.openmmo.common.Pokemon>): GroupListFrameSet {
+    val ordered = party.sortedBy { it.containerSlot }
+    return GroupListFrameSet(if (ordered.isEmpty()) null else PARTY_LIST, ordered.map(::icon))
+  }
+
+  /**
+   * The character's party changed (a rearrange, a heal, a withdrawal...): everyone in its link gets
+   * its new icons (s2c 0xDB, r32645 f/f5).
+   */
+  fun onPartyChanged(charId: Long) {
+    val link = linkOf(charId) ?: return
+    val party = characterStore.getCharacter(charId)?.pokemon ?: return
+    val update = EntityFramesUpdatePacket(charId, partyFrames(party))
+    for (member in link.members) sessionRegistry.getByCharacterId(member)?.send(update)
+  }
+
+  private fun icon(mon: de.fiereu.openmmo.common.Pokemon): GroupListFrame {
+    val female = speciesRegistry.forMonster(mon)?.let { Gender.of(it.genderRatio, mon.seed) } == Gender.FEMALE
+    val rarity =
+        (if (mon.isShiny) PokemonRarityFlag.SHINY.mask else 0) or
+            (if (mon.isAlpha) PokemonRarityFlag.ALPHA.mask else 0) or
+            (if (mon.isSecret) PokemonRarityFlag.SECRET_SHINY.mask else 0)
+    return GroupListFrame(
+        monsterId = mon.id,
+        species = clientSpeciesId(mon.dexId).toShort(),
+        form = mon.form.toByte(),
+        gender = if (female) 1 else 0,
+        rarity = rarity.toShort(),
     )
   }
 

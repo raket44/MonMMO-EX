@@ -44,4 +44,16 @@ object WorldClock {
         in 11..20 -> TimeOfDay.DAY
         else -> TimeOfDay.NIGHT
       }
+
+  /**
+   * Day for day/night evolutions: the in-game clock the player sees, morning and day bands
+   * (project owner, 2026-09-14). It was the server's own UTC hour, 6:00-17:59.
+   */
+  fun isDaytime(nowSecond: Long = GameClock.nowSecond().toLong()): Boolean = timeOfDay(nowSecond) != TimeOfDay.NIGHT
+
+  /**
+   * Today's real date in the world clock zone (the operator's, America/Chicago), for daily resets
+   * and weekdays. The server machine runs on UTC, so LocalDate.now() rolled over at 7 PM Texas time.
+   */
+  fun today(): java.time.LocalDate = GameClock.now().toLocalDate()
 }

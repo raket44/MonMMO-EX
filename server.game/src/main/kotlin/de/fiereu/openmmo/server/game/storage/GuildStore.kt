@@ -13,6 +13,8 @@ data class GuildMember(
     val name: String,
     val rank: GuildRank,
     val leader: Boolean,
+    /** When the member joined; the store stamps it on the way in. */
+    val joinedAt: java.time.LocalDateTime? = null,
 )
 
 // Wire codes are provisional and unverified against the real client.
@@ -51,7 +53,7 @@ class GuildStore @Inject constructor(private val db: GuildDb? = null) {
 
   fun createGuild(name: String, tag: String, leaderId: Long, leaderName: String): Guild {
     ensureLoaded()
-    val leader = GuildMember(leaderId, leaderName, GuildRank.BOSS, leader = true)
+    val leader = GuildMember(leaderId, leaderName, GuildRank.BOSS, leader = true, joinedAt = java.time.LocalDateTime.now())
     val id = db?.insertGuild(name, tag) ?: nextId.getAndIncrement()
     val guild = Guild(id, name, tag, mutableListOf(leader))
     val founded = GuildLogEntry(GuildActivityType.FOUNDED, leaderName, "", now())
@@ -91,7 +93,11 @@ class GuildStore @Inject constructor(private val db: GuildDb? = null) {
     return guilds.values.firstOrNull { it.tag.equals(tag, ignoreCase = true) }
   }
 
-  fun addMember(guild: Guild, member: GuildMember) {
+  /** Last seen and head of each member by character id (empty without a database). */
+  fun profiles(charIds: Collection<Long>): Map<Long, FriendProfile> = db?.profiles(charIds).orEmpty()
+
+  fun addMember(guild: Guild, joining: GuildMember) {
+    val member = if (joining.joinedAt == null) joining.copy(joinedAt = java.time.LocalDateTime.now()) else joining
     guild.members.add(member)
     guildByChar[member.id] = guild.id
     val joined = GuildLogEntry(GuildActivityType.JOINED, member.name, "", now())

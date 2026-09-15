@@ -64,7 +64,7 @@ object CrystalOnixRaid {
   const val BATTLE_POINTS = 2_500
   const val COSMETIC_CHANCE_PERCENT = 2
 
-  /** Epoch day of the character's last win: one per day, server time. */
+  /** Epoch day of the character's last win: one per day, reset at midnight in the world clock zone (Texas). */
   const val WIN_DAY_KEY = "monmmo.crystal_onix.last_win_day"
 
   fun beatenToday(vars: Map<String, Int>, today: LocalDate): Boolean =

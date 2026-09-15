@@ -282,6 +282,8 @@ constructor(
           skinRegionSelectionIndex = skinRegionSelectionIndex.toShort(),
           lastLogin = lastLogin,
           createdAt = createdAt,
+          playTimeSeconds = playTimeSeconds,
+          lastLogout = lastLogout,
           money = money,
           permissions = permissions,
           remainingSafariSteps = remainingSafariSteps,
@@ -317,6 +319,9 @@ constructor(
           skinRegionSelectionIndex = skinRegionSelectionIndex?.toInt() ?: 0,
           lastLogin = lastLogin,
           createdAt = createdAt,
+          // The DDL-generated record types an added column as nullable; the column itself defaults to 0.
+          playTimeSeconds = playTimeSeconds ?: 0,
+          lastLogout = lastLogout,
           money = money,
           permissions = permissions,
           remainingSafariSteps = remainingSafariSteps,

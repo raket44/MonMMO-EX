@@ -54,6 +54,10 @@ interface ChatCommandModule {
 
   @Binds @IntoSet fun developerStoryCommand(command: DeveloperStoryCommand): ChatCommand
 
+  @Binds
+  @IntoSet
+  fun developerRaidCommand(command: de.fiereu.openmmo.server.game.services.command.DeveloperRaidCommand): ChatCommand
+
   @Binds @IntoSet fun developerSeasonCommand(command: DeveloperSeasonCommand): ChatCommand
 
   @Binds @IntoSet fun linkProbeCommand(command: LinkProbeCommand): ChatCommand

@@ -13,6 +13,10 @@ data class CharacterInfo(
     val skinRegionSelectionIndex: Int = 0,
     val lastLogin: LocalDateTime,
     val createdAt: LocalDateTime,
+    /** Seconds spent in the world, the trainer card's "Time played" (client eu6.zz / 3600 hours). */
+    val playTimeSeconds: Int = 0,
+    /** When the character last left the world ("Last Online"); null when it never has. Not on this wire. */
+    val lastLogout: LocalDateTime? = null,
     val money: Int,
     val permissions: Int,
     /** The Sweet Scent Ocarina's pp left, out of 32 (client f/ZZ.Og1; f/ZO1.k70 uses it once it covers the move's cost). */

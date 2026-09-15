@@ -38,6 +38,8 @@ private const val DEFAULT_PERMISSIONS = 8
 const val BATTLE_POINTS_KEY = "monmmo.battle_points"
 
 private val FLUSH_TICK = 5.seconds
+private const val PLAY_TIME_BANK_SECONDS = 60L
+private const val NANOS_PER_SECOND = 1_000_000_000L
 private val FLUSH_DEBOUNCE = 10.seconds
 
 data class StoredCharacter(
@@ -531,11 +533,44 @@ constructor(
     mutate(characterId) { snapshot }
   }
 
+  /** Characters in the world, each with the System.nanoTime() up to which its play time is banked. */
+  private val playClock = ConcurrentHashMap<Long, Long>()
+
+  /** A character entered the world: its trainer card's play time starts counting. */
+  fun startPlaySession(characterId: Long) {
+    playClock[characterId] = System.nanoTime()
+  }
+
+  /**
+   * Adds the whole seconds played since the last bank (at least [minSeconds]) to the character's
+   * play time; the fraction stays on the clock for the next bank.
+   */
+  fun bankPlayTime(characterId: Long, minSeconds: Long = 1, nowNanos: Long = System.nanoTime()) {
+    val since = playClock[characterId] ?: return
+    val seconds = (nowNanos - since) / NANOS_PER_SECOND
+    if (seconds < minSeconds.coerceAtLeast(1)) return
+    val banked =
+        mutate(characterId) { stored ->
+          val total = (stored.info.playTimeSeconds.toLong() + seconds).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+          stored.copy(info = stored.info.copy(playTimeSeconds = total))
+        }
+    if (banked) playClock.replace(characterId, since, since + seconds * NANOS_PER_SECOND)
+  }
+
+  /** The character left the world: its last seconds are banked and the moment is kept as last seen. */
+  fun endPlaySession(characterId: Long) {
+    bankPlayTime(characterId)
+    playClock.remove(characterId)
+    mutate(characterId) { it.copy(info = it.info.copy(lastLogout = LocalDateTime.now())) }
+  }
+
   fun startPeriodicFlush() {
     periodicJob =
         flushScope.launch {
           while (isActive) {
             delay(FLUSH_TICK)
+            // A crash loses at most a minute of play time.
+            for (id in playClock.keys) bankPlayTime(id, minSeconds = PLAY_TIME_BANK_SECONDS)
             flushOlderThan(FLUSH_DEBOUNCE.inWholeMilliseconds)
           }
         }

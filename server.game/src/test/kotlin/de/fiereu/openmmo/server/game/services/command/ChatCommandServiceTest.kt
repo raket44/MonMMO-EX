@@ -143,6 +143,30 @@ class ChatCommandServiceTest :
         }
       }
 
+      test("a staff rank of DEV or higher runs developer commands without the bit; a lower rank does not") {
+        runTest {
+          val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
+          val charId = store.createCharacter(1, "Red", CharacterGender.MALE, Region.KANTO).info.id
+          val session = FakeSession(characterId = charId)
+          val gated = RecordingCommand(CharacterPermissions.DEVELOPER)
+          val service =
+              ChatCommandService(store, setOf(HelpCommand(), PosCommand(), gated), disabledTools())
+          val info = store.getCharacter(charId)!!.info
+
+          store.updateCharacter(info.copy(permissions = de.fiereu.openmmo.common.withClientStaffLevel(info.permissions, 8)))
+          service.tryHandle(session, "/secret") shouldBe true
+          gated.ran shouldBe false
+
+          store.updateCharacter(
+              info.copy(
+                  permissions =
+                      de.fiereu.openmmo.common.withClientStaffLevel(info.permissions, CharacterPermissions.CLIENT_STAFF_LEVEL_FULL)))
+          session.sent.clear()
+          service.tryHandle(session, "/secret") shouldBe true
+          gated.ran shouldBe true
+        }
+      }
+
       test("a command that throws answers instead of killing the connection") {
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)

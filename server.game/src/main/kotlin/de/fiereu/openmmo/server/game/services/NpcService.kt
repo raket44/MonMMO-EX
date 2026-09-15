@@ -115,22 +115,36 @@ constructor(
     ferry.at(regionId, bankId, mapId)?.let { p ->
       ctx.send(buildSpawnPacket(p.npc(), entityIdFor(regionId, bankId, mapId, FerryPlacements.LOCAL_ID), regionId, bankId, mapId, look = p.look))
     }
-    // The Crystal Onix raid boss, gone for the rest of the day once this character has beaten it.
-    if (raid.isHere(regionId, bankId, mapId) &&
-        !de.fiereu.openmmo.server.game.battle.CrystalOnixRaid.beatenToday(storyVars, java.time.LocalDate.now())) {
-      ctx.send(
-          buildSpawnPacket(
-              raid.npc(), entityIdFor(regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID), regionId, bankId, mapId,
-              spriteRegionId = CrystalOnixRaidPlacement.SPRITE_REGION,
-              // The hit box, in tiles (f/ni6 adds dw2.QX()/oy() to the tile position). The follower
-              // graphics id has no sprite of its own in the set, so the size is given: one tile.
-              spriteSize = 1.toByte() to 1.toByte()))
+    spawnRaidBoss(ctx, regionId, bankId, mapId, storyVars)
+  }
+
+  /** The Crystal Onix raid boss, gone for the rest of the day once this character has beaten it. */
+  private fun spawnRaidBoss(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, storyVars: Map<String, Int>) {
+    if (!raid.isHere(regionId, bankId, mapId) ||
+        de.fiereu.openmmo.server.game.battle.CrystalOnixRaid.beatenToday(storyVars, WorldClock.today())) {
+      return
     }
+    ctx.send(
+        buildSpawnPacket(
+            raid.npc(), entityIdFor(regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID), regionId, bankId, mapId,
+            spriteRegionId = CrystalOnixRaidPlacement.SPRITE_REGION,
+            // The hit box, in tiles (f/ni6 adds dw2.QX()/oy() to the tile position). The follower
+            // graphics id has no sprite of its own in the set, so the size is given: one tile.
+            spriteSize = 1.toByte() to 1.toByte()))
   }
 
   /** Takes the raid boss off the map once it has been beaten (it returns the next day). */
   fun despawnRaidBoss(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
     despawnNpc(ctx, regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID)
+  }
+
+  /** Puts the raid boss back in front of a player standing on its map, once today's win is cleared (/devraid). */
+  fun respawnRaidBoss(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    if (!raid.isHere(regionId, bankId, mapId)) return
+    val storyVars = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)?.storyVars.orEmpty()
+    // Replace, not stack: the client may still hold the boss under this entity id.
+    despawnNpc(ctx, regionId, bankId, mapId, CrystalOnixRaidPlacement.LOCAL_ID)
+    spawnRaidBoss(ctx, regionId, bankId, mapId, storyVars)
   }
 
   /**

@@ -147,6 +147,15 @@ sealed interface BattleEvent {
 
   /** A sentence of the server's own in the battle box, no animation (kind -22 on a monster of the player's side). */
   data class FreeLine(val targetId: Long, val text: String) : BattleEvent
+
+  /**
+   * An entry hazard appearing on ([set]) or leaving a side's field: client kind -30 on [targetId],
+   * a monster standing on that side, naming the hazard by [moveId] (Spikes 191, Toxic Spikes 390,
+   * Stealth Rock 446, Sticky Web 564). The client prints the line and keeps the side's floating
+   * rocks / spikes drawn until the removal.
+   */
+  data class FieldEffect(val targetId: Long, val playerSide: Boolean, val moveId: Short, val set: Boolean = true) :
+      BattleEvent
 }
 
 enum class CantMoveReason {

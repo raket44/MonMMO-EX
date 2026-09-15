@@ -22,6 +22,11 @@ private const val STRUGGLE_ID = 165
 private const val WEATHER_TURNS = 5
 private const val SCREEN_TURNS = 5
 private const val CONFUSION_SELF_HIT_POWER = 40
+// Hazard move ids as the client keys its field graphics and lines (f/x55.NM1, kind -30).
+private const val HAZARD_SPIKES: Short = 191
+private const val HAZARD_TOXIC_SPIKES: Short = 390
+private const val HAZARD_STEALTH_ROCK: Short = 446
+private const val HAZARD_STICKY_WEB: Short = 564
 
 // Gen 3 critical stages: 1/16 base, Focus Energy +2, a high-crit move +1.
 private val CRIT_DENOMINATORS = intArrayOf(16, 8, 4, 3, 2)
@@ -299,13 +304,43 @@ constructor(
       move.argument?.value?.removePrefix("TYPE_")?.let { runCatching { PokemonType.valueOf(it) }.getOrNull() }
 
   /** Defog and Tidy Up sweep every entry hazard off both sides. */
-  private fun clearHazards(battle: BattleInstance) {
-    for (side in listOf(battle.playerSide, battle.opponentSide)) {
+  private fun clearHazards(battle: BattleInstance, events: MutableList<BattleEvent>) {
+    for (playerSide in listOf(true, false)) {
+      val side = if (playerSide) battle.playerSide else battle.opponentSide
+      val before = hazardMoves(side)
       side.spikes = 0
       side.toxicSpikes = 0
       side.stealthRock = false
       side.stickyWeb = false
+      announceHazards(battle, playerSide, before, events)
     }
+  }
+
+  /** The move ids of the hazards lying on [side] - what the client draws on that side's field. */
+  private fun hazardMoves(side: SideState): Set<Short> =
+      buildSet {
+        if (side.spikes > 0) add(HAZARD_SPIKES)
+        if (side.toxicSpikes > 0) add(HAZARD_TOXIC_SPIKES)
+        if (side.stealthRock) add(HAZARD_STEALTH_ROCK)
+        if (side.stickyWeb) add(HAZARD_STICKY_WEB)
+      }
+
+  /**
+   * Tells the client which hazards appeared on or left one side since [before] (kind -30, the line
+   * plus the side's persistent graphic). The event needs a monster standing on that side; an
+   * empty side (nothing left to switch in) has nothing to announce to.
+   */
+  private fun announceHazards(
+      battle: BattleInstance,
+      playerSide: Boolean,
+      before: Set<Short>,
+      events: MutableList<BattleEvent>,
+  ) {
+    val after = hazardMoves(if (playerSide) battle.playerSide else battle.opponentSide)
+    if (after == before) return
+    val stander = (if (playerSide) battle.playerActives() else battle.opponentActives()).firstOrNull() ?: return
+    for (gone in before - after) events += BattleEvent.FieldEffect(stander.entityId, playerSide, gone, set = false)
+    for (laid in after - before) events += BattleEvent.FieldEffect(stander.entityId, playerSide, laid, set = true)
   }
 
   /** Earlier successful uses in a row of [move], for the moves that grow with each one. */
@@ -1568,8 +1603,20 @@ constructor(
     if (move.effect == MoveEffect.SPIT_UP) releaseStockpile(attacker, events)
     when (move.effect) {
       MoveEffect.FLING, MoveEffect.NATURAL_GIFT -> if (attacker.heldItem != 0) consumeItem(attacker, events)
-      MoveEffect.STONE_AXE -> battle.sideOf(defender).stealthRock = true
-      MoveEffect.CEASELESS_EDGE -> battle.sideOf(defender).let { if (it.spikes < 3) it.spikes++ }
+      MoveEffect.STONE_AXE, MoveEffect.CEASELESS_EDGE -> {
+        val side = battle.sideOf(defender)
+        val laid =
+            if (move.effect == MoveEffect.STONE_AXE) {
+              if (side.stealthRock) false else { side.stealthRock = true; true }
+            } else {
+              if (side.spikes >= 3) false else { side.spikes++; true }
+            }
+        if (laid) {
+          // The client keys the field graphic and the line by the hazard's own move, not the attack's.
+          val hazard = if (move.effect == MoveEffect.STONE_AXE) HAZARD_STEALTH_ROCK else HAZARD_SPIKES
+          events += BattleEvent.FieldEffect(defender.entityId, battle.isPlayerSide(defender.entityId), hazard)
+        }
+      }
       MoveEffect.ICE_SPINNER, MoveEffect.STEEL_ROLLER -> {
         battle.field.terrain = null
         battle.field.terrainTurns = 0
@@ -2567,13 +2614,17 @@ constructor(
         }
       }
       MoveEffect.SPIKES, MoveEffect.TOXIC_SPIKES, MoveEffect.STEALTH_ROCK, MoveEffect.STICKY_WEB -> {
-        val side = if (battle.isPlayerSide(attacker.entityId)) battle.opponentSide else battle.playerSide
+        val hitsPlayer = !battle.isPlayerSide(attacker.entityId)
+        val side = if (hitsPlayer) battle.playerSide else battle.opponentSide
         when (move.effect) {
           MoveEffect.SPIKES -> if (side.spikes >= 3) return fail() else side.spikes++
           MoveEffect.TOXIC_SPIKES -> if (side.toxicSpikes >= 2) return fail() else side.toxicSpikes++
           MoveEffect.STEALTH_ROCK -> if (side.stealthRock) return fail() else side.stealthRock = true
           else -> if (side.stickyWeb) return fail() else side.stickyWeb = true
         }
+        // Every layer prints its line; the client keeps one graphic per hazard on the side.
+        val stander = (if (hitsPlayer) battle.playerActives() else battle.opponentActives()).firstOrNull()
+        if (stander != null) events += BattleEvent.FieldEffect(stander.entityId, hitsPlayer, moveId)
       }
       MoveEffect.FOLLOW_ME -> attacker.centerOfAttention = true
       MoveEffect.HELPING_HAND -> {
@@ -2738,7 +2789,7 @@ constructor(
         foeSide.lightScreenTurns = 0
         foeSide.safeguardTurns = 0
         foeSide.mistTurns = 0
-        clearHazards(battle)
+        clearHazards(battle, events)
       }
       MoveEffect.MEMENTO -> {
         if (accurate()) moveStats(action, move, defender, events)
@@ -2799,7 +2850,7 @@ constructor(
         for (mon in grass) moveStats(action, move, mon, events)
       }
       MoveEffect.TIDY_UP -> {
-        clearHazards(battle)
+        clearHazards(battle, events)
         for (mon in battle.actives()) mon.substituteHp = 0
         moveStats(action, move, attacker, events)
       }
@@ -2946,7 +2997,13 @@ constructor(
         if (!accurate()) return
         battle.reorder = defender to (move.effect == MoveEffect.AFTER_YOU)
       }
-      MoveEffect.COURT_CHANGE -> battle.playerSide.swapWith(battle.opponentSide)
+      MoveEffect.COURT_CHANGE -> {
+        val playerHad = hazardMoves(battle.playerSide)
+        val opponentHad = hazardMoves(battle.opponentSide)
+        battle.playerSide.swapWith(battle.opponentSide)
+        announceHazards(battle, true, playerHad, events)
+        announceHazards(battle, false, opponentHad, events)
+      }
       MoveEffect.OCTOLOCK -> {
         if (defender.octolockedBy != null) return fail()
         if (!accurate()) return

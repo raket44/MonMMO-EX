@@ -23,8 +23,9 @@ class BattleEntityMoveEventPacketTest :
         decoded.sourceMove shouldBe 45.toShort()
         val target = decoded.targets.single()
         target.targetMove shouldBe 0.toShort()
+        // Retail (31914 era) left bit 0x80 clear here, so the capture decodes with the animation on.
         target.subEvents.single().body shouldBe
-            BattleEventBody.StatChange(stat = 1, stageDelta = -1)
+            BattleEventBody.StatChange(stat = 1, stageDelta = -1, animate = true)
         BattleEntityMoveEventPacketCodec.encodeToBytes(decoded).toHex() shouldBe bytes.toHex()
       }
 
@@ -46,7 +47,10 @@ class BattleEntityMoveEventPacketTest :
                                     BattleActionEvent(null, 30L, BattleEventBody.Faint(true)),
                                     BattleActionEvent(
                                         40L, 50L, BattleEventBody.EffectivenessMessage),
-                                    BattleActionEvent(null, null, BattleEventBody.MoveFailed(33)))),
+                                    BattleActionEvent(null, null, BattleEventBody.MoveFailed(33)),
+                                    BattleActionEvent(null, null, BattleEventBody.FieldEffect(1, 446)),
+                                    BattleActionEvent(
+                                        null, null, BattleEventBody.FieldEffect(0, 191, set = false, animate = false)))),
                         BattleEffectTarget(
                             entityId = 60L, targetMove = 0, subEvents = emptyList())))
 

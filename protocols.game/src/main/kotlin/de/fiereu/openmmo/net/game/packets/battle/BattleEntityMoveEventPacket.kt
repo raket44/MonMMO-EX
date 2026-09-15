@@ -19,16 +19,45 @@ sealed interface BattleEventBody {
    * fourth byte the animation takes as its direction: the delta again when the change [applied],
    * 0 when the stat could not go further ("won't go any higher"). A constant 0xFF there - what
    * the captures of stat DROPS showed - animated every rise as a fall.
+   *
+   * [animate] is bit 0x80 of the stat byte CLEAR (retail's own Growl capture has it clear): the
+   * client (31914 SF1 and r32645 ko1 alike) then plays status/up or status/down on the target, on
+   * top of the text line and the HUD arrows it shows either way. Through that path the stock engine
+   * anchors the effect CASTER/ABSOLUTE (cj1.bl1 -> ParticleEffectExt.init keeps the controller
+   * default) and PolarAccelerationExt applies down.vfx's dir (0,-1,0) x strength -5.523 literally,
+   * so a DROP drifted upward (blue particles rising, 2026-09-15). The MonMMO-EX Android build
+   * re-anchors both stat paths CASTER -> ENEMY (f/i90.tn0, f/z57.Gu0), where down falls and up
+   * rises; that build is what this default assumes. Set false to suppress the particles (the
+   * desktop-era encoding).
    */
   data class StatChange(
       val stat: Byte,
       val stageDelta: Short,
       val changeType: Byte = 0,
       val applied: Boolean = true,
+      val animate: Boolean = true,
   ) : BattleEventBody
 
   /** Event 5, BattlePokemonFainted. [playFaintAnimation] plays the faint-in-place animation. */
   data class Faint(val playFaintAnimation: Boolean) : BattleEventBody
+
+  /**
+   * Event -30, the client's field-effect event (f/ko1 -> f/wx, bytecode-verified 2026-09-15):
+   * [set] true = kind 0 (the effect appears), false = kind 2 (it is gone); [side] indexes the
+   * client's sides array (0 the player's, 1 the opposing side - f/ua5.m10; f/ua5.cOM7 picks the
+   * "your side" / "opposing side" wording by comparing it with the local side); [moveId] names it.
+   * The client prints the move's line (string 0x1007488 set / 0x1007486 removed; Reflect, Light
+   * Screen and their 3000+ mirrors use their own) and adds or removes that side's persistent field
+   * graphic keyed by the move id (f/x55.NM1: Spikes 191, Tailwind 366, Toxic Spikes 390, Stealth
+   * Rock 446, the pledges, ...). Two bytes after the side and a trailing short are read and ignored
+   * by the handler; the last byte must be 1 for the event to play ([animate]).
+   */
+  data class FieldEffect(
+      val side: Byte,
+      val moveId: Short,
+      val set: Boolean = true,
+      val animate: Boolean = true,
+  ) : BattleEventBody
 
   /** Event 4, meaning unknown. It carries no body. Effectiveness rides in the outcome word. */
   data object EffectivenessMessage : BattleEventBody
@@ -375,15 +404,24 @@ private val StatChangeBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
         val changeType = field(S8) { (it as BattleEventBody.StatChange).changeType }
-        // Low seven bits name the stat (client f/RC0 order). Bit 0x80 SUPPRESSES the stat animation
-        // (client SF1 event 1 animates only when it is clear; the text line prints either way), so it
-        // stays clear - the retail Growl capture has it clear too.
-        val stat = field(S8) { ((it as BattleEventBody.StatChange).stat.toInt() and STAT_INDEX_MASK).toByte() }
+        // Low seven bits name the stat (client f/RC0 order). Bit 0x80 clear = play the particle
+        // animation (see StatChange.animate); the text line prints either way. The retail Growl
+        // capture has it clear, so the bit is carried, not assumed.
+        val stat = field(S8) {
+          val c = it as BattleEventBody.StatChange
+          ((c.stat.toInt() and STAT_INDEX_MASK) or (if (c.animate) 0 else 0x80)).toByte()
+        }
         val stages = field(S8) { (it as BattleEventBody.StatChange).stageDelta.toByte() }
         // The animation's direction byte: the delta when the change landed, 0 when it could not.
+        // r32645 also adds this byte to the HUD's stage arrows (f/b54.gm1), so its sign is the real
+        // delta's (an inverted byte showed +1 Atk for a Growl, 2026-09-15).
         val direction = field(S8) { val c = it as BattleEventBody.StatChange; if (c.applied) c.stageDelta.toByte() else 0 }
         return BattleEventBody.StatChange(
-            (stat.toInt() and STAT_INDEX_MASK).toByte(), stages.toShort(), changeType, direction.toInt() != 0)
+            (stat.toInt() and STAT_INDEX_MASK).toByte(),
+            stages.toShort(),
+            changeType,
+            direction.toInt() != 0,
+            animate = (stat.toInt() and 0x80) == 0)
       }
     }
 
@@ -460,8 +498,26 @@ private val ClientLineBodyCodec: Codec<BattleEventBody> =
       }
     }
 
+private val FieldEffectBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        // f/wx: kind 0 set / 2 removed (1 is also "set" but prints nothing special; never sent).
+        val kind = field(S8) { if ((it as BattleEventBody.FieldEffect).set) 0 else 2 }
+        val side = field(S8) { (it as BattleEventBody.FieldEffect).side }
+        // Stored by the client (f/wx.volatile, N20) but unread by its handler.
+        field(S8) { 0 }
+        field(S8) { 0 }
+        val moveId = field(S16LE) { (it as BattleEventBody.FieldEffect).moveId }
+        // A second short the reader consumes and drops.
+        field(S16LE) { 0 }
+        val play = field(S8) { if ((it as BattleEventBody.FieldEffect).animate) 1 else 0 }
+        return BattleEventBody.FieldEffect(side, moveId, kind.toInt() != 2, play.toInt() == 1)
+      }
+    }
+
 enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   HP_UPDATE(id = 0, codec = HpUpdateBodyCodec),
+  FIELD_EFFECT(id = -30, codec = FieldEffectBodyCodec),
   STAT_CHANGE(id = 1, codec = StatChangeBodyCodec),
   STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
@@ -497,6 +553,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.FreeLine -> FREE_LINE
           is BattleEventBody.Transform -> TRANSFORM
           is BattleEventBody.BlownAway -> BLOWN_AWAY
+          is BattleEventBody.FieldEffect -> FIELD_EFFECT
           is BattleEventBody.Line -> error("lines are written by id, not by type")
         }
   }

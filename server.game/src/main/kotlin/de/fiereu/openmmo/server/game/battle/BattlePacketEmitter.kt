@@ -233,6 +233,14 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         // Only the owner's client lists the moves; a foe's stay hidden.
         is BattleEvent.MovesChanged ->
             if (battle.isPlayerSide(event.targetId)) battle.session.send(moveSlotsDelta(event.targetId, event.moves, 0))
+        is BattleEvent.FieldEffect ->
+            // Side byte = the client's sides array index: 0 the player's side, 1 the opponents'
+            // (the same numbering as BattleInstance.monAt).
+            target(event.targetId).subEvents +=
+                BattleActionEvent(
+                    null,
+                    null,
+                    BattleEventBody.FieldEffect(if (event.playerSide) 0 else 1, event.moveId, event.set))
         is BattleEvent.Protected -> target(event.targetId).outcome = PROTECTED_TARGET_MOVE
         is BattleEvent.Immune -> target(event.targetId).outcome = IMMUNE_TARGET_MOVE
         is BattleEvent.SafariBait ->

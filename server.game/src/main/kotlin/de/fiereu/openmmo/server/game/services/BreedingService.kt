@@ -295,12 +295,21 @@ constructor(
           "shiny=${egg.isShiny}${if (!inheritsShiny && egg.isShiny) " (rolled 1 in $shinyDenominator)" else ""} " +
           "alpha=${egg.isAlpha} ha=${egg.hasHiddenAbility} ivs=${egg.iVs.total} hatchIn=${hatchIn}s"
     }
-    resendContainers(session, charId)
+    resendContainers(session, charId, egg)
     if (!inheritsShiny && egg.isShiny) sendNotice(session, "The egg is shining...")
   }
 
   /** Party, PC and incubators after a breed: two parents left and an egg arrived. */
-  private fun resendContainers(session: SessionContext, charId: Long) {
+  /**
+   * The two parents are gone and [egg] is new, so the party and the boxes have to be rebuilt. The
+   * INCUBATOR is NOT: the egg is delivered with the change flag CLEAR, which files it into the
+   * container the client already has (f/yT0), exactly as a boxed catch is delivered. Rebuilding
+   * that container instead would replace the object the incubator page and its HUD counter draw
+   * from, which is why a newly laid egg did not show as 0/1 until a map change rebuilt the HUD,
+   * while a hatch - a change inside the container, not a replacement - ticked to 1/1 live
+   * (owner-reported 2026-09-16).
+   */
+  private fun resendContainers(session: SessionContext, charId: Long, egg: de.fiereu.openmmo.common.Pokemon) {
     val after = characterStore.getCharacter(charId) ?: return
     de.fiereu.openmmo.net.game.packets
         .containerPackets(PokemonContainer.PARTY, after.pokemon)
@@ -308,9 +317,13 @@ constructor(
     de.fiereu.openmmo.net.game.packets
         .containerPackets(PokemonContainer.PC, after.boxed)
         .forEach { session.send(it) }
-    de.fiereu.openmmo.net.game.packets
-        .containerPackets(PokemonContainer.INCUBATOR, after.incubator)
-        .forEach { session.send(it) }
+    session.send(
+        de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
+            container = PokemonContainer.INCUBATOR,
+            hasChange = false,
+            delete = false,
+            pokemon = listOf(egg),
+        ))
   }
 
   /** An Everstone holder pins the baby's nature; both holding one is a coin flip between them. */

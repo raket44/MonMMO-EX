@@ -1019,6 +1019,14 @@ private fun patchNames(
           textContent = value
         })
   }
+  DAYCARE_STRINGS.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId is taken; pick another for the daycare line" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
+        })
+  }
   RAID_ABILITY_NAMES.forEach { (stringId, value) ->
     require(stringId !in occupied) { "Client string $stringId is taken; pick another ability id for the raid power" }
     root.appendChild(
@@ -1079,6 +1087,16 @@ private val RAID_STRINGS =
         16790013 to "The Crystal Onix drew light from the stone!",
         16790014 to "Its glow washed the field clean!",
         16790015 to "The Crystal Onix held on inside its crystal!",
+    )
+
+/**
+ * The daycare man's lines (server DaycareScripts.MAN_BARGAIN / MAN_CONFIRM), the owner's words
+ * (2026-09-16), one script for every region's daycare man. The decline stays FRLG's own line.
+ */
+private val DAYCARE_STRINGS =
+    mapOf(
+        16790020 to "Im the day care guy. Care to strike a bargain?\\nIf you give me 2 Pokemon I can use as breeders I'll give you pick of the litter! How's that sound?",
+        16790021 to "Are you sure? You wont get these Pokemon back.",
     )
 
 /**

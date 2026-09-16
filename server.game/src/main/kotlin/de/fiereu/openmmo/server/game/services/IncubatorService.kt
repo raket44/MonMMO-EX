@@ -80,10 +80,14 @@ constructor(
    * the time the page draws.
    */
   suspend fun onStateRequest(event: PacketEvent<IncubatorStateRequestPacket>) {
-    val session = event.session
-    val charId = session.attributes[PLAYER_STATE]?.characterId ?: return
+    val charId = event.session.attributes[PLAYER_STATE]?.characterId ?: return
+    // Sweep anything already due so the page draws babies, not eggs - but send NO container back.
+    // The page builds itself from the containers it already holds and only then asks (f/fb6.z61
+    // sends this at the end of its build), so a container packet here arrives AFTER the capture and
+    // replaces the object the freshly opened page is drawing: its egg slots then ignore every later
+    // delta, which is why they alone were not updating live while the PC and the hatch-helper slot
+    // were (owner-reported 2026-09-16).
     hatchDue(charId)
-    resend(session, charId)
   }
 
   suspend fun removeAll(session: SessionContext, charId: Long) {

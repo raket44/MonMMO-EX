@@ -39,3 +39,36 @@ class IncubatorsTest :
         weights.values.sum() shouldBe 8
       }
     })
+
+/** Eggs hatch on a timer, not on steps (owner, 2026-09-16); the two bonuses stack. */
+class IncubatorHatchTimeTest :
+    io.kotest.core.spec.style.FunSpec({
+      test("a common species lands near five minutes and a slow one far longer") {
+        Incubators.hatchSeconds(20) shouldBe 300
+        Incubators.hatchSeconds(120) shouldBe 1800
+      }
+
+      test("Flame Body takes a fifth off, Donator a tenth, and together both") {
+        Incubators.hatchSeconds(20, flameBody = true) shouldBe 240
+        Incubators.hatchSeconds(20, donator = true) shouldBe 270
+        Incubators.hatchSeconds(20, flameBody = true, donator = true) shouldBe 210
+      }
+
+      test("an egg always takes at least a second, whatever the cycles") {
+        Incubators.hatchSeconds(0) shouldBe Incubators.secondsPerEggCycle
+        (Incubators.hatchSeconds(1, flameBody = true, donator = true) >= 1) shouldBe true
+      }
+
+      test("each incubator slot remembers its own egg") {
+        Incubators.hatchVarKey(0) shouldBe "egg/hatch/0"
+        Incubators.hatchVarKey(5) shouldBe "egg/hatch/5"
+      }
+
+      test("the page asks for the two abilities the client names") {
+        Incubators.HATCH_ABILITIES shouldBe
+            setOf(
+                de.fiereu.openmmo.common.enums.Ability.FLAME_BODY,
+                de.fiereu.openmmo.common.enums.Ability.MAGMA_ARMOR,
+            )
+      }
+    })

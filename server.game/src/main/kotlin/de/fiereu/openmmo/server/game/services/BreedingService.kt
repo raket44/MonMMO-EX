@@ -214,6 +214,7 @@ constructor(
     val inheritsShiny = PokemonRarityFlag.SHINY.isSet(flags)
     val rng = de.fiereu.openmmo.server.game.battle.BattleRng()
     // A baby that did not inherit shininess still gets its own roll, at the egg rate.
+    val donatorActive = (characterStore.donatorUntil(stored.info.userId) ?: 0L) > System.currentTimeMillis() / 1000
     val shinyDenominator = if (inheritsShiny) 0 else eggShinyDenominator(stored)
     val hints =
         de.fiereu.openmmo.server.game.battle.WildRollHints(
@@ -262,11 +263,25 @@ constructor(
       sendNotice(session, "Something went wrong with that pair.")
       return
     }
+    // Eggs hatch on a TIMER, not on steps (see Incubators): a Flame Body or Magma Armor sitting in
+    // the incubator's own slot and Donator Status both shorten it, and the two stack. The slot
+    // itself is not modelled yet, so that term is false here.
+    val hatchIn =
+        Incubators.hatchSeconds(
+            eggCycles = speciesRegistry.get(babyServerId)?.eggCycles ?: DEFAULT_EGG_CYCLES,
+            flameBody = false,
+            donator = donatorActive,
+        )
+    characterStore.setStoryVar(
+        charId,
+        Incubators.hatchVarKey(freeSlot),
+        (System.currentTimeMillis() / 1000).toInt() + hatchIn,
+    )
     characterStore.flushCharacterAsync(charId)
     log.info {
       "Bred char=$charId ${first.dexId}+${second.dexId} -> egg ${egg.dexId} slot=$freeSlot " +
           "shiny=${egg.isShiny}${if (!inheritsShiny && egg.isShiny) " (rolled 1 in $shinyDenominator)" else ""} " +
-          "alpha=${egg.isAlpha} ha=${egg.hasHiddenAbility} ivs=${egg.iVs.total}"
+          "alpha=${egg.isAlpha} ha=${egg.hasHiddenAbility} ivs=${egg.iVs.total} hatchIn=${hatchIn}s"
     }
     resendContainers(session, charId)
     if (!inheritsShiny && egg.isShiny) sendNotice(session, "The egg is shining...")
@@ -490,6 +505,9 @@ constructor(
 
     /** Eggs hatch at level 1. */
     const val EGG_LEVEL = 1
+
+    /** Fallback when a species record carries no egg cycles; the common value in the data. */
+    const val DEFAULT_EGG_CYCLES = 20
 
     /** Base egg shiny odds, 1 in this many; -Dmonmmo.eggShinyRate overrides, 0 turns them off. */
     val eggShinyRate: Int =

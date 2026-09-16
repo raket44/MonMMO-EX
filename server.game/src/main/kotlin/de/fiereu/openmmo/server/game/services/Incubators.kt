@@ -56,6 +56,42 @@ object Incubators {
   fun unlockedSlots(storyFlags: Set<String>): Int =
       (if (HallOfFame.FLAG in storyFlags) 5 else 0) + (if (MET_DAYCARE_MAN in storyFlags) 1 else 0)
 
+  /**
+   * PokeMMO eggs hatch on a TIMER, not on steps (owner, 2026-09-16). Seconds per egg cycle, so a
+   * common 20-cycle species takes about five minutes and a 120-cycle legendary about half an hour.
+   * Override with -Dmonmmo.eggSecondsPerCycle.
+   */
+  val secondsPerEggCycle: Int =
+      System.getProperty("monmmo.eggSecondsPerCycle")?.toIntOrNull()?.coerceAtLeast(1) ?: 15
+
+  /** Flame Body or Magma Armor sitting in the incubator's own slot takes 20% off the wait. */
+  const val FLAME_BODY_BONUS = 0.20
+
+  /** Donator Status takes another 10% off, as its blurb says (client string 4001). */
+  const val DONATOR_HATCH_BONUS = 0.10
+
+  /** The abilities the page asks for: "Attach a {mon} with {Flame Body} or {Magma Armor}" (1475). */
+  val HATCH_ABILITIES =
+      setOf(
+          de.fiereu.openmmo.common.enums.Ability.FLAME_BODY,
+          de.fiereu.openmmo.common.enums.Ability.MAGMA_ARMOR,
+      )
+
+  /** Where an egg's hatch time is remembered, one per incubator slot. */
+  fun hatchVarKey(slot: Int): String = "egg/hatch/$slot"
+
+  /**
+   * How long an egg of [eggCycles] takes to hatch, in seconds. The two bonuses stack, which is how
+   * the client can report a combined "Hatching rate increased by {01}%" (string 1477).
+   */
+  fun hatchSeconds(eggCycles: Int, flameBody: Boolean = false, donator: Boolean = false): Int {
+    val base = eggCycles.coerceAtLeast(1) * secondsPerEggCycle
+    var reduction = 0.0
+    if (flameBody) reduction += FLAME_BODY_BONUS
+    if (donator) reduction += DONATOR_HATCH_BONUS
+    return (base * (1.0 - reduction)).toInt().coerceAtLeast(1)
+  }
+
   fun packet(flag: Int) = StoryFlagUpdatePacket(STORE, flag, 1)
 
   fun firstChampionPacket() = packet(FIRST_CHAMPION_FLAG)

@@ -350,6 +350,17 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
     session.attributes[PENDING_DIALOG]?.await()
   }
 
+  /**
+   * Releases a script waiting on a choice window that closed through its OWN packet instead of a
+   * dialog answer. The breed window does exactly that: cancelling it sends the dialog response the
+   * script awaits, but pressing Breed sends SubmitBreedingParty and nothing else, so without this
+   * the daycare script never finished and the player stayed locked in scripted state, unable to
+   * move until they relogged (owner-reported 2026-09-16, right after a successful breed).
+   */
+  fun completePendingChoice(session: SessionContext, code: Int = 0) {
+    session.attributes.remove(PENDING_DIALOG_RESPONSE)?.complete(DialogActionResponsePacket(0, code))
+  }
+
   fun onInteractive(event: PacketEvent<DialogActionResponsePacket>) {
     val session = event.session
     log.info { "Dialog response id=${event.packet.id} code=${event.packet.unk}" }

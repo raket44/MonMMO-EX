@@ -38,6 +38,7 @@ constructor(
     private val characterStore: CharacterStore,
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
     private val wildMons: de.fiereu.openmmo.server.game.battle.WildMonFactory,
+    private val dialog: DialogService,
 ) {
 
   /** The last assigned pair per character, so held-item changes can refresh the open window. */
@@ -167,6 +168,10 @@ constructor(
     val p = event.packet
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return
     activePairs.remove(charId)
+    // The window closed through THIS packet, not a dialog answer, so the daycare script is still
+    // suspended on its choice. Release it first, before any early return below, or the player is
+    // left standing in scripted state with movement locked.
+    dialog.completePendingChoice(session)
     val stored = characterStore.getCharacter(charId) ?: return
     val owned = stored.pokemon + stored.pcStorage
     val ids = p.pokemonEntityIds.distinct()

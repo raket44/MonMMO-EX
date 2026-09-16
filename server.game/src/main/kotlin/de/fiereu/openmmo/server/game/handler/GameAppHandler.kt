@@ -157,8 +157,8 @@ constructor(
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
 
-    onSuspend<de.fiereu.openmmo.net.game.packets.IncubatorRemoveAllPacket> { event ->
-      incubatorService.onRemoveAll(event)
+    onSuspend<de.fiereu.openmmo.net.game.packets.IncubatorStateRequestPacket> { event ->
+      incubatorService.onStateRequest(event)
     }
     on<de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket> { event ->
       breedingService.onAssignSlot(event)

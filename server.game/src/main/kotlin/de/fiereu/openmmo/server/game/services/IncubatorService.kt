@@ -4,7 +4,7 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.enums.PokemonContainer
-import de.fiereu.openmmo.net.game.packets.IncubatorRemoveAllPacket
+import de.fiereu.openmmo.net.game.packets.IncubatorStateRequestPacket
 import de.fiereu.openmmo.net.game.packets.containerPackets
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.SessionRegistry
@@ -27,12 +27,15 @@ private val log = KotlinLogging.logger {}
 private val HATCH_TICK = 15.seconds
 
 /**
- * The incubator page's two bulk buttons and the egg timer itself.
+ * The incubator page's state request and the egg timer itself.
  *
- * "Remove All" (client string 1479) arrives as the bare c2s 0x70 and empties every incubator into
- * the first free PC slots. Its sibling "Fill All" needs nothing here: the client computes that one
- * itself (f/vg5 mode 6) and issues ordinary container drags into the incubator, which the normal
- * move path handles.
+ * c2s 0x70 is the page ASKING for its contents when it opens (client f/fb6.z61), not a button. Both
+ * bulk buttons are computed client-side and move monsters with ordinary container drags, so neither
+ * needs anything here: "Remove All" (string 1479) is `fb6.SB`, which checks the PC has room and
+ * walks the occupied slots, and "Fill All" (1480) is `f/vg5` mode 6.
+ *
+ * Reading 0x70 as Remove All emptied a player's incubators every time they merely opened the page
+ * (owner pressed "I", 2026-09-16).
  *
  * Hatching is a TIMER, not steps: each egg's due time is written as a play-time reading when it is
  * laid (see [Incubators] and BreedingService), so it pauses while the player is offline. A due egg
@@ -71,11 +74,16 @@ constructor(
     ticker = null
   }
 
-  /** c2s 0x70: every incubator slot empties into the PC, eggs and hatched monsters alike. */
-  suspend fun onRemoveAll(event: PacketEvent<IncubatorRemoveAllPacket>) {
+  /**
+   * c2s 0x70: the page opened. It is a REQUEST, not a button - answer with the current contents and
+   * sweep anything already due, so an egg that came due while the player was elsewhere is a baby by
+   * the time the page draws.
+   */
+  suspend fun onStateRequest(event: PacketEvent<IncubatorStateRequestPacket>) {
     val session = event.session
     val charId = session.attributes[PLAYER_STATE]?.characterId ?: return
-    removeAll(session, charId)
+    hatchDue(charId)
+    resend(session, charId)
   }
 
   suspend fun removeAll(session: SessionContext, charId: Long) {

@@ -482,11 +482,6 @@ internal constructor(
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return
     de.fiereu.openmmo.net.game.packets.containerPackets(de.fiereu.openmmo.common.enums.PokemonContainer.PC, stored.boxed)
         .forEach { p -> session.send(p) }
-    // The incubators go out with the boxes: the page's own Remove All walks BOTH containers
-    // client-side, so a stale incubator made that button do nothing until it was reopened.
-    de.fiereu.openmmo.net.game.packets.containerPackets(
-            de.fiereu.openmmo.common.enums.PokemonContainer.INCUBATOR, stored.incubator)
-        .forEach { p -> session.send(p) }
     session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
   }
 

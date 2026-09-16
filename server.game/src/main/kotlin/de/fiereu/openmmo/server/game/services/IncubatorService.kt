@@ -140,9 +140,14 @@ constructor(
     return hatched
   }
 
+  /**
+   * ONLY the incubator. Pushing the PC here replaced the container object an open box window had
+   * captured, and every later drag out of the PC was then aimed at a stale slot - the server kept
+   * rejecting moves from cells the client still believed were occupied (owner-reported, log
+   * 2026-09-16 12:39).
+   */
   private fun resend(session: SessionContext, charId: Long) {
     val after = characterStore.getCharacter(charId) ?: return
-    containerPackets(PokemonContainer.PC, after.boxed).forEach { session.send(it) }
     containerPackets(PokemonContainer.INCUBATOR, after.incubator).forEach { session.send(it) }
   }
 }

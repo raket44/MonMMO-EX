@@ -132,6 +132,10 @@ constructor(
         ocarinas.use(ctx, state, charId, itemId)
         return
       }
+      Boosts.Kind.byItem(itemId)?.let { kind ->
+        useCharm(ctx, charId, stored, itemId, kind)
+        return
+      }
       repelSteps[itemId]?.let { steps ->
         useRepel(ctx, charId, stored, itemId, steps)
         return
@@ -380,6 +384,29 @@ constructor(
    * the HUD's "{00} repel step(s)" line) and to the client at once through the local delta's 0x10
    * group (f/cd1 -> ZZ.J61 / ZZ.fS1). EncounterService burns a step per step and gates the rolls.
    */
+  /**
+   * A Boost Item from the bag: consumed on use, then it runs for an hour (see [Boosts]). Only one
+   * charm of a type may run, which is the client's own rule - string 5991, quoted back here.
+   */
+  private suspend fun useCharm(
+      ctx: SessionContext,
+      charId: Long,
+      stored: StoredCharacter,
+      itemId: Int,
+      kind: Boosts.Kind,
+  ) {
+    if (Boosts.isActive(stored, kind)) {
+      ctx.reply("You already have a Charm of that type active.")
+      return
+    }
+    characters.setStoryVar(charId, kind.key, Boosts.expiryFromNow())
+    characters.addItem(charId, itemId, -1)
+    characters.flushCharacterAsync(charId)
+    sendStack(ctx, charId, itemId)
+    ctx.reply("Used the ${kind.label}. Its effect lasts one hour.")
+    log.info { "[UseItem] CHARM char=$charId item=$itemId kind=${kind.name} for ${Boosts.DURATION_SECONDS}s" }
+  }
+
   private suspend fun useRepel(ctx: SessionContext, charId: Long, stored: StoredCharacter, itemId: Int, steps: Int) {
     val name = items.get(itemId)?.name ?: "Repel"
     if (stored.info.repelLeft > 0) {

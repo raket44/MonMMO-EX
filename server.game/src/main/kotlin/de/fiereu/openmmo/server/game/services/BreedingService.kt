@@ -311,9 +311,8 @@ constructor(
    *
    * Base rate is [eggShinyRate] (override with -Dmonmmo.eggShinyRate; 0 turns egg shinies off).
    * Donator Status improves it by the same 10% the client advertises in its own donator blurb
-   * (string 4001, "+10% chance of encountering shinies"), and each Shiny Charm held in the bag adds
-   * [SHINY_CHARM_BONUS]. The charm item does not exist in our item data yet, so that term is
-   * currently always zero - set [SHINY_CHARM_ITEM] once it does.
+   * (string 4001), and a running Shiny Charm adds [SHINY_CHARM_BONUS] - the charm is a timed Boost
+   * Item (see [Boosts]), consumed on use and active for an hour, NOT something merely held.
    */
   private suspend fun eggShinyDenominator(stored: de.fiereu.openmmo.server.game.storage.StoredCharacter): Int {
     val base = eggShinyRate
@@ -321,8 +320,7 @@ constructor(
     var multiplier = 1.0
     val donatorUntil = characterStore.donatorUntil(stored.info.userId) ?: 0L
     if (donatorUntil > System.currentTimeMillis() / 1000) multiplier += DONATOR_SHINY_BONUS
-    val charms = stored.items[SHINY_CHARM_ITEM] ?: 0
-    if (charms > 0) multiplier += SHINY_CHARM_BONUS * charms
+    if (Boosts.isActive(stored, Boosts.Kind.SHINY)) multiplier += SHINY_CHARM_BONUS
     return (base / multiplier).toInt().coerceAtLeast(1)
   }
 
@@ -500,9 +498,8 @@ constructor(
     /** Donator Status, in the client's own words (string 4001): +10% shiny chance. */
     const val DONATOR_SHINY_BONUS = 0.10
 
-    /** Per Shiny Charm held. The item is not in our data yet, so this never applies (see above). */
+    /** A running Shiny Charm, the 5% the client's own item text quotes for it. */
     const val SHINY_CHARM_BONUS = 0.05
-    const val SHINY_CHARM_ITEM = -1
 
     /** Client string ids for the pass-outcome tooltip labels. */
     const val HIGH_PASS = 2541

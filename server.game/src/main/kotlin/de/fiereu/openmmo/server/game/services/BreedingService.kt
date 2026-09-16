@@ -243,6 +243,11 @@ constructor(
             container = PokemonContainer.INCUBATOR,
             containerSlot = freeSlot.toShort(),
             ot = if (unknownOt) "" else playerName,
+            // The egg is built through the wild factory, which rolls the species' WILD held item -
+            // a bred Munchlax arrived holding Leftovers (owner-reported). A baby holds nothing;
+            // the parents' items stay with the parents, and a brace or Everstone only shapes the
+            // roll, it is never passed on.
+            heldItem = 0,
             iVs = rollOffspringIVs(first, second, rng),
             isEgg = true,
             isShiny = base.isShiny || inheritsShiny,

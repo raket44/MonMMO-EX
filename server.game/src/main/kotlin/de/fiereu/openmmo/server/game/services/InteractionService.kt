@@ -260,7 +260,12 @@ constructor(
             1 -> {
               ctx.sign(opened)
               // Fresh contents first, then the toggle that shows the window.
-              de.fiereu.openmmo.net.game.packets.containerPackets(de.fiereu.openmmo.common.enums.PokemonContainer.PC, stored.pcStorage)
+              de.fiereu.openmmo.net.game.packets.containerPackets(de.fiereu.openmmo.common.enums.PokemonContainer.PC, stored.boxed)
+                  .forEach { p -> session.send(p) }
+              // The incubators go out with the boxes: the page's Remove All walks BOTH containers
+              // client-side, so a stale incubator made that button do nothing until reopened.
+              de.fiereu.openmmo.net.game.packets.containerPackets(
+                      de.fiereu.openmmo.common.enums.PokemonContainer.INCUBATOR, stored.incubator)
                   .forEach { p -> session.send(p) }
               session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
               stored.info.id.let { ocarinas.refill(session, it) }

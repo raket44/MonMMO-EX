@@ -112,10 +112,20 @@ sealed interface BattleEventBody {
    * Kind 76 (f/lW1) printing one of the client's own strings_en.xml strings by id: [shape u8]
    * [1 u8][flag u8][id s32] (the flag is f/lW1.Ff1, an index remap used by the bank form only). Shape 1 fills {00} with the name of the monster the event is attached to
    * (the same parameter the bait event names), shape 2 with the other side's, 3/7 both, 0 none.
-   * The kind's other form ([shape][0][bank s16][index s16]) reads a text bank, but with the ROM
-   * byte hard-coded to the Unova game in all 272 call sites, so only the string form is modelled.
+   * The kind's other form ([shape][0][flag][bank s16][index s16], r32645 f/ko1 re-verified
+   * 2026-09-15) prints a ROM text-bank line; the ROM byte is hard-coded to the Unova game in every
+   * call site, so [romBank]/[romIndex] address Unova's text NARC (reference battle-strings.tsv,
+   * rom 2): e.g. bank 10 entry 46 "You're out of Pokemon that can fight!".
    */
-  data class ClientLine(val shape: Byte, val stringId: Int) : BattleEventBody
+  data class ClientLine(
+      val shape: Byte,
+      val stringId: Int,
+      val romBank: Short? = null,
+      val romIndex: Short? = null,
+  ) : BattleEventBody {
+    val romForm: Boolean
+      get() = romBank != null && romIndex != null
+  }
 
   /**
    * Kind -22 (f/wl, bytecode-verified 2026-09-10): [text UTF-16][entity s64]. The client prints its
@@ -490,9 +500,13 @@ private val ClientLineBodyCodec: Codec<BattleEventBody> =
         // the form is non-zero. A fourth byte here made every packet carrying the line underflow on
         // the client ("Buffer underflow for wF1 0x33"), dropping the whole group (2026-09-14).
         val shape = field(S8) { (it as BattleEventBody.ClientLine).shape }
-        val form = field(S8) { 1 }
-        require(form.toInt() == 1) { "kind 76 bank-line form is not modelled" }
+        val form = field(S8) { if ((it as BattleEventBody.ClientLine).romForm) 0 else 1 }
         field(S8) { 1 }
+        if (form.toInt() == 0) {
+          val bank = field(S16LE) { (it as BattleEventBody.ClientLine).romBank!! }
+          val index = field(S16LE) { (it as BattleEventBody.ClientLine).romIndex!! }
+          return BattleEventBody.ClientLine(shape, 0, bank, index)
+        }
         val id = field(S32LE) { (it as BattleEventBody.ClientLine).stringId }
         return BattleEventBody.ClientLine(shape, id)
       }

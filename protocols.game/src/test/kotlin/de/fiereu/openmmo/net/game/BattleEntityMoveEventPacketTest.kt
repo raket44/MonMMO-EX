@@ -50,7 +50,8 @@ class BattleEntityMoveEventPacketTest :
                                     BattleActionEvent(null, null, BattleEventBody.MoveFailed(33)),
                                     BattleActionEvent(null, null, BattleEventBody.FieldEffect(1, 446)),
                                     BattleActionEvent(
-                                        null, null, BattleEventBody.FieldEffect(0, 191, set = false, animate = false)))),
+                                        null, null, BattleEventBody.FieldEffect(0, 191, set = false, animate = false)),
+                                    BattleActionEvent(null, null, BattleEventBody.ClientLine(0, 0, romBank = 10, romIndex = 46)))),
                         BattleEffectTarget(
                             entityId = 60L, targetMove = 0, subEvents = emptyList())))
 

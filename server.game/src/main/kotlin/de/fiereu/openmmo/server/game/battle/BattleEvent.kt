@@ -145,6 +145,9 @@ sealed interface BattleEvent {
   /** One of the client's own strings printed in the battle box (kind 76): shape 1 = {00} is the target's name. */
   data class ClientLine(val targetId: Long, val stringId: Int, val shape: Int = 1) : BattleEvent
 
+  /** A ROM battle-text line (kind 76 bank form; Unova's text NARC): [bank] entry [index]. */
+  data class RomLine(val targetId: Long, val bank: Int, val index: Int, val shape: Int = 0) : BattleEvent
+
   /** A sentence of the server's own in the battle box, no animation (kind -22 on a monster of the player's side). */
   data class FreeLine(val targetId: Long, val text: String) : BattleEvent
 

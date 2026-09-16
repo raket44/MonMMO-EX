@@ -64,8 +64,10 @@ private val GBA_REGIONS = setOf(0, 1)
 
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
-/** Staged client string (ExpansionClientContentMain): "You have no more Pokemon that can fight! You whited out..." */
-private const val WHITEOUT_LINE = 16790016
+// The ROM's own whiteout line (Unova text bank 10 entry 46, reference battle-strings.tsv):
+// "You're out of Pokemon that can fight!"
+private const val WHITEOUT_BANK = 10
+private const val WHITEOUT_INDEX = 46
 
 private val log = KotlinLogging.logger {}
 
@@ -1201,7 +1203,7 @@ constructor(
     // player's side is empty by now, and the client drops sub-events aimed at a removed monster.
     if (battle.whiteoutOnDefeat) {
       battle.opponentActives().firstOrNull { !it.fainted }?.let { foe ->
-        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(foe.entityId, WHITEOUT_LINE, shape = 0)))
+        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.RomLine(foe.entityId, WHITEOUT_BANK, WHITEOUT_INDEX)))
       }
     }
     endBattle(battle, BattleResult.DEFEAT)

@@ -252,6 +252,12 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         is BattleEvent.ClientLine ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.ClientLine(event.shape.toByte(), event.stringId))
+        is BattleEvent.RomLine ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(
+                    null,
+                    null,
+                    BattleEventBody.ClientLine(event.shape.toByte(), 0, event.bank.toShort(), event.index.toShort()))
         is BattleEvent.Line ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.Line(event.line, event.values))

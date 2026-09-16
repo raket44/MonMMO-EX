@@ -348,6 +348,29 @@ constructor(
                       placement.first.ordinal.toByte(), placement.second),
           ))
     }
+    // The incubator page and its HUD counter are not driven by the per-monster delta the PC tab
+    // wants, so a drag out of an incubator left the slot still drawn and the monster missing from
+    // the boxes until the window was reopened (owner-reported). Push those containers whole - they
+    // are small, and neither has the open-tab capture problem the PC has.
+    val touched =
+        packet.moves
+            .flatMap { listOf(clientContainer(it.fromContainer), clientContainer(it.toContainer)) }
+            .filterNotNull()
+            .toSet()
+    if (PokemonContainer.INCUBATOR in touched || PokemonContainer.HATCH_HELPER in touched) {
+      val fresh = characters.getCharacter(charId)
+      if (fresh != null) {
+        de.fiereu.openmmo.net.game.packets
+            .containerPackets(PokemonContainer.INCUBATOR, fresh.incubator)
+            .forEach { ctx.send(it) }
+        de.fiereu.openmmo.net.game.packets
+            .containerPackets(PokemonContainer.HATCH_HELPER, listOfNotNull(fresh.hatchHelper))
+            .forEach { ctx.send(it) }
+        de.fiereu.openmmo.net.game.packets
+            .containerPackets(PokemonContainer.PC, fresh.boxed)
+            .forEach { ctx.send(it) }
+      }
+    }
     sendParty(ctx, charId)
     // The follower is a party monster: boxed, it must stop walking; a new lead takes over.
     presenceService.refreshFollower(ctx)

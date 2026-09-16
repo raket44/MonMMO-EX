@@ -52,7 +52,18 @@ data class StoredCharacter(
     val storyFlags: MutableSet<String> = mutableSetOf(),
     val storyVars: MutableMap<String, Int> = mutableMapOf(),
     val skins: Map<SkinSlot, Skin> = emptyMap(),
-)
+) {
+  /**
+   * [pcStorage] is everything that is not in the party, because that is how the repository splits
+   * the rows - so a monster filed under any other container sits in it too. These two views keep
+   * the PC window from listing eggs that are sitting in the incubators.
+   */
+  val boxed: List<Pokemon>
+    get() = pcStorage.filter { it.container == PokemonContainer.PC }
+
+  val incubator: List<Pokemon>
+    get() = pcStorage.filter { it.container == PokemonContainer.INCUBATOR }
+}
 
 /**
  * Write-through cache over [CharacterRepository]. Memory is the live version and the database
@@ -325,6 +336,23 @@ constructor(
                       .toMutableList())
         },
         rollback = { it.copy(pokemon = previous.toMutableList()) },
+    )
+  }
+
+  /**
+   * Removes one monster wherever it lives - the party (renumbering the slots behind it) or any
+   * stored container. [removePokemon] only ever looked at the party, so anything boxed could not be
+   * deleted at all; breeding consumes its two parents and they are usually boxed.
+   */
+  suspend fun removeAnyPokemon(characterId: Long, pokemonId: Long): Boolean {
+    val stored = getCharacter(characterId) ?: return false
+    if (stored.pokemon.any { it.id == pokemonId }) return removePokemon(characterId, pokemonId)
+    val previous = stored.pcStorage.toList()
+    if (previous.none { it.id == pokemonId }) return false
+    return mutateDurably(
+        characterId,
+        apply = { it.copy(pcStorage = it.pcStorage.filter { m -> m.id != pokemonId }.toMutableList()) },
+        rollback = { it.copy(pcStorage = previous.toMutableList()) },
     )
   }
 

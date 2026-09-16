@@ -48,6 +48,14 @@ object Incubators {
    */
   val CONTAINER = de.fiereu.openmmo.common.enums.PokemonContainer.INCUBATOR
 
+  /**
+   * How many permanent incubator slots the character has earned, from the flags it holds. The
+   * client derives the same number from the flags we replay, so an egg must never be filed past
+   * this or it lands in a slot still painted "not yet unlocked".
+   */
+  fun unlockedSlots(storyFlags: Set<String>): Int =
+      (if (HallOfFame.FLAG in storyFlags) 5 else 0) + (if (MET_DAYCARE_MAN in storyFlags) 1 else 0)
+
   fun packet(flag: Int) = StoryFlagUpdatePacket(STORE, flag, 1)
 
   fun firstChampionPacket() = packet(FIRST_CHAMPION_FLAG)

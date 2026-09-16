@@ -159,7 +159,7 @@ constructor(
     on<de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket> { event ->
       breedingService.onAssignSlot(event)
     }
-    on<de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket> { event ->
+    onSuspend<de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket> { event ->
       breedingService.onSubmit(event)
     }
 

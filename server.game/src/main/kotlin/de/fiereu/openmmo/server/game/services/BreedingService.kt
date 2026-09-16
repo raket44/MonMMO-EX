@@ -4,6 +4,7 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.EggGroup
+import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.common.enums.PokemonRarityFlag
 import de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket
 import de.fiereu.openmmo.net.game.packets.BreedingForecastPacket
@@ -27,8 +28,8 @@ private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  * group; shinies only breed with shinies, while an alpha MAY pair with a non-alpha (the client allows
  * it and warns the baby will not be an alpha). OT attribution: shiny babies
  * carry your OT only from a mother with your OT (else Unknown OT); non-shiny babies always carry
- * your name, starred when the species will not register in the Pokedex. The submit still only
- * logs - egg creation is the next system.
+ * your name, starred when the species will not register in the Pokedex. The Breed button CONSUMES
+ * both parents and files the egg the forecast previewed into the incubator container.
  */
 @Singleton
 class BreedingService
@@ -36,6 +37,7 @@ class BreedingService
 constructor(
     private val characterStore: CharacterStore,
     private val speciesRegistry: de.fiereu.openmmo.pokemon.SpeciesRegistry,
+    private val wildMons: de.fiereu.openmmo.server.game.battle.WildMonFactory,
 ) {
 
   /** The last assigned pair per character, so held-item changes can refresh the open window. */
@@ -154,14 +156,174 @@ constructor(
         ))
   }
 
-  fun onSubmit(event: PacketEvent<SubmitBreedingPartyPacket>) {
+  /**
+   * The Breed button. Owner's design (2026-09-16): the two parents are CONSUMED - the window warns
+   * "You wont get these Pokemon back" - and the egg the forecast previewed is placed into the
+   * incubator container exactly as shown. A baby that is not already shiny then takes one roll at
+   * the server's egg shiny rate (see [eggShinyDenominator]).
+   */
+  suspend fun onSubmit(event: PacketEvent<SubmitBreedingPartyPacket>) {
+    val session = event.session
     val p = event.packet
-    event.session.attributes[PLAYER_STATE]?.characterId?.let { activePairs.remove(it) }
-    log.info {
-      "Breeding submit: session=${p.sessionId} mons=${p.pokemonEntityIds} " +
-          "gender=${p.slotIndex} valueId=${p.stateFlag} - egg creation not modeled yet"
+    val charId = session.attributes[PLAYER_STATE]?.characterId ?: return
+    activePairs.remove(charId)
+    val stored = characterStore.getCharacter(charId) ?: return
+    val owned = stored.pokemon + stored.pcStorage
+    val ids = p.pokemonEntityIds.distinct()
+    val first = ids.getOrNull(0)?.let { id -> owned.firstOrNull { it.id == id } }
+    val second = ids.getOrNull(1)?.let { id -> owned.firstOrNull { it.id == id } }
+    if (ids.size != 2 || first == null || second == null) {
+      log.info { "Breeding submit with unknown parents: char=$charId mons=${p.pokemonEntityIds}" }
+      return
     }
-    sendNotice(event.session, "Breeding is coming soon - your pair was noted.")
+    val defA = speciesRegistry.forMonster(first)
+    val defB = speciesRegistry.forMonster(second)
+    val incompatible = incompatibilityReason(first, second, defA, defB)
+    if (defA == null || defB == null || incompatible != null) {
+      log.info { "Breeding submit rejected: char=$charId reason=${incompatible ?: "unknown species"}" }
+      sendNotice(session, "These two cannot be bred together.")
+      return
+    }
+    // Never file an egg past the slots the character has actually unlocked - the client paints the
+    // rest "not yet unlocked" and the egg would be invisible in one of them.
+    val unlocked = Incubators.unlockedSlots(stored.storyFlags)
+    val eggs = stored.incubator
+    val freeSlot = (0 until unlocked).firstOrNull { slot -> eggs.none { it.containerSlot.toInt() == slot } }
+    if (freeSlot == null) {
+      log.info { "Breeding submit with no free incubator: char=$charId unlocked=$unlocked eggs=${eggs.size}" }
+      sendNotice(session, if (unlocked == 0) "You have no egg incubators yet." else "All your egg incubators are full.")
+      return
+    }
+
+    val mother =
+        when {
+          isDitto(first) -> second
+          isDitto(second) -> first
+          genderOf(second, defB) == FEMALE -> second
+          else -> first
+        }
+    val offspringWire = EvolutionTable.baseForm(clientSpeciesId(mother.dexId))
+    // EvolutionTable speaks the client's wire ids; the factory wants a server id. For every retail
+    // family those are the same number, and an Expansion-only base form is the offset copy.
+    val babyServerId =
+        listOf(offspringWire, de.fiereu.openmmo.common.EXPANSION_SERVER_SPECIES_BASE + offspringWire)
+            .firstOrNull { speciesRegistry.get(it) != null && clientSpeciesId(it) == offspringWire }
+            ?: offspringWire
+
+    val flags = offspringRarityFlags(first, second, mother).toInt()
+    val inheritsShiny = PokemonRarityFlag.SHINY.isSet(flags)
+    val rng = de.fiereu.openmmo.server.game.battle.BattleRng()
+    // A baby that did not inherit shininess still gets its own roll, at the egg rate.
+    val shinyDenominator = if (inheritsShiny) 0 else eggShinyDenominator(stored)
+    val hints =
+        de.fiereu.openmmo.server.game.battle.WildRollHints(
+            nature = pinnedNature(first, second),
+            gender = chosenGender(p.slotIndex),
+        )
+    val base = wildMons.create(babyServerId, EGG_LEVEL, rng, shinyDenominator, hints)
+    if (base == null) {
+      log.error { "Breeding submit could not build species $babyServerId for char=$charId" }
+      sendNotice(session, "Something went wrong with that pair.")
+      return
+    }
+    val playerName = stored.info.name
+    val caughtAsOt =
+        owned.asSequence().filter { it.ot == playerName }.map { clientSpeciesId(it.dexId) }.toSet()
+    val unknownOt =
+        (first.isShiny || first.isSecret) && mother.ot != playerName
+    val egg =
+        base.copy(
+            ownerId = charId,
+            container = PokemonContainer.INCUBATOR,
+            containerSlot = freeSlot.toShort(),
+            ot = if (unknownOt) "" else playerName,
+            iVs = rollOffspringIVs(first, second, rng),
+            isEgg = true,
+            isShiny = base.isShiny || inheritsShiny,
+            isSecret = PokemonRarityFlag.SECRET_SHINY.isSet(flags),
+            isAlpha = PokemonRarityFlag.ALPHA.isSet(flags),
+            hasHiddenAbility = PokemonRarityFlag.HIDDEN_ABILITY.isSet(flags),
+        )
+
+    // The parents go first: if one of them cannot be removed, no egg is created, so a failure can
+    // never mint a monster out of nothing.
+    if (!characterStore.removeAnyPokemon(charId, first.id)) {
+      log.error { "Breeding could not consume parent ${first.id} for char=$charId" }
+      sendNotice(session, "Something went wrong with that pair.")
+      return
+    }
+    if (!characterStore.removeAnyPokemon(charId, second.id)) {
+      log.error { "Breeding consumed ${first.id} but not ${second.id} for char=$charId" }
+      sendNotice(session, "Something went wrong with that pair.")
+      return
+    }
+    if (!characterStore.addPokemon(charId, egg)) {
+      log.error { "Breeding consumed both parents but could not store the egg for char=$charId" }
+      sendNotice(session, "Something went wrong with that pair.")
+      return
+    }
+    characterStore.flushCharacterAsync(charId)
+    log.info {
+      "Bred char=$charId ${first.dexId}+${second.dexId} -> egg ${egg.dexId} slot=$freeSlot " +
+          "shiny=${egg.isShiny}${if (!inheritsShiny && egg.isShiny) " (rolled 1 in $shinyDenominator)" else ""} " +
+          "alpha=${egg.isAlpha} ha=${egg.hasHiddenAbility} ivs=${egg.iVs.total}"
+    }
+    resendContainers(session, charId)
+    if (!inheritsShiny && egg.isShiny) sendNotice(session, "The egg is shining...")
+  }
+
+  /** Party, PC and incubators after a breed: two parents left and an egg arrived. */
+  private fun resendContainers(session: SessionContext, charId: Long) {
+    val after = characterStore.getCharacter(charId) ?: return
+    de.fiereu.openmmo.net.game.packets
+        .containerPackets(PokemonContainer.PARTY, after.pokemon)
+        .forEach { session.send(it) }
+    de.fiereu.openmmo.net.game.packets
+        .containerPackets(PokemonContainer.PC, after.boxed)
+        .forEach { session.send(it) }
+    de.fiereu.openmmo.net.game.packets
+        .containerPackets(PokemonContainer.INCUBATOR, after.incubator)
+        .forEach { session.send(it) }
+  }
+
+  /** An Everstone holder pins the baby's nature; both holding one is a coin flip between them. */
+  private fun pinnedNature(
+      first: de.fiereu.openmmo.common.Pokemon,
+      second: de.fiereu.openmmo.common.Pokemon,
+  ): de.fiereu.openmmo.common.enums.PokemonNature? {
+    val holders = buildList {
+      if (first.heldItem in EVERSTONES) add(first.nature)
+      if (second.heldItem in EVERSTONES) add(second.nature)
+    }
+    return holders.randomOrNull()
+  }
+
+  /** The window's gender chooser: the forecast prices male and female separately. */
+  private fun chosenGender(preference: Byte): Byte? =
+      when (preference.toInt()) {
+        MALE -> MALE.toByte()
+        FEMALE -> FEMALE.toByte()
+        else -> null
+      }
+
+  /**
+   * The egg's own shiny odds, 1 in this many, for a baby that did not inherit shininess.
+   *
+   * Base rate is [eggShinyRate] (override with -Dmonmmo.eggShinyRate; 0 turns egg shinies off).
+   * Donator Status improves it by the same 10% the client advertises in its own donator blurb
+   * (string 4001, "+10% chance of encountering shinies"), and each Shiny Charm held in the bag adds
+   * [SHINY_CHARM_BONUS]. The charm item does not exist in our item data yet, so that term is
+   * currently always zero - set [SHINY_CHARM_ITEM] once it does.
+   */
+  private suspend fun eggShinyDenominator(stored: de.fiereu.openmmo.server.game.storage.StoredCharacter): Int {
+    val base = eggShinyRate
+    if (base <= 0) return 0
+    var multiplier = 1.0
+    val donatorUntil = characterStore.donatorUntil(stored.info.userId) ?: 0L
+    if (donatorUntil > System.currentTimeMillis() / 1000) multiplier += DONATOR_SHINY_BONUS
+    val charms = stored.items[SHINY_CHARM_ITEM] ?: 0
+    if (charms > 0) multiplier += SHINY_CHARM_BONUS * charms
+    return (base / multiplier).toInt().coerceAtLeast(1)
   }
 
   /**
@@ -328,6 +490,20 @@ constructor(
     /** Retail's price for pinning the offspring's gender. */
     const val GENDER_CHOICE_COST = 5000
 
+    /** Eggs hatch at level 1. */
+    const val EGG_LEVEL = 1
+
+    /** Base egg shiny odds, 1 in this many; -Dmonmmo.eggShinyRate overrides, 0 turns them off. */
+    val eggShinyRate: Int =
+        System.getProperty("monmmo.eggShinyRate")?.toIntOrNull()?.coerceAtLeast(0) ?: 30_000
+
+    /** Donator Status, in the client's own words (string 4001): +10% shiny chance. */
+    const val DONATOR_SHINY_BONUS = 0.10
+
+    /** Per Shiny Charm held. The item is not in our data yet, so this never applies (see above). */
+    const val SHINY_CHARM_BONUS = 0.05
+    const val SHINY_CHARM_ITEM = -1
+
     /** Client string ids for the pass-outcome tooltip labels. */
     const val HIGH_PASS = 2541
     const val LOW_PASS = 2542
@@ -398,4 +574,57 @@ internal fun offspringRarityFlags(
           (if (first.isAlpha && second.isAlpha) PokemonRarityFlag.ALPHA.mask else 0) or
           (if (mother.hasHiddenAbility) PokemonRarityFlag.HIDDEN_ABILITY.mask else 0))
       .toShort()
+}
+
+/**
+ * The baby's actual IVs, rolling the model the forecast describes (see
+ * `BreedingService.forecastStatEntries`): a Power brace pins its stat to the holder's value and
+ * uses up a pass slot, a shiny pair passes four stats instead of three with two of them forced to
+ * the better parent, every other pass is a coin flip between the parents, and a stat that is not
+ * passed rolls anywhere in the parents' min-to-max range, endpoints included.
+ *
+ * Stat order is RC0.Df0, the order the forecast rows use: hp, atk, def, SPEED, spAtk, spDef.
+ */
+internal fun rollOffspringIVs(
+    first: de.fiereu.openmmo.common.Pokemon,
+    second: de.fiereu.openmmo.common.Pokemon,
+    rng: de.fiereu.openmmo.server.game.battle.BattleRng,
+): de.fiereu.openmmo.common.enums.IVs {
+  val a = with(first.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+  val b = with(second.iVs) { listOf(hp, atk, def, spd, spAtk, spDef) }
+  val bracedA = BreedingService.POWER_BRACES[first.heldItem]
+  val bracedB = BreedingService.POWER_BRACES[second.heldItem]
+  val bracedStats = setOfNotNull(bracedA, bracedB)
+  val shinyPair = first.isShiny || first.isSecret || second.isShiny || second.isSecret
+  val passSlots = ((if (shinyPair) 4 else 3) - bracedStats.size).coerceAtLeast(0)
+  val forcedHigh = if (shinyPair) minOf(2, passSlots) else 0
+  val free = (0 until 6).filter { it !in bracedStats }.shuffled()
+  val passed = free.take(passSlots).toSet()
+  val forced = free.take(forcedHigh).toSet()
+  val values = IntArray(6)
+  for (stat in 0 until 6) {
+    val hi = maxOf(a[stat], b[stat])
+    val lo = minOf(a[stat], b[stat])
+    values[stat] =
+        when {
+          stat in bracedStats -> {
+            val holders = buildList {
+              if (stat == bracedA) add(a[stat])
+              if (stat == bracedB) add(b[stat])
+            }
+            holders[rng.pick(holders.size)]
+          }
+          stat in forced -> hi
+          stat in passed -> if (rng.coinFlip()) a[stat] else b[stat]
+          else -> lo + rng.pick(hi - lo + 1)
+        }
+  }
+  return de.fiereu.openmmo.common.enums.IVs().apply {
+    hp = values[0]
+    atk = values[1]
+    def = values[2]
+    spd = values[3]
+    spAtk = values[4]
+    spDef = values[5]
+  }
 }

@@ -58,11 +58,11 @@ class WorldStateService @Inject constructor(
     val containers =
         mapOf(
             PokemonContainer.PARTY to stored.pokemon,
-            PokemonContainer.PC to stored.pcStorage,
+            PokemonContainer.PC to stored.boxed,
             PokemonContainer.BATTLE_BOX_1 to emptyList(),
             PokemonContainer.BATTLE_BOX_2 to emptyList(),
             PokemonContainer.DAYCARE to emptyList(),
-            PokemonContainer.INCUBATOR to emptyList(),
+            PokemonContainer.INCUBATOR to stored.incubator,
             PokemonContainer.UNKNOWN_14 to emptyList(),
         )
     // Split under the client's inflate buffer (containerPackets): a big PC in one packet garbles

@@ -25,16 +25,21 @@ class BoostsTest :
         Boosts.Kind.entries.filter { it.itemId == 0 }.forEach { Boosts.Kind.byItem(it.itemId) shouldBe null }
       }
 
-      test("a charm is active until its stored expiry passes") {
-        val now = (System.currentTimeMillis() / 1000).toInt()
-        Boosts.isActive(withVar(Boosts.Kind.SHINY.key, now + 60), Boosts.Kind.SHINY) shouldBe true
-        Boosts.isActive(withVar(Boosts.Kind.SHINY.key, now - 60), Boosts.Kind.SHINY) shouldBe false
+      test("a charm is measured in PLAY TIME, so it pauses while logged out") {
+        val played = 1000
+        Boosts.isActive(played, withVar(Boosts.Kind.SHINY.key, played + 60), Boosts.Kind.SHINY) shouldBe true
+        Boosts.isActive(played, withVar(Boosts.Kind.SHINY.key, played - 60), Boosts.Kind.SHINY) shouldBe false
         // Never used at all.
-        Boosts.isActive(withVar("other", 1), Boosts.Kind.SHINY) shouldBe false
+        Boosts.isActive(played, withVar("other", 1), Boosts.Kind.SHINY) shouldBe false
+        // Hours of wall clock pass while offline; play time does not move, so the charm survives.
+        val expiry = Boosts.expiryFrom(played)
+        Boosts.isActive(played, mapOf(Boosts.Kind.SHINY.key to expiry), Boosts.Kind.SHINY) shouldBe true
+        Boosts.secondsLeft(played, mapOf(Boosts.Kind.SHINY.key to expiry), Boosts.Kind.SHINY) shouldBe
+            Boosts.DURATION_SECONDS
       }
 
-      test("using one now expires about an hour out") {
-        val now = (System.currentTimeMillis() / 1000).toInt()
-        Boosts.expiryFromNow() shouldBeGreaterThan now + Boosts.DURATION_SECONDS - 5
+      test("using one costs an hour of play time") {
+        Boosts.expiryFrom(0) shouldBe Boosts.DURATION_SECONDS
+        Boosts.expiryFrom(500) shouldBeGreaterThan 500
       }
     })

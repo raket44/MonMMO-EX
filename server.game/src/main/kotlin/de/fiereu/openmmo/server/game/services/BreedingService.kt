@@ -266,17 +266,19 @@ constructor(
     // Eggs hatch on a TIMER, not on steps (see Incubators): a Flame Body or Magma Armor sitting in
     // the incubator's own slot and Donator Status both shorten it, and the two stack. The slot
     // itself is not modelled yet, so that term is false here.
+    val helper = stored.hatchHelper?.let { speciesRegistry.forMonster(it) }
+    val helperSpeedsHatching =
+        helper != null && (helper.ability1 in Incubators.HATCH_ABILITIES || helper.ability2 in Incubators.HATCH_ABILITIES)
     val hatchIn =
         Incubators.hatchSeconds(
             eggCycles = speciesRegistry.get(babyServerId)?.eggCycles ?: DEFAULT_EGG_CYCLES,
-            flameBody = false,
+            flameBody = helperSpeedsHatching,
             donator = donatorActive,
         )
-    characterStore.setStoryVar(
-        charId,
-        Incubators.hatchVarKey(freeSlot),
-        (System.currentTimeMillis() / 1000).toInt() + hatchIn,
-    )
+    // Egg timers run on PLAY TIME so they pause while the player is offline (owner, 2026-09-16).
+    characterStore.bankPlayTime(charId)
+    val playTime = characterStore.getCharacter(charId)?.info?.playTimeSeconds ?: stored.info.playTimeSeconds
+    characterStore.setStoryVar(charId, Incubators.hatchVarKey(freeSlot), playTime + hatchIn)
     characterStore.flushCharacterAsync(charId)
     log.info {
       "Bred char=$charId ${first.dexId}+${second.dexId} -> egg ${egg.dexId} slot=$freeSlot " +

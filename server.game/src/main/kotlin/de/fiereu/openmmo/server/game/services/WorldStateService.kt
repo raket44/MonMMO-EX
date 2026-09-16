@@ -63,7 +63,7 @@ class WorldStateService @Inject constructor(
             PokemonContainer.BATTLE_BOX_2 to emptyList(),
             PokemonContainer.DAYCARE to emptyList(),
             PokemonContainer.INCUBATOR to stored.incubator,
-            PokemonContainer.UNKNOWN_14 to emptyList(),
+            PokemonContainer.HATCH_HELPER to listOfNotNull(stored.hatchHelper),
         )
     // Split under the client's inflate buffer (containerPackets): a big PC in one packet garbles
     // every compressed packet after it, bag included.

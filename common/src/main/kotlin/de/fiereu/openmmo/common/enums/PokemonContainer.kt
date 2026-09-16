@@ -21,7 +21,14 @@ enum class PokemonContainer {
    * (bytecode-walked 2026-09-16; see server Incubators).
    */
   INCUBATOR,
-  UNKNOWN_14,
+
+  /**
+   * The incubator page's hatch-helper slot (client `f/xe1.Zc1`, wire byte 14, capacity ONE): the
+   * monster with Flame Body or Magma Armor that speeds hatching, which the page asks for in string
+   * 1475. The client drags into it exactly like any other container - the owner's Larvesta arrived
+   * as `PartyMove(fromContainer=0, fromSlot=48, toContainer=14, toSlot=0)` on 2026-09-16.
+   */
+  HATCH_HELPER,
 
   /**
    * Client f/Cy.Vg0 (byte 15): the "shared monster" slot. A monster delivered here is not the

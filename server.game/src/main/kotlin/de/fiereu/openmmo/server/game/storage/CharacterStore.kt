@@ -63,6 +63,10 @@ data class StoredCharacter(
 
   val incubator: List<Pokemon>
     get() = pcStorage.filter { it.container == PokemonContainer.INCUBATOR }
+
+  /** The single monster in the incubator page's hatch-helper slot, if one is sitting there. */
+  val hatchHelper: Pokemon?
+    get() = pcStorage.firstOrNull { it.container == PokemonContainer.HATCH_HELPER }
 }
 
 /**

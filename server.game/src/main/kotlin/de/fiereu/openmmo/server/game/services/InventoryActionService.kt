@@ -395,11 +395,15 @@ constructor(
       itemId: Int,
       kind: Boosts.Kind,
   ) {
-    if (Boosts.isActive(stored, kind)) {
+    // The charm clock is PLAY TIME, so it pauses while the player is offline: bank the current
+    // session first, then measure against it.
+    characters.bankPlayTime(charId)
+    val playTime = characters.getCharacter(charId)?.info?.playTimeSeconds ?: stored.info.playTimeSeconds
+    if (Boosts.isActive(playTime, stored.storyVars, kind)) {
       ctx.reply("You already have a Charm of that type active.")
       return
     }
-    characters.setStoryVar(charId, kind.key, Boosts.expiryFromNow())
+    characters.setStoryVar(charId, kind.key, Boosts.expiryFrom(playTime))
     characters.addItem(charId, itemId, -1)
     characters.flushCharacterAsync(charId)
     sendStack(ctx, charId, itemId)

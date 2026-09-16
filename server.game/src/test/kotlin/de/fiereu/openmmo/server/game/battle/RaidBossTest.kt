@@ -111,7 +111,7 @@ class RaidBossTest :
       // The MonMMO client patch in f/dw2.Kk0 draws graphics 20000 + N as species N's follower; the
       // Crystal Onix form's client id is 1643, the id its follower sheet is staged under.
       test("the boss npc asks the client for the Crystal Onix follower sprite") {
-        de.fiereu.openmmo.server.game.services.CrystalOnixRaidPlacement.SPRITE_ID shouldBe 21643
+        de.fiereu.openmmo.server.game.services.CrystalOnixRaidPlacement.SPRITE_ID shouldBe 31643
       }
 
       test("the rare drop lands on about 2 percent of wins") {

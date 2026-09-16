@@ -634,6 +634,25 @@
 
     sub-int/2addr v0, v3
 
+    # MonMMO 2026-09-15: 30000 + N is the same sheet one size up - follower flag 0x80, which the
+    # follower entity (f/vc1.eL0, fed by d11() = x71) draws at 4/3 scale, as retail does for alphas.
+    const/16 v3, 0x2710
+
+    if-lt v0, v3, :monmmo_follower_normal
+
+    sub-int/2addr v0, v3
+
+    int-to-short v0, v0
+
+    iput-short v0, p0, Lf/dw2;->cp:S
+
+    const/16 v3, -0x80
+
+    iput-byte v3, p0, Lf/dw2;->x71:B
+
+    return-void
+
+    :monmmo_follower_normal
     int-to-short v0, v0
 
     iput-short v0, p0, Lf/dw2;->cp:S

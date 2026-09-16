@@ -60,6 +60,12 @@ class CrystalOnixRaidPlacement @Inject constructor(private val mapManager: MapMa
      */
     const val SPRITE_REGION = 0
     const val FOLLOWER_GRAPHICS_BASE = 20000
+    /**
+     * [LARGE_FOLLOWER_GRAPHICS_BASE] + N: the same sheet one size up - the client patch sets the
+     * follower flag 0x80, which f/vc1.eL0 draws at 4/3 scale, the retail alpha render. The boss is
+     * an alpha (owner, 2026-09-15).
+     */
+    const val LARGE_FOLLOWER_GRAPHICS_BASE = 30000
 
     /** The client id of the Crystal Onix form, whose follower sheet the player's own follower uses. */
     val FOLLOWER_SPECIES: Int by lazy {
@@ -69,6 +75,6 @@ class CrystalOnixRaidPlacement @Inject constructor(private val mapManager: MapMa
     }
 
     val SPRITE_ID: Int
-      get() = FOLLOWER_GRAPHICS_BASE + FOLLOWER_SPECIES
+      get() = LARGE_FOLLOWER_GRAPHICS_BASE + FOLLOWER_SPECIES
   }
 }

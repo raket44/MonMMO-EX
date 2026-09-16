@@ -481,7 +481,7 @@ constructor(
     val raid = de.fiereu.openmmo.server.game.battle.CrystalOnixRaid
     val boss = expansionSpecies.get(raid.SPECIES_SYMBOL) ?: return BattleResult.FAILED
     val specs =
-        listOf(OpponentSpec(boss.serverId, raid.BOSS_LEVEL, raid.OPENING_MOVES, iv = 31)) +
+        listOf(OpponentSpec(boss.serverId, raid.BOSS_LEVEL, raid.OPENING_MOVES, iv = 31, shiny = true, alpha = true)) +
             List(raid.HELPERS) { OpponentSpec(raid.HELPER_DEX, raid.HELPER_LEVEL, raid.HELPER_MOVES) }
     val battle =
         createBattle(session, specs, catchable = false, escapable = false, formatOverride = BattleFormat.TRIPLES, raid = true)
@@ -504,6 +504,9 @@ constructor(
       val iv: Int? = null,
       /** The lead's Synchronize / Cute Charm / Compound Eyes (OverworldAbilities). */
       val hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
+      /** Forced rarity flags (the raid boss is a shiny alpha: gold outline, alpha marks). */
+      val shiny: Boolean = false,
+      val alpha: Boolean = false,
   )
 
   private fun createWildBattle(
@@ -575,6 +578,7 @@ constructor(
         return null
       }
       if (rolled.isShiny) log.info { "Shiny wild ${spec.dexId} L${spec.level} rolled for char=$charId (1 in $shinyDenominator)" }
+      if (spec.shiny || spec.alpha) rolled = rolled.copy(isShiny = rolled.isShiny || spec.shiny, isAlpha = spec.alpha)
       if (spec.moveIds.isNotEmpty()) {
         rolled =
             rolled.copy(

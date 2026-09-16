@@ -1,6 +1,6 @@
 # Android client (r32645) code patches
 
-The 18 files under `f/` are the MonMMO-EX versions of the retail classes they replace, as smali
+The 19 files under `f/` are the MonMMO-EX versions of the retail classes they replace, as smali
 (smali/baksmali 3.0.10, `--api 21`). They are the source of the `classes.dex` that
 `ApkPackager prepare` takes as its rebuilt-dex argument; everything else in the dex is retail.
 
@@ -26,3 +26,4 @@ What each class changes (every edit is marked `# MonMMO-EX` in the file):
 | `dw2` | follower-rendered raid npc (`Kk0`) |
 | `m12` | 31 Expansion Fairy moves registered to Moonlight's staging (`ub(0x15)`), appended after retail's table |
 | `i90`, `z57` | stat-change particles anchored CASTER -> ENEMY so `status/down` falls (see the comment in `i90`) |
+| `nb4` | `D60` menu-header weekday = real days since the join anchor (a Sunday midnight in the server zone) mod 7, instead of the 4x in-game day counter |

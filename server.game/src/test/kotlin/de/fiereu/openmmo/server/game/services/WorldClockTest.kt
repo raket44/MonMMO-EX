@@ -21,3 +21,17 @@ class WorldClockTest :
         WorldClock.today() shouldBe java.time.LocalDate.now(GameClock.zone)
       }
     })
+
+// The join anchor is a Sunday midnight in the world zone (the patched client's weekday = real days
+// since it mod 7); moving it back by whole days must not shift the in-game hour (2026-09-16).
+class WorldClockAnchorTest :
+    io.kotest.core.spec.style.FunSpec({
+      test("the anchor is a Sunday midnight in the zone and the in-game hour still counts from local midnight") {
+        val anchor = java.time.Instant.ofEpochSecond(GameClock.dayStartSecond().toLong()).atZone(GameClock.zone)
+        anchor.dayOfWeek shouldBe java.time.DayOfWeek.SUNDAY
+        anchor.toLocalTime() shouldBe java.time.LocalTime.MIDNIGHT
+        val todayMidnight = GameClock.now().toLocalDate().atStartOfDay(GameClock.zone).toEpochSecond()
+        for (h in 0 until 24) WorldClock.inGameHour(todayMidnight + h * 900L) shouldBe h
+        ((todayMidnight - anchor.toEpochSecond()) / 86_400L).toInt() shouldBe GameClock.weekday()
+      }
+    })

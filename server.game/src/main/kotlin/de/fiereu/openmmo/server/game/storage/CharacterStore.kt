@@ -42,6 +42,9 @@ private const val PLAY_TIME_BANK_SECONDS = 60L
 private const val NANOS_PER_SECOND = 1_000_000_000L
 private val FLUSH_DEBOUNCE = 10.seconds
 
+/** The client declares fifteen incubator slots (f/xe1.ma): eight permanent plus seven temporary. */
+private const val INCUBATOR_CAPACITY = 15
+
 data class StoredCharacter(
     val info: CharacterInfo,
     val pokemon: MutableList<Pokemon>,
@@ -391,9 +394,12 @@ constructor(
         if (!validSlot(from, fromSlot) || !validSlot(to, toSlot)) return@mutate null
         val party = stored.pokemon.toMutableList()
         val pc = stored.pcStorage.toMutableList()
+        // Everything that is not the party shares one list, so the container has to be part of the
+        // match: without it PC slot 0, incubator slot 0 and the hatch-helper slot are the same
+        // cell, and a drag would pick up whichever happened to be first.
         fun occupant(container: PokemonContainer, slot: Int): Pokemon? =
             if (container == PokemonContainer.PARTY) party.getOrNull(slot)
-            else pc.firstOrNull { it.containerSlot.toInt() == slot }
+            else pc.firstOrNull { it.container == container && it.containerSlot.toInt() == slot }
         val moving = occupant(from, fromSlot) ?: return@mutate null
         val displaced = occupant(to, toSlot)
         val leavesParty = from == PokemonContainer.PARTY && to != PokemonContainer.PARTY
@@ -425,6 +431,9 @@ constructor(
       when (container) {
         PokemonContainer.PARTY -> slot in 0 until MAX_PARTY_SIZE
         PokemonContainer.PC -> slot in 0 until PC_CAPACITY
+        // The client's own capacities (f/xe1): fifteen incubator slots, one hatch-helper slot.
+        PokemonContainer.INCUBATOR -> slot in 0 until INCUBATOR_CAPACITY
+        PokemonContainer.HATCH_HELPER -> slot == 0
         else -> false
       }
 

@@ -363,6 +363,10 @@ constructor(
       when (byte) {
         PC_CONTAINER -> PokemonContainer.PC
         PARTY_CONTAINER -> PokemonContainer.PARTY
+        // The incubator page drags into its own two containers: the egg slots and the single
+        // hatch-helper slot that wants a Flame Body or Magma Armor (owner's Larvesta, 2026-09-16).
+        INCUBATOR_CONTAINER -> PokemonContainer.INCUBATOR
+        HATCH_HELPER_CONTAINER -> PokemonContainer.HATCH_HELPER
         else -> null
       }
 
@@ -468,6 +472,8 @@ constructor(
     const val TRADE_CONTAINER = 2
 
     /** The client's container ordinals (f/Cy) as its drag packet writes them. */
+    const val INCUBATOR_CONTAINER = 13
+    const val HATCH_HELPER_CONTAINER = 14
     const val PC_CONTAINER = 0
     const val PARTY_CONTAINER = 1
 

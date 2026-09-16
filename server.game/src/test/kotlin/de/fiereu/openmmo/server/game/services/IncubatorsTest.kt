@@ -43,9 +43,9 @@ class IncubatorsTest :
 /** Eggs hatch on a timer, not on steps (owner, 2026-09-16); the two bonuses stack. */
 class IncubatorHatchTimeTest :
     io.kotest.core.spec.style.FunSpec({
-      test("a common species lands near five minutes and a slow one far longer") {
+      test("a common species lands at five minutes, and nothing goes past it") {
         Incubators.hatchSeconds(20) shouldBe 300
-        Incubators.hatchSeconds(120) shouldBe 1800
+        Incubators.hatchSeconds(120) shouldBe 300
       }
 
       test("Flame Body takes a fifth off, Donator a tenth, and together both") {
@@ -70,5 +70,24 @@ class IncubatorHatchTimeTest :
                 de.fiereu.openmmo.common.enums.Ability.FLAME_BODY,
                 de.fiereu.openmmo.common.enums.Ability.MAGMA_ARMOR,
             )
+      }
+    })
+
+/** No egg takes longer than five minutes (owner, 2026-09-16), whatever the species. */
+class IncubatorHatchCapTest :
+    io.kotest.core.spec.style.FunSpec({
+      test("a slow species is capped at the ceiling, not scaled past it") {
+        Incubators.hatchSeconds(120) shouldBe Incubators.MAX_HATCH_SECONDS
+        Incubators.hatchSeconds(255) shouldBe Incubators.MAX_HATCH_SECONDS
+        Incubators.MAX_HATCH_SECONDS shouldBe 300
+      }
+
+      test("quick species still come in under the ceiling") {
+        (Incubators.hatchSeconds(5) < Incubators.MAX_HATCH_SECONDS) shouldBe true
+        Incubators.hatchSeconds(5) shouldBe 5 * Incubators.secondsPerEggCycle
+      }
+
+      test("the bonuses come off the capped time, so nothing exceeds five minutes") {
+        Incubators.hatchSeconds(120, flameBody = true, donator = true) shouldBe 210
       }
     })

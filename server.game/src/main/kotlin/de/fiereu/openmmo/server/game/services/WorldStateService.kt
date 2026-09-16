@@ -105,7 +105,10 @@ class WorldStateService @Inject constructor(
         gender = info.rivalSex,
         skinTone = 0,
         hairColor = 0,
-        playtime = 0.0,
+        // The trainer card renders this with string 1603 "Time played: {00} hour(s).", so it is
+        // FRACTIONAL HOURS, not seconds. It was hardcoded 0.0, so every card read 0 hrs played
+        // (owner-reported 2026-09-16) even though the clock banks fine.
+        playtime = stored.info.playTimeSeconds / 3600.0,
         flags = 0,
         partyDex = partyDex,
         partyForms = partyDex.map { 0.toByte() },

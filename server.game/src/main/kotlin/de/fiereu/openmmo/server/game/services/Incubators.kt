@@ -64,6 +64,13 @@ object Incubators {
   val secondsPerEggCycle: Int =
       System.getProperty("monmmo.eggSecondsPerCycle")?.toIntOrNull()?.coerceAtLeast(1) ?: 15
 
+  /**
+   * No egg ever takes longer than five minutes (owner, 2026-09-16), so the per-cycle scale only
+   * separates the quick species from the slow ones up to this ceiling.
+   */
+  val MAX_HATCH_SECONDS: Int =
+      System.getProperty("monmmo.eggMaxHatchSeconds")?.toIntOrNull()?.coerceAtLeast(1) ?: 300
+
   /** Flame Body or Magma Armor sitting in the incubator's own slot takes 20% off the wait. */
   const val FLAME_BODY_BONUS = 0.20
 
@@ -85,7 +92,7 @@ object Incubators {
    * the client can report a combined "Hatching rate increased by {01}%" (string 1477).
    */
   fun hatchSeconds(eggCycles: Int, flameBody: Boolean = false, donator: Boolean = false): Int {
-    val base = eggCycles.coerceAtLeast(1) * secondsPerEggCycle
+    val base = (eggCycles.coerceAtLeast(1) * secondsPerEggCycle).coerceAtMost(MAX_HATCH_SECONDS)
     var reduction = 0.0
     if (flameBody) reduction += FLAME_BODY_BONUS
     if (donator) reduction += DONATOR_HATCH_BONUS

@@ -14,7 +14,13 @@ enum class PokemonContainer {
   BATTLE_BOX_1,
   BATTLE_BOX_2,
   GTS,
-  UNKNOWN_13,
+  /**
+   * The egg incubators (client `f/xe1.ma`, wire byte 13, capacity FIFTEEN - the eight permanent
+   * slots plus the seven temporary ones). The incubator page (f/fb6) lists this container and the
+   * PC side by side, which is what its fill-all / empty-to-PC buttons move eggs between
+   * (bytecode-walked 2026-09-16; see server Incubators).
+   */
+  INCUBATOR,
   UNKNOWN_14,
 
   /**

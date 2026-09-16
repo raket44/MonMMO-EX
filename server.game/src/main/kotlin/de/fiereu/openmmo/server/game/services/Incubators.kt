@@ -36,6 +36,18 @@ object Incubators {
   /** The character flag recording that a daycare man has been met (any region). */
   const val MET_DAYCARE_MAN = "global/FLAG_MET_DAYCARE_MAN"
 
+  /**
+   * Where eggs actually sit: client container `f/xe1.ma`, wire byte 13, capacity FIFTEEN - the
+   * eight permanent slots plus the seven temporary ones. The page (f/fb6) lists it next to the PC
+   * (byte 0), which is what its two buttons move eggs between:
+   *  - c2s 0x70 (client f/dp5, EMPTY body) from the incubator page itself, and
+   *  - c2s 0xd3 (client f/wf0, EMPTY body) from f/vg5.
+   * Our protocol table still maps those two opcodes to GtlMarketListingsRequest and
+   * CancelSocialInteraction, so both currently land on the wrong handler - nothing implements the
+   * moves yet (owner pressed both on 2026-09-16 to surface them).
+   */
+  val CONTAINER = de.fiereu.openmmo.common.enums.PokemonContainer.INCUBATOR
+
   fun packet(flag: Int) = StoryFlagUpdatePacket(STORE, flag, 1)
 
   fun firstChampionPacket() = packet(FIRST_CHAMPION_FLAG)

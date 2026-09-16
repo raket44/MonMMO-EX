@@ -24,7 +24,8 @@ private val log = io.github.oshai.kotlinlogging.KotlinLogging.logger {}
  *
  * Pairing rules (operator-specified): the FEMALE determines the offspring's family and the baby is
  * the family's youngest form; a Ditto substitutes for either parent; males just need a shared egg
- * group; shinies only breed with shinies and alphas only with alphas. OT attribution: shiny babies
+ * group; shinies only breed with shinies, while an alpha MAY pair with a non-alpha (the client allows
+ * it and warns the baby will not be an alpha). OT attribution: shiny babies
  * carry your OT only from a mother with your OT (else Unknown OT); non-shiny babies always carry
  * your name, starred when the species will not register in the Pokedex. The submit still only
  * logs - egg creation is the next system.
@@ -268,7 +269,9 @@ constructor(
     val bDitto = isDitto(b)
     if (aDitto && bDitto) return "two Dittos"
     if ((a.isShiny || a.isSecret) != (b.isShiny || b.isSecret)) return "shiny with non-shiny"
-    if (a.isAlpha != b.isAlpha) return "alpha with non-alpha"
+    // Alpha with non-alpha is LEGAL to the client: it shows string 2522 ("It will not be an Alpha
+    // ... because one of the parents is not an Alpha") as a warning and still lets the pair breed.
+    // We used to refuse it, so the window offered a pair we rejected (owner agreed 2026-09-16).
     fun groups(def: de.fiereu.openmmo.pokemon.SpeciesDef) =
         setOf(def.eggGroup1, def.eggGroup2) - EggGroup.NONE
     if (!aDitto && EggGroup.NO_EGGS_DISCOVERED in groups(defA)) return "${defA.name} cannot breed"

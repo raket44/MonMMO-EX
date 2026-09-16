@@ -62,7 +62,7 @@ class WorldStateService @Inject constructor(
             PokemonContainer.BATTLE_BOX_1 to emptyList(),
             PokemonContainer.BATTLE_BOX_2 to emptyList(),
             PokemonContainer.DAYCARE to emptyList(),
-            PokemonContainer.UNKNOWN_13 to emptyList(),
+            PokemonContainer.INCUBATOR to emptyList(),
             PokemonContainer.UNKNOWN_14 to emptyList(),
         )
     // Split under the client's inflate buffer (containerPackets): a big PC in one packet garbles

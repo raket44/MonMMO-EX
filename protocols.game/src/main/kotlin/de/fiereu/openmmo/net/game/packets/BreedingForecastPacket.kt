@@ -91,6 +91,11 @@ object BreedingForecastPacketCodec : PacketCodec<BreedingForecastPacket>() {
     val parentB = field(S64LE, BreedingForecastPacket::parentB)
     val hasPreview = field(Bool, BreedingForecastPacket::hasPreview)
     if (!hasPreview) {
+      // The client's no-preview branch (f/bx8.Rl0) still reads an int (bx8.yO) and a U8-counted
+      // list (bx8.VJ1, entries via ih6.CI0) before returning, so a REJECTED pair underflowed the
+      // reader as well.
+      padding(4)
+      padding(1)
       return BreedingForecastPacket(
           parentA,
           parentB,
@@ -122,6 +127,11 @@ object BreedingForecastPacketCodec : PacketCodec<BreedingForecastPacket>() {
     val shiny = field(Bool, BreedingForecastPacket::shiny)
     val cost = field(S32LE, BreedingForecastPacket::cost)
     val secondaryCost = field(S32LE, BreedingForecastPacket::secondaryCost)
+    // THE LAST BYTE (f/bx8.Rl0, the read at line 315): a U8 presence flag for an optional trailing
+    // block (bx8.KW, read through ih6.JI1 only when it is 1). Omitting it threw
+    // "Buffer underflow for Ij0 [R] 0x73 bx8:315" on r32645, the client dropped the whole packet,
+    // and the breed window never drew a forecast (2026-09-16).
+    padding(1)
     return BreedingForecastPacket(
         parentA,
         parentB,

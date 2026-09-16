@@ -186,7 +186,7 @@ constructor(
             species = species.toShort(),
             flags =
                 de.fiereu.openmmo.net.game.packets.EntityFollowerPacket.followerFlags(
-                    shiny = chosen?.isShiny ?: false),
+                    shiny = chosen?.isShiny ?: false, large = chosen?.isAlpha ?: false),
         )
     ctx.send(update)
     broadcastToObservers(ctx, update)

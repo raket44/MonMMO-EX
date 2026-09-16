@@ -63,7 +63,7 @@ constructor(
         followerDexId = clientSpeciesId(follower?.dexId ?: 0).toShort(),
         followerFlags =
             de.fiereu.openmmo.net.game.packets.EntityFollowerPacket.followerFlags(
-                    shiny = follower?.isShiny ?: false)
+                    shiny = follower?.isShiny ?: false, large = follower?.isAlpha ?: false)
                 .toInt() and 0xFF,
         railLine = railLine,
         transportation = transportation,

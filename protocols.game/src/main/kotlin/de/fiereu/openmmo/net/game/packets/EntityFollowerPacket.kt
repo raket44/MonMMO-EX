@@ -27,13 +27,20 @@ data class EntityFollowerPacket(
     /**
      * Bits of the follower flag byte, as the client's mod loader keys follower sheets (f/EP: a
      * `-f-` sheet registers under 0x20, an `-s-` sheet under 0x40, the low bits are the form) and
-     * the renderer looks them up (f/xX1: species | byte << 16).
+     * the renderer looks them up (f/xX1: species | byte << 16). Re-verified on r32645 (f/im7.pR1,
+     * 2026-09-15): low 5 bits form, 0x20 female (f/o80.Hi picks the gender sprite), 0x40 shiny
+     * (sheet id + 2000), and 0x80 is read by the follower entity itself (f/vc1.eL0): the sheet is
+     * drawn at 4/3 scale - the "one size bigger" overworld render retail uses for alphas.
      */
     const val FOLLOWER_FEMALE = 0x20
     const val FOLLOWER_SHINY = 0x40
+    const val FOLLOWER_LARGE = 0x80
 
-    fun followerFlags(shiny: Boolean, female: Boolean = false): Byte =
-        ((if (shiny) FOLLOWER_SHINY else 0) or (if (female) FOLLOWER_FEMALE else 0)).toByte()
+    fun followerFlags(shiny: Boolean, female: Boolean = false, large: Boolean = false): Byte =
+        ((if (shiny) FOLLOWER_SHINY else 0) or
+                (if (female) FOLLOWER_FEMALE else 0) or
+                (if (large) FOLLOWER_LARGE else 0))
+            .toByte()
   }
 }
 

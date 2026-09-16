@@ -485,7 +485,7 @@ constructor(
     val raid = de.fiereu.openmmo.server.game.battle.CrystalOnixRaid
     val boss = expansionSpecies.get(raid.SPECIES_SYMBOL) ?: return BattleResult.FAILED
     val specs =
-        listOf(OpponentSpec(boss.serverId, raid.BOSS_LEVEL, raid.OPENING_MOVES, iv = 31, shiny = true, alpha = true)) +
+        listOf(OpponentSpec(boss.serverId, raid.BOSS_LEVEL, raid.OPENING_MOVES, iv = 31, shiny = false, alpha = true)) +
             List(raid.HELPERS) { OpponentSpec(raid.HELPER_DEX, raid.HELPER_LEVEL, raid.HELPER_MOVES) }
     val battle =
         createBattle(session, specs, catchable = false, escapable = false, formatOverride = BattleFormat.TRIPLES, raid = true)

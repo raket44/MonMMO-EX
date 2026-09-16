@@ -344,13 +344,7 @@ constructor(
       }
       "pc" -> {
         val stored = characterStore.getCharacter(ctx.characterId) ?: return
-        ctx.session.send(
-            PokemonContainerPacket(
-                container = PokemonContainer.PC,
-                hasChange = true,
-                delete = false,
-                pokemon = stored.pcStorage,
-            ))
+        de.fiereu.openmmo.net.game.packets.containerPackets(PokemonContainer.PC, stored.pcStorage).forEach { p -> ctx.session.send(p) }
         ctx.reply("Sent PC container with ${stored.pcStorage.size} pokemon.")
       }
       else -> ctx.reply(usage)

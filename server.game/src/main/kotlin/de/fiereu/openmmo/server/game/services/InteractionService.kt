@@ -260,13 +260,8 @@ constructor(
             1 -> {
               ctx.sign(opened)
               // Fresh contents first, then the toggle that shows the window.
-              session.send(
-                  de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
-                      container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
-                      hasChange = true,
-                      delete = false,
-                      pokemon = stored.pcStorage,
-                  ))
+              de.fiereu.openmmo.net.game.packets.containerPackets(de.fiereu.openmmo.common.enums.PokemonContainer.PC, stored.pcStorage)
+                  .forEach { p -> session.send(p) }
               session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
               stored.info.id.let { ocarinas.refill(session, it) }
             }

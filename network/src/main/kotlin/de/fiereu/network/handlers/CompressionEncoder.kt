@@ -4,7 +4,10 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.MessageToByteEncoder
 import java.io.ByteArrayOutputStream
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.zip.Deflater
+
+private val log = KotlinLogging.logger {}
 
 // One continuous raw deflate stream per connection: the deflater is never reset, so its sliding
 // window carries across packets. Each compressed packet is a Z_SYNC_FLUSH segment ending in
@@ -24,6 +27,11 @@ class CompressionEncoder(private val threshold: Int = 256) : MessageToByteEncode
       out.writeBytes(msg, msg.readerIndex(), payloadLen)
       msg.skipBytes(payloadLen)
       return
+    }
+    if (payloadLen > CLIENT_INFLATE_BUFFER) {
+      // The r32645 client inflates into a fixed 30000-byte buffer (f/od4.oP): the overflow stays in
+      // its inflater and every later compressed packet on this connection decodes as garbage.
+      log.warn { "Packet 0x${"%02x".format(opcode.toInt() and 0xFF)} payload $payloadLen bytes exceeds the client inflate buffer ($CLIENT_INFLATE_BUFFER); split it" }
     }
     val input = ByteArray(payloadLen)
     msg.getBytes(msg.readerIndex(), input, 0, payloadLen)
@@ -47,5 +55,6 @@ class CompressionEncoder(private val threshold: Int = 256) : MessageToByteEncode
 
   private companion object {
     const val SYNC_MARKER = 4
+    const val CLIENT_INFLATE_BUFFER = 30_000
   }
 }

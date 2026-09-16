@@ -307,7 +307,7 @@ constructor(
       val stored = characterStore.getCharacter(charId) ?: continue
       val party = stored.pokemon
       ctx.send(PokemonContainerPacket(container = PokemonContainer.PARTY, hasChange = true, delete = false, pokemon = party))
-      ctx.send(storyItemStacksPacket(stored.items))
+      storyItemStacksPackets(stored.items).forEach { p -> ctx.send(p) }
       ctx.send(LocalCharacterDeltaPacket(money = stored.info.money))
       // Trade evolutions: what this side just received evolves now, the way the cartridges do it
       // right after the trade, through the same cancellable prompt as any other evolution.

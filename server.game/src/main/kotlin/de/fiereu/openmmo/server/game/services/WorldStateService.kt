@@ -5,6 +5,7 @@ import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.PokemonContainer
 import de.fiereu.openmmo.net.game.packets.LocalPlayerStatePacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
+import de.fiereu.openmmo.net.game.packets.containerPackets
 import de.fiereu.openmmo.net.game.packets.StoryFlagUpdatePacket
 import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import javax.inject.Inject
@@ -59,19 +60,15 @@ class WorldStateService @Inject constructor(
             PokemonContainer.UNKNOWN_13 to emptyList(),
             PokemonContainer.UNKNOWN_14 to emptyList(),
         )
+    // Split under the client's inflate buffer (containerPackets): a big PC in one packet garbles
+    // every compressed packet after it, bag included.
     for ((container, pokemon) in containers) {
-      ctx.send(
-          PokemonContainerPacket(
-              container = container,
-              hasChange = true,
-              delete = false,
-              pokemon = pokemon,
-          ))
+      containerPackets(container, pokemon).forEach { p -> ctx.send(p) }
     }
 
     // The real server sends the bag stacks interleaved with the containers, so the client has the
     // items before entering the world.
-    ctx.send(storyItemStacksPacket(stored.items))
+    storyItemStacksPackets(stored.items).forEach { p -> ctx.send(p) }
   }
 
   /**

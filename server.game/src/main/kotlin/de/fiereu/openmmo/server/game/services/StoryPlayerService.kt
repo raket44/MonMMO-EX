@@ -14,7 +14,7 @@ import de.fiereu.openmmo.net.game.packets.SocialListEntryAddPacket
 import de.fiereu.openmmo.net.game.packets.battle.BattleAddPokemon
 import de.fiereu.openmmo.net.game.packets.battle.BattleSideAddPokemonPacket
 import de.fiereu.openmmo.net.game.packets.battle.ItemStack
-import de.fiereu.openmmo.net.game.packets.battle.itemStacksPacket
+import de.fiereu.openmmo.net.game.packets.battle.itemStacksPackets
 import de.fiereu.openmmo.pokemon.SpeciesRegistry
 import de.fiereu.openmmo.server.game.battle.BattleRng
 import de.fiereu.openmmo.server.game.battle.StatCalculator
@@ -216,7 +216,7 @@ constructor(
       if (CLIENT_BICYCLE_ITEM !in bag) characters.addItem(characterId, CLIENT_BICYCLE_ITEM, 1)
     }
     val stored = characters.getCharacter(characterId) ?: return false
-    session.send(storyItemStacksPacket(stored.items))
+    storyItemStacksPackets(stored.items).forEach { p -> session.send(p) }
     worldState.refreshUnlocks(session, stored)
     return true
   }
@@ -249,8 +249,8 @@ object RespawnPoint {
 }
 
 /** Builds a stable full bag snapshot. */
-fun storyItemStacksPacket(items: Map<Int, Int>) =
-    itemStacksPacket(
+fun storyItemStacksPackets(items: Map<Int, Int>): List<de.fiereu.openmmo.net.game.packets.battle.BattleSidePartyPacket> =
+    itemStacksPackets(
         items.entries
             .sortedBy { it.key }
             .flatMap { (itemId, quantity) ->

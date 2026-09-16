@@ -76,7 +76,7 @@ constructor(
   suspend fun enter(session: SessionContext, charId: Long) {
     story.setFlag(charId, KantoFlags.FLAG_SYS_SAFARI_MODE)
     characterStore.addItem(charId, safariBallItemId, BALLS)
-    characterStore.getCharacter(charId)?.let { session.send(storyItemStacksPacket(it.items)) }
+    characterStore.getCharacter(charId)?.let { storyItemStacksPackets(it.items).forEach { p -> session.send(p) } }
     set(session, charId, STEPS, BALLS)
     log.info { "[safari] char=$charId enters: $BALLS balls, $STEPS steps" }
   }
@@ -87,7 +87,7 @@ constructor(
     val left = characterStore.getCharacter(charId)?.items?.get(safariBallItemId) ?: 0
     if (left > 0) {
       characterStore.addItem(charId, safariBallItemId, -left)
-      characterStore.getCharacter(charId)?.let { session.send(storyItemStacksPacket(it.items)) }
+      characterStore.getCharacter(charId)?.let { storyItemStacksPackets(it.items).forEach { p -> session.send(p) } }
     }
     set(session, charId, 0, 0)
     log.info { "[safari] char=$charId leaves" }

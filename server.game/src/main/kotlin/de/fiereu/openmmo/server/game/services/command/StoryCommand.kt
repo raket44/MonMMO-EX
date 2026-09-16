@@ -14,7 +14,7 @@ import de.fiereu.openmmo.server.game.services.CLIENT_BICYCLE_ITEM
 import de.fiereu.openmmo.server.game.services.DUPLICATE_BICYCLE_ITEM
 import de.fiereu.openmmo.server.game.services.REGIONAL_BIKE_ITEMS
 import de.fiereu.openmmo.server.game.services.itemStackUpdatePacket
-import de.fiereu.openmmo.server.game.services.storyItemStacksPacket
+import de.fiereu.openmmo.server.game.services.storyItemStacksPackets
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import de.fiereu.openmmo.server.game.storage.NewGameStarts
 import javax.inject.Inject
@@ -97,7 +97,7 @@ constructor(
     val refreshed = characterStore.getCharacter(charId) ?: return
     worldStateService.send(ctx.session, refreshed, fullVars = true)
     // The bag as it now is, then a zero stack for each bike so an open bag drops it at once.
-    ctx.session.send(storyItemStacksPacket(refreshed.items))
+    storyItemStacksPackets(refreshed.items).forEach { p -> ctx.session.send(p) }
     for (itemId in takenBikes) ctx.session.send(itemStackUpdatePacket(itemId, 0))
     warpService.executeWarp(
         ctx.session,

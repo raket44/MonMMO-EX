@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.net.game.packets.battle
 
 import de.fiereu.bytecodec.*
+import de.fiereu.openmmo.net.game.chunkByWireSize
 
 data class BattlePartyStatusEffect(
     val durationTurns: Int,
@@ -108,4 +109,15 @@ object BattleSidePartyPacketCodec : PacketCodec<BattleSidePartyPacket>() {
     val pokemon = field(BattlePartyPokemonCodec.listPrefixed(U16LE)) { it.pokemon }
     return BattleSidePartyPacket(side, replace, pokemon)
   }
+}
+
+/**
+ * The bag as packets the client can inflate: the first replaces the stack list (f/y.c00 builds a
+ * new kn0), the rest arrive with replace clear and are added to it stack by stack.
+ */
+fun itemStacksPackets(stacks: List<ItemStack>): List<BattleSidePartyPacket> {
+  val entries = itemStacksPacket(stacks).pokemon
+  val runs = chunkByWireSize(entries, BattlePartyPokemonCodec, maxCount = 0xFFFF)
+  if (runs.isEmpty()) return listOf(BattleSidePartyPacket(side = 1, replace = true, pokemon = emptyList()))
+  return runs.mapIndexed { i, run -> BattleSidePartyPacket(side = 1, replace = i == 0, pokemon = run) }
 }

@@ -3,6 +3,7 @@ package de.fiereu.openmmo.net.game.packets
 import de.fiereu.bytecodec.*
 import de.fiereu.openmmo.common.Pokemon
 import de.fiereu.openmmo.common.enums.PokemonContainer
+import de.fiereu.openmmo.net.game.chunkByWireSize
 import de.fiereu.openmmo.net.game.codecs.PokemonCodec
 
 data class PokemonContainerPacket(
@@ -51,5 +52,19 @@ object PokemonContainerPacketCodec : PacketCodec<PokemonContainerPacket>() {
     }
     val pokemon = field(PokemonListPrefixedU8, PokemonContainerPacket::pokemon)
     return PokemonContainerPacket(container, hasChange, false, pokemon)
+  }
+}
+
+/**
+ * A whole container as packets the client can inflate: the first carries the change flag (f/r99.c00
+ * registers a fresh container and files its monsters), the rest arrive without it and are filed
+ * into that container one by one - the same path a boxed catch uses. The list count is a byte, so
+ * a run never exceeds 255 monsters either.
+ */
+fun containerPackets(container: PokemonContainer, pokemon: List<Pokemon>): List<PokemonContainerPacket> {
+  val runs = chunkByWireSize(pokemon, PokemonCodec, maxCount = 255)
+  if (runs.isEmpty()) return listOf(PokemonContainerPacket(container, hasChange = true, delete = false, pokemon = emptyList()))
+  return runs.mapIndexed { i, run ->
+    PokemonContainerPacket(container, hasChange = i == 0, delete = false, pokemon = run)
   }
 }

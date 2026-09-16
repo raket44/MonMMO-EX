@@ -466,13 +466,8 @@ internal constructor(
   /** Opens the client's storage window on the player's PC boxes (fresh contents first). */
   fun openPcStorageWindow() {
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return
-    session.send(
-        de.fiereu.openmmo.net.game.packets.PokemonContainerPacket(
-            container = de.fiereu.openmmo.common.enums.PokemonContainer.PC,
-            hasChange = true,
-            delete = false,
-            pokemon = stored.pcStorage,
-        ))
+    de.fiereu.openmmo.net.game.packets.containerPackets(de.fiereu.openmmo.common.enums.PokemonContainer.PC, stored.pcStorage)
+        .forEach { p -> session.send(p) }
     session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
   }
 

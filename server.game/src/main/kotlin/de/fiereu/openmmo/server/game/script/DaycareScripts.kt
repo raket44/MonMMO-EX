@@ -25,6 +25,8 @@ internal object DaycareScripts {
    * gone for good, then the client's pick-two window; a no at either step gets the decline.
    */
   private fun daycareMan(ask: Int, confirm: Int, whichMon: Int, decline: Int) = Script { ctx ->
+    // The first daycare man ever spoken to hands over a permanent egg incubator (Incubators).
+    ctx.meetDaycareMan()
     if (ctx.askYesNo(Line(ask)) && ctx.askYesNo(Line(confirm))) {
       val response = ctx.breedSelection(Line(whichMon))
       log.info { "Daycare breed selection responded $response" }

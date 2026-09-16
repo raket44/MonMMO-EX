@@ -738,7 +738,9 @@ constructor(
           encounterTracker.sendState(ctx, stored)
         }
         ctx.send(HallOfFame.encounterCounterPacket())
+        ctx.send(Incubators.firstChampionPacket())
       }
+      if (Incubators.MET_DAYCARE_MAN in stored.storyFlags) ctx.send(Incubators.daycareManPacket())
     }
 
     // An entry script may fade back out, so it runs after the fade this arrival owns.

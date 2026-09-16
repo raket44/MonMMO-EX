@@ -47,8 +47,13 @@ class WorldStateService @Inject constructor(
           }
     }
     setFlags.forEach { ctx.send(it) }
-    // A Hall of Fame entry keeps the encounter counter unlocked on every later login (HallOfFame).
-    if (HallOfFame.FLAG in stored.storyFlags) ctx.send(HallOfFame.encounterCounterPacket())
+    // A Hall of Fame entry keeps the encounter counter unlocked on every later login (HallOfFame),
+    // and carries the five permanent egg incubators it unlocked (Incubators).
+    if (HallOfFame.FLAG in stored.storyFlags) {
+      ctx.send(HallOfFame.encounterCounterPacket())
+      ctx.send(Incubators.firstChampionPacket())
+    }
+    if (Incubators.MET_DAYCARE_MAN in stored.storyFlags) ctx.send(Incubators.daycareManPacket())
 
     val containers =
         mapOf(

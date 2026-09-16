@@ -463,6 +463,20 @@ internal constructor(
     return dialog.breedSelection(session, state, line.textId)
   }
 
+  /**
+   * Meeting a daycare man for the first time, in any region, unlocks one permanent egg incubator
+   * (see [de.fiereu.openmmo.server.game.services.Incubators]). Recorded on the character, so it
+   * only ever grants once and survives a relog.
+   */
+  fun meetDaycareMan() {
+    val id = characterId ?: return
+    val incubators = de.fiereu.openmmo.server.game.services.Incubators
+    if (incubators.MET_DAYCARE_MAN in (characters?.getCharacter(id)?.storyFlags ?: emptySet())) return
+    characters?.setStoryFlag(id, incubators.MET_DAYCARE_MAN)
+    characters?.flushCharacterAsync(id)
+    session.send(incubators.daycareManPacket())
+  }
+
   /** Opens the client's storage window on the player's PC boxes (fresh contents first). */
   fun openPcStorageWindow() {
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return
@@ -824,6 +838,9 @@ internal constructor(
       characters?.flushCharacterAsync(id)
     }
     session.send(de.fiereu.openmmo.server.game.services.HallOfFame.encounterCounterPacket())
+    // The first championship also unlocks five permanent egg incubators (Incubators; the client
+    // sums store-10 flags, and 771 alone is worth five of the eight slots).
+    session.send(de.fiereu.openmmo.server.game.services.Incubators.firstChampionPacket())
     val closed = dialog.expectAcknowledgement(session)
     session.send(de.fiereu.openmmo.server.game.services.HallOfFame.showPacket(regionId))
     closed.await()

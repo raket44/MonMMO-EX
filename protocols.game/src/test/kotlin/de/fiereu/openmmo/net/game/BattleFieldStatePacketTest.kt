@@ -3,6 +3,9 @@ package de.fiereu.openmmo.net.game
 import de.fiereu.openmmo.common.test.decodeBytes
 import de.fiereu.openmmo.common.test.encodeToBytes
 import de.fiereu.openmmo.common.test.fixture
+import de.fiereu.openmmo.common.utils.toHex
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import de.fiereu.openmmo.common.Skin
 import de.fiereu.openmmo.common.enums.SkinSlot
 import de.fiereu.openmmo.net.game.codecs.SkinSet
@@ -227,5 +230,36 @@ class BattleFieldStateSamplesTest :
                 opponentActive = listOf(0, 1, 2, null, null),
                 format = BattleFormat.HORDE,
             ))
+      }
+    })
+
+// r32645 reads the rarity flags twice: the active detail's short (f/at0.VQ1 -> f/b54.c50, where bit
+// 0x4 sets E70 = alpha and f/lq1.rj tints the sprite) and the full block's short after the hp pair
+// (f/at0.ci -> f/qi0.mP -> f/dl6.Lq0). The alpha mark used to ride in the gender byte, so no battle
+// sprite ever glowed (2026-09-16).
+class BattleBlockRarityTest :
+    FunSpec({
+      test("a shiny alpha rides its rarity bits in the active detail and the party block") {
+        val decoded = BattleFieldStatePacketCodec.decodeBytes(fixture(WILD))
+        val alphaLead = decoded.playerParty[0].copy(shiny = true, alpha = true, gender = 1)
+        val wildAlpha = decoded.opponentParty.single().copy(alpha = true, secret = true)
+        val packet = decoded.copy(playerParty = listOf(alphaLead, decoded.playerParty[1]), opponentParty = listOf(wildAlpha))
+        val hex = BattleFieldStatePacketCodec.encodeToBytes(packet).toHex()
+        val plain = BattleFieldStatePacketCodec.encodeToBytes(decoded).toHex()
+        // Player block: gender byte 01, form 00, SK 0000, hp 1600 1600, status 00, flags 0500 (shiny|alpha), ff 03.
+        hex shouldContain "0100000016001600" + "000500ff03"
+        // Active detail: species ef01, level 06, empty name, flags 0500, gender 01, form 00, then the tail.
+        hex shouldContain "ef01060000050001" + "0003ff"
+        // Wild block flags 0c00 (alpha|secret) sit in the same tail slot.
+        hex shouldContain "0e000e00000c00ff03"
+        plain shouldNotContain "0500ff03"
+
+        val back = BattleFieldStatePacketCodec.decodeBytes(BattleFieldStatePacketCodec.encodeToBytes(packet))
+        back.playerParty[0].shiny shouldBe true
+        back.playerParty[0].alpha shouldBe true
+        back.playerParty[0].gender shouldBe 1.toByte()
+        back.opponentParty.single().alpha shouldBe true
+        back.opponentParty.single().secret shouldBe true
+        back.opponentParty.single().shiny shouldBe false
       }
     })

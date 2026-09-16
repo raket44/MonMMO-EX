@@ -203,7 +203,7 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
             field(BattleActiveDetailCodec) {
                   val index = it.opponentActive[position]!!
                   val mon = it.opponentParty[index]
-                  BattleActiveDetail(position, mon.slot, mon.species, mon.level, mon.gender, owner = if (it.partnerTrainerId != null) mon.owner else null)
+                  BattleActiveDetail.of(position, mon, owner = if (it.partnerTrainerId != null) mon.owner else null)
                 }
                 .slot
           } else null

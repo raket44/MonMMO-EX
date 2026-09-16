@@ -386,7 +386,9 @@ class BattleMonState(
           gender = illusionOf?.gender ?: gender,
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
+          shiny = illusionOf?.source?.isShiny ?: source.isShiny,
           alpha = source.isAlpha,
+          secret = source.isSecret,
       )
 
   fun toBlock(slot: Int, movesPresent: Boolean): BattleMonBlock =
@@ -403,6 +405,7 @@ class BattleMonState(
           moveIds = List(BattleMonBlock.MOVE_SLOTS) { moves.getOrNull(it)?.id ?: 0 },
           alpha = source.isAlpha,
           shiny = illusionOf?.source?.isShiny ?: source.isShiny,
+          secret = source.isSecret,
       )
 
   /** The species the client is shown: the Illusion disguise while it holds, else the real one. */

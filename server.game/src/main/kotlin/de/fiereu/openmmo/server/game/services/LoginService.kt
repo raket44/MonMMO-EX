@@ -114,6 +114,7 @@ constructor(
     private val ndsWarps: NdsWarps,
     private val ocarinas: OcarinaService,
     private val guildService: GuildService,
+    private val appearance: AppearanceService,
     private val linkService: LinkService,
     private val encounterTracker: EncounterTrackerService,
 ) {
@@ -424,6 +425,8 @@ constructor(
     // season-change refresh listeners never fire mid-transition (mixed NDS/GBA values did, and
     // glitched GBA door-exit animations).
     ctx.send(SeasonPacket(Season.current()))
+    // Worn cosmetics whose item left the bag (traded away) come off before the look is sent.
+    appearance.dropUnownedWorn(info.id)
     val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     if (map != null) {
       log.info {

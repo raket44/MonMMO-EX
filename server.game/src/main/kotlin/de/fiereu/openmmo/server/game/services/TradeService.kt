@@ -54,6 +54,7 @@ class TradeService
 constructor(
     private val sessionRegistry: SessionRegistry,
     private val characterStore: CharacterStore,
+    private val appearance: AppearanceService,
 ) {
 
   class ItemOffer(val itemId: Int, var quantity: Int)
@@ -286,6 +287,9 @@ constructor(
           continue
         }
         characterStore.addItem(to, offer.itemId, offer.quantity)
+        // A cosmetic the giver was wearing comes off with the item (the bag cannot render a worn
+        // cosmetic it does not hold).
+        appearance.dropUnownedWorn(from, sessionRegistry.getByCharacterId(from))
       }
       val money = trade.money[side]
       if (money > 0 && characterStore.addMoney(from, -money)) characterStore.addMoney(to, money)

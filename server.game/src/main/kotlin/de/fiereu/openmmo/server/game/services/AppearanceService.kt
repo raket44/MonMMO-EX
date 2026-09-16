@@ -196,6 +196,34 @@ constructor(
   }
 
   /**
+   * Takes off every worn cosmetic whose bag item is gone and the addon is not free (innate body
+   * features and defaults stay). A trade let a player give away the facial hair and the bike he
+   * was wearing (2026-09-16); the client's bag window then died rendering a worn cosmetic it could
+   * not find. Runs at login placement and, with [ctx], right after a trade so the look is
+   * re-announced. Returns the cleared slots.
+   */
+  fun dropUnownedWorn(charId: Long, ctx: de.fiereu.network.SessionContext? = null): List<SkinSlot> {
+    val stored = characters.getCharacter(charId) ?: return emptyList()
+    val cleared = mutableListOf<SkinSlot>()
+    for ((slot, skin) in stored.skins.toMap()) {
+      val type = skin.type?.toInt() ?: continue
+      val addon = CosmeticsRegistry.get(slot, type) ?: continue
+      if (addon.free || addon.itemId in stored.items) continue
+      characters.setSkin(charId, slot, null)
+      cleared += slot
+      log.info { "[Appearance] char=$charId slot=$slot ${addon.name} taken off: item ${addon.itemId} is no longer in the bag" }
+    }
+    if (cleared.isEmpty()) return cleared
+    characters.flushCharacterAsync(charId)
+    if (ctx != null) {
+      resend(ctx, charId)
+      val state = ctx.attributes[PLAYER_STATE]
+      if (SkinSlot.BIKE in cleared && state?.riding == true) send(ctx, EntityTransportationPacket(charId, 0x02))
+    }
+    return cleared
+  }
+
+  /**
    * Announce the stored appearance to the live entity - 0x90 applies it without a respawn. The
    * boolean routes the set client-side (f.uz.X91): true stages it into IL0.JQ1 where nothing reads
    * it, FALSE applies into IL0.v4 - the set the renderer and the bike frame selector (jR1) actually

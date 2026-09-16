@@ -4,6 +4,7 @@ import de.fiereu.network.PacketEvent
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.clientSpeciesId
 import de.fiereu.openmmo.common.enums.EggGroup
+import de.fiereu.openmmo.common.enums.PokemonRarityFlag
 import de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket
 import de.fiereu.openmmo.net.game.packets.BreedingForecastPacket
 import de.fiereu.openmmo.net.game.packets.SubmitBreedingPartyPacket
@@ -111,6 +112,14 @@ constructor(
       if (first.heldItem in EVERSTONES) add(first.nature.ordinal.toByte())
       if (second.heldItem in EVERSTONES) add(second.nature.ordinal.toByte())
     }
+    // The offspring's appearance flags, in the record's own bits (PokemonRarityFlag / client
+    // dl6.D20). The window builds a baby record from these and compares it against BOTH parents:
+    // whatever it finds set on a parent but clear on the child it lists as a trait that will not
+    // be inherited (strings 2521-2524, gathered by f/yb3.run). Sending a flat 0 made it announce
+    // "It will not be an Alpha because one of the parents is not an Alpha" for a pair of alphas.
+    // The client's own wording gives the rules: an Alpha needs BOTH parents Alpha, a Hidden
+    // Ability comes from the MAIN parent only (2521), and Fateful Encounter never passes (2523).
+    val offspringFlags = offspringRarityFlags(first, second, mother)
     session.send(
         BreedingForecastPacket(
             parentA = p.ownPokemonEntityId,
@@ -131,8 +140,8 @@ constructor(
             gender = otByte,
             // Capture-mislabeled TWICE over: this short is the offspring's APPEARANCE FLAGS
             // bitfield (k91.Zl1 - bit 0 shiny, bit 3 secret, more for alpha; -1 rendered a
-            // secret shiny alpha, operator-verified). 0 = plain until shininess rules exist.
-            nature = 0,
+            // secret shiny alpha, operator-verified). See offspringFlags above.
+            nature = offspringFlags,
             // Capture-mislabeled: this boolean is the GENDER-CHOOSER toggle, not shininess.
             // The renderer (Cm0 param 11) sets the gender buttons' visibility from it and
             // resets the preference to "any" when false - the section only exists while true.
@@ -356,4 +365,34 @@ constructor(
             6292 to 5, // Power Band - Sp. Defense
         )
   }
+}
+
+/**
+ * The offspring's appearance flags for the breed window, in the record's own bits
+ * ([PokemonRarityFlag], client `dl6.D20`).
+ *
+ * The window builds a baby record from this short and compares it against BOTH parents: every trait
+ * set on a parent but clear on the child is listed as one that will not be inherited (client
+ * strings 2521-2524, gathered in f/yb3.run), under "Are you sure you want to continue?". Sending a
+ * flat zero therefore told a pair of alphas "It will not be an Alpha because one of the parents is
+ * not an Alpha" (owner-reported 2026-09-16).
+ *
+ * The rules come from the client's own wording:
+ * - Alpha passes only when BOTH parents are alphas (2522).
+ * - A Hidden Ability comes from the MAIN parent alone - the one whose family the baby takes (2521).
+ * - Fateful Encounter never passes (2523), and neither does the raid mark.
+ * - Shininess has no "will not inherit" string, and the pairing rules already require both parents
+ *   to be shiny, so a shiny pair breeds a shiny; the rarer secret variant needs both parents secret.
+ */
+internal fun offspringRarityFlags(
+    first: de.fiereu.openmmo.common.Pokemon,
+    second: de.fiereu.openmmo.common.Pokemon,
+    mother: de.fiereu.openmmo.common.Pokemon,
+): Short {
+  val bothShiny = (first.isShiny || first.isSecret) && (second.isShiny || second.isSecret)
+  return ((if (bothShiny) PokemonRarityFlag.SHINY.mask else 0) or
+          (if (first.isSecret && second.isSecret) PokemonRarityFlag.SECRET_SHINY.mask else 0) or
+          (if (first.isAlpha && second.isAlpha) PokemonRarityFlag.ALPHA.mask else 0) or
+          (if (mother.hasHiddenAbility) PokemonRarityFlag.HIDDEN_ABILITY.mask else 0))
+      .toShort()
 }

@@ -437,6 +437,25 @@ constructor(
         else -> false
       }
 
+  /**
+   * Replace one monster by id wherever it is stored - the party or any other container. [updatePokemon]
+   * only rewrites party members, so a boxed monster (an egg in an incubator, say) could not change.
+   */
+  fun updateStoredPokemon(characterId: Long, updated: Pokemon) {
+    mutate(characterId) { stored ->
+      if (stored.pokemon.any { it.id == updated.id }) {
+        stored.copy(
+            pokemon = stored.pokemon.map { if (it.id == updated.id) updated else it }.toMutableList())
+      } else if (stored.pcStorage.any { it.id == updated.id }) {
+        stored.copy(
+            pcStorage =
+                stored.pcStorage.map { if (it.id == updated.id) updated else it }.toMutableList())
+      } else {
+        null
+      }
+    }
+  }
+
   /** Replace one party monster by id, for example after a battle changed hp, xp, or level. */
   fun updatePokemon(characterId: Long, updated: Pokemon) {
     mutate(characterId) { stored ->

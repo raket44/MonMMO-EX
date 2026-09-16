@@ -331,7 +331,8 @@ object GameProtocol : Protocol() {
 
     s2c<NamedCategoryEntriesPacket>(0x6Fu, NamedCategoryEntriesPacketCodec)
 
-    c2s<GtlMarketListingsRequestPacket>(0x70u, GtlMarketListingsRequestPacketCodec)
+    // 0x70 c2s is the incubator page's "Remove All" button (client f/dp5), not a market request.
+    c2s<IncubatorRemoveAllPacket>(0x70u, IncubatorRemoveAllPacketCodec)
     s2c<GtlMarketListingsPacket>(0x70u, GtlMarketListingsPacketCodec)
 
     c2s<GtlPurchaseListingPacket>(0x71u, GtlPurchaseListingPacketCodec)

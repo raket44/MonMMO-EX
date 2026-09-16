@@ -119,6 +119,7 @@ constructor(
     private val chatCommandService: ChatCommandService,
     private val shopService: ShopService,
     private val breedingService: BreedingService,
+    private val incubatorService: de.fiereu.openmmo.server.game.services.IncubatorService,
     private val inventoryActionService: InventoryActionService,
     private val evolutionService: de.fiereu.openmmo.server.game.services.EvolutionService,
     private val appearanceService: AppearanceService,
@@ -156,6 +157,9 @@ constructor(
     onSuspend<ExchangeItemRequestPacket> { event -> shopService.onBuy(event) }
     onSuspend<ShopSellRequestPacket> { event -> shopService.onSell(event) }
 
+    onSuspend<de.fiereu.openmmo.net.game.packets.IncubatorRemoveAllPacket> { event ->
+      incubatorService.onRemoveAll(event)
+    }
     on<de.fiereu.openmmo.net.game.packets.AssignBreedingSlotPacket> { event ->
       breedingService.onAssignSlot(event)
     }

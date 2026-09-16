@@ -28,6 +28,8 @@ fun main() {
   component.databaseBootstrap().migrate()
   val characterStore = component.characterStore()
   characterStore.startPeriodicFlush()
+  // Eggs come due on their own timer, so they need a sweep rather than a player action.
+  component.incubatorService().start()
   runBlocking {
     component.devCharacterSeeder().seed()
     component.testBoxSeeder().seed()

@@ -26,6 +26,8 @@ interface GameServerComponent {
 
   fun characterStore(): CharacterStore
 
+  fun incubatorService(): de.fiereu.openmmo.server.game.services.IncubatorService
+
   fun devCharacterSeeder(): DevCharacterSeeder
 
   fun testBoxSeeder(): de.fiereu.openmmo.server.game.storage.TestBoxSeeder

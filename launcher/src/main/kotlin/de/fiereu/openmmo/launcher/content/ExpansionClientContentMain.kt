@@ -1095,7 +1095,7 @@ private val RAID_STRINGS =
  */
 private val DAYCARE_STRINGS =
     mapOf(
-        16790020 to "Im the day care guy. Care to strike a bargain?\\nIf you give me 2 Pokemon I can use as breeders I'll give you pick of the litter! How's that sound?",
+        16790020 to "Im the Day Care Man. Care to strike a bargain?\\n\\nIf you give me 2 Pokemon I can use as breeders I'll give you pick of the litter! How's that sound?",
         16790021 to "Are you sure? You wont get these Pokemon back.",
     )
 

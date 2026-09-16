@@ -64,6 +64,8 @@ private val GBA_REGIONS = setOf(0, 1)
 
 /** FireRed SafariZone_Text_OutOfBalls, "PA: Ding-dong! You are out of SAFARI BALLS!" (kanto.json). */
 private const val SAFARI_OUT_OF_BALLS_TEXT = 1834067
+/** Staged client string (ExpansionClientContentMain): "You have no more Pokemon that can fight! You whited out..." */
+private const val WHITEOUT_LINE = 16790016
 
 private val log = KotlinLogging.logger {}
 
@@ -1195,6 +1197,13 @@ constructor(
   }
 
   private fun endDefeat(battle: BattleInstance) {
+    // The cartridge's "out of usable Pokemon / whited out" text. It rides a STANDING foe: the
+    // player's side is empty by now, and the client drops sub-events aimed at a removed monster.
+    if (battle.whiteoutOnDefeat) {
+      battle.opponentActives().firstOrNull { !it.fainted }?.let { foe ->
+        emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.ClientLine(foe.entityId, WHITEOUT_LINE, shape = 0)))
+      }
+    }
     endBattle(battle, BattleResult.DEFEAT)
   }
 

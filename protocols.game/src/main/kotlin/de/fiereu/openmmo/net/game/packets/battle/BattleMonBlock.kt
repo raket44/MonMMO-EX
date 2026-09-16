@@ -16,6 +16,7 @@ data class BattleMonBlock(
     val entityId: Long,
     val species: Short,
     val level: Byte,
+    /** The client's gender byte (f/b54.Se): 0 male, 1 female, 2 genderless. */
     val gender: Byte,
     val abilityId: Short,
     val maxHp: Short,
@@ -24,6 +25,12 @@ data class BattleMonBlock(
     val moveIds: List<Short>,
     /** Rides the active detail's rarity flags (bit 0): the client picks the shiny sprite from it. */
     val shiny: Boolean = false,
+    /**
+     * Bit 0x4 of the little-endian short that starts with the gender byte (f/at0 -> f/b54.c50 p4;
+     * retail captures put the gender in its low byte, the client's c50 sets E70 = alpha from bit
+     * 0x4). The client marks the monster as an alpha in battle from it (f/b54.lU1).
+     */
+    val alpha: Boolean = false,
 ) {
   init {
     require(moveIds.size == MOVE_SLOTS) { "A battle mon block carries exactly $MOVE_SLOTS moves" }
@@ -39,6 +46,9 @@ private fun seg(hex: String): ByteArray =
 
 // Captured constant that precedes the moves-present flag, meaning still unknown.
 private val MOVES_HEADER = seg("000000ff03")
+// The gender short after the name: low bits the gender, 0x4 the alpha mark (f/b54.c50).
+private const val GENDER_MASK = 0x3
+private const val ALPHA_BIT = 0x4
 private val ACTIVE_TAIL = seg("03ff0000000066666666")
 
 /**
@@ -93,9 +103,12 @@ internal object BattleFullBlockCodec : PacketCodec<BattleMonBlock>() {
     val entityId = field(S64LE) { it.entityId }
     val species = field(S16LE) { it.species }
     val level = field(S8) { it.level }
+    // The name: a UTF-16 string the client reads to its 0 char - always empty from us.
     padding(2)
-    val gender = field(S8) { it.gender }
-    padding(3)
+    val genderWord = field(S16LE) { ((it.gender.toInt() and 0xFF) or (if (it.alpha) ALPHA_BIT else 0)).toShort() }
+    val gender = (genderWord.toInt() and GENDER_MASK).toByte()
+    val alpha = genderWord.toInt() and ALPHA_BIT != 0
+    padding(2)
     val currentHp = field(S16LE) { it.currentHp }
     val maxHp = field(S16LE) { it.maxHp }
     constant(MOVES_HEADER)
@@ -105,7 +118,7 @@ internal object BattleFullBlockCodec : PacketCodec<BattleMonBlock>() {
         if (movesPresent) field(S16LE.repeat(BattleMonBlock.MOVE_SLOTS)) { it.moveIds }
         else List(BattleMonBlock.MOVE_SLOTS) { 0.toShort() }
     return BattleMonBlock(
-        slot, entityId, species, level, gender, abilityId, maxHp, currentHp, movesPresent, moveIds)
+        slot, entityId, species, level, gender, abilityId, maxHp, currentHp, movesPresent, moveIds, alpha = alpha)
   }
 }
 
@@ -125,6 +138,8 @@ data class BattleOpponentBlock(
     val currentHp: Short = 0,
     /** Owner key: the first byte of the trainer entry in a two-trainer header; 0 otherwise. */
     val owner: Int = 0,
+    /** See BattleMonBlock.alpha. */
+    val alpha: Boolean = false,
 )
 
 private const val REVEALED: Byte = 1
@@ -139,13 +154,15 @@ internal object BattleOpponentBlockCodec : PacketCodec<BattleOpponentBlock>() {
     val species = field(S16LE) { it.species }
     val level = field(S8) { it.level }
     padding(2)
-    val gender = field(S8) { it.gender }
-    padding(3)
+    val genderWord = field(S16LE) { ((it.gender.toInt() and 0xFF) or (if (it.alpha) ALPHA_BIT else 0)).toShort() }
+    val gender = (genderWord.toInt() and GENDER_MASK).toByte()
+    val alpha = genderWord.toInt() and ALPHA_BIT != 0
+    padding(2)
     val currentHp = field(S16LE) { it.currentHp }
     val maxHp = field(S16LE) { it.maxHp }
     constant(MOVES_HEADER)
     // The opposing side never carries a moveset, so the client cannot read the enemy's moves.
     constant(0)
-    return BattleOpponentBlock(slot, true, entityId, species, level, gender, maxHp, currentHp)
+    return BattleOpponentBlock(slot, true, entityId, species, level, gender, maxHp, currentHp, alpha = alpha)
   }
 }

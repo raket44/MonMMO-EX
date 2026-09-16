@@ -140,7 +140,12 @@ constructor(
     return true
   }
 
-  fun healParty(session: SessionContext, state: PlayerState) {
+  /**
+   * Heals the party. [recordRespawn] makes this spot the whiteout return point (a nurse); the
+   * whiteout heal itself passes false - it used to record the spot the player fell on, so a
+   * whiteout "returned" the player to the cave floor it happened on (2026-09-15).
+   */
+  fun healParty(session: SessionContext, state: PlayerState, recordRespawn: Boolean = true) {
     val characterId = state.characterId ?: return
     val stored = characters.getCharacter(characterId) ?: return
     val healed =
@@ -159,15 +164,17 @@ constructor(
     healed.forEach { characters.updatePokemon(characterId, it) }
     ocarinas.refill(session, characterId)
     // The spot that healed last is where a whiteout returns the player.
-    val info = stored.info
-    characters.setStoryVar(
-        characterId,
-        RespawnPoint.MAP_KEY,
-        (info.positionRegionId.toInt() shl 16) or
-            ((info.positionBankId.toInt() and 0xFF) shl 8) or
-            (info.positionMapId.toInt() and 0xFF))
-    characters.setStoryVar(
-        characterId, RespawnPoint.XY_KEY, (info.positionX.toInt() shl 12) or info.positionY.toInt())
+    if (recordRespawn) {
+      val info = stored.info
+      characters.setStoryVar(
+          characterId,
+          RespawnPoint.MAP_KEY,
+          (info.positionRegionId.toInt() shl 16) or
+              ((info.positionBankId.toInt() and 0xFF) shl 8) or
+              (info.positionMapId.toInt() and 0xFF))
+      characters.setStoryVar(
+          characterId, RespawnPoint.XY_KEY, (info.positionX.toInt() shl 12) or info.positionY.toInt())
+    }
     session.send(
         PokemonContainerPacket(
             container = PokemonContainer.PARTY,

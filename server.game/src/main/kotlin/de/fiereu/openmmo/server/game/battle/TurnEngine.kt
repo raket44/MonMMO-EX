@@ -338,7 +338,7 @@ constructor(
   ) {
     val after = hazardMoves(if (playerSide) battle.playerSide else battle.opponentSide)
     if (after == before) return
-    val stander = (if (playerSide) battle.playerActives() else battle.opponentActives()).firstOrNull() ?: return
+    val stander = (if (playerSide) battle.playerActives() else battle.opponentActives()).firstOrNull { !it.fainted } ?: return
     for (gone in before - after) events += BattleEvent.FieldEffect(stander.entityId, playerSide, gone, set = false)
     for (laid in after - before) events += BattleEvent.FieldEffect(stander.entityId, playerSide, laid, set = true)
   }
@@ -2623,7 +2623,7 @@ constructor(
           else -> if (side.stickyWeb) return fail() else side.stickyWeb = true
         }
         // Every layer prints its line; the client keeps one graphic per hazard on the side.
-        val stander = (if (hitsPlayer) battle.playerActives() else battle.opponentActives()).firstOrNull()
+        val stander = (if (hitsPlayer) battle.playerActives() else battle.opponentActives()).firstOrNull { !it.fainted }
         if (stander != null) events += BattleEvent.FieldEffect(stander.entityId, hitsPlayer, moveId)
       }
       MoveEffect.FOLLOW_ME -> attacker.centerOfAttention = true

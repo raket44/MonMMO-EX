@@ -386,6 +386,7 @@ class BattleMonState(
           gender = illusionOf?.gender ?: gender,
           maxHp = stats.hp.toShort(),
           currentHp = currentHp.toShort(),
+          alpha = source.isAlpha,
       )
 
   fun toBlock(slot: Int, movesPresent: Boolean): BattleMonBlock =
@@ -400,6 +401,7 @@ class BattleMonState(
           currentHp = currentHp.toShort(),
           movesPresent = movesPresent,
           moveIds = List(BattleMonBlock.MOVE_SLOTS) { moves.getOrNull(it)?.id ?: 0 },
+          alpha = source.isAlpha,
           shiny = illusionOf?.source?.isShiny ?: source.isShiny,
       )
 

@@ -1079,6 +1079,8 @@ private val RAID_STRINGS =
         16790013 to "The Crystal Onix drew light from the stone!",
         16790014 to "Its glow washed the field clean!",
         16790015 to "The Crystal Onix held on inside its crystal!",
+        // Whiteout, battle event kind 76 shape 0 on a standing foe (the player's side is empty then).
+        16790016 to "You have no more Pok00e9mon that can fight!\nYou whited out...",
     )
 
 /**

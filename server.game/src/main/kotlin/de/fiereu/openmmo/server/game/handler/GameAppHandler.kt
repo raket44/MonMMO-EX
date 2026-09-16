@@ -252,7 +252,7 @@ constructor(
       if (result == de.fiereu.openmmo.server.game.battle.BattleResult.DEFEAT) {
         val state = event.session.attributes[PLAYER_STATE]
         if (state != null) {
-          storyPlayerService.healParty(event.session, state)
+          storyPlayerService.healParty(event.session, state, recordRespawn = false)
           movementService.respawnAfterWhiteout(event.session, state)
         }
       }

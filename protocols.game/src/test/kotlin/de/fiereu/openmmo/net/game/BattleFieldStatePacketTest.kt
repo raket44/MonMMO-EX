@@ -62,6 +62,7 @@ class BattleFieldStatePacketTest :
         patrat.species shouldBe 504.toShort()
         patrat.level shouldBe 2.toByte()
         patrat.gender shouldBe 1.toByte()
+        patrat.alpha shouldBe false
         patrat.abilityId shouldBe 50.toShort()
         patrat.moveIds shouldBe listOf<Short>(33, 0, 0, 0)
 

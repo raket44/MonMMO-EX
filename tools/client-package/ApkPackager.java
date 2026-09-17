@@ -235,7 +235,10 @@ public class ApkPackager {
         }
         byte[] bytes = Files.readAllBytes(p);
         boolean existed = result.removeIf(x -> x.name().equals(name));
-        result.add(name.endsWith(".png") ? stored(name, bytes) : deflated(name, bytes));
+        // Audio must be STORED: the client hands MediaPlayer an AssetFileDescriptor, and Android's
+        // AssetManager.openFd refuses a compressed asset ("probably compressed") - which is why retail
+        // stores its own sounds/10 oggs. The cries shipped deflated once and every one failed to load.
+        result.add(name.endsWith(".png") || isAudio(name) ? stored(name, bytes) : deflated(name, bytes));
         replaced.add(name + (existed ? " (overlay)" : " (added)"));
       }
     }
@@ -725,6 +728,10 @@ public class ApkPackager {
     deflater.end();
     byte[] comp = b.toByteArray();
     return new Entry(name, 8, crc(content), comp.length, content.length, comp, 0);
+  }
+
+  static boolean isAudio(String name) {
+    return name.endsWith(".wav") || name.endsWith(".ogg") || name.endsWith(".mp3");
   }
 
   static Entry stored(String name, byte[] content) {

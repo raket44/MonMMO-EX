@@ -41,7 +41,7 @@ TOOLS="$REPO/tools/client-package"
 CACHE="$HOME/.monmmo/build"
 JDK=${JDK:-"/c/Program Files/Eclipse Adoptium/jdk-25.0.4.101-hotspot/bin"}
 KEYDIR="$HOME/.monmmo/android-signing"
-SMALI="$HOME/.monmmo/tools/smali-3.0.10"
+SMALI="${USERPROFILE:-$HOME}/.monmmo/tools/smali-3.0.10"   # Windows-form: a POSIX path breaks java -cp
 STOCK="$CACHE/stock-root" STAGE="$CACHE/stage" OVERLAY="$CACHE/overlay" WORK="$CACHE/work"
 DEX="$CACHE/classes.dex" MOD="$CACHE/monmmo-theme.zip"
 
@@ -89,6 +89,24 @@ BATTLE_TTF="$WORK/stocktheme/assets/data/themes/default/res/fonts/battle.ttf"
   "${BADGE_TEXT:-Pirated Version}" "${STOCK_BADGE_COLOUR:-#FFFFFF}" \
   "$OVERLAY/assets/data/themes/default/res/bg.png"
 export BATTLE_TTF
+
+# 2c. The app icon. The launcher icon is the `pokemmo` mipmap set; these obfuscated names were read
+#     out of this APK's resources.arsc (48/72/96/144/192 px), so they are checked before use - a
+#     different retail build would name them differently. The adaptive icon's background layer is a
+#     flat colour, not an image, so there is nothing else to replace.
+ICON_SRC="$TOOLS/app-icon/app-icon-source.png"
+if [ -f "$ICON_SRC" ]; then
+  echo "== fitting the app icon"
+  rm -rf "$WORK/icons"; mkdir -p "$WORK/icons" "$OVERLAY/res" "$OVERLAY/assets/data/icons"
+  "$JDK/java.exe" "$TOOLS/app-icon/IconSet.java" "$ICON_SRC" "$WORK/icons"
+  for pair in "Au 48" "Mx 72" "db 96" "hm 144" "xq 192"; do
+    set -- $pair
+    unzip -l "$APK" "res/$1.png" | grep -q "res/$1.png" \
+      || { echo "ERROR: res/$1.png is not in this APK - re-read the mipmap names from resources.arsc"; exit 1; }
+    cp "$WORK/icons/icon-$2.png" "$OVERLAY/res/$1.png"
+  done
+  for n in 16 32 128; do cp "$WORK/icons/icon-$n.png" "$OVERLAY/assets/data/icons/${n}x${n}.png"; done
+fi
 
 # 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.
 if [ -f "$THEME" ]; then

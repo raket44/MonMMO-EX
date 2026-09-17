@@ -77,7 +77,20 @@ for dir in cries sprites/battlesprites sprites/monstericons sprites/followsprite
   [ "$z" = "$o" ] || { echo "ERROR: $dir count mismatch (zip $z, overlay $o)"; exit 1; }
 done
 
-# 3. The theme, with our Fairy extension and atlas pages folded in (see compose-theme-mod.sh).
+# 2b. The version line under the baked theme's wordmark, so it is there with the mod disabled too.
+#     bg.png and the dialogue font both come from the retail APK; the badge is drawn onto them here.
+echo "== drawing the version badge on the stock wordmark"
+rm -rf "$WORK/stocktheme"; mkdir -p "$WORK/stocktheme" "$OVERLAY/assets/data/themes/default/res"
+unzip -o -q "$APK" "assets/data/themes/default/res/bg.png" \
+  "assets/data/themes/default/res/fonts/battle.ttf" -d "$WORK/stocktheme"
+BATTLE_TTF="$WORK/stocktheme/assets/data/themes/default/res/fonts/battle.ttf"
+"$JDK/java.exe" "$TOOLS/theme-mod/MakeTitleBadge.java" \
+  "$WORK/stocktheme/assets/data/themes/default/res/bg.png" "$BATTLE_TTF" \
+  "${BADGE_TEXT:-Pirated Version}" "${STOCK_BADGE_COLOUR:-#FFFFFF}" \
+  "$OVERLAY/assets/data/themes/default/res/bg.png"
+export BATTLE_TTF
+
+# 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.
 if [ -f "$THEME" ]; then
   echo "== composing the theme mod"
   bash "$TOOLS/theme-mod/compose-theme-mod.sh" "$THEME" "$MOD"

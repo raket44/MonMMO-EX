@@ -58,6 +58,20 @@ mkdir -p "$MOD/$EXT_DIR/res"
   "$MOD/$EXT_DIR/res/monmmo-fairy-move.png"
 cp "$HERE/fairy-extension/theme.xml" "$MOD/$EXT_DIR/theme.xml"
 
+# 3b. The version line under this theme's own wordmark, in its own accent colour. BATTLE_TTF is the
+#     client's dialogue font, which only the caller has (it lives in the retail APK).
+BADGE_TEXT=${BADGE_TEXT:-"Pirated Version"}
+BADGE_COLOUR=${BADGE_COLOUR:-"#6BEBF0"}          # the dark theme's cyan, mirroring its own logo
+THEME_BG="$MOD/data/DarkTheme_theme/res/bg.png"
+if [ -n "${BATTLE_TTF:-}" ] && [ -f "$BATTLE_TTF" ] && [ -f "$THEME_BG" ]; then
+  "$JDK/java.exe" "$HERE/MakeTitleBadge.java" "$THEME_BG" "$BATTLE_TTF" \
+    "$BADGE_TEXT" "$BADGE_COLOUR" "$WORK/badge.png"
+  mv "$WORK/badge.png" "$THEME_BG"
+  echo "[theme] drew \"$BADGE_TEXT\" under this theme's wordmark"
+else
+  echo "[theme] no BATTLE_TTF given - theme ships without the version badge"
+fi
+
 # 4. Declare the extension. The client applies enabled extensions on top of whatever theme is
 #    selected, so this covers their theme, the stock one, and anything installed later.
 awk -v dir="$EXT_DIR" -v name="$EXT_NAME" -v rev="$EXT_REVISION" '

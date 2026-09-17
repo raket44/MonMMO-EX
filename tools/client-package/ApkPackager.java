@@ -162,11 +162,22 @@ public class ApkPackager {
         }
         System.arraycopy(target.getBytes(StandardCharsets.US_ASCII), 0, arsc, icon.foregroundPathAt, target.length());
         int argb = Integer.parseUnsignedInt(System.getProperty("monmmo.iconBackground", "FF14161A"), 16);
-        ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN).putInt(icon.backgroundValueAt, argb);
+        ByteBuffer buf = ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN);
+        buf.putInt(icon.backgroundValueAt, argb);
+        // The retail foreground is a vector in a no-density config. A BITMAP there is scaled up by
+        // the device's density ratio and, on the owner's phone, drawn at that size - the icon became
+        // a magnified crop of its own centre. Declaring the chunk xxxhdpi (640) makes a 432px image
+        // exactly 108dp, the adaptive canvas, on every device. The other entries in that chunk are
+        // vectors, which density does not affect.
+        int density = Integer.parseInt(System.getProperty("monmmo.iconDensity", "640"));
+        if (icon.foregroundDensity == 0 && density > 0) {
+          buf.putShort(icon.foregroundDensityAt, (short) density);
+        }
         result.add(stored(n, arsc));
         result.add(stored(target, Files.readAllBytes(Path.of(overlayDir, "res", "adaptive-foreground.png"))));
         replaced.add(n + " (adaptive icon: " + icon.foregroundPath + " -> " + target
-            + String.format(", background 0x%08X -> 0x%08X)", icon.backgroundValue, argb));
+            + String.format(", background 0x%08X -> 0x%08X, foreground density %d -> %d)",
+                icon.backgroundValue, argb, icon.foregroundDensity, icon.foregroundDensity == 0 ? density : icon.foregroundDensity));
         continue;
       }
       if (n.equals("classes.dex")) {
@@ -578,6 +589,7 @@ public class ApkPackager {
   static final class AdaptiveIcon {
     String foregroundPath; int foregroundPathAt;   // the path's characters, patched .xml -> .png
     int backgroundValue, backgroundValueAt;         // the colour's Res_value data word
+    int foregroundDensity, foregroundDensityAt;     // the chunk config's density qualifier
 
     static AdaptiveIcon locate(byte[] arsc) {
       ByteBuffer b = ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN);
@@ -611,6 +623,9 @@ public class ApkPackager {
               s += (b.get(s) & 0x80) != 0 ? 2 : 1;
               out.foregroundPath = poolStrings(b, poolStart)[data];
               out.foregroundPathAt = s;
+              // ResTable_config: size(4) mcc/mnc(4) locale(4) orientation(1) touchscreen(1) DENSITY(2)
+              out.foregroundDensityAt = p + 20 + 12;
+              out.foregroundDensity = b.getShort(out.foregroundDensityAt) & 0xFFFF;
             } else if (key.equals(ICON_BACKGROUND_NAME) && (dataType == 0x1C || dataType == 0x1D)) {
               out.backgroundValue = data;
               out.backgroundValueAt = e + 12;

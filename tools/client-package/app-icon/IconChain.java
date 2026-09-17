@@ -64,7 +64,9 @@ public class IconChain {
       if (size <= 0) break;
       if (type == 0x0201) {
         int id = b.get(p + 8) & 0xFF, count = b.getInt(p + 12), entriesStart = b.getInt(p + 16);
-        int density = b.getShort(p + 30) & 0xFFFF, sdk = b.getShort(p + 44) & 0xFFFF;
+        // ResTable_config at p+20: size(4) mcc/mnc(4) locale(4) orientation(1) touchscreen(1)
+        // density(2) at +12; input(4) screenSize(4); sdkVersion(2) at +24.
+        int density = b.getShort(p + 20 + 12) & 0xFFFF, sdk = b.getShort(p + 20 + 24) & 0xFFFF;
         for (int i = 0; i < count; i++) {
           int off = b.getInt(p + headerSize + i * 4);
           if (off == -1) continue;

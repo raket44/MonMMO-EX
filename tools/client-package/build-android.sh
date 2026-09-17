@@ -62,6 +62,9 @@ if [ "$SKIP_STAGE" = 0 ]; then
   echo "== proving retail content is preserved"
   (cd "$REPO" && ./gradlew.bat :launcher:checkRetailPreserved \
       "-Pretail.stock=$STOCK" "-Pretail.staged=$STAGE" --console=plain -q)
+  # The daemon keeps ~400 MB resident for nothing once staging is done, and this machine has none
+  # to spare. KEEP_DAEMON=1 to leave it running when builds are back to back.
+  [ "${KEEP_DAEMON:-0}" = 1 ] || (cd "$REPO" && ./gradlew.bat --stop >/dev/null 2>&1 || true)
 fi
 
 # 2. The overlay: our hand-made files first, then the staged mod's art under resources/.

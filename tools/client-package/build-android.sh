@@ -166,6 +166,20 @@ if [ "$REBUILD_DEX" = 1 ] || [ ! -f "$DEX" ]; then
   rm -rf "$WORK/dex"; mkdir -p "$WORK/dex"
   unzip -o -q "$APK" classes.dex -d "$WORK/dex"
   "$JDK/java.exe" -Xmx3g -cp "$CP" com.android.tools.smali.baksmali.Main d "$WORK/dex/classes.dex" -o "$WORK/smali" --api 21
+  # This client has thousands of class names that differ only by case (f/Vk vs f/vK). Windows cannot
+  # keep both as files, so one silently overwrites the other and the class is GONE from the rebuilt
+  # dex - 8392 classes in, 6735 files out, baksmali exiting 0 the whole way. That shipped once and
+  # crashed the client at launch on a missing retail class (NoClassDefFoundError: Lf/Vk;), so the
+  # counts are compared before anything is assembled.
+  want=$("$JDK/java.exe" -cp "$CP" com.android.tools.smali.baksmali.Main list classes "$WORK/dex/classes.dex" | wc -l)
+  got=$(find "$WORK/smali" -name "*.smali" | wc -l)
+  if [ "$got" -lt "$want" ]; then
+    echo "ERROR: disassembly lost $((want - got)) of $want classes - case-colliding names cannot"
+    echo "       survive on this filesystem. Disassemble on a case-sensitive volume (or in WSL)"
+    echo "       before rebuilding the dex; the cached dex is untouched."
+    exit 1
+  fi
+  echo "   disassembly kept all $want classes"
   cp -r "$TOOLS/android-smali/." "$WORK/smali/"     # every package we patch, not just f/
   "$JDK/java.exe" -Xmx3g -cp "$CP" com.android.tools.smali.smali.Main a "$WORK/smali" -o "$DEX" --api 21
 else

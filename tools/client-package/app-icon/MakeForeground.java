@@ -13,7 +13,7 @@ import java.awt.*; import java.awt.image.BufferedImage; import java.io.File; imp
 
 public class MakeForeground {
   static final int SIZE = 432;            // 108dp at xxxhdpi
-  static final double SAFE = 0.66;        // the guaranteed-visible middle
+  static double safe = 0.66;              // the guaranteed-visible middle of an adaptive canvas
 
   public static void main(String[] a) throws Exception {   // <art.png> <out.png>
     BufferedImage src = ImageIO.read(new File(a[0]));
@@ -28,7 +28,12 @@ public class MakeForeground {
     Graphics2D g = out.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
     g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-    double box = SIZE * SAFE;
+    if (a.length > 2) safe = Double.parseDouble(a[2]);
+    if (a.length > 3) {                    // a plate baked in, for the v26 slot: the launcher masks
+      g.setColor(new Color(Integer.parseInt(a[3].substring(1), 16)));   // this canvas and would
+      g.fillRect(0, 0, SIZE, SIZE);                                     // otherwise show white
+    }
+    double box = SIZE * safe;
     double s = Math.min(box / art.getWidth(), box / art.getHeight());
     int w = (int) Math.round(art.getWidth() * s), h = (int) Math.round(art.getHeight() * s);
     g.drawImage(art, (SIZE - w) / 2, (SIZE - h) / 2, w, h, null);

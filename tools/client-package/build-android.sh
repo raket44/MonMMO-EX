@@ -150,7 +150,11 @@ if [ -f "$ICON_SRC" ]; then
   # (res/df.xml). ApkPackager repoints the resource table at res/df.png when this file exists, so
   # the icon is ours on modern phones too. Adaptive foregrounds are a 108dp canvas with only the
   # middle 72dp guaranteed visible, hence the wide margin: the art must sit inside two thirds.
-  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/df.png"
+  # A bitmap in the v26 slot is treated as the adaptive CANVAS: the launcher masks it to the middle
+  # and shows its own white plate through any transparency. So the plate is baked in and the art is
+  # inset, which is what stops it looking like a blurry close-up on a white square.
+  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/wL.png" \
+    "${ICON_SAFE:-0.62}" "${ICON_PLATE:-#14161A}"
 fi
 
 # 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.

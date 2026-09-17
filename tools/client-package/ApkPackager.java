@@ -59,9 +59,10 @@ public class ApkPackager {
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh4Vqgnd+8Fqebu0H40v+FgwhE6RwgAYxJMihb8mJmcHDy8r/rPz3kLHH1oabyKIRUa5Y2cK0TsxZky+mp7DKWA==";
   static final String CONFIG_ENTRY = "assets/config/zzz-monmmo-ex-server.properties";
   static final String MOD_DIR = "assets/data/mods/";
-  /** The adaptive icon's foreground drawable in this APK, read out of its own resources.arsc. */
-  static final String ICON_FOREGROUND_XML = "res/df.xml";
-  static final String ICON_FOREGROUND_PNG = "res/df.png";
+  /** The `pokemmo` mipmap's Android 8+ variant: the adaptive icon itself, resolved by name from
+   * this APK's resources.arsc. Repointing it at a PNG bypasses the adaptive layers entirely. */
+  static final String ICON_FOREGROUND_XML = "res/wL.xml";
+  static final String ICON_FOREGROUND_PNG = "res/wL.png";
   static final int ALIGN = 4;
   static final int V2_ID = 0x7109871a;
   static final int RSA_PKCS1_SHA256 = 0x0103;
@@ -140,12 +141,12 @@ public class ApkPackager {
         replaced.add(n);
         continue;
       }
-      // Android 8+ draws the launcher icon from the adaptive icon (res/wL.xml), whose foreground is
-      // the vector res/df.xml - so replacing the legacy mipmaps alone leaves modern phones showing
-      // the retail icon. We cannot author binary XML here, so the resource table is repointed at a
-      // PNG instead: "res/df.xml" and "res/df.png" are the same length, making it an in-place swap
-      // exactly like the server keys below. Only done when the overlay actually supplies that PNG.
-      if (n.equals("resources.arsc") && Files.exists(Path.of(overlayDir, "res", "df.png"))) {
+      // Android 8+ draws the launcher icon from the `pokemmo` mipmap's v26 variant, res/wL.xml - the
+      // adaptive icon - so replacing the legacy mipmap PNGs alone leaves modern phones on the retail
+      // icon. Binary XML cannot be authored here, so the resource table is repointed at a PNG of the
+      // same name length instead ("res/wL.xml" -> "res/wL.png"), an in-place swap like the server
+      // keys below, which takes the adaptive layers out of the picture. Only when the overlay has it.
+      if (n.equals("resources.arsc") && Files.exists(Path.of(overlayDir, "res", "wL.png"))) {
         byte[] arsc = content(e);
         int at = indexOf(arsc, ICON_FOREGROUND_XML.getBytes(StandardCharsets.US_ASCII), 0);
         if (at < 0) throw new IllegalStateException("resources.arsc has no " + ICON_FOREGROUND_XML);

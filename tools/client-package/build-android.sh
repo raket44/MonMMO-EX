@@ -87,11 +87,48 @@ rm -rf "$WORK/stocktheme"; mkdir -p "$WORK/stocktheme" "$OVERLAY/assets/data/the
 unzip -o -q "$APK" "assets/data/themes/default/res/bg.png" \
   "assets/data/themes/default/res/fonts/battle.ttf" -d "$WORK/stocktheme"
 BATTLE_TTF="$WORK/stocktheme/assets/data/themes/default/res/fonts/battle.ttf"
+# The wordmark's accent is hue-shifted from the client's own logo (yellow -> cyan), which is the
+# dark theme's title screen without putting anyone else's file in the package. Set
+# TITLE_ACCENT= to leave the stock yellow alone.
 "$JDK/java.exe" "$TOOLS/theme-mod/MakeTitleBadge.java" \
   "$WORK/stocktheme/assets/data/themes/default/res/bg.png" "$BATTLE_TTF" \
-  "${BADGE_TEXT:-Pirated Version}" "${STOCK_BADGE_COLOUR:-#FFFFFF}" \
-  "$OVERLAY/assets/data/themes/default/res/bg.png"
+  "${BADGE_TEXT:-Pirated Version}" "${BADGE_COLOUR:-#6BEBF0}" \
+  "$OVERLAY/assets/data/themes/default/res/bg.png" \
+  "#F0EA6B" "${TITLE_ACCENT-#6BEBF0}"
 export BATTLE_TTF
+
+# 2b2. The login background. Retail defines no `login-background` image at all - the slot does not
+#      exist - so shipping one means adding the area to gfx.xml and pointing logingui at it in
+#      main-widgets.xml. Both are patched from the retail files at build time rather than kept as
+#      copies, so they follow whatever the APK ships. See theme-assets/CREDITS.md for the artwork.
+LOGIN_BG="$TOOLS/theme-assets/login-background.png"
+if [ -f "$LOGIN_BG" ]; then
+  echo "== adding the login background"
+  unzip -o -q "$APK" "assets/data/themes/default/gfx.xml" \
+    "assets/data/themes/default/main-widgets.xml" -d "$WORK/stocktheme"
+  cp "$LOGIN_BG" "$OVERLAY/assets/data/themes/default/res/background.png"
+  awk '
+    /<\/themes>/ && !done {
+      print "\t<images file=\"res/background.png\">";
+      print "\t\t<area name=\"login-background\" xywh=\"*\"/>";
+      print "\t</images>";
+      done = 1;
+    }
+    { print }
+  ' "$WORK/stocktheme/assets/data/themes/default/gfx.xml" \
+    > "$OVERLAY/assets/data/themes/default/gfx.xml"
+  awk '
+    { print }
+    /<theme name="logingui"/ && !done {
+      print "    <param name=\"background\"><image>login-background</image></param>";
+      done = 1;
+    }
+  ' "$WORK/stocktheme/assets/data/themes/default/main-widgets.xml" \
+    > "$OVERLAY/assets/data/themes/default/main-widgets.xml"
+  grep -q "login-background" "$OVERLAY/assets/data/themes/default/gfx.xml" \
+    && grep -q "login-background" "$OVERLAY/assets/data/themes/default/main-widgets.xml" \
+    || { echo "ERROR: could not wire login-background into the theme"; exit 1; }
+fi
 
 # 2c. The app icon. The launcher icon is the `pokemmo` mipmap set; these obfuscated names were read
 #     out of this APK's resources.arsc (48/72/96/144/192 px), so they are checked before use - a

@@ -161,8 +161,11 @@ public class ApkPackager {
       }
       for (Path p : files) {
         String name = root.relativize(p).toString().replace('\\', '/');
-        if (!name.startsWith("assets/")) {
-          throw new IllegalStateException("overlay may only touch assets/, not " + name);
+        // assets/ is the client's own data; res/ is only there for the launcher icon's mipmaps,
+        // whose obfuscated names the build reads out of resources.arsc. Everything else - the dex,
+        // the manifest, the resource table, the signatures - stays off limits to the overlay.
+        if (!name.startsWith("assets/") && !name.startsWith("res/")) {
+          throw new IllegalStateException("overlay may only touch assets/ or res/, not " + name);
         }
         byte[] bytes = Files.readAllBytes(p);
         boolean existed = result.removeIf(x -> x.name().equals(name));

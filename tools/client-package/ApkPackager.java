@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
@@ -56,7 +58,7 @@ public class ApkPackager {
   static final String RETAIL_CHAT_KEY =
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh4Vqgnd+8Fqebu0H40v+FgwhE6RwgAYxJMihb8mJmcHDy8r/rPz3kLHH1oabyKIRUa5Y2cK0TsxZky+mp7DKWA==";
   static final String CONFIG_ENTRY = "assets/config/zzz-monmmo-ex-server.properties";
-  static final String MOD_ENTRY = "assets/data/mods/monmmo-lost-knights.zip";
+  static final String MOD_DIR = "assets/data/mods/";
   static final int ALIGN = 4;
   static final int V2_ID = 0x7109871a;
   static final int RSA_PKCS1_SHA256 = 0x0103;
@@ -105,6 +107,10 @@ public class ApkPackager {
       String dataPak, String stringsEn, String classesDex, String overlayDir)
       throws Exception {
     byte[] file = Files.readAllBytes(in);
+    // The mod keeps its own file name inside the APK, and its info.xml names the theme we select,
+    // so nothing here goes stale when the theme is replaced or renamed.
+    String modEntry = mod.equals("-") ? "-" : MOD_DIR + Path.of(mod).getFileName();
+    String themeName = mod.equals("-") ? "-" : mobileThemeName(Files.readAllBytes(Path.of(mod)));
     Map<String, String> keys = new LinkedHashMap<>();
     keys.put(RETAIL_GAME_KEY, pemBody(gamePem));
     keys.put(RETAIL_CHAT_KEY, pemBody(chatPem));
@@ -122,7 +128,7 @@ public class ApkPackager {
       if (n.startsWith("assets/config/")) {
         throw new IllegalStateException("retail APK unexpectedly ships " + n);
       }
-      if (n.equals(MOD_ENTRY)) continue;
+      if (n.equals(modEntry)) continue;
       String replacement =
           n.equals(DATA_PAK_ENTRY) ? dataPak : n.equals(STRINGS_EN_ENTRY) ? stringsEn : "-";
       if (!replacement.equals("-")) {
@@ -174,9 +180,12 @@ public class ApkPackager {
             + "force.gs.port=7777\n"
             + "client.misc.ignore_feed=true\n"
             + "client.misc.testserver_feed_signature=false\n"
-            + (mod.equals("-") ? "" : "client.mods.enabled_mods=monmmo-lost-knights.zip\n");
+            + (mod.equals("-")
+                ? ""
+                : "client.mods.enabled_mods=" + Path.of(mod).getFileName() + "\n"
+                    + (themeName.equals("-") ? "" : "client.ui.theme=" + themeName + "\n"));
     result.add(deflated(CONFIG_ENTRY, props.getBytes(StandardCharsets.ISO_8859_1)));
-    if (!mod.equals("-")) result.add(stored(MOD_ENTRY, Files.readAllBytes(Path.of(mod))));
+    if (!mod.equals("-")) result.add(stored(modEntry, Files.readAllBytes(Path.of(mod))));
 
     Files.write(out, write(result));
     System.out.println(
@@ -499,6 +508,25 @@ public class ApkPackager {
     out.write(le32(cdStart));
     out.write(le16(0));
     return out.toByteArray();
+  }
+
+  /**
+   * The name of the mod's mobile theme, taken from its own info.xml, so the config can select it as
+   * the client's theme. Returns "-" when the mod ships no mobile theme.
+   */
+  static String mobileThemeName(byte[] modZip) throws Exception {
+    for (Entry e : read(modZip)) {
+      if (!e.name().equals("info.xml")) continue;
+      String xml = new String(content(e), StandardCharsets.UTF_8);
+      Matcher m = Pattern.compile("<theme\\s+[^>]*>", Pattern.DOTALL).matcher(xml);
+      while (m.find()) {
+        String tag = m.group();
+        if (!tag.contains("is_mobile=\"true\"")) continue;
+        Matcher n = Pattern.compile("name=\"([^\"]+)\"").matcher(tag);
+        if (n.find()) return n.group(1);
+      }
+    }
+    return "-";
   }
 
   static byte[] content(Entry e) throws Exception {

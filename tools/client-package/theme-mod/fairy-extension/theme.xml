@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MonMMO-EX Fairy button, as a THEME EXTENSION.
+
+  A theme is a complete set, not a patch: when a mod's theme is selected the client loads that
+  theme's gfx.xml / android-battle.xml / res, so the type19 definitions we added to the stock
+  Android theme are simply not in the set. The client's own answer to this is the mod info.xml
+  `theme_extensions` section (parsed by f/EP, loaded by f/xv, which appends each enabled
+  extension to the URL list of whatever theme is being built) - so the Fairy button rides on top
+  of any theme instead of being re-patched into each one.
+
+  The button art is generated at compose time from the host theme's own Psychic button
+  (MakeFairyButton), so it always matches the theme it is layered onto.
+-->
+<themes>
+	<images file="res/monmmo-fairy-move.png" filter="nearest">
+		<area name="mobile.rmove.type19" xywh="0,0,320,130"/>
+		<area name="mobile.lmove.type19" xywh="0,0,-320,130"/>
+
+		<!-- mobile.[rl]move.selected comes from the host theme, which loads before this file. -->
+		<select name="mobile.rmove.type19.background">
+			<composed if="selected | keyboardFocus">
+				<alias ref="mobile.rmove.type19"/>
+				<alias ref="mobile.rmove.selected"/>
+			</composed>
+			<alias ref="mobile.rmove.type19"/>
+		</select>
+
+		<select name="mobile.lmove.type19.background">
+			<composed if="selected | keyboardFocus">
+				<alias ref="mobile.lmove.type19"/>
+				<alias ref="mobile.lmove.selected"/>
+			</composed>
+			<alias ref="mobile.lmove.type19"/>
+		</select>
+	</images>
+
+	<theme name="battle-move-button-right-type19" ref="battle-move-button-right" allowWildcard="true">
+		<param name="background"><image>mobile.rmove.type19.background</image></param>
+	</theme>
+
+	<theme name="battle-move-button-left-type19" ref="battle-move-button" allowWildcard="true">
+		<param name="background"><image>mobile.lmove.type19.background</image></param>
+	</theme>
+
+	<!-- The triple-battle prompt asks for maingui.battlegui.battlebutton, which neither retail's
+	     Android theme nor this one defines. -->
+	<theme name="battlegui" ref="-defaults">
+		<theme name="battlebutton" ref="battle-button" allowWildcard="true"/>
+	</theme>
+</themes>

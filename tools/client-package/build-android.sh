@@ -129,7 +129,7 @@ if [ "$REBUILD_DEX" = 1 ] || [ ! -f "$DEX" ]; then
   rm -rf "$WORK/dex"; mkdir -p "$WORK/dex"
   unzip -o -q "$APK" classes.dex -d "$WORK/dex"
   "$JDK/java.exe" -Xmx3g -cp "$CP" com.android.tools.smali.baksmali.Main d "$WORK/dex/classes.dex" -o "$WORK/smali" --api 21
-  cp -r "$TOOLS/android-smali/f/." "$WORK/smali/f/"
+  cp -r "$TOOLS/android-smali/." "$WORK/smali/"     # every package we patch, not just f/
   "$JDK/java.exe" -Xmx3g -cp "$CP" com.android.tools.smali.smali.Main a "$WORK/smali" -o "$DEX" --api 21
 else
   echo "== reusing cached classes.dex ($(stat -c%s "$DEX") bytes; --rebuild-dex to redo it)"
@@ -151,6 +151,20 @@ rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
 echo "== what is in $OUT"
 echo "-- config (server properties only; the package must never carry credentials)"
 unzip -p "$OUT" assets/config/zzz-monmmo-ex-server.properties | sed 's/^/   /'
+echo "-- code patches that add members (everything we add is named monmmo*)"
+unzip -p "$OUT" classes.dex > "$WORK/shipped.dex"
+missing=0
+# Only members we DECLARE (.method/.field) or CALL (->name); smali labels like :monmmo_not_fairy
+# assemble into jump offsets and never appear in a dex as text.
+for marker in $(grep -rhoE "^\.(method|field).*[ (]monmmo[A-Za-z0-9_]+|->monmmo[A-Za-z0-9_]+" "$TOOLS/android-smali" \
+    | grep -oE "monmmo[A-Za-z0-9_]+" | sort -u); do
+  if strings -a -n 6 "$WORK/shipped.dex" | grep -q "$marker"; then
+    echo "   $marker: present"
+  else
+    echo "   $marker: MISSING from the shipped dex"; missing=1
+  fi
+done
+[ "$missing" = 0 ] || { echo "ERROR: a code patch did not reach the APK (rebuild the dex: --rebuild-dex)"; exit 1; }
 echo "-- Fairy and evolution symbols in the stock-theme atlas"
 printf "   type19 badge regions: %s, evo symbols: %s\n" \
   "$(unzip -p "$OUT" assets/data/sprites/atlas/main.atlas | grep -c '_type_19_')" \

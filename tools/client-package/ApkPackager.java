@@ -2,6 +2,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,10 +61,15 @@ public class ApkPackager {
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh4Vqgnd+8Fqebu0H40v+FgwhE6RwgAYxJMihb8mJmcHDy8r/rPz3kLHH1oabyKIRUa5Y2cK0TsxZky+mp7DKWA==";
   static final String CONFIG_ENTRY = "assets/config/zzz-monmmo-ex-server.properties";
   static final String MOD_DIR = "assets/data/mods/";
-  /** The `pokemmo` mipmap's Android 8+ variant: the adaptive icon itself, resolved by name from
-   * this APK's resources.arsc. Repointing it at a PNG bypasses the adaptive layers entirely. */
-  static final String ICON_FOREGROUND_XML = "res/wL.xml";
-  static final String ICON_FOREGROUND_PNG = "res/wL.png";
+  /**
+   * The adaptive icon's two layers, by the names the retail resource table gives them. Resolved
+   * through the table at build time (never by guessed offsets: an earlier parser with a hardcoded
+   * chunk header size pointed at the wrong drawable and cost four installs). The overlay file
+   * below is the art for the foreground; it is shipped under whatever path the table used.
+   */
+  static final String ICON_FOREGROUND_NAME = "pokemmo_foreground";
+  static final String ICON_BACKGROUND_NAME = "pokemmo_background";
+  static final String ICON_FOREGROUND_OVERLAY = "res/adaptive-foreground.png";
   static final int ALIGN = 4;
   static final int V2_ID = 0x7109871a;
   static final int RSA_PKCS1_SHA256 = 0x0103;
@@ -141,21 +148,25 @@ public class ApkPackager {
         replaced.add(n);
         continue;
       }
-      // Android 8+ draws the launcher icon from the `pokemmo` mipmap's v26 variant, res/wL.xml - the
-      // adaptive icon - so replacing the legacy mipmap PNGs alone leaves modern phones on the retail
-      // icon. Binary XML cannot be authored here, so the resource table is repointed at a PNG of the
-      // same name length instead ("res/wL.xml" -> "res/wL.png"), an in-place swap like the server
-      // keys below, which takes the adaptive layers out of the picture. Only when the overlay has it.
-      if (n.equals("resources.arsc") && Files.exists(Path.of(overlayDir, "res", "wL.png"))) {
+      // Android 8+ draws the launcher icon from the adaptive icon (the `pokemmo` mipmap's v26
+      // variant), not the legacy mipmaps - so the icon is only ours on modern phones once the
+      // adaptive layers are. The foreground ships as a vector we cannot author here, so its table
+      // entry is repointed at a PNG of the same path length (an in-place swap like the server keys),
+      // and the background colour's entry is rewritten in place. Both are found by NAME.
+      if (n.equals("resources.arsc") && overlayHas(overlayDir, ICON_FOREGROUND_OVERLAY)) {
         byte[] arsc = content(e);
-        int at = indexOf(arsc, ICON_FOREGROUND_XML.getBytes(StandardCharsets.US_ASCII), 0);
-        if (at < 0) throw new IllegalStateException("resources.arsc has no " + ICON_FOREGROUND_XML);
-        if (indexOf(arsc, ICON_FOREGROUND_XML.getBytes(StandardCharsets.US_ASCII), at + 1) >= 0) {
-          throw new IllegalStateException(ICON_FOREGROUND_XML + " appears twice; not safe to repoint");
+        AdaptiveIcon icon = AdaptiveIcon.locate(arsc);
+        String target = icon.foregroundPath.replaceAll("\\.xml$", ".png");
+        if (target.length() != icon.foregroundPath.length()) {
+          throw new IllegalStateException("foreground path is not an .xml: " + icon.foregroundPath);
         }
-        System.arraycopy(ICON_FOREGROUND_PNG.getBytes(StandardCharsets.US_ASCII), 0, arsc, at, ICON_FOREGROUND_PNG.length());
+        System.arraycopy(target.getBytes(StandardCharsets.US_ASCII), 0, arsc, icon.foregroundPathAt, target.length());
+        int argb = Integer.parseUnsignedInt(System.getProperty("monmmo.iconBackground", "FF14161A"), 16);
+        ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN).putInt(icon.backgroundValueAt, argb);
         result.add(stored(n, arsc));
-        replaced.add(n + " (icon foreground -> " + ICON_FOREGROUND_PNG + ")");
+        result.add(stored(target, Files.readAllBytes(Path.of(overlayDir, "res", "adaptive-foreground.png"))));
+        replaced.add(n + " (adaptive icon: " + icon.foregroundPath + " -> " + target
+            + String.format(", background 0x%08X -> 0x%08X)", icon.backgroundValue, argb));
         continue;
       }
       if (n.equals("classes.dex")) {
@@ -182,6 +193,7 @@ public class ApkPackager {
       }
       for (Path p : files) {
         String name = root.relativize(p).toString().replace('\\', '/');
+        if (name.equals(ICON_FOREGROUND_OVERLAY)) continue;   // shipped under the table's own path above
         // assets/ is the client's own data; res/ is only there for the launcher icon's mipmaps,
         // whose obfuscated names the build reads out of resources.arsc. Everything else - the dex,
         // the manifest, the resource table, the signatures - stays off limits to the overlay.
@@ -551,6 +563,92 @@ public class ApkPackager {
       }
     }
     return "-";
+  }
+
+  static boolean overlayHas(String overlayDir, String rel) {
+    return !overlayDir.equals("-") && Files.exists(Path.of(overlayDir).resolve(rel));
+  }
+
+  /**
+   * Where the adaptive icon's two layers live inside resources.arsc, found by walking the table
+   * properly: the global string pool, the package's type and key pools, then every type chunk with
+   * its REAL header size (it carries a variable-length config struct). Byte offsets are absolute in
+   * the arsc so the caller can patch in place.
+   */
+  static final class AdaptiveIcon {
+    String foregroundPath; int foregroundPathAt;   // the path's characters, patched .xml -> .png
+    int backgroundValue, backgroundValueAt;         // the colour's Res_value data word
+
+    static AdaptiveIcon locate(byte[] arsc) {
+      ByteBuffer b = ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN);
+      AdaptiveIcon out = new AdaptiveIcon();
+      int poolStart = 12;                                              // after ResTable_header
+      int poolCount = b.getInt(poolStart + 8), poolFlags = b.getInt(poolStart + 16),
+          poolStrings = b.getInt(poolStart + 20);
+      boolean utf8 = (poolFlags & 0x100) != 0;
+      int pkg = poolStart + b.getInt(poolStart + 4);
+      int typeStrings = pkg + b.getInt(pkg + 268), keyStrings = pkg + b.getInt(pkg + 276);
+      String[] keys = poolStrings(b, keyStrings);
+      int p = keyStrings + b.getInt(keyStrings + 4);
+      while (p + 8 <= arsc.length) {
+        int type = b.getShort(p) & 0xFFFF, headerSize = b.getShort(p + 2) & 0xFFFF, size = b.getInt(p + 4);
+        if (size <= 0) break;
+        if (type == 0x0201) {
+          int count = b.getInt(p + 12), entriesStart = b.getInt(p + 16);
+          for (int i = 0; i < count; i++) {
+            int off = b.getInt(p + headerSize + i * 4);
+            if (off == -1) continue;
+            int e = p + entriesStart + off;
+            if ((b.getShort(e + 2) & 1) != 0) continue;                // complex entries: not ours
+            String key = keys[b.getInt(e + 4)];
+            int dataType = b.get(e + 11) & 0xFF, data = b.getInt(e + 12);
+            if (key.equals(ICON_FOREGROUND_NAME) && dataType == 0x03) {
+              if (!utf8) throw new IllegalStateException("UTF-16 resource pool: extend the patch");
+              if (out.foregroundPath != null) throw new IllegalStateException("two foreground entries; extend the patch to cover both");
+              // UTF-8 pool entry: char count (1-2 bytes), byte count (1-2 bytes), then the bytes.
+              int s = poolStart + poolStrings + b.getInt(poolStart + 28 + data * 4);
+              s += (b.get(s) & 0x80) != 0 ? 2 : 1;
+              s += (b.get(s) & 0x80) != 0 ? 2 : 1;
+              out.foregroundPath = poolStrings(b, poolStart)[data];
+              out.foregroundPathAt = s;
+            } else if (key.equals(ICON_BACKGROUND_NAME) && (dataType == 0x1C || dataType == 0x1D)) {
+              out.backgroundValue = data;
+              out.backgroundValueAt = e + 12;
+            }
+          }
+        }
+        p += size;
+      }
+      if (out.foregroundPath == null || out.backgroundValueAt == 0) {
+        throw new IllegalStateException("could not find " + ICON_FOREGROUND_NAME + " / " + ICON_BACKGROUND_NAME);
+      }
+      return out;
+    }
+
+    static String[] poolStrings(ByteBuffer b, int at) {
+      int count = b.getInt(at + 8), flags = b.getInt(at + 16), strStart = b.getInt(at + 20);
+      boolean utf8 = (flags & 0x100) != 0;
+      String[] out = new String[count];
+      for (int i = 0; i < count; i++) {
+        int off = at + strStart + b.getInt(at + 28 + i * 4);
+        if (utf8) {
+          int p = off;
+          if ((b.get(p) & 0x80) != 0) p += 2; else p += 1;             // char count
+          int n = b.get(p) & 0xFF;
+          if ((n & 0x80) != 0) { n = ((n & 0x7F) << 8) | (b.get(p + 1) & 0xFF); p += 2; } else p += 1;
+          byte[] s = new byte[n];
+          for (int k = 0; k < n; k++) s[k] = b.get(p + k);
+          out[i] = new String(s, StandardCharsets.UTF_8);
+        } else {
+          int n = b.getShort(off) & 0xFFFF, p = off + 2;
+          if ((n & 0x8000) != 0) { n = ((n & 0x7FFF) << 16) | (b.getShort(p) & 0xFFFF); p += 2; }
+          StringBuilder sb = new StringBuilder();
+          for (int k = 0; k < n; k++) sb.append((char) b.getShort(p + k * 2));
+          out[i] = sb.toString();
+        }
+      }
+      return out;
+    }
   }
 
   static byte[] content(Entry e) throws Exception {

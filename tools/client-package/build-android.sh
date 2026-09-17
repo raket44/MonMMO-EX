@@ -150,11 +150,12 @@ if [ -f "$ICON_SRC" ]; then
   # (res/df.xml). ApkPackager repoints the resource table at res/df.png when this file exists, so
   # the icon is ours on modern phones too. Adaptive foregrounds are a 108dp canvas with only the
   # middle 72dp guaranteed visible, hence the wide margin: the art must sit inside two thirds.
-  # A bitmap in the v26 slot is treated as the adaptive CANVAS: the launcher masks it to the middle
-  # and shows its own white plate through any transparency. So the plate is baked in and the art is
-  # inset, which is what stops it looking like a blurry close-up on a white square.
-  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/wL.png" \
-    "${ICON_SAFE:-0.62}" "${ICON_PLATE:-#14161A}"
+  # Android 8+ draws the ADAPTIVE icon, not these mipmaps. Its foreground is a vector we cannot
+  # author, so ApkPackager repoints the table's `pokemmo_foreground` entry at this PNG (shipped
+  # under the table's own path) and rewrites `pokemmo_background`'s colour in place. The art sits
+  # in the middle two thirds of a 108dp canvas: the launcher masks the rest to its own shape.
+  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/adaptive-foreground.png" \
+    "${ICON_SAFE:-0.66}"
 fi
 
 # 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.
@@ -198,7 +199,7 @@ fi
 # 5. Package, sign, align.
 echo "== packaging"
 rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
-"$JDK/java.exe" -Xmx2g "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
+"$JDK/java.exe" -Xmx2g "-Dmonmmo.iconBackground=${ICON_PLATE:-FF14161A}" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
   "$REPO/launcher/src/main/resources/game.public.pem" "$REPO/launcher/src/main/resources/chat.public.pem" \
   "$STAGE/data/data.pak" "$STAGE/data/strings/strings_en.xml" "$DEX" "$OVERLAY"
 "$JDK/jarsigner.exe" -keystore "$KEYDIR/monmmo-ex.p12" -storetype PKCS12 -storepass:file "$KEYDIR/password.txt" \
@@ -225,6 +226,11 @@ for marker in $(grep -rhoE "^\.(method|field).*[ (]monmmo[A-Za-z0-9_]+|->monmmo[
   fi
 done
 [ "$missing" = 0 ] || { echo "ERROR: a code patch did not reach the APK (rebuild the dex: --rebuild-dex)"; exit 1; }
+if [ -f "$ICON_SRC" ]; then
+  echo "-- launcher icon, decoded from the built APK the way Android resolves it"
+  "$JDK/java.exe" "$TOOLS/app-icon/IconChain.java" "$OUT" | sed 's/^/   /' \
+    || { echo "ERROR: the icon chain does not resolve to our art"; exit 1; }
+fi
 echo "-- Fairy and evolution symbols in the stock-theme atlas"
 printf "   type19 badge regions: %s, evo symbols: %s\n" \
   "$(unzip -p "$OUT" assets/data/sprites/atlas/main.atlas | grep -c '_type_19_')" \

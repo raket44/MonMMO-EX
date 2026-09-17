@@ -59,6 +59,9 @@ public class ApkPackager {
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh4Vqgnd+8Fqebu0H40v+FgwhE6RwgAYxJMihb8mJmcHDy8r/rPz3kLHH1oabyKIRUa5Y2cK0TsxZky+mp7DKWA==";
   static final String CONFIG_ENTRY = "assets/config/zzz-monmmo-ex-server.properties";
   static final String MOD_DIR = "assets/data/mods/";
+  /** The adaptive icon's foreground drawable in this APK, read out of its own resources.arsc. */
+  static final String ICON_FOREGROUND_XML = "res/df.xml";
+  static final String ICON_FOREGROUND_PNG = "res/df.png";
   static final int ALIGN = 4;
   static final int V2_ID = 0x7109871a;
   static final int RSA_PKCS1_SHA256 = 0x0103;
@@ -135,6 +138,23 @@ public class ApkPackager {
         byte[] bytes = Files.readAllBytes(Path.of(replacement));
         result.add(e.method() == 0 ? stored(n, bytes) : deflated(n, bytes));
         replaced.add(n);
+        continue;
+      }
+      // Android 8+ draws the launcher icon from the adaptive icon (res/wL.xml), whose foreground is
+      // the vector res/df.xml - so replacing the legacy mipmaps alone leaves modern phones showing
+      // the retail icon. We cannot author binary XML here, so the resource table is repointed at a
+      // PNG instead: "res/df.xml" and "res/df.png" are the same length, making it an in-place swap
+      // exactly like the server keys below. Only done when the overlay actually supplies that PNG.
+      if (n.equals("resources.arsc") && Files.exists(Path.of(overlayDir, "res", "df.png"))) {
+        byte[] arsc = content(e);
+        int at = indexOf(arsc, ICON_FOREGROUND_XML.getBytes(StandardCharsets.US_ASCII), 0);
+        if (at < 0) throw new IllegalStateException("resources.arsc has no " + ICON_FOREGROUND_XML);
+        if (indexOf(arsc, ICON_FOREGROUND_XML.getBytes(StandardCharsets.US_ASCII), at + 1) >= 0) {
+          throw new IllegalStateException(ICON_FOREGROUND_XML + " appears twice; not safe to repoint");
+        }
+        System.arraycopy(ICON_FOREGROUND_PNG.getBytes(StandardCharsets.US_ASCII), 0, arsc, at, ICON_FOREGROUND_PNG.length());
+        result.add(stored(n, arsc));
+        replaced.add(n + " (icon foreground -> " + ICON_FOREGROUND_PNG + ")");
         continue;
       }
       if (n.equals("classes.dex")) {

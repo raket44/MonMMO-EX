@@ -146,6 +146,11 @@ if [ -f "$ICON_SRC" ]; then
     cp "$WORK/icons/icon-$2.png" "$OVERLAY/res/$1.png"
   done
   for n in 16 32 128; do cp "$WORK/icons/icon-$n.png" "$OVERLAY/assets/data/icons/${n}x${n}.png"; done
+  # Android 8+ ignores those mipmaps and draws the adaptive icon, whose foreground is a vector
+  # (res/df.xml). ApkPackager repoints the resource table at res/df.png when this file exists, so
+  # the icon is ours on modern phones too. Adaptive foregrounds are a 108dp canvas with only the
+  # middle 72dp guaranteed visible, hence the wide margin: the art must sit inside two thirds.
+  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/df.png"
 fi
 
 # 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.

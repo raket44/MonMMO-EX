@@ -12,7 +12,7 @@
 import java.awt.*; import java.awt.image.BufferedImage; import java.io.File; import javax.imageio.ImageIO;
 
 public class MakeForeground {
-  static final int SIZE = 432;            // 108dp at xxxhdpi
+  static final int SIZE = Integer.getInteger("monmmo.iconCanvas", 108);   // a no-density bitmap is 1px = 1dp
   static double safe = 0.66;              // the guaranteed-visible middle of an adaptive canvas
 
   public static void main(String[] a) throws Exception {   // <art.png> <out.png>

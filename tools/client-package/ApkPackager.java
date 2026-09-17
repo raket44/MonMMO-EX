@@ -169,7 +169,9 @@ public class ApkPackager {
         // a magnified crop of its own centre. Declaring the chunk xxxhdpi (640) makes a 432px image
         // exactly 108dp, the adaptive canvas, on every device. The other entries in that chunk are
         // vectors, which density does not affect.
-        int density = Integer.parseInt(System.getProperty("monmmo.iconDensity", "640"));
+        // Declaring 640 here made the icon fail to load outright (Android drew its default robot), so
+        // the chunk is left at no-density and the art is sized in dp instead (see MakeForeground).
+        int density = Integer.parseInt(System.getProperty("monmmo.iconDensity", "0"));
         if (icon.foregroundDensity == 0 && density > 0) {
           buf.putShort(icon.foregroundDensityAt, (short) density);
         }

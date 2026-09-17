@@ -1,6 +1,6 @@
 # Android client (r32645) code patches
 
-The 20 files under `f/` are the MonMMO-EX versions of the retail classes they replace, as smali
+The 22 files under `f/` are the MonMMO-EX versions of the retail classes they replace, as smali
 (smali/baksmali 3.0.10, `--api 21`). They are the source of the `classes.dex` that
 `ApkPackager prepare` takes as its rebuilt-dex argument; everything else in the dex is retail.
 
@@ -28,3 +28,4 @@ What each class changes (every edit is marked `# MonMMO-EX` in the file):
 | `i90`, `z57` | stat-change particles anchored CASTER -> ENEMY so `status/down` falls (see the comment in `i90`) |
 | `nb4` | `D60` menu-header weekday = real days since the join anchor (a Sunday midnight in the server zone) mod 7, instead of the 4x in-game day counter |
 | `aw3` | `DR1` no longer clears `km0.Es` (the native ROM-sound engine) when one song fails to load. Cries are `Sseqj.loadSSEQ(2, 1, species)` on the Black ROM; an Expansion follower's first cry threw and silenced every map song for the session |
+| `c85`, `g10` | Expansion cries: `c85.ZY1` also files a `cries/<id>.wav` under `aw3.SE0` key `10<<16|id` (the client's own sounds/10 route; `vh7.qi1` is write-only on Android), and `g10.run` plays a cry from there when the file exists, else the retail ROM path |

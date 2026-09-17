@@ -130,32 +130,50 @@ if [ -f "$LOGIN_BG" ]; then
     || { echo "ERROR: could not wire login-background into the theme"; exit 1; }
 fi
 
-# 2c. The app icon. The launcher icon is the `pokemmo` mipmap set; these obfuscated names were read
-#     out of this APK's resources.arsc (48/72/96/144/192 px), so they are checked before use - a
-#     different retail build would name them differently. The adaptive icon's background layer is a
-#     flat colour, not an image, so there is nothing else to replace.
+# 2c. The app icon - done the way Android documents it, because nothing else worked. Android 8+
+#     draws the adaptive icon, and its foreground layer must be a density-qualified bitmap
+#     (108dp per bucket) or a vector. Retail's is a vector in drawable-anydpi-v24; a bitmap dropped
+#     into that slot decodes at density 65534 - a few pixels - and the launcher smears its average
+#     colour across the mask. That was seven installs of a grey circle.
+#     So the resource side is rebuilt with apktool: decode retail's resources, swap the vector for
+#     PNGs at five densities, set the background colour, put our mipmaps in, build. The packager
+#     then takes resources.arsc, the manifest and res/ from that build (-Dmonmmo.resourcesApk) and
+#     everything else from retail. Resource ids are pinned by apktool's public.xml; the build
+#     checks the icon chain, the ids and the dex afterwards. The desktop window icons come from
+#     the same art via IconSet.
 ICON_SRC="$TOOLS/app-icon/app-icon-source.png"
+APKTOOL="${USERPROFILE:-$HOME}/.monmmo/tools/apktool_3.0.3.jar"
+RES_APK="-"
 if [ -f "$ICON_SRC" ]; then
-  echo "== fitting the app icon"
-  rm -rf "$WORK/icons"; mkdir -p "$WORK/icons" "$OVERLAY/res" "$OVERLAY/assets/data/icons"
-  "$JDK/java.exe" "$TOOLS/app-icon/IconSet.java" "$ICON_SRC" "$WORK/icons"
-  for pair in "Au 48" "Mx 72" "db 96" "hm 144" "xq 192"; do
-    set -- $pair
-    unzip -l "$APK" "res/$1.png" | grep -q "res/$1.png" \
-      || { echo "ERROR: res/$1.png is not in this APK - re-read the mipmap names from resources.arsc"; exit 1; }
-    cp "$WORK/icons/icon-$2.png" "$OVERLAY/res/$1.png"
+  echo "== rebuilding the resource side with our icon (apktool)"
+  [ -f "$APKTOOL" ] || { echo "ERROR: apktool missing at $APKTOOL"; exit 1; }
+  AT="$CACHE/apktool"; DEC="$AT/decoded"
+  if [ ! -d "$DEC/res" ]; then
+    "$JDK/java.exe" -Xmx2g -jar "$APKTOOL" d -s --no-assets -f -o "$DEC" "$APK" > "$AT.log" 2>&1 \
+      || { tail -5 "$AT.log"; echo "ERROR: apktool decode failed"; exit 1; }
+  fi
+  rm -rf "$WORK/ladder"
+  "$JDK/java.exe" "$TOOLS/app-icon/DensityLadder.java" "$ICON_SRC" "$WORK/ladder"
+  rm -f "$DEC/res/drawable-anydpi-v24/pokemmo_foreground.xml"
+  for b in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+    mkdir -p "$DEC/res/drawable-$b" "$DEC/res/mipmap-$b"
+    cp "$WORK/ladder/drawable-$b/pokemmo_foreground.png" "$DEC/res/drawable-$b/"
+    cp "$WORK/ladder/mipmap-$b/pokemmo.png" "$DEC/res/mipmap-$b/pokemmo.png"
   done
+  sed -i "s|<color name=\"pokemmo_background\">#[0-9a-fA-F]*</color>|<color name=\"pokemmo_background\">${ICON_PLATE:-#ff14161a}</color>|" "$DEC/res/values/colors.xml"
+  grep -q "pokemmo_background\">${ICON_PLATE:-#ff14161a}<" "$DEC/res/values/colors.xml" || { echo "ERROR: background colour not set"; exit 1; }
+  RES_APK="$AT/retail-icon.apk"
+  "$JDK/java.exe" -Xmx2g -jar "$APKTOOL" b -f -o "$RES_APK" "$DEC" > "$AT-build.log" 2>&1 \
+    || { tail -5 "$AT-build.log"; echo "ERROR: apktool build failed"; exit 1; }
+  "$JDK/java.exe" "$TOOLS/app-icon/IconChain.java" "$RES_APK" > "$AT-chain.log" \
+    || { cat "$AT-chain.log"; echo "ERROR: rebuilt resources do not resolve the icon"; exit 1; }
+  for d in classes.dex classes2.dex; do
+    cmp -s <(unzip -p "$RES_APK" $d) <(unzip -p "$APK" $d) || { echo "ERROR: apktool altered $d"; exit 1; }
+  done
+  # The desktop window icons, from the same art.
+  rm -rf "$WORK/icons"; mkdir -p "$WORK/icons" "$OVERLAY/assets/data/icons"
+  "$JDK/java.exe" "$TOOLS/app-icon/IconSet.java" "$ICON_SRC" "$WORK/icons" > /dev/null
   for n in 16 32 128; do cp "$WORK/icons/icon-$n.png" "$OVERLAY/assets/data/icons/${n}x${n}.png"; done
-  # Android 8+ ignores those mipmaps and draws the adaptive icon, whose foreground is a vector
-  # (res/df.xml). ApkPackager repoints the resource table at res/df.png when this file exists, so
-  # the icon is ours on modern phones too. Adaptive foregrounds are a 108dp canvas with only the
-  # middle 72dp guaranteed visible, hence the wide margin: the art must sit inside two thirds.
-  # Android 8+ draws the ADAPTIVE icon, not these mipmaps. Its foreground is a vector we cannot
-  # author, so ApkPackager repoints the table's `pokemmo_foreground` entry at this PNG (shipped
-  # under the table's own path) and rewrites `pokemmo_background`'s colour in place. The art sits
-  # in the middle two thirds of a 108dp canvas: the launcher masks the rest to its own shape.
-  "$JDK/java.exe" "$TOOLS/app-icon/MakeForeground.java" "$ICON_SRC" "$OVERLAY/res/adaptive-foreground.png" \
-    "${ICON_SAFE:-0.66}"
 fi
 
 # 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.
@@ -199,7 +217,7 @@ fi
 # 5. Package, sign, align.
 echo "== packaging"
 rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
-"$JDK/java.exe" -Xmx2g "-Dmonmmo.iconBackground=${ICON_PLATE:-FF14161A}" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
+"$JDK/java.exe" -Xmx2g "-Dmonmmo.resourcesApk=$RES_APK" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
   "$REPO/launcher/src/main/resources/game.public.pem" "$REPO/launcher/src/main/resources/chat.public.pem" \
   "$STAGE/data/data.pak" "$STAGE/data/strings/strings_en.xml" "$DEX" "$OVERLAY"
 "$JDK/jarsigner.exe" -keystore "$KEYDIR/monmmo-ex.p12" -storetype PKCS12 -storepass:file "$KEYDIR/password.txt" \

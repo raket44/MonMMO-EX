@@ -126,6 +126,15 @@ public class ApkPackager {
     keys.put(RETAIL_GAME_KEY, pemBody(gamePem));
     keys.put(RETAIL_CHAT_KEY, pemBody(chatPem));
 
+    // -Dmonmmo.resourcesApk=<apk>: take the RESOURCE side - resources.arsc, AndroidManifest.xml and
+    // every res/ file - from an apktool rebuild of the retail APK instead of the retail APK itself.
+    // apktool renames res/ files by resource name and config on the way through, so the whole set
+    // must come from one place; everything else (dex, assets, libs) still comes from retail.
+    // This is how the launcher icon gets density-qualified bitmap layers, which no in-place patch
+    // of the retail table can express (see build-android.sh).
+    String resourcesApk = System.getProperty("monmmo.resourcesApk", "-");
+    List<Entry> transplant = resourcesApk.equals("-") ? List.of() : read(Files.readAllBytes(Path.of(resourcesApk)));
+
     List<Entry> result = new ArrayList<>();
     List<String> replaced = new ArrayList<>();
     boolean dexPatched = false;
@@ -136,6 +145,7 @@ public class ApkPackager {
         dropped++;
         continue;
       }
+      if (!transplant.isEmpty() && isResourceSide(n)) continue;
       if (n.startsWith("assets/config/")) {
         throw new IllegalStateException("retail APK unexpectedly ships " + n);
       }
@@ -153,7 +163,7 @@ public class ApkPackager {
       // adaptive layers are. The foreground ships as a vector we cannot author here, so its table
       // entry is repointed at a PNG of the same path length (an in-place swap like the server keys),
       // and the background colour's entry is rewritten in place. Both are found by NAME.
-      if (n.equals("resources.arsc") && overlayHas(overlayDir, ICON_FOREGROUND_OVERLAY)) {
+      if (n.equals("resources.arsc") && transplant.isEmpty() && overlayHas(overlayDir, ICON_FOREGROUND_OVERLAY)) {
         byte[] arsc = content(e);
         AdaptiveIcon icon = AdaptiveIcon.locate(arsc);
         String target = icon.foregroundPath.replaceAll("\\.xml$", ".png");
@@ -193,6 +203,16 @@ public class ApkPackager {
       result.add(e);
     }
     if (!dexPatched) throw new IllegalStateException("no classes.dex in " + in);
+    if (!transplant.isEmpty()) {
+      int files = 0;
+      for (Entry t : transplant) {
+        if (!isResourceSide(t.name())) continue;
+        byte[] bytes = content(t);
+        result.add(t.method() == 0 ? stored(t.name(), bytes) : deflated(t.name(), bytes));
+        files++;
+      }
+      replaced.add("resource side from " + Path.of(resourcesApk).getFileName() + " (" + files + " entries)");
+    }
     for (String[] want : new String[][] {{dataPak, DATA_PAK_ENTRY}, {stringsEn, STRINGS_EN_ENTRY}}) {
       if (!want[0].equals("-") && !replaced.contains(want[1])) {
         throw new IllegalStateException("asked to replace " + want[1] + " but the APK has no such entry");
@@ -576,6 +596,10 @@ public class ApkPackager {
       }
     }
     return "-";
+  }
+
+  static boolean isResourceSide(String n) {
+    return n.equals("resources.arsc") || n.equals("AndroidManifest.xml") || n.startsWith("res/");
   }
 
   static boolean overlayHas(String overlayDir, String rel) {

@@ -35,6 +35,9 @@ unzip -q "$SRC_ZIP" -d "$MOD"
 MOBILE="$MOD/data/DarkTheme_mobile"
 [ -d "$MOBILE" ] || { echo "ERROR: $SRC_ZIP has no data/DarkTheme_mobile - is this the right theme?"; exit 1; }
 
+# Source art the client never reads (the authors ship their atlas .psd) has no business on a phone.
+find "$MOD" -iname "*.psd" -print -delete | sed 's/^/[theme] dropped /'
+
 # 1. Their atlas misspells one region: flag_fil ships as fflag_fil, so the Filipino flag would be
 #    missing from the registry. Every other one of the 458 names matches retail exactly.
 if grep -q '^fflag_fil$' "$MOD/atlas/main.atlas"; then

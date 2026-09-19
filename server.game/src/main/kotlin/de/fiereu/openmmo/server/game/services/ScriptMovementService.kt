@@ -486,8 +486,7 @@ constructor(
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map =
-        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
     // A still-animating previous walk finishes first; these steps append behind it.
     awaitSelfActions(state)
     state.selfActionsEndAt =
@@ -496,6 +495,16 @@ constructor(
             CLIENT_LAG_PAD_MS
     val start = Pose(info.positionX.toInt(), info.positionY.toInt(), state.facingDirection)
     val end = drive(session, info.id, start, steps)
+    if (map == null) {
+      // DS map: no tile table to walk against (moveNpc trusts the ROM script the same way).
+      // Returning before the drive, as this did, left the player frozen through every DS scene
+      // (Nuvema: never turning to Bianca, 2026-09-19).
+      characterStore.updatePosition(charId, end.x.toShort(), end.y.toShort(), facing = end.facing)
+      state.x = end.x.toShort()
+      state.y = end.y.toShort()
+      state.facingDirection = end.facing
+      return
+    }
     // A player walked off the map with no neighbour there means the scene ran from a position it
     // never expected (a login in the middle of a cutscene map). Failing the script rolls its
     // writes back for a clean retry from the proper entry.

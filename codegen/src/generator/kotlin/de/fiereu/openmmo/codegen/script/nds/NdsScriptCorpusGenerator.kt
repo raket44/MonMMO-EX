@@ -605,6 +605,8 @@ class NdsScriptCorpusGenerator {
         // White's gift box (see the first pass): Snivy, Tepig, Oshawott - entry 8's own table -
         // over bank 430's "Choose a Pokémon." (19) and the type lines (18 grass, 17 fire, 16
         // water; each names the species through text slot 1). The script wants the INDEX back.
+        // White's FadeScreen (see the first pass): 1 darkens, 0 restores - the GBA fadescreen modes.
+        "ScreenFade" -> out += "fadescreen ${a[0]}"
         "ChooseUnovaStarter" -> {
           val texts = listOf(19, 18, 17, 16).map { dialect.textId("T0430_%05d".format(it)) }
           if (texts.any { it == null }) out += "ds_startchoosestarterscene"
@@ -1525,6 +1527,8 @@ class NdsScriptCorpusGenerator {
         // value is one row; CloseMulti shows it. Emitted as one ds_menu, like HeartGold's MenuExec.
         var menuVar: String? = null
         val menuItems = mutableListOf<Pair<String, String>>()
+        // The starter-select app's result var, from its open (0xB4 331 339 var) to its close (CMD_1AF).
+        var starterVar: String? = null
         val list = cmds.values.toList()
         for ((ci, c) in list.withIndex()) {
           // A command whose last (var) argument the table lacks leaves it decoded as a bare
@@ -1645,7 +1649,7 @@ class NdsScriptCorpusGenerator {
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
             "CMD_240", "SetVarType", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
-            "CMD_1AF", "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
+            "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "Screen_B5", "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "CMD_4E", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
@@ -1692,11 +1696,19 @@ class NdsScriptCorpusGenerator {
             // own (@612: == 0 is Snivy; @652 pushes the var itself and tests == 1, Tepig; @700 is
             // Oshawott). The app becomes the species picker the Platinum briefcase and Elm's lab
             // already use here; the read-back pushes the var and 0 for that first compare.
+            // The app covers the field from its open to its close (CMD_1AF); the SetOWPositions
+            // in between (Cheren and Bianca step up beside the box) happen unseen on the cartridge,
+            // so here the screen fades out at the open and back in at the close, and the picker
+            // follows - the same fade the script itself uses around its later repositions.
             "ResetScreen" -> when {
-              t(0) == "331" && t(1) == "339" && (t(2).toIntOrNull() ?: 0) >= 0x4000 -> b.lines += listOf("ChooseUnovaStarter", v(2))
+              t(0) == "331" && t(1) == "339" && (t(2).toIntOrNull() ?: 0) >= 0x4000 -> { starterVar = v(2); b.lines += listOf("ScreenFade", "1") }
               t(0) == "9" && (t(1).toIntOrNull() ?: 0) >= 0x4000 -> { stack.addLast(v(1)); stack.addLast("0") }
               else -> {}
             }
+            "CMD_1AF" -> starterVar?.let { b.lines += listOf("ScreenFade", "0"); b.lines += listOf("ChooseUnovaStarter", it); starterVar = null }
+            // type, from, to, speed: 0 -> 16 darkens, 16 -> 0 restores. Dropped, every reposition
+            // the games hide behind a fade was a visible jump (Nuvema's gift box, 2026-09-19).
+            "FadeScreen" -> b.lines += listOf("ScreenFade", if (t(2) == "16") "1" else "0")
             "StoreVarItem", "SetVarPartyPokemonNick", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
             // 255 = player; 250-254 = camera/follower slots the server does not animate.
             "ApplyMovement" -> if (t(0).toInt() in 250..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))

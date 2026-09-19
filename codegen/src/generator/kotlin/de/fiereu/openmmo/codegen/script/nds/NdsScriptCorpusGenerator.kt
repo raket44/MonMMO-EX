@@ -1723,7 +1723,10 @@ class NdsScriptCorpusGenerator {
             "TakeItem" -> b.lines += listOf("TakeItem", item(0), tv(1), v(2))
             "GiveItem", "AddItem" -> b.lines += listOf("GiveItem", item(0), tv(1), v(2))
             "StoreHeroGender" -> b.lines += listOf("GetPlayerGender", v(0))
-            "FallWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            // header, x, y. Nuvema's room scene ends with `FallWarp 0 101 100` - header 0 is no map
+            // (a same-map reload on the cartridge); warped there the owner stood in a blue void
+            // (2026-09-19). Only a real header goes out.
+            "FallWarp" -> if (t(0) != "0") b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "MakeNPC", "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
             "RemoveNPC" -> if (t(0).toInt() < 250) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
             "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))

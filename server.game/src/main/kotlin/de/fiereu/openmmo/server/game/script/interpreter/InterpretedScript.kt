@@ -544,7 +544,8 @@ class InterpretedScript(
         }
         "ds_warp" -> {
           val header = (instruction.arg(0) as IntArg).value
-          val region = if (program.id.source == "heartgold") 4 else 3
+          // Was "heartgold ? 4 : 3" - a White warp landed in Sinnoh's map space.
+          val region = dsRegion()
           tracedWait(ctx, "ds_warp") {
             ctx.rawWarp(region, header and 0xFF, header shr 8, (instruction.arg(1) as IntArg).value, (instruction.arg(2) as IntArg).value)
           }

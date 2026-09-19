@@ -17,6 +17,13 @@ val PENDING_DIALOG = SessionAttribute.of<CompletableDeferred<Unit>>("pendingDial
 val PENDING_DIALOG_RESPONSE =
     SessionAttribute.of<CompletableDeferred<DialogActionResponsePacket>>("pendingDialogResponse")
 
+/**
+ * Completes with the bytes of a payload answer (c2s 0x28, TypedBinaryDataPacket): the Plant Seeds
+ * window answers its seed picks this way, cancel still comes as a DialogActionResponsePacket.
+ */
+val PENDING_DIALOG_PAYLOAD =
+    SessionAttribute.of<CompletableDeferred<ByteArray?>>("pendingDialogPayload")
+
 /** Completed when the client has asked for its player again, which ends a map transition. */
 val PENDING_MAP_LOAD = SessionAttribute.of<CompletableDeferred<Unit>>("pendingMapLoad")
 

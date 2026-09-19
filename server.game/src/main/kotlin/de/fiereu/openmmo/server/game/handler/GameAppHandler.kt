@@ -151,6 +151,8 @@ constructor(
     on<de.fiereu.openmmo.net.game.packets.EntityActionRequestPacket> { event -> interactionService.onFieldMoveRequest(event) }
     onSuspend<TileInteractPacket> { event -> interactionService.onTileInteract(event) }
     onSuspend<DialogActionResponsePacket> { event -> dialogService.onInteractive(event) }
+    // c2s 0x28: a window answering with bytes (the Plant Seeds window), see DialogService.plantSeeds.
+    on<de.fiereu.openmmo.net.game.packets.TypedBinaryDataPacket> { event -> dialogService.onPayload(event) }
     onSuspend<DialogChoicePacket> { event -> dialogService.onDialogChoice(event) }
     on<de.fiereu.openmmo.net.game.packets.EncounterTrackerPinPacket> { event -> encounterTracker.onPin(event) }
     onSuspend<de.fiereu.openmmo.net.game.packets.ChatLinkInspectRequestPacket> { event -> chatLinkService.onInspect(event) }

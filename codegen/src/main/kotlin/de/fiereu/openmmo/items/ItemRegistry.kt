@@ -22,6 +22,7 @@ class ItemRegistry @Inject constructor() {
     // (idOf takes the lowest), so there is one Bicycle, not two.
     register(de.fiereu.openmmo.items.generated.Items.BICYCLE, 360)
     registerClientTools()
+    registerBerryFarming()
   }
 
   /**
@@ -41,6 +42,21 @@ class ItemRegistry @Inject constructor() {
           val item = existing ?: ItemDef("${if (itemIds.any(::isHmId)) "HM" else "TM"} $name", 0)
           register(item, *itemIds.sorted().toIntArray())
         }
+  }
+
+  /**
+   * PokeMMO's own berry-farming items, which no Gen 3/5 table carries: the Harvesting Tools, the
+   * ten seeds and the Watering Can, at the client ids the dumped item-names.csv shows (1028-1039,
+   * 4561). The client draws and stacks them; BerryPlotService plants and harvests with them.
+   */
+  private fun registerBerryFarming() {
+    val own =
+        listOf(
+            1028 to "Harvesting Tool", 1029 to "Unbreakable Harvesting Tool",
+            1030 to "Plain Spicy Seed", 1031 to "Very Spicy Seed", 1032 to "Plain Dry Seed", 1033 to "Very Dry Seed",
+            1034 to "Plain Sweet Seed", 1035 to "Very Sweet Seed", 1036 to "Plain Bitter Seed", 1037 to "Very Bitter Seed",
+            1038 to "Plain Sour Seed", 1039 to "Very Sour Seed", 4561 to "Watering Can")
+    for ((id, name) in own) if (!byId.containsKey(id)) register(ItemDef(name, 0), id)
   }
 
   /** The client's HM blocks (f/ls0.jU0). */

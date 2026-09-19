@@ -8,6 +8,7 @@ import de.fiereu.openmmo.net.game.packets.dialog.DialogActionPacket
 import de.fiereu.openmmo.net.game.packets.dialog.DialogActionResponsePacket
 import de.fiereu.openmmo.net.game.packets.dialog.DialogMessageArg
 import de.fiereu.openmmo.server.game.session.PENDING_DIALOG
+import de.fiereu.openmmo.server.game.session.PENDING_DIALOG_PAYLOAD
 import de.fiereu.openmmo.server.game.session.PENDING_DIALOG_RESPONSE
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
@@ -204,6 +205,49 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
         .unk
   }
 
+  /**
+   * The client's own Plant Seeds window (dialog kind wire 32 = f/qw4.Zi1, window f/by0 + seed
+   * slots f/r27, r32645 bytecode 2026-09-19): the panel shows [textId] with [messageArgs], the
+   * player fills up to three slots from the seeds in the bag. Confirm answers on c2s 0x28 with
+   * one byte per filled slot = seed item id % 1000 (seeds 1030-1039 -> 30..39); cancel answers
+   * on the ordinary 0x21. Returns the seed item ids picked, or null when cancelled.
+   */
+  suspend fun plantSeeds(
+      session: SessionContext,
+      state: PlayerState,
+      textId: Int,
+      entityId: Long,
+      messageArgs: List<DialogMessageArg> = emptyList(),
+  ): List<Int>? {
+    session.attributes.remove(PENDING_DIALOG)?.complete(Unit)
+    session.attributes.remove(PENDING_DIALOG_RESPONSE)
+    val payload = CompletableDeferred<ByteArray?>()
+    session.attributes[PENDING_DIALOG_PAYLOAD] = payload
+    val seq = state.dialogSeqId
+    state.dialogSeqId = seq + 1
+    state.dialogVisible = true
+    state.dialogNpcEntityId = entityId
+    session.send(
+        DialogActionPacket(
+            flags = seq.toByte(),
+            actionType = PLANT_SEEDS.toByte(),
+            textId = textId,
+            entityId = entityId,
+            contextValue = 0,
+            messageArgs = messageArgs,
+            detail = byteArrayOf(0),
+        ))
+    val bytes = payload.await() ?: return null
+    return bytes.map { SEED_ITEM_BASE + (it.toInt() and 0xFF) }
+  }
+
+  /** c2s 0x28: the payload answer of the window waiting for one (see [plantSeeds]). */
+  fun onPayload(event: PacketEvent<de.fiereu.openmmo.net.game.packets.TypedBinaryDataPacket>) {
+    val waiting = event.session.attributes.remove(PENDING_DIALOG_PAYLOAD)
+    log.info { "Dialog payload id=${event.packet.dataType} bytes=${event.packet.data.size} waiting=${waiting != null}" }
+    waiting?.complete(event.packet.data)
+  }
+
   /** Show a ROM-backed yes/no box and return true for YES. */
   suspend fun askYesNo(
       session: SessionContext,
@@ -366,6 +410,11 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
     log.info { "Dialog response id=${event.packet.id} code=${event.packet.unk}" }
     // A social prompt (trade, link, friend, team, duel) answers through the same packet.
     if (socialRequests?.onAnswer(session, event.packet.id, event.packet.unk) == true) return
+    // A cancelled Plant Seeds window answers here, not with a payload.
+    session.attributes.remove(PENDING_DIALOG_PAYLOAD)?.let {
+      it.complete(null)
+      return
+    }
     val response = session.attributes.remove(PENDING_DIALOG_RESPONSE)
     if (response != null) {
       response.complete(event.packet)
@@ -455,6 +504,10 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
     /** f/Lx.R40 set 3: "{01}'s PC" / "Global Trade Link" / "Mail" / Cancel. */
     const val PC_MENU_SET = 3
     const val STARTER_PICK = 0x23
+    /** The Plant Seeds window: wire 32 = f/qw4.Zi1 (internal 27), no kind-specific payload. */
+    const val PLANT_SEEDS = 32
+    /** Seed item ids 1030-1039; the window answers item % 1000. */
+    const val SEED_ITEM_BASE = 1000
     const val STARTER_CONTEXT = 700
 
     const val TREECKO = 252

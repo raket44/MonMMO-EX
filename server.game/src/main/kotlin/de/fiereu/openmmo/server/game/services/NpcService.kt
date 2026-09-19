@@ -109,6 +109,7 @@ constructor(
               regionId,
               bankId,
               mapId,
+              berryState = berryState(storyVars, regionId, bankId, mapId, resolved),
           ))
     }
     // The region-link ferry captain is not in the ROM; he stands in the harbour town.
@@ -215,6 +216,11 @@ constructor(
           applyStoryPlacement(bankId, mapId, npc, storyFlags, storyVars),
           storyVars)
 
+  /** A soil spot's packed plant state for this character, null for any other npc. */
+  private fun berryState(storyVars: Map<String, Int>, regionId: Int, bankId: Int, mapId: Int, npc: NpcDef): Int? =
+      if (npc.graphicsId != BerryPlots.BERRY_TREE_GFX) null
+      else BerryPlots.packedState(BerryPlots.view(BerryPlots.Plot(storyVars, "berry/$regionId/$bankId/$mapId/${npc.entityIdx}")))
+
   private fun sessionStoryVars(ctx: SessionContext): Map<String, Int> =
       ctx.attributes[PLAYER_STATE]
           ?.characterId
@@ -295,7 +301,11 @@ constructor(
             ctx, applyXyOverride(regionId, bankId, mapId, npc, storyVars), regionId, storyVars)
     if (resolved.graphicsId in DYNAMIC_GFX_VAR_0..DYNAMIC_GFX_VAR_3) return
     log.info { "Scripted spawn $regionId:$bankId:$mapId local=$localId gfx=${resolved.graphicsId} at (${resolved.x}, ${resolved.y}) elev=${resolved.elevation} hideFlag=${npc.hideFlag}" }
-    sendAfterArrival(ctx, buildSpawnPacket(resolved, entityIdFor(regionId, bankId, mapId, localId), regionId, bankId, mapId))
+    sendAfterArrival(
+        ctx,
+        buildSpawnPacket(
+            resolved, entityIdFor(regionId, bankId, mapId, localId), regionId, bankId, mapId,
+            berryState = berryState(storyVars, regionId, bankId, mapId, resolved)))
   }
 
   /**
@@ -455,12 +465,17 @@ constructor(
       spriteRegionId: Int = regionId,
       /** Width/height overrides (NpcSpawnPacket.spriteSize); a region-10 sprite needs (-1, -1). */
       spriteSize: Pair<Byte, Byte>? = null,
+      /** The packed berry-plot state for a soil spot (BerryPlots.packedState), else unused. */
+      berryState: Int? = null,
   ): NpcSpawnPacket {
     val region = requireNotNull(Region.byId(regionId)) { "Unknown region id $regionId" }
     val movementId = npc.movementType.forRegion(region).id
     val unk3 = ((movementId and 0xFF) shl 8) or 0x02
     val unk4 =
-        if (movementId in 1..6 || (movementId in 25..52)) {
+        if (npc.graphicsId == BerryPlots.BERRY_TREE_GFX) {
+          // A soil spot: the plant's growth stage and droplets for this character (BerryPlots).
+          berryState ?: BerryPlots.packedState(BerryPlots.View(BerryPlots.STAGE_EMPTY, 0, null, null, 0.0, 0.0))
+        } else if (movementId in 1..6 || (movementId in 25..52)) {
           ((npc.movementRangeX and 0xFF) shl 8) or (npc.movementRangeY and 0xFF)
         } else {
           0

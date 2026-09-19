@@ -3,7 +3,7 @@
 `item-berry.json` / `item-seed.json` from the open-source PokeMMO Hub
 (https://github.com/PokeMMO-Tools/pokemmo-hub, src/data/pokemmo/), fetched 2026-09-19. They are a
 dump of the client's own berry data (data.pak section 7 carries the same fields; verify before
-relying on the copy). Berry ids 600+k are Gen 5 item 149+k (Cheri .. Rowap, 64 entries; 63 here).
+relying on the copy). Berry ids 600+k are Gen 5 item 149+k (Cheri .. Rowap, 64 entries).
 Seeds 701-705 = Plain (degree 1) per flavor spicy/dry/sweet/bitter/sour, 706-710 = Very
 (degree 2); our item ids are 1030-1039 in the same order.
 

@@ -38,6 +38,7 @@ constructor(
     private val ocarinas: OcarinaService,
     private val banners: FieldMoveBanners,
     private val raidPlacement: CrystalOnixRaidPlacement,
+    private val berryPlots: BerryPlotService,
     private val raid: CrystalOnixRaidService,
 ) {
 
@@ -136,6 +137,11 @@ constructor(
 
     for (npc in currentMap.npcs) {
       if (npcService.getNpcEntityId(regionId, bankId, mapId, npc.entityIdx) == npcEntityId) {
+        // A soil spot (the ROM's berry-tree object) is farmed through the client's own windows.
+        if (berryPlots.isPlot(npc)) {
+          runScript(session, state, berryPlots.script(stored, regionId, bankId, mapId, npc), npcEntityId)
+          return
+        }
         val script =
             try {
               scriptRegistry.forLabel(npc.script, gbaScriptSource(state.regionId))

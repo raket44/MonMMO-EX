@@ -8687,7 +8687,13 @@
     .line 1893
     .line 1894
     :try_start_765
-    new-instance v0, Lf/z46;
+    # MonMMO-EX 2026-09-19: retail opens sp-icon.pak (the shiny icon palette remaps) with
+    # `new z46(String)` = libgdx Absolute, i.e. /data/sprites/sp-icon.pak on the phone, which never
+    # exists - so hz1() is false, the map below stays empty and every shiny icon falls back to the
+    # normal icon. Every other pak in this class goes through u43.G4 (the APK asset handle f/rz,
+    # which overrides hz1/iz1/HH), so do the same here. dq7.vZ1 is the singleton the sp.pak open
+    # in DW() reads; it is set before any sprite loading runs.
+    sget-object v0, Lf/dq7;->vZ1:Lf/u43;
 
     .line 1895
     .line 1896
@@ -8695,7 +8701,9 @@
 
     .line 1897
     .line 1898
-    invoke-direct {v0, v9}, Lf/z46;-><init>(Ljava/lang/String;)V
+    invoke-virtual {v0, v9}, Lf/u43;->G4(Ljava/lang/String;)Lf/rz;
+
+    move-result-object v0
 
     .line 1899
     .line 1900

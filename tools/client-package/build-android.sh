@@ -191,20 +191,18 @@ if [ "$REBUILD_DEX" = 1 ] || [ ! -f "$DEX" ]; then
   echo "== rebuilding classes.dex from smali (slow, needs ~3 GB)"
   [ -d "$SMALI" ] || { echo "ERROR: smali tools missing at $SMALI"; exit 1; }
   CP=$(ls "$SMALI"/*.jar | tr '\n' ';')
-  rm -rf "$WORK/dex"; mkdir -p "$WORK/dex"
+  rm -rf "$WORK/dex" "$WORK/smali"; mkdir -p "$WORK/dex"   # a stale tree would keep dropped patches
   unzip -o -q "$APK" classes.dex -d "$WORK/dex"
   "$JDK/java.exe" -Xmx3g -cp "$CP" com.android.tools.smali.baksmali.Main d "$WORK/dex/classes.dex" -o "$WORK/smali" --api 21
-  # This client has thousands of class names that differ only by case (f/Vk vs f/vK). Windows cannot
-  # keep both as files, so one silently overwrites the other and the class is GONE from the rebuilt
-  # dex - 8392 classes in, 6735 files out, baksmali exiting 0 the whole way. That shipped once and
-  # crashed the client at launch on a missing retail class (NoClassDefFoundError: Lf/Vk;), so the
-  # counts are compared before anything is assembled.
+  # Retail r32645 has 8392 classes and the disassembly keeps all 8392 on this filesystem (checked
+  # 2026-09-19; `f/` alone holds 6735, which was once misread as classes lost to case collisions -
+  # there are none). The 2026-09-18 launch crash (NoClassDefFoundError: Lf/Vk;) was a patch naming
+  # a class that does not exist in r32645, not a disassembly loss. The count check stays as a cheap
+  # guard against a broken or partial disassembly.
   want=$("$JDK/java.exe" -cp "$CP" com.android.tools.smali.baksmali.Main list classes "$WORK/dex/classes.dex" | wc -l)
   got=$(find "$WORK/smali" -name "*.smali" | wc -l)
   if [ "$got" -lt "$want" ]; then
-    echo "ERROR: disassembly lost $((want - got)) of $want classes - case-colliding names cannot"
-    echo "       survive on this filesystem. Disassemble on a case-sensitive volume (or in WSL)"
-    echo "       before rebuilding the dex; the cached dex is untouched."
+    echo "ERROR: disassembly produced $got of $want classes; not assembling. The cached dex is untouched."
     exit 1
   fi
   echo "   disassembly kept all $want classes"

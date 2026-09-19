@@ -1413,6 +1413,24 @@ class NdsScriptCorpusGenerator {
    */
   private class Unova(private val root: File) : Dialect {
     override val region = 2
+    /**
+     * The client's own item names by Gen 5 index (decomp/pokeblack/item_names.json, the table the
+     * item catalogue is generated from), so a script's numeric item becomes the ITEM_ constant of
+     * the item the client already has - never a new item. Same mangling as ItemRegistry.
+     */
+    private val itemNames: List<String> by lazy {
+      val json = File(root.parentFile, "decomp/pokeblack/item_names.json").readText()
+      Regex("\"([^\"]*)\"").findAll(json).map { it.groupValues[1] }.toList()
+    }
+    fun itemConstant(index: Int): String? =
+        itemNames.getOrNull(index)?.takeIf { it.isNotEmpty() && it != "None" }?.let { name ->
+          "ITEM_" +
+              java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+                  .replace(Regex("\\p{Mn}+"), "")
+                  .uppercase(java.util.Locale.ROOT)
+                  .replace(Regex("[^A-Z0-9]+"), "_")
+                  .trim('_')
+        }
     override val scriptFiles: List<File> = emptyList()
     private val headerRows: List<IntArray> by lazy {
       File(root, "nds-headers-2.txt").readLines().filter { it.startsWith("hdr;") }.map { l -> l.split(';').drop(1).map { it.toInt() }.toIntArray() }
@@ -1513,6 +1531,8 @@ class NdsScriptCorpusGenerator {
           fun fl(i: Int) = "FLAG_" + t(i)
           /** A value-or-var argument: Gen 5 passes vars (0x4000+) where a value is expected. */
           fun tv(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else t(i)
+          /** An item argument: a var stays a var, a Gen 5 index becomes the client item's ITEM_ constant. */
+          fun item(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else itemConstant(t(i).toInt()) ?: t(i)
           fun jump(i: Int) = lab(t(i).drop(1).toInt())
           fun text(i: Int) = "T%04d_%05d".format(bank, t(i).toInt())
           fun cond(code: Int, negate: Boolean): String {
@@ -1566,7 +1586,7 @@ class NdsScriptCorpusGenerator {
             "EndRoutine", "ReturnStd" -> b.lines += listOf("Return")
             // CheckItemBagNumber item, count[, var]: the table knows two args, the var rides as the
             // following CMD_80xx; without one the second arg was the var all along.
-            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", tv(0), trailingVar ?: v(1))
+            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", item(0), trailingVar ?: v(1))
             "Multi" -> {
               menuVar = v(5)
               menuItems.clear()
@@ -1611,7 +1631,7 @@ class NdsScriptCorpusGenerator {
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "Screen_B5", "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "CMD_4E", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
-            "SetVarItem", "SetVarItem2", "SetVarItem3" -> b.lines += listOf("BufferItemName", t(0), tv(1))
+            "SetVarItem", "SetVarItem2", "SetVarItem3" -> b.lines += listOf("BufferItemName", t(0), item(1))
             "CloseShowMessageAt" -> b.lines += listOf("CloseMessage")
             "SetVarBag", "CMD_6A", "CMD_19F" -> {}
             "CMD_BB" -> b.lines += listOf("GetItemPocket", v(0), v(1))
@@ -1626,7 +1646,9 @@ class NdsScriptCorpusGenerator {
             "SetFlag" -> b.lines += listOf("SetFlag", fl(0))
             "ClearFlag" -> b.lines += listOf("ClearFlag", fl(0))
             "StoreValueInVar" -> b.lines += listOf("SetVar", v(0), t(1))
-            "StoreVarInVar", "StoreDerefVarInVar" -> b.lines += listOf("CopyVar", v(0), v(1))
+            // The second argument is a var OR a literal (StoreDerefVarInVar VAR_0x8000, 504 puts the
+            // item index in the var); read as a var it pointed at nothing and hidden items gave item 0.
+            "StoreVarInVar", "StoreDerefVarInVar" -> b.lines += if ((t(1).toIntOrNull() ?: 0) >= 0x4000) listOf("CopyVar", v(0), v(1)) else listOf("SetVar", v(0), t(1))
             "AddVars" -> b.lines += listOf("AddVar", v(0), t(1))
             "SubVars" -> b.lines += listOf("SubVar", v(0), t(1))
             "LockAll" -> b.lines += listOf("LockAll")
@@ -1660,7 +1682,10 @@ class NdsScriptCorpusGenerator {
             "GivePokemon" -> b.lines += listOf("GivePokemon", tv(0), tv(1), tv(2), v(3))
             "TakeMoney" -> b.lines += listOf("RemoveMoney", tv(0))
             "CheckMoney" -> b.lines += listOf("CheckMoney", tv(0), v(1))
-            "CheckItemBagSpace" -> b.lines += listOf("CanFitItem", tv(0), tv(1), v(2))
+            "CheckItemBagSpace" -> b.lines += listOf("CanFitItem", item(0), tv(1), v(2))
+            // item, count, result var - the item by the client's own name, never a raw Gen 5 index.
+            "TakeItem" -> b.lines += listOf("TakeItem", item(0), tv(1), v(2))
+            "GiveItem", "AddItem" -> b.lines += listOf("GiveItem", item(0), tv(1), v(2))
             "StoreHeroGender" -> b.lines += listOf("GetPlayerGender", v(0))
             "FallWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "MakeNPC", "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}

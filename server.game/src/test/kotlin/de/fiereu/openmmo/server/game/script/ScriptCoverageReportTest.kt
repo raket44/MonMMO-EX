@@ -33,6 +33,8 @@ class ScriptCoverageReportTest :
                       "$stripped: ${raw.substringAfter(" from `", "").substringBefore(' ').trim('`')}"
                   else stripped
               reasons.merge(reason, 1, Int::plus)
+              // The source line behind a reason, when asked: -Dcoverage.show=<substring>.
+              System.getProperty("coverage.show")?.takeIf { it in raw }?.let { println("SOURCE $label: $raw") }
             }
           }
           println("=== ${corpus.source}: direct=${direct.size} complete=$complete ===")

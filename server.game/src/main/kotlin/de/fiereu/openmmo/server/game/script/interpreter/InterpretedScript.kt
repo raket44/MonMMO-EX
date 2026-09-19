@@ -1542,13 +1542,19 @@ class InterpretedScript(
   private suspend fun runItemCommand(ctx: ScriptContext, instruction: ScriptInstruction) {
     val token = instruction.arg(0).token
     // DS item balls carry the item and count in vars; the value is the game's own item index,
-    // which the client knows as region * 1000 + index.
+    // which the client knows as region * 1000 + index for Sinnoh/Johto and, for Unova, as the
+    // 5000-band id (the client's item table IS the Gen 5 table; see ItemRegistry).
     val item =
         if (instruction.arg(0) is VarArg) {
-          val region = if (program.id.source == "heartgold") 4 else 3
           val index = ctx.getVar(namespaced(token))
-          ctx.resolveItemWire(region * 1000 + index)
-              ?: error("Script ${program.id.stable} var $token holds unknown item $index (region $region)")
+          val wire =
+              when (program.id.source) {
+                "white" -> 5000 + index
+                "heartgold" -> 4000 + index
+                else -> 3000 + index
+              }
+          ctx.resolveItemWire(wire)
+              ?: error("Script ${program.id.stable} var $token holds unknown item $index (${program.id.source})")
         } else {
           ctx.resolveItem(token)
               ?: error(

@@ -77,6 +77,7 @@ constructor(
     }
     val female = stored.info.rivalSex == CharacterGender.FEMALE.wireValue
     val start = NewGameStarts.forRegion(region, female)
+    val ns = NewGameStarts.namespace(region)
 
     // Every bike quest is reset with the flags, so every bike goes with them even when the bag is
     // kept: the login reclaim only runs at login, and a reset made mid-session left the Bicycle
@@ -87,8 +88,10 @@ constructor(
         characterId = charId,
         party = if (keepBuild) stored.pokemon.toList() else emptyList(),
         items = if (keepBuild) keptItems else emptyMap(),
-        storyFlags = start.storyFlags,
-        storyVars = start.storyVars,
+        // Only THIS region restarts: the other regions' progress (and their untouched opening
+        // state) stays - a Johto reset must not wipe a finished Kanto (2026-09-19).
+        storyFlags = stored.storyFlags.filterNot { it.startsWith(ns) }.toSet() + start.storyFlags,
+        storyVars = stored.storyVars.filterKeys { !it.startsWith(ns) } + start.storyVars,
         pc = if (keepBuild) stored.pcStorage.toList() else emptyList(),
     )
     // Hoenn's opening reads the dynamic warp on its way out of the truck.

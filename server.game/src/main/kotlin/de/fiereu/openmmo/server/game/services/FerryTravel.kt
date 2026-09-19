@@ -96,8 +96,12 @@ constructor(
       ctx.warp(id, start.bankId.toInt(), start.mapId.toInt(), start.x.toInt(), start.y.toInt(), Direction.DOWN)
       return
     }
-    val (bank, mapId) = NDS_STARTS[dest] ?: return
-    rawArrival(ctx, charId, id, bank, mapId)
+    // A DS region's story starts where its game starts too - the player's bedroom (NewGameStarts:
+    // Twinleaf / New Bark / Nuvema player's house 2F), not the town's entry tile: the town start
+    // skipped the opening (the owner arrived outdoors with no intro, 2026-09-19).
+    val start = NewGameStarts.forRegion(dest, female = ctx.playerGender() != 0)
+    characterStore.flushCharacterAsync(charId)
+    warps.executeRawWarp(ctx.session, charId, id, start.bankId.toInt() and 0xFF, start.mapId.toInt() and 0xFF, start.x.toInt(), start.y.toInt(), -1)
   }
 
   /** A DS map the server does not host: land on the ROM header's entry tile, on its rail if any. */
@@ -128,7 +132,6 @@ constructor(
     /** f/xq1.CH0, the order the client lists regions in. */
     val MENU_ORDER = listOf(Region.KANTO, Region.JOHTO, Region.HOENN, Region.SINNOH, Region.UNOVA)
     /** DS ROM headers (bank = low byte, map = high byte) of the start towns and harbours. */
-    val NDS_STARTS = mapOf(Region.UNOVA to (133 to 1), Region.SINNOH to (155 to 1), Region.JOHTO to (60 to 0))
     val NDS_HARBOURS = mapOf(Region.UNOVA to (28 to 0), Region.SINNOH to (33 to 0), Region.JOHTO to (77 to 0))
   }
 }

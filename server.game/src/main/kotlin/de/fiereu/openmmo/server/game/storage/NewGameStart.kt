@@ -8,6 +8,7 @@ import de.fiereu.openmmo.story.generated.hoenn.HoennFlags
 import de.fiereu.openmmo.story.generated.hoenn.HoennVars
 import de.fiereu.openmmo.story.generated.johto.JohtoFlags
 import de.fiereu.openmmo.story.generated.kanto.KantoFlags
+import de.fiereu.openmmo.story.generated.sinnoh.SinnohFlags
 
 /**
  * Where a fresh character starts and the story state its source game would already have set. Every
@@ -123,13 +124,30 @@ internal object NewGameStarts {
    * name the exact start tile, so the player stands on the room's stairs arrival (9,2), where
    * climbing the stairs lands (nds-map-spawns.txt).
    */
+  /**
+   * White opens in the player's room in Nuvema Town (header 391 = bank 135, map 1; the ROM's
+   * spawn table puts the player at 9,2). The ROM has no decomp: its new-game init is script file
+   * 866 entry 0, whose 131 hide flags are listed in monmmo/unova-new-game-flags.txt (numeric ids,
+   * story keys unova/FLAG_<id>), plus var 0x4116 = 1.
+   */
   private fun unova(): NewGameStart =
       NewGameStart(
           bankId = 135.toByte(),
           mapId = 1,
           x = 9,
           y = 2,
+          storyFlags = UNOVA_INITIAL_FLAGS,
+          storyVars = mapOf("unova/VAR_0x4116" to 1),
       )
+
+  private val UNOVA_INITIAL_FLAGS: Set<String> by lazy {
+    val stream = NewGameStarts::class.java.getResourceAsStream("/monmmo/unova-new-game-flags.txt")
+    stream?.bufferedReader()?.readLines().orEmpty()
+        .map(String::trim)
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+        .map { "unova/FLAG_$it" }
+        .toSet()
+  }
 
   /**
    * Platinum opens upstairs in the player's house in Twinleaf Town, where the rival bursts in:
@@ -142,6 +160,7 @@ internal object NewGameStarts {
           mapId = 1,
           x = 4,
           y = 6,
+          storyFlags = SinnohFlags.initiallySet,
       )
 
   /**

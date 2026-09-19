@@ -414,12 +414,16 @@ constructor(
    * A DS map's npcs straight from the ROM's zone events (NdsNpcs): the ROM sprite id resolves in
    * the client's own table for that region, movement and ranges ride the same wire fields the
    * GBA npcs use, and facing is the Gen 4 order (north, south, west, east) turned into ours.
-   * Story flags are not modelled for these yet, so every placed npc shows.
+   * An npc whose ROM hide flag is SET in the story store stays away, exactly as on the GBA (the
+   * DS games set their later-story npcs' flags in the new-game init script, NewGameStarts) -
+   * until 2026-09-19 every placed npc showed.
    */
   private fun spawnNdsNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
     val npcs = ndsNpcs.of(regionId, bankId, mapId)
     if (npcs.isEmpty()) return
+    val storyFlags = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)?.storyFlags.orEmpty()
     for (npc in npcs) {
+      if (NdsStoryFlags.isHidden(regionId, npc.flag, storyFlags)) continue
       val movementId = npc.movement and 0xFF
       val unk4 =
           if (movementId in 1..6 || movementId in 25..52) ((npc.xRange and 0xFF) shl 8) or (npc.yRange and 0xFF)

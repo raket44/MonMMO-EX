@@ -126,14 +126,18 @@ class StoryResetTest :
           store.setStoryFlag(charId, KantoFlags.FLAG_SYS_POKEMON_GET)
           store.setStoryVar(charId, KantoVars.VAR_STARTER_MON, 2)
           store.addItem(charId, itemId = 4, amount = 5)
+          val before = store.getCharacter(charId)!!.storyFlags.toSet()
           val session = FakeSession(characterId = charId)
           val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
 
           service.tryHandle(session, "/story reset") shouldBe true
 
           val after = store.getCharacter(charId)!!
-          after.storyFlags shouldBe NewGameStarts.forRegion(Region.KANTO, female = false).storyFlags
-          after.storyVars shouldBe emptyMap()
+          // Only Kanto restarts: its progress is gone, its opening flags are back, and the other
+          // regions' opening state (set at creation) is untouched.
+          after.storyFlags.filter { it.startsWith("kanto/") }.toSet() shouldBe NewGameStarts.forRegion(Region.KANTO, female = false).storyFlags
+          after.storyFlags.filterNot { it.startsWith("kanto/") }.toSet() shouldBe before.filterNot { it.startsWith("kanto/") }.toSet()
+          after.storyVars.filterKeys { it.startsWith("kanto/") } shouldBe emptyMap()
           after.items shouldBe emptyMap()
           session.sent.filterIsInstance<ChatMessagePacket>().last().message shouldContain "Reset"
         }

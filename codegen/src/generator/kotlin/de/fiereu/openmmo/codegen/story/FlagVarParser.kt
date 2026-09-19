@@ -53,9 +53,26 @@ object FlagVarParser {
     return values.filterKeys { it.startsWith(prefix) }.map { StoryConstant(it.key, it.value) }
   }
 
-  /** Flags the source game's new-game reset sets. */
-  fun initialFlags(decompDir: File): List<String> =
-      scriptFlags(decompDir, "EventScript_ResetAllMapFlags")
+  /**
+   * Flags the source game's new-game reset sets. GBA: EventScript_ResetAllMapFlags. The DS games
+   * run one init script at new game instead - Platinum's scripts_init_new_game.s (InitNewGame,
+   * SCRIPT_ID_OFFSET_INIT_NEW_GAME) and HeartGold's scr_seq_0149.s (_std_init 9600, run by
+   * RunInitScript from CallFieldTask_NewGame) - which is where every "hide until the story gets
+   * there" npc flag is set. Without these a fresh Johto/Sinnoh showed every later-story npc
+   * (owner, 2026-09-19).
+   */
+  fun initialFlags(decompDir: File): List<String> {
+    val ds =
+        listOf("res/field/scripts/scripts_init_new_game.s", "files/fielddata/script/scr_seq/scr_seq_0149.s")
+            .map { File(decompDir, it) }
+            .firstOrNull(File::isFile)
+    if (ds != null) {
+      return ds.readLines()
+          .mapNotNull { Regex("""^\s*SetFlag\s+(FLAG_[A-Za-z0-9_]+)\b""").find(it)?.groupValues?.get(1) }
+          .distinct()
+    }
+    return scriptFlags(decompDir, "EventScript_ResetAllMapFlags")
+  }
 
   /**
    * Gender-specific flags the source game establishes during its intro. Emerald sets them in the

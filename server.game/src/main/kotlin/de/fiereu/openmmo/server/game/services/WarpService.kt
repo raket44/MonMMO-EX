@@ -201,6 +201,7 @@ constructor(
     // Only fade out and send the map. onRequestPlayer does the arrival and fades back in.
     ctx.send(MapTransitionPacket())
     ctx.send(RenderScreenPacket(false))
+    resyncRegionFlags(ctx, stored.info.positionRegionId.toInt(), warp.targetRegionId.toInt(), stored.storyFlags)
     // The scripted-state lock (the same input removal every script uses) covers the whole
     // transition: ON here, re-asserted at arrival for the emergence step, OFF after the walk
     // plays. Sent after the transition packets in case the map change resets client state;
@@ -342,6 +343,7 @@ constructor(
     }
     ctx.send(MapTransitionPacket())
     ctx.send(RenderScreenPacket(false))
+    resyncRegionFlags(ctx, stored.info.positionRegionId.toInt(), regionId, stored.storyFlags)
     // The scripted-state lock, same discipline as executeWarp: ON for the transition,
     // re-asserted at arrival, released after the emergence walk; failsafe for lost arrivals.
     ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
@@ -385,6 +387,17 @@ constructor(
    * Builds the real warp for a MAP_DYNAMIC tile, whose target fields are placeholders, from the
    * destination a script set on the player.
    */
+  /**
+   * The client keeps one story-flag store per region and drops it when the region changes, and
+   * only login (WorldStateService.send) ever filled it - so Kanto -> anywhere -> Kanto lost the
+   * running shoes, badges, fly points and gates until relog (owner, 2026-09-19). A cross-region
+   * warp re-sends the destination region's mirror of the save, the way login does.
+   */
+  private fun resyncRegionFlags(ctx: SessionContext, from: Int, to: Int, storyFlags: Collection<String>) {
+    if (from == to) return
+    StoryClientState.flags(to.toByte(), storyFlags).forEach(ctx::send)
+  }
+
   private fun resolveDynamicWarp(stored: StoredCharacter): WarpTile? {
     val d = stored.info.dynamicWarp
     if (d == null) {

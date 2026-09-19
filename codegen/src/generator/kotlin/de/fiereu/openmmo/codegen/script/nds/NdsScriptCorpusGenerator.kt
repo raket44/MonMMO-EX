@@ -1791,7 +1791,12 @@ class NdsScriptCorpusGenerator {
                   61 -> "Delay4"
                   62 -> "Delay8"
                   63 -> "Delay16"
-                  75 -> "Delay8"
+                  // The Gen 4 numbers carry over here: 0x45 hides the walker (it closes walks into
+                  // doors: `12 69`), 0x46 shows it, 0x4B is the "!" bubble (Bianca spotting the
+                  // player in her house: `13x2 75`; it opens most approach walks).
+                  69 -> "SetInvisible"
+                  70 -> "SetVisible"
+                  75 -> "EmoteExclamationMark"
                   else -> continue
                 }
             block.lines += listOf(name, n.toString())

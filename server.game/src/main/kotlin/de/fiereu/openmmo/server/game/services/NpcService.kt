@@ -394,6 +394,17 @@ constructor(
     val facing =
         if (mapManager.getMap(regionId, bankId, mapId) == null) {
           val npc = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+          // A DS map's on-load level script places its actors before the cartridge draws anything
+          // (Bianca's house: dad to 8,4 and Bianca to 6,4 for the argument). Ours runs after the
+          // spawn, and a held update landed after the fade-in - she sat at the counter, then
+          // popped across the room (2026-09-19). The client takes DS spawns while it loads, so
+          // during the arrival window the npc is simply spawned again at its new tile.
+          val state = ctx.attributes[PLAYER_STATE]
+          val held = maxOf(state?.moveIgnoreUntil ?: 0L, state?.sceneHoldUntil ?: 0L) > System.currentTimeMillis()
+          if (held) {
+            ctx.send(ndsSpawnPacket(regionId, bankId, mapId, npc.copy(x = x, y = y)))
+            return
+          }
           ndsSpawnPacket(regionId, bankId, mapId, npc).facing
         } else {
           (findNpc(regionId, bankId, mapId, localId) ?: return).facing.ordinal

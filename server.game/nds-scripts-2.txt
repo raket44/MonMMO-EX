@@ -1216,7 +1216,8 @@ mv;14;2308;12,1 15,2 33,1
 14;5;1876;Message 0 4 9 2 0 0
 14;5;1888;CloseMessageKP
 14;5;1890;Jump @1955
-14;5;1955;ResetCamera 30 325
+14;5;1955;ResetCamera 30
+14;5;1959;EndCameraEvent
 14;5;1961;ReleaseCamera
 14;5;1963;StopCameraEvent
 14;5;1965;StoreValueInVar 16514 5
@@ -2636,7 +2637,8 @@ mv;32;1148;14,4
 32;10;980;WaitMovement
 32;10;982;RemoveNPC 251
 32;10;986;FadeToDefaultMusic
-32;10;988;ResetCamera 32 325
+32;10;988;ResetCamera 32
+32;10;992;EndCameraEvent
 32;10;994;ReleaseCamera
 32;10;996;StopCameraEvent
 32;10;998;StoreValueInVar 16530 2
@@ -3159,7 +3161,8 @@ mv;34;1128;15,1 13,1
 34;15;692;Jump @698
 34;15;863;Message 0 4 6 2 4 0
 34;15;875;CloseMessageKP
-34;15;877;ResetCamera 1 325
+34;15;877;ResetCamera 1
+34;15;881;EndCameraEvent
 34;15;883;ReleaseCamera
 34;15;885;StopCameraEvent
 34;15;887;ApplyMovement 2 @1188
@@ -3195,7 +3198,8 @@ mv;34;1348;29,1
 34;15;1033;WaitMovement
 34;15;1035;Message 0 4 10 2 5 0
 34;15;1047;CloseMessageKP
-34;15;1049;ResetCamera 32 325
+34;15;1049;ResetCamera 32
+34;15;1053;EndCameraEvent
 34;15;1055;ReleaseCamera
 34;15;1057;StopCameraEvent
 34;15;1059;StoreValueInVar 16516 1
@@ -6108,7 +6112,8 @@ mv;62;2136;2,1 71,1 19,1 72,1
 62;7;1579;EndCameraEvent
 62;7;1581;DisableTrainer
 62;7;1583;Jump @1591
-62;7;1938;ResetCamera 30 325
+62;7;1938;ResetCamera 30
+62;7;1942;EndCameraEvent
 62;7;1944;ReleaseCamera
 62;7;1946;StopCameraEvent
 62;7;1948;EndRoutine
@@ -11200,9 +11205,9 @@ mv;124;1064;12,1 15,2 12,1
 124;0;542;ApplyMovement 10 @1152
 mv;124;1152;2,1 63,1 3,1 63,2 33,1 75,1 
 124;0;550;WaitMovement
-124;0;552;ResetCamera 16 100
-124;0;558;GetStackVar 616
-124;0;562;Nop
+124;0;552;ResetCamera 16
+124;0;556;ApplyMovement 10 @1180
+mv;124;1180;17,3 19,1 
 124;0;564;ApplyMovement 8 @1284
 mv;124;1284;33,1 
 124;0;572;ReturnAfterDelay 4
@@ -11728,7 +11733,8 @@ mv;124;3260;1,1 71,1 12,1 72,1 63,2 34,1
 mv;124;3304;14,9 
 124;19;3029;WaitMovement
 124;19;3031;RemoveNPC 251
-124;19;3035;ResetCamera 20 325
+124;19;3035;ResetCamera 20
+124;19;3039;EndCameraEvent
 124;19;3041;ReleaseCamera
 124;19;3043;StopCameraEvent
 124;19;3045;StoreBadge 32776 3
@@ -12434,9 +12440,9 @@ mv;128;1336;62,1 15,1 12,1 15,29
 132;2;279;ReleaseAll
 132;2;281;End
 132;3;116;LockAll
-132;3;118;CMD_7C 6 0 0 100
-132;3;128;CMD_0FF
-132;3;130;Unknown_16 0
+132;3;118;CMD_7C 6 0 0
+132;3;126;ApplyMovement 255 @156
+mv;132;156;15,8 
 132;3;134;WaitMovement
 132;3;136;CMD_21 17
 132;3;140;FastWarp 62 422 459 1
@@ -17036,9 +17042,9 @@ mv;180;916;12,2
 180;3;738;SetVarHero 0
 180;3;741;Message 0 4 9 3 2 0
 180;3;753;CloseMessageKP2
-180;3;755;ResetCamera 8 100
-180;3;761;ReturnAfterDelay 269
-180;3;765;Nop
+180;3;755;ResetCamera 8
+180;3;759;ApplyMovement 3 @1036
+mv;180;1036;13,6 69,1 
 180;3;767;EndCameraEvent
 180;3;769;ReleaseCamera
 180;3;771;StopCameraEvent
@@ -17424,7 +17430,8 @@ mv;192;1180;34,0
 192;8;1060;ApplyMovement 11 @1188
 mv;192;1188;14,9 
 192;8;1068;WaitMovement
-192;8;1070;ResetCamera 16 325
+192;8;1070;ResetCamera 16
+192;8;1074;EndCameraEvent
 192;8;1076;ReleaseCamera
 192;8;1078;StopCameraEvent
 192;8;1080;RemoveNPC 11
@@ -19637,7 +19644,8 @@ mv;226;1204;14,2 12,1
 226;1;926;WaitMovement
 226;1;928;Message 0 4 21 1 6 0
 226;1;940;CloseMessageKP
-226;1;942;ResetCamera 16 325
+226;1;942;ResetCamera 16
+226;1;946;EndCameraEvent
 226;1;948;ReleaseCamera
 226;1;950;StopCameraEvent
 226;1;952;RemoveNPC 3
@@ -20868,7 +20876,8 @@ mv;240;4124;75,1 12,1
 240;16;3771;ApplyMovement 251 @4136
 mv;240;4136;12,2 
 240;16;3779;WaitMovement
-240;16;3781;ResetCamera 16 325
+240;16;3781;ResetCamera 16
+240;16;3785;EndCameraEvent
 240;16;3787;ReleaseCamera
 240;16;3789;StopCameraEvent
 240;16;3791;DoubleMessage 0 4 64 65 251 0 0
@@ -21154,7 +21163,8 @@ mv;240;4212;63,1 33,0
 242;2;1798;LockCamera
 242;2;1800;CallRoutine @1824
 242;2;1806;CallRoutine @2128
-242;2;1812;ResetCamera 30 325
+242;2;1812;ResetCamera 30
+242;2;1816;EndCameraEvent
 242;2;1818;ReleaseCamera
 242;2;1820;StopCameraEvent
 242;2;1822;EndRoutine
@@ -21452,7 +21462,8 @@ mv;246;568;65,1 33,0
 246;0;377;StoreValueInVar 16552 4
 246;0;383;SetFlag 620
 246;0;387;SetFlag 621
-246;0;391;ResetCamera 30 325
+246;0;391;ResetCamera 30
+246;0;395;EndCameraEvent
 246;0;397;ReleaseCamera
 246;0;399;StopCameraEvent
 246;0;401;WaitMoment
@@ -23213,7 +23224,8 @@ mv;288;700;33,1
 288;0;643;WaitMovement
 288;0;645;Message 0 4 20 1 3 0
 288;0;657;CloseMessageKP2
-288;0;659;ResetCamera 30 325
+288;0;659;ResetCamera 30
+288;0;663;EndCameraEvent
 288;0;665;ReleaseCamera
 288;0;667;StopCameraEvent
 288;0;669;StoreValueInVar 16546 1
@@ -26973,7 +26985,8 @@ mv;386;2696;35,1
 mv;386;512;32,1 
 386;0;454;ApplyMovement 3 @512
 386;0;462;WaitMovement
-386;0;464;ResetCamera 30 325
+386;0;464;ResetCamera 30
+386;0;468;EndCameraEvent
 386;0;470;ReleaseCamera
 386;0;472;StopCameraEvent
 386;0;474;StoreValueInVar 16523 3
@@ -28891,7 +28904,8 @@ mv;394;2996;29,1
 394;0;2363;RemoveNPC 5
 394;0;2367;RemoveNPC 6
 394;0;2371;RemoveNPC 7
-394;0;2375;ResetCamera 1 325
+394;0;2375;ResetCamera 1
+394;0;2379;EndCameraEvent
 394;0;2381;ReleaseCamera
 394;0;2383;StopCameraEvent
 394;0;2385;FadeScreen 3 16 0 4
@@ -29016,7 +29030,8 @@ mv;396;896;100,1
 396;1;529;ReturnAfterDelay 14
 396;1;533;ApplyMovement 1 @904
 mv;396;904;13,3 35,1 
-396;1;541;ResetCamera 50 325
+396;1;541;ResetCamera 50
+396;1;545;EndCameraEvent
 396;1;547;ReleaseCamera
 396;1;549;StopCameraEvent
 396;1;551;WaitMovement
@@ -29230,7 +29245,8 @@ mv;400;616;12,3
 mv;400;728;15,7 
 400;0;514;ApplyMovement 255 @748
 400;0;522;WaitMovement
-400;0;524;ResetCamera 10 325
+400;0;524;ResetCamera 10
+400;0;528;EndCameraEvent
 400;0;530;ReleaseCamera
 400;0;532;StopCameraEvent
 400;0;534;WaitMovement
@@ -30315,7 +30331,59 @@ mv;426;1604;34,1
 426;0;1211;WaitMovement
 426;0;1213;WaitSound
 426;0;1215;RemoveNPC 251
-426;0;1219;ResetCamera 32 36
+426;0;1219;ResetCamera 32
+426;0;1223;ClearFlag 613
+426;0;1227;AddNPC 0
+426;0;1231;AddNPC 1
+426;0;1235;ReturnAfterDelay 8
+426;0;1239;ApplyMovement 0 @1484
+mv;426;1484;12,8 14,1 
+426;0;1247;ApplyMovement 1 @1512
+mv;426;1512;12,9 34,1 
+426;0;1255;ReturnAfterDelay 64
+426;0;1259;ApplyMovement 255 @1580
+426;0;1267;WaitMovement
+426;0;1269;EndCameraEvent
+426;0;1271;ReleaseCamera
+426;0;1273;StopCameraEvent
+426;0;1275;Message 0 4 8 0 4 0
+426;0;1287;CloseMessageKP2
+426;0;1289;Message 0 4 9 1 6 0
+426;0;1301;CloseMessageKP2
+426;0;1303;ApplyMovement 0 @1564
+426;0;1311;WaitMovement
+426;0;1313;Message 0 4 10 0 4 0
+426;0;1325;CloseMessageKP2
+426;0;1327;Message 0 4 11 1 6 0
+426;0;1339;CloseMessageKP2
+426;0;1341;ApplyMovement 1 @1524
+mv;426;1524;13,3 
+426;0;1349;ApplyMovement 0 @1496
+mv;426;1496;62,1 15,1 13,2 
+426;0;1357;ApplyMovement 255 @1472
+mv;426;1472;63,1 13,3 
+426;0;1365;ReturnAfterDelay 4
+426;0;1369;CMD_1B6 433
+426;0;1373;WaitMovement
+426;0;1375;ReturnAfterDelay 16
+426;0;1379;PlaySound 1369
+426;0;1383;WaitSound
+426;0;1385;ReturnAfterDelay 16
+426;0;1389;StoreValueInVar 16551 9
+426;0;1395;SetFlag 612
+426;0;1399;SetFlag 611
+426;0;1403;SetFlag 613
+426;0;1407;SetFlag 609
+426;0;1411;SetFlag 659
+426;0;1415;ClearFlag 604
+426;0;1419;ClearFlag 603
+426;0;1423;ClearFlag 605
+426;0;1427;ClearFlag 606
+426;0;1431;CMD_21 4
+426;0;1435;TeleportWarp 205 179 3 146 0
+426;0;1447;WaitMoment
+426;0;1449;ReleaseAll
+426;0;1451;End
 426;1;82;LockAll
 426;1;84;PlaySound 1351
 426;1;88;StoreValueInVar 32800 0
@@ -31545,10 +31613,13 @@ mv;478;972;13,1
 478;3;432;CloseMessageKP
 478;3;434;Message 0 4 3 0 0 1
 478;3;446;CloseMessageKP
-478;3;448;ResetCamera 12 100
-478;3;454;Nop
-478;3;456;CMD_200 0 101 325 322 320 60 1024 4 0 0
-478;3;478;Nop
+478;3;448;ResetCamera 12
+478;3;452;ApplyMovement 0 @972
+478;3;460;WaitMovement
+478;3;462;EndCameraEvent
+478;3;464;ReleaseCamera
+478;3;466;StopCameraEvent
+478;3;468;Message 0 4 4 0 0 0
 478;3;480;CloseMessageKP
 478;3;482;Message 0 4 5 0 0 1
 478;3;494;CloseMessageKP
@@ -36959,7 +37030,8 @@ mv;528;1280;33,1
 528;0;985;WaitMovement
 528;0;987;DoubleMessage 0 4 18 19 13 2 0
 528;0;1001;CloseMessageKP2
-528;0;1003;ResetCamera 30 325
+528;0;1003;ResetCamera 30
+528;0;1007;EndCameraEvent
 528;0;1009;ReleaseCamera
 528;0;1011;StopCameraEvent
 528;0;1013;CMD_24B 120
@@ -41227,10 +41299,9 @@ mv;658;1684;14,7 12,2 14,6
 658;0;1344;ApplyMovement 14 @1776
 mv;658;1776;14,8 
 658;0;1352;WaitMovement
-658;0;1354;ResetCamera 30 3
-658;0;1360;Unknown_0F 100
-658;0;1364;GetStackVar 102
-658;0;1368;Nop
+658;0;1354;ResetCamera 30
+658;0;1358;ReturnAfterDelay 15
+658;0;1362;ApplyMovement 10 @1472
 658;0;1370;WaitMovement
 658;0;1372;EndCameraEvent
 658;0;1374;ReleaseCamera
@@ -41356,9 +41427,9 @@ mv;658;2608;15,1 34,1
 658;4;2348;WaitMovement
 658;4;2350;Message 0 4 30 14 3 0
 658;4;2362;CloseMessageKP2
-658;4;2364;ResetCamera 30 100
-658;4;2370;Unknown_0E 244
-658;4;2374;Nop
+658;4;2364;ResetCamera 30
+658;4;2368;ApplyMovement 14 @2620
+mv;658;2620;15,10 
 658;4;2376;ReturnAfterDelay 16
 658;4;2380;ApplyMovement 10 @1488
 658;4;2388;ApplyMovement 255 @1488
@@ -41434,7 +41505,8 @@ mv;658;2932;15,1 12,2
 658;5;2878;EndCameraEvent
 658;5;2880;Message 0 4 34 15 0 0
 658;5;2892;CloseMessageKP2
-658;5;2894;ResetCamera 20 325
+658;5;2894;ResetCamera 20
+658;5;2898;EndCameraEvent
 658;5;2900;ReleaseCamera
 658;5;2902;StopCameraEvent
 658;5;2904;WaitMoment
@@ -42183,7 +42255,17 @@ mv;670;816;9,1
 670;1;638;Message 0 4 13 6 5 0
 670;1;650;Message 0 4 14 6 5 0
 670;1;662;CloseMessageKP2
-670;1;664;ResetCamera 24 40
+670;1;664;ResetCamera 24
+670;1;668;StoreValueInVar 16567 1
+670;1;674;EndCameraEvent
+670;1;676;ReleaseCamera
+670;1;678;StopCameraEvent
+670;1;680;Jump @809
+670;1;533;SetStackDerefVar 32800
+670;1;537;SetStackVar 26
+670;1;541;Condition 1
+670;1;545;When 255 @576
+670;1;552;MoveCamera 9688 0 53248 14 32768 26 15 1 32768 22 24
 670;2;980;LockAll
 670;2;982;PlaySound 1351
 670;2;986;FacePlayer
@@ -47006,7 +47088,8 @@ mv;770;1812;13,4
 770;1;773;CloseBubbleMessage
 770;1;775;ApplyMovement 0 @1820
 mv;770;1820;17,2 
-770;1;783;ResetCamera 8 325
+770;1;783;ResetCamera 8
+770;1;787;EndCameraEvent
 770;1;789;ReleaseCamera
 770;1;791;StopCameraEvent
 770;1;793;WaitMovement
@@ -48221,10 +48304,44 @@ mv;782;428;79,1 76,1
 782;4;219;WaitMovement
 782;4;221;Message 0 4 3 0 6 0
 782;4;233;CloseMessageKP
-782;4;235;ResetCamera 30 100
-782;4;241;Nop2
-782;4;243;FallWarp 0 101 100
-782;4;251;Nop
+782;4;235;ResetCamera 30
+782;4;239;ApplyMovement 1 @440
+mv;782;440;13,1 14,3 13,1 
+782;4;247;WaitMovement
+782;4;249;ApplyMovement 0 @1980
+mv;782;1980;34,1 
+782;4;257;WaitMovement
+782;4;259;EndCameraEvent
+782;4;261;ReleaseCamera
+782;4;263;StopCameraEvent
+782;4;265;SetVarHero 0
+782;4;268;Message 0 4 4 1 5 0
+782;4;280;CloseMessageKP
+782;4;282;ApplyMovement 1 @456
+mv;782;456;14,1 13,2 35,1 
+782;4;290;WaitMovement
+782;4;292;ApplyMovement 255 @1980
+782;4;300;WaitMovement
+782;4;302;Message 0 4 5 1 4 0
+782;4;314;CloseMessageKP
+782;4;316;Message 0 4 6 0 6 0
+782;4;328;CloseMessageKP
+782;4;330;ApplyMovement 0 @472
+mv;782;472;77,1 78,1 33,1 
+782;4;338;WaitMovement
+782;4;340;ApplyMovement 255 @1972
+782;4;348;ApplyMovement 1 @1972
+782;4;356;WaitMovement
+782;4;358;SetVarHero 0
+782;4;361;Message 0 4 7 0 6 0
+782;4;373;WaitButton
+782;4;375;CloseMessageKP
+782;4;377;SetFlag 2434
+782;4;381;StoreValueInVar 16513 1
+782;4;387;CMD_25F
+782;4;389;WaitMoment
+782;4;391;ReleaseAll
+782;4;393;End
 782;5;1912;LockAll
 782;5;1914;ApplyMovement 0 @1964
 782;5;1922;ApplyMovement 255 @1972
@@ -48397,7 +48514,6 @@ mv;782;1800;35,1 63,1 32,1 63,1 33,1 63,2
 782;8;1208;Message 0 4 40 1 6 0
 782;8;1220;CloseMessageKP2
 782;8;1222;ApplyMovement 1 @1980
-mv;782;1980;34,1 
 782;8;1230;WaitMovement
 782;8;1232;SetVarHero 0
 782;8;1235;Message 0 4 41 1 6 0
@@ -48626,9 +48742,12 @@ mv;784;320;100,1
 784;2;219;ApplyMovement 2 @328
 mv;784;328;15,1 13,3 14,1 13,1 
 784;2;227;ReturnAfterDelay 32
-784;2;231;ResetCamera 16 100
-784;2;237;CMD_0FF
-784;2;239;MakeNPC 0 101 108 2 166 1369
+784;2;231;ResetCamera 16
+784;2;235;ApplyMovement 255 @348
+mv;784;348;33,1 
+784;2;243;WaitMovement
+784;2;245;RemoveNPC 2
+784;2;249;PlaySound 1369
 784;2;253;WaitSound
 784;2;255;EndCameraEvent
 784;2;257;ReleaseCamera
@@ -48838,11 +48957,10 @@ mv;792;1284;8,1 63,1 2,1 61,1 33,1
 792;0;768;CloseEventGreyMessage
 792;0;770;Message 0 4 20 0 5 0
 792;0;782;CloseMessageKP2
-792;0;784;ResetCamera 30 100
-792;0;790;Nop2
-792;0;792;CMD_208 0
-792;0;796;ApplyMovement 255 @1316
+792;0;784;ResetCamera 30
+792;0;788;ApplyMovement 1 @1316
 mv;792;1316;3,1 71,1 14,1 72,1 
+792;0;796;ApplyMovement 255 @1316
 792;0;804;ApplyMovement 0 @1308
 mv;792;1308;13,2 
 792;0;812;WaitMovement
@@ -52312,7 +52430,8 @@ mv;834;228;33,1
 836;0;527;When 255 @538
 836;0;534;SetFlag 363
 836;0;538;Jump @591
-836;0;591;ResetCamera 15 325
+836;0;591;ResetCamera 15
+836;0;595;EndCameraEvent
 836;0;597;ReleaseCamera
 836;0;599;StopCameraEvent
 836;0;601;WaitMoment

@@ -297,8 +297,8 @@ class ScriptSupportAnalyzer(
           "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
           "ds_countbadges" -> args.size == 1
-          // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts
-          "ds_startchoosestarterscene" -> args.size == 8
+          // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts [, index]
+          "ds_startchoosestarterscene" -> args.size == 8 || (args.size == 9 && args[8].token == "index")
           "ds_startfirstbattle" -> args.size == 1
           "ds_starttagbattle" -> args.size == 3
           "ds_getpartymonspecies", "ds_messagevar" -> args.size == 2
@@ -421,7 +421,7 @@ class ScriptSupportAnalyzer(
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args[0] is TrainerArg || (args[0] is SymbolArg && args[0].token.startsWith("TRAINER_"))
           "trainerbattle_earlyrival" -> args[0] is TrainerArg && args[2] is TextArg
           "givemon" -> isValue(args[0]) && isValue(args[1])
-          "ds_startchoosestarterscene", "ds_dexrating" -> args[0] is VarArg && args.drop(1).all { it is IntArg }
+          "ds_startchoosestarterscene", "ds_dexrating" -> args[0] is VarArg && args.drop(1).all { it is IntArg || it.token == "index" }
           "ds_dexcount" -> args[0].token in setOf("seen", "caught") && args[1] is VarArg
           "ds_startfirstbattle" -> args[0] is IntArg
           "ds_starttagbattle" -> isValue(args[1]) && isValue(args[2])

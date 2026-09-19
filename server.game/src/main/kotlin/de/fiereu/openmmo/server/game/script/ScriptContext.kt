@@ -203,9 +203,14 @@ internal constructor(
   }
 
   /** A DS starter scene (Platinum StartChooseStarterScene): the species the player accepted. */
-  suspend fun chooseStarter(pickText: Int, speciesIds: List<Int>, confirmTexts: List<Int>): Int {
+  suspend fun chooseStarter(
+      pickText: Int,
+      speciesIds: List<Int>,
+      confirmTexts: List<Int>,
+      confirmArgs: (Int) -> List<DialogMessageArg> = { emptyList() },
+  ): Int {
     holdScriptedFacing()
-    return dialog.chooseStarter(session, state, pickText, speciesIds, confirmTexts)
+    return dialog.chooseStarter(session, state, pickText, speciesIds, confirmTexts, confirmArgs)
   }
 
   /**

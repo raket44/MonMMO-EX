@@ -89,6 +89,9 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
       pickText: Int,
       speciesIds: List<Int>,
       confirmTexts: List<Int>,
+      // Text args for one candidate's confirm line (White's "The Grass-type Pokémon {1}" names the
+      // species through a slot; Platinum's and HeartGold's lines carry the name themselves).
+      confirmArgs: (Int) -> List<DialogMessageArg> = { emptyList() },
   ): Int {
     while (true) {
       val choice = chooseFromSpecies(session, state, pickText, speciesIds.map { de.fiereu.openmmo.common.clientSpeciesId(it) })
@@ -101,6 +104,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
                   actionType = YES_NO,
                   entityId = NO_ENTITY,
                   contextValue = STARTER_CONTEXT,
+                  messageArgs = confirmArgs(speciesIds[choice - 1]),
               )
               .unk != 0
       if (accepted) return speciesIds[choice - 1]

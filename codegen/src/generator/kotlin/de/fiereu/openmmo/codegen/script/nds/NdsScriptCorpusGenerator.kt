@@ -448,6 +448,8 @@ class NdsScriptCorpusGenerator {
                   if (a.size >= 2) out += "ds_buffer ${a[0]}, item, ${a[1]}"
               "BufferNumber", "BufferInt", "BufferFloorNumber", "BufferDeptStoreFloorNo" ->
                   if (a.size >= 2) out += "ds_buffer ${a[0]}, number, ${a[1]}"
+              // White SetVarPoke: the species by national number, a literal or a var.
+              "BufferSpeciesName" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, species, ${a[1]}"
               else -> {}
             }
         else -> when (name) {
@@ -599,6 +601,14 @@ class NdsScriptCorpusGenerator {
           val texts = listOf(7, 1, 2, 3).map { dialect.textId("pl_msg_00000360_%05d".format(it)) }
           if (species.any { it == null } || texts.any { it == null }) out += "ds_startchoosestarterscene"
           else out += "ds_startchoosestarterscene VAR_PLAYER_STARTER, ${species.joinToString(", ")}, ${texts.joinToString(", ")}"
+        }
+        // White's gift box (see the first pass): Snivy, Tepig, Oshawott - entry 8's own table -
+        // over bank 430's "Choose a Pokémon." (19) and the type lines (18 grass, 17 fire, 16
+        // water; each names the species through text slot 1). The script wants the INDEX back.
+        "ChooseUnovaStarter" -> {
+          val texts = listOf(19, 18, 17, 16).map { dialect.textId("T0430_%05d".format(it)) }
+          if (texts.any { it == null }) out += "ds_startchoosestarterscene"
+          else out += "ds_startchoosestarterscene ${a[0]}, 495, 498, 501, ${texts.joinToString(", ")}, index"
         }
         "SaveChosenStarter" -> {}
         "GetPlayerStarterSpecies" -> out += "copyvar ${a[0]}, VAR_PLAYER_STARTER"
@@ -1521,6 +1531,14 @@ class NdsScriptCorpusGenerator {
           // CMD_80xx "opcode" right after it (0x8010 = VAR_0x8010); the real command reads it here.
           val trailingVar = list.getOrNull(ci + 1)?.name?.takeIf { it.matches(Regex("CMD_80[0-9A-F]{2}")) }?.let { "VAR_0x" + it.removePrefix("CMD_") }
           if (c.offset in targets || current == null) {
+            // A block that runs into the next label falls through on the ROM; the transpiler ends
+            // every block, so it gets the explicit goto the decomp parser adds (parseScriptFile).
+            // Without it the gift box's Oshawott branch (file 782 @700 -> @723) ended the script
+            // before the mon was given (2026-09-19).
+            current?.let { prev ->
+              val last = prev.lines.lastOrNull()?.firstOrNull()
+              if (last !in TERMINAL) prev.lines += listOf("GoTo", lab(c.offset))
+            }
             current = Block(lab(c.offset), false, mutableListOf()).also { blocks += it }
             stack.clear()
           }
@@ -1664,7 +1682,22 @@ class NdsScriptCorpusGenerator {
             "Store_D2" -> b.lines += listOf("SetVar", v(0), "0")
             "DoubleMessage" -> b.lines += listOf("Message", text(3))
             "CloseBubbleMessage" -> b.lines += listOf("CloseMessage")
-            "StoreVarItem", "SetVarPoke", "SetVarPartyPokemonNick", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
+            // SetVarPoke slot, species (a literal or a var): the species name in a text slot.
+            "SetVarPoke" -> b.lines += listOf("BufferSpeciesName", t(0), tv(1))
+            // Opcode 0xB4 (table name "ResetScreen") is a function-call family: (40, var, value)
+            // stores, (260, 169, 1300) sits between a fade and WaitFanfare. Nuvema's gift box
+            // (file 782 entry 8) uses two of them around the Gen 5 starter-select app: CMD_1AE +
+            // (331, 339, 0x8020) runs the app, leaving the pick 0/1/2 in the var, and CMD_1AF +
+            // (9, 0x8020, 8) reads it back for the Condition that follows with NO pushes of its
+            // own (@612: == 0 is Snivy; @652 pushes the var itself and tests == 1, Tepig; @700 is
+            // Oshawott). The app becomes the species picker the Platinum briefcase and Elm's lab
+            // already use here; the read-back pushes the var and 0 for that first compare.
+            "ResetScreen" -> when {
+              t(0) == "331" && t(1) == "339" && (t(2).toIntOrNull() ?: 0) >= 0x4000 -> b.lines += listOf("ChooseUnovaStarter", v(2))
+              t(0) == "9" && (t(1).toIntOrNull() ?: 0) >= 0x4000 -> { stack.addLast(v(1)); stack.addLast("0") }
+              else -> {}
+            }
+            "StoreVarItem", "SetVarPartyPokemonNick", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
             // 255 = player; 250-254 = camera/follower slots the server does not animate.
             "ApplyMovement" -> if (t(0).toInt() in 250..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
             "WaitMovement" -> b.lines += listOf("WaitMovement")
@@ -1691,7 +1724,9 @@ class NdsScriptCorpusGenerator {
             "MakeNPC", "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
             "RemoveNPC" -> if (t(0).toInt() < 250) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
             "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))
-            "SetOWPosition" -> if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(2))
+            // obj, x, z, y, facing (the corpus: z is 0/1/3 everywhere, facing 0-3; Nuvema's gift
+            // box puts Cheren at 6,6 and Bianca at 4,6). Reading z as y put them on row 0.
+            "SetOWPosition" -> if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
             "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
@@ -1867,7 +1902,7 @@ class NdsScriptCorpusGenerator {
             // Gen 5 (disassembly names): sound, camera, waits with no server counterpart.
             "WaitMoment", "Nop", "Nop2", "PlaySound", "WaitSound", "WaitSoundA7", "Cry", "ChangeMusic", "FadeToDefaultMusic",
             "StartCameraEvent", "StopCameraEvent", "LockCamera", "ReleaseCamera", "MoveCamera", "EndCameraEvent", "ResetCamera",
-            "CallStart", "CallEnd", "ResetScreen", "EndBattle", "DisableTrainer", "ChangeMusicVolume", "SetTextScriptMessage", "CloseMulti",
+            "CallStart", "CallEnd", "EndBattle", "DisableTrainer", "ChangeMusicVolume", "SetTextScriptMessage", "CloseMulti",
             // HeartGold opens most npc scripts with this argument-less command; nothing observable follows it.
             "ScrCmd_609", "CameronPhoto", "RecordHeapMemory", "CreateJournalEvent", "ActivateRegiRuinsDot", "LoadDoorAnimation",
             "InitTurnbackCave", "InitPersistedMapFeaturesForDistortionWorld", "ShowDressUpPhoto", "SetWarpEventPos",

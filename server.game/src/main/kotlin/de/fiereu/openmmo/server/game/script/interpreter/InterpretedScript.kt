@@ -244,16 +244,22 @@ class InterpretedScript(
         // wire id (25), number (raw string of the value).
         "ds_buffer" -> {
           val slot = (instruction.arg(0) as IntArg).value
-          val region = if (program.id.source == "heartgold") 4 else 3
+          val region = dsRegion()
           fun valueOf(arg: ScriptArg): Int = if (arg is VarArg) ctx.getVar(namespaced(arg.token)) else (arg as? IntArg)?.value ?: 0
+          // The item by the client's id: region * 1000 + index for Sinnoh/Johto, the 5000 band for
+          // Unova (the same bands runItemCommand uses).
+          val itemBand = if (program.id.source == "white") 5000 else region * 1000
           val arg: DialogMessageArg? =
               when (instruction.arg(1).token) {
                 "player" -> RawMessageArg(slot.toByte(), 5, text = ctx.playerName)
                 "rival" -> RawMessageArg(slot.toByte(), 5, text = if (region == 4) "Silver" else "Barry")
                 // Platinum TEXT_BANK_COUNTERPART_NAMES: 0 Lucas, 1 Dawn - the other gender's assistant.
                 "counterpart" -> RawMessageArg(slot.toByte(), 5, text = if (ctx.playerGender() == 0) "Dawn" else "Lucas")
-                "item" -> RawMessageArg(slot.toByte(), 25, shorts = listOf((region * 1000 + valueOf(instruction.arg(2))).toShort()))
+                "item" -> RawMessageArg(slot.toByte(), 25, shorts = listOf((itemBand + valueOf(instruction.arg(2))).toShort()))
                 "number" -> RawMessageArg(slot.toByte(), 5, text = valueOf(instruction.arg(2)).toString())
+                // White SetVarPoke slot, species: the species name ("{player} chose {species}!",
+                // Nuvema's gift box). Unset, the client showed the player's name in the slot.
+                "species" -> ctx.speciesName(valueOf(instruction.arg(2)))?.let { RawMessageArg(slot.toByte(), 5, text = it) }
                 else -> null
               }
           arg?.let { ctx.setMessageArg(slot, it) }
@@ -264,11 +270,18 @@ class InterpretedScript(
           state.pc++
         }
         // ds_startchoosestarterscene VAR, species x3, pick text, confirm text x3: the starter window.
+        // A trailing `index` answers the ball's index (0..2) instead of the species: White's gift
+        // box maps the index to the species itself. White's confirm lines name the species through
+        // text slot 1 ("The Grass-type Pokémon {1}"); the DS decomps' lines carry the name.
         "ds_startchoosestarterscene" -> {
           val species = (1..3).map { value(ctx, instruction.arg(it)) }
           val confirms = (5..7).map { value(ctx, instruction.arg(it)) }
-          val picked = tracedWait(ctx, "starter choice") { ctx.chooseStarter(value(ctx, instruction.arg(4)), species, confirms) }
-          ctx.setVar(namespaced(varArg(instruction, 0).token), picked)
+          val asIndex = instruction.args.getOrNull(8)?.token == "index"
+          val confirmArgs: (Int) -> List<DialogMessageArg> =
+              if (program.id.source == "white") { id -> listOfNotNull(ctx.speciesName(id)?.let { RawMessageArg(1, 5, text = it) }) }
+              else { _ -> emptyList() }
+          val picked = tracedWait(ctx, "starter choice") { ctx.chooseStarter(value(ctx, instruction.arg(4)), species, confirms, confirmArgs) }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), if (asIndex) species.indexOf(picked) else picked)
           state.pc++
         }
         // StartFirstBattle (BATTLE_STATUS_FIRST_BATTLE): the rival on Route 201. A loss does not

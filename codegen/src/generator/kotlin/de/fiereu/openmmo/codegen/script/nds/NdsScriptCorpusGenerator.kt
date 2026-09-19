@@ -1493,7 +1493,15 @@ class NdsScriptCorpusGenerator {
         var current: Block? = null
         val stack = ArrayDeque<String>()
         var lastOp = 1
-        for (c in cmds.values) {
+        // Multi x, y, ?, ?, cancel, var opens a choice list; each SetTextScriptMessage text, 0xFFFF,
+        // value is one row; CloseMulti shows it. Emitted as one ds_menu, like HeartGold's MenuExec.
+        var menuVar: String? = null
+        val menuItems = mutableListOf<Pair<String, String>>()
+        val list = cmds.values.toList()
+        for ((ci, c) in list.withIndex()) {
+          // A command whose last (var) argument the table lacks leaves it decoded as a bare
+          // CMD_80xx "opcode" right after it (0x8010 = VAR_0x8010); the real command reads it here.
+          val trailingVar = list.getOrNull(ci + 1)?.name?.takeIf { it.matches(Regex("CMD_80[0-9A-F]{2}")) }?.let { "VAR_0x" + it.removePrefix("CMD_") }
           if (c.offset in targets || current == null) {
             current = Block(lab(c.offset), false, mutableListOf()).also { blocks += it }
             stack.clear()
@@ -1513,6 +1521,8 @@ class NdsScriptCorpusGenerator {
             val k = code.coerceIn(0, 5)
             return names[if (negate) neg[k] else k]
           }
+          // The bare var "opcodes" (see trailingVar) belong to the command before them.
+          if (c.name.matches(Regex("CMD_80[0-9A-F]{2}"))) continue
           when (c.name) {
             "SetStackVar" -> stack.addLast(t(0))
             "SetStackDerefVar" -> stack.addLast(v(0))
@@ -1554,7 +1564,41 @@ class NdsScriptCorpusGenerator {
             "PopStack", "AddStackVar" -> {}
             "End" -> b.lines += listOf("End")
             "EndRoutine", "ReturnStd" -> b.lines += listOf("Return")
-            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", tv(0), v(1))
+            // CheckItemBagNumber item, count[, var]: the table knows two args, the var rides as the
+            // following CMD_80xx; without one the second arg was the var all along.
+            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", tv(0), trailingVar ?: v(1))
+            "Multi" -> {
+              menuVar = v(5)
+              menuItems.clear()
+            }
+            "SetTextScriptMessage" -> if (menuVar != null) menuItems += (textId(text(0))?.toString() ?: "0") to t(2)
+            "CloseMulti" -> {
+              val target = menuVar
+              if (target != null && menuItems.isNotEmpty()) b.lines += listOf("Menu", target, "0") + menuItems.flatMap { listOf(it.first, it.second) }
+              else if (target != null) b.lines += listOf("SetVar", target, "127")
+              menuVar = null
+              menuItems.clear()
+            }
+            // The trainer is marked fought so the sight line no longer triggers (same flag the
+            // battle sets on a win).
+            "DeactivateTrainerID" -> b.lines += listOf("SetTrainerFlag", tv(0))
+            // Scripted wild battle: CMD_178 species, level, flagsVar; CMD_17B var = 1 when won;
+            // CMD_17C var = the outcome code; CMD_179 / CMD_17A = the won / not-won epilogues.
+            // Rides Platinum's StartLegendaryBattle so the owner's story-legendary rule applies.
+            "CMD_178" -> b.lines += listOf("StartLegendaryBattle", tv(0), tv(1))
+            "CMD_17B" -> b.lines += listOf("WildOutcome", v(0), "won")
+            "CMD_17C" -> b.lines += listOf("WildOutcome", v(0), "outcome")
+            "CMD_179", "CMD_17A" -> {}
+            // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
+            "RenamePokemon" -> b.lines += listOf("SetVar", v(0), "0")
+            // Presentation and engine calls with no server counterpart on the opening route
+            // (contexts read in the corpus 2026-09-19): item-obtained fanfare/pocket (CMD_240),
+            // type-name text buffer (SetVarType; DS buffers are all no-ops for now), relocator,
+            // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
+            "CMD_240", "SetVarType", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
+            "CMD_0FF", "CMD_208", "CMD_24F", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
+            "CMD_1AF", "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
+            "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "Screen_B5", "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "CMD_4E", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
             "SetVarItem", "SetVarItem2", "SetVarItem3" -> b.lines += listOf("BufferItemName", t(0), tv(1))

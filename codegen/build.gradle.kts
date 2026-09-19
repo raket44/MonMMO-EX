@@ -78,6 +78,9 @@ jteCodegen {
     // The client's own form catalogue (launcher :stageRetailData), so Expansion forms the client
     // already has resolve to its records instead of becoming duplicate species.
     val retailForms = layout.projectDirectory.file("src/main/resources/monmmo/retail-forms.csv")
+    // Declared as an input, or Gradle keeps a catalog generated before the csv existed: that is
+    // how 75 forms retail already draws (Unown, Rotom, Castform...) shipped again as species.
+    inputDirs.from(retailForms)
     extraArgs.set(
         listOf(
             expansionDecompDir.asFile.absolutePath,

@@ -51,7 +51,8 @@ class JteCodegenPlugin : Plugin<Project> {
                   group = "openmmo"
                   description = "Render ${spec.name} sources from the GBA decomp data via JTE"
                   dependsOn(project.tasks.named("${generator.name}Classes"))
-                  spec.inputDirs.forEach { inputs.dir(it) }
+                  // A plain file in inputDirs (retail-forms.csv) is an input too, not a directory.
+                  spec.inputDirs.forEach { if (it.isDirectory) inputs.dir(it) else inputs.file(it) }
                   inputs.dir(templatesDir)
                   outputs.dir(outDir)
                   classpath = generator.runtimeClasspath

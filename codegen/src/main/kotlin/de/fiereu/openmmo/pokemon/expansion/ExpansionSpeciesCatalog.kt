@@ -139,9 +139,34 @@ data class ExpansionSpeciesDef(
     get() =
         clientWireId != null &&
             !usesClientUnsupportedType &&
+            !isExcludedForm &&
             assets.partyIcon &&
             assets.frontSprite &&
             assets.backSprite
+
+  /**
+   * Forms with no place on this server (owner, 2026-09-19: one row per real Pokemon, no cosmetic
+   * spam): Totems (size only), Pikachu caps/cosplay and the LGPE starters (retail does caps as
+   * costumes), Gigantamax (no Dynamax here), the fan "Mega Z"s, every Scatterbug/Spewpa pattern
+   * but the first (identical art until Vivillon) and Alcremie's sweets (the cream is the form).
+   * The wire ids stay assigned so nothing else renumbers; these are simply never staged or given.
+   */
+  val isExcludedForm: Boolean
+    get() =
+        isForm &&
+            (symbol.contains("_TOTEM") ||
+                symbol.startsWith("SPECIES_PIKACHU_") && symbol != "SPECIES_PIKACHU_MEGA" ||
+                symbol == "SPECIES_PICHU_SPIKY_EARED" ||
+                symbol == "SPECIES_EEVEE_STARTER" ||
+                symbol.endsWith("_GMAX") || symbol.contains("_GMAX_") || symbol.endsWith("_ETERNAMAX") ||
+                symbol.endsWith("_MEGA_Z") ||
+                symbol.startsWith("SPECIES_SCATTERBUG_") && symbol != "SPECIES_SCATTERBUG_ICY_SNOW" ||
+                symbol.startsWith("SPECIES_SPEWPA_") && symbol != "SPECIES_SPEWPA_ICY_SNOW" ||
+                symbol.startsWith("SPECIES_ALCREMIE_") && !symbol.endsWith("_STRAWBERRY_VANILLA_CREAM") &&
+                    !symbol.endsWith("_STRAWBERRY_RUBY_CREAM") && !symbol.endsWith("_STRAWBERRY_MATCHA_CREAM") &&
+                    !symbol.endsWith("_STRAWBERRY_MINT_CREAM") && !symbol.endsWith("_STRAWBERRY_LEMON_CREAM") &&
+                    !symbol.endsWith("_STRAWBERRY_SALTED_CREAM") && !symbol.endsWith("_STRAWBERRY_RUBY_SWIRL") &&
+                    !symbol.endsWith("_STRAWBERRY_CARAMEL_SWIRL") && !symbol.endsWith("_STRAWBERRY_RAINBOW_SWIRL"))
 
   fun runtimeDefinition(runtimeId: Int = serverId): SpeciesDef? {
     val types = typeSymbols.mapNotNull(::runtimeType)

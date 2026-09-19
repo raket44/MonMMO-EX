@@ -110,10 +110,10 @@ class ExpansionAssetStaging(
               val scripted = script.size > 1 && front.height / FRAME > 1
               val packed = spritePack?.resolve(entry, bySymbol)
               val online = showdown?.resolve(entry.symbol)
-              // Battle sprites, best source first per side: Showdown's animated GIF (Gen 5-style
-              // where the Smogon project made one, otherwise the XY-era set, whose shiny animations
-              // are real; a Gen 5-style shiny is a recolour), the operator's Gen 5-style still,
-              // Showdown's still, and finally the Expansion's own art. Stills get the idle bounce.
+              // Battle sprites, best source first per side: Showdown's Gen 5-style animated GIF
+              // (normal sides only - there are no shiny animations; the shiny is a recolour), the
+              // operator's Gen 5-style still, Showdown's still, and finally the Expansion's own art.
+              // Stills get the idle bounce. Gen 5-style ONLY: the XY-era 3D set is not approved.
               // A custom species' own animation wins; it has no shiny art, so both sides use it.
               val frontN =
                   customFront?.let { reencodeGif(it) to ANI }
@@ -124,7 +124,6 @@ class ExpansionAssetStaging(
                       else idleGif(front, normal, FRAME)) to EXPANSION
               val frontS =
                   customFront?.let { reencodeGif(it) to ANI }
-                      ?: online?.aniFrontShiny?.let { reencodeGif(it) to ANI }
                       ?: online?.let { o ->
                     if (o.aniFront != null && o.front != null && o.frontShiny != null)
                         shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
@@ -142,7 +141,6 @@ class ExpansionAssetStaging(
                       ?: idleGif(back, normal, FRAME) to EXPANSION
               val backS =
                   customBack?.let { reencodeGif(it) to ANI }
-                      ?: online?.aniBackShiny?.let { reencodeGif(it) to ANI }
                       ?: online?.let { o ->
                     if (o.aniBack != null && o.back != null && o.backShiny != null)
                         shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY

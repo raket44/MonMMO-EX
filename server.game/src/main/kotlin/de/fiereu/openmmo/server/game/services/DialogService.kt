@@ -293,7 +293,7 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
     state.dialogSeqId = seq + 1
     state.dialogVisible = true
     state.dialogNpcEntityId = entityId
-    log.debug {
+    log.info {
       "Send dialog box seq=$seq actionType=$actionType textId=0x${textId.toString(16)} entity=$entityId"
     }
     session.send(

@@ -108,6 +108,7 @@ class StoryResetTest :
                     classicMode = ClassicModeService(store),
                 ),
             items = items,
+            mapManager = mapManager,
         )
       }
 

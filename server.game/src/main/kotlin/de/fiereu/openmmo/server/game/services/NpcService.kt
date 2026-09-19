@@ -294,6 +294,14 @@ constructor(
 
   /** Spawn a single npc (including a normally hidden one) for one player, for cutscenes. */
   fun spawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {
+    if (mapManager.getMap(regionId, bankId, mapId) == null) {
+      // DS map: the npc comes from the ROM's zone events, not a MapDef (a script's AddNPC after
+      // it cleared the npc's hide flag - Nuvema's Bianca, New Bark's Elm).
+      val npc = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+      log.info { "Scripted DS spawn $regionId:$bankId:$mapId local=$localId sprite=${npc.sprite} at (${npc.x}, ${npc.y})" }
+      sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
+      return
+    }
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
     val storyVars = sessionStoryVars(ctx)
     val resolved =
@@ -356,6 +364,11 @@ constructor(
       x: Int,
       y: Int,
   ) {
+    if (mapManager.getMap(regionId, bankId, mapId) == null) {
+      val npc = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+      sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc.copy(x = x, y = y)))
+      return
+    }
     val npc = findNpc(regionId, bankId, mapId, localId) ?: return
     sendAfterArrival(
         ctx,
@@ -378,7 +391,13 @@ constructor(
       x: Int,
       y: Int,
   ) {
-    val npc = findNpc(regionId, bankId, mapId, localId) ?: return
+    val facing =
+        if (mapManager.getMap(regionId, bankId, mapId) == null) {
+          val npc = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+          ndsSpawnPacket(regionId, bankId, mapId, npc).facing
+        } else {
+          (findNpc(regionId, bankId, mapId, localId) ?: return).facing.ordinal
+        }
     sendAfterArrival(
         ctx,
         NpcUpdatePacket(
@@ -390,7 +409,7 @@ constructor(
             y = y,
             // Captures use 0xF6 followed by the direction for this update packet.
             facing = 0xF6,
-            unk = npc.facing.ordinal,
+            unk = facing,
         ))
   }
 
@@ -404,6 +423,12 @@ constructor(
     val npc =
         mapManager.getMap(regionId, bankId, mapId)?.npcs?.firstOrNull { it.entityIdx == localId }
     if (npc == null) log.warn { "npc $localId not found on $regionId:$bankId:$mapId" }
+    return npc
+  }
+
+  private fun findNdsNpc(regionId: Int, bankId: Int, mapId: Int, localId: Int): NdsNpcs.Npc? {
+    val npc = ndsNpcs.of(regionId, bankId, mapId).firstOrNull { it.index == localId }
+    if (npc == null) log.warn { "ROM npc $localId not found on DS map $regionId:$bankId:$mapId" }
     return npc
   }
 
@@ -424,38 +449,42 @@ constructor(
     val storyFlags = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)?.storyFlags.orEmpty()
     for (npc in npcs) {
       if (NdsStoryFlags.isHidden(regionId, npc.flag, storyFlags)) continue
-      val movementId = npc.movement and 0xFF
-      val unk4 =
-          if (movementId in 1..6 || movementId in 25..52) ((npc.xRange and 0xFF) shl 8) or (npc.yRange and 0xFF)
-          else 0
-      val facing =
-          when (npc.facing) {
-            0 -> Direction.UP.ordinal
-            1 -> Direction.DOWN.ordinal
-            2 -> Direction.LEFT.ordinal
-            else -> Direction.RIGHT.ordinal
-          }
-      ctx.send(
-          NpcSpawnPacket(
-              entityId = entityIdFor(regionId, bankId, mapId, npc.index),
-              spriteRegionId = regionId,
-              graphicsId = npc.sprite,
-              unk3 = (movementId shl 8) or 0x02,
-              unk4 = unk4,
-              regionId = regionId,
-              bankId = bankId,
-              mapId = mapId,
-              x = npc.x,
-              y = npc.y,
-              facing = facing,
-              // The client reads this byte as the terrain layer (low two bits, f/p01: `& 3` into
-              // Wi1.RW1) plus a flag bit 8. Layer 2 is the GBA default; DS ground is layer 0,
-              // and anything else sinks the sprite into the terrain.
-              unk5 = 0,
-              unk6 = 8,
-          ))
+      ctx.send(ndsSpawnPacket(regionId, bankId, mapId, npc))
     }
     log.info { "Spawned ${npcs.size} ROM npcs on DS map $regionId:$bankId:$mapId" }
+  }
+
+  /** One ROM npc's spawn packet on a DS map (field notes in spawnNdsNpcs). */
+  private fun ndsSpawnPacket(regionId: Int, bankId: Int, mapId: Int, npc: NdsNpcs.Npc): NpcSpawnPacket {
+    val movementId = npc.movement and 0xFF
+    val unk4 =
+        if (movementId in 1..6 || movementId in 25..52) ((npc.xRange and 0xFF) shl 8) or (npc.yRange and 0xFF)
+        else 0
+    val facing =
+        when (npc.facing) {
+          0 -> Direction.UP.ordinal
+          1 -> Direction.DOWN.ordinal
+          2 -> Direction.LEFT.ordinal
+          else -> Direction.RIGHT.ordinal
+        }
+    return NpcSpawnPacket(
+        entityId = entityIdFor(regionId, bankId, mapId, npc.index),
+        spriteRegionId = regionId,
+        graphicsId = npc.sprite,
+        unk3 = (movementId shl 8) or 0x02,
+        unk4 = unk4,
+        regionId = regionId,
+        bankId = bankId,
+        mapId = mapId,
+        x = npc.x,
+        y = npc.y,
+        facing = facing,
+        // The client reads this byte as the terrain layer (low two bits, f/p01: `& 3` into
+        // Wi1.RW1) plus a flag bit 8. Layer 2 is the GBA default; DS ground is layer 0,
+        // and anything else sinks the sprite into the terrain.
+        unk5 = 0,
+        unk6 = 8,
+    )
   }
 
   private fun buildSpawnPacket(

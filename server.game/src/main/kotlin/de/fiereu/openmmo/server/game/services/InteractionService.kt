@@ -119,7 +119,7 @@ constructor(
       return
     }
     val regionId = stored.info.positionRegionId.toInt()
-    val bankId = stored.info.positionBankId.toInt()
+    val bankId = (stored.info.positionBankId.toInt() and 0xFF)
     val mapId = stored.info.positionMapId.toInt()
 
     ferryPlacements.at(regionId, bankId, mapId)?.let { p ->
@@ -342,7 +342,7 @@ constructor(
         mapManager.getMap(stored.info.positionRegionId, stored.info.positionBankId, stored.info.positionMapId)
             ?: return
     val region = stored.info.positionRegionId.toInt()
-    val bank = stored.info.positionBankId.toInt()
+    val bank = (stored.info.positionBankId.toInt() and 0xFF)
     val mapId = stored.info.positionMapId.toInt()
     val hoenn = Region.byId(state.regionId) == Region.HOENN
     val fx = stored.info.positionX.toInt() + state.facingDirection.dx

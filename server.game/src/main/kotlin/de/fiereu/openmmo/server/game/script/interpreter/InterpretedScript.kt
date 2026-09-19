@@ -1445,6 +1445,17 @@ class InterpretedScript(
             ?: error(
                 "Script ${program.id.stable} cannot resolve object id $token from " +
                     "`${instruction.sourceLine}`")
+    // The DS games (Platinum/HeartGold scripts, `ApplyMovement 0`) number a map's objects from 0
+    // = the first zone event, with 255 the player; there is no "none" id and no pret offset.
+    // Treating 0 as LOCALID_NONE and shifting every other id by one is what rolled back every
+    // New Bark scene ("cannot apply movement to LOCALID_NONE", "npc 8" for object 9, 2026-09-19).
+    if (program.id.source in DS_SOURCES) {
+      if (sourceLocalId == 255) return MovementTarget.Player
+      check(sourceLocalId in 0..254) {
+        "Script ${program.id.stable} has invalid DS object id $sourceLocalId from `${instruction.sourceLine}`"
+      }
+      return MovementTarget.Npc(sourceLocalId)
+    }
     if (sourceLocalId == LOCALID_NONE) {
       check(allowNone) {
         "Script ${program.id.stable} cannot use LOCALID_NONE in `${instruction.sourceLine}`"
@@ -2302,6 +2313,8 @@ class InterpretedScript(
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1
+    /** Script sources whose object ids are the ROM zone-event indexes (0-based, 255 = player). */
+    val DS_SOURCES = setOf("platinum", "heartgold", "white")
     val FIRE_RED_REMATCH_GATES =
         mapOf(
             1 to "FLAG_GOT_VS_SEEKER",

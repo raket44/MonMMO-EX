@@ -30,6 +30,7 @@ constructor(
     private val warpService: WarpService,
     private val battleService: BattleService,
     private val items: ItemRegistry,
+    private val mapManager: de.fiereu.openmmo.maps.MapManager,
 ) : ChatCommand {
   override val name = "story"
   override val usage = "/story [checkpoint|reset|reset keep]"
@@ -102,20 +103,28 @@ constructor(
     // The bag as it now is, then a zero stack for each bike so an open bag drops it at once.
     storyItemStacksPackets(refreshed.items).forEach { p -> ctx.session.send(p) }
     for (itemId in takenBikes) ctx.session.send(itemStackUpdatePacket(itemId, 0))
-    warpService.executeWarp(
-        ctx.session,
-        charId,
-        WarpTile(
-            x = 0,
-            y = 0,
-            targetRegionId = region.wireValue,
-            targetBankId = start.bankId,
-            targetMapId = start.mapId,
-            targetX = start.x.toInt(),
-            targetY = start.y.toInt(),
-            exitFacing = Direction.DOWN,
-        ),
-    )
+    if (mapManager.getMap(region.wireValue.toInt(), start.bankId.toInt() and 0xFF, start.mapId.toInt() and 0xFF) == null) {
+      // A DS bedroom is ROM-rendered (no MapDef): the same raw warp the ferry uses to start the
+      // region. Banks above 127 (Nuvema 135, Twinleaf 159) are stored as negative bytes.
+      warpService.executeRawWarp(
+          ctx.session, charId, region.wireValue.toInt(),
+          start.bankId.toInt() and 0xFF, start.mapId.toInt() and 0xFF, start.x.toInt(), start.y.toInt())
+    } else {
+      warpService.executeWarp(
+          ctx.session,
+          charId,
+          WarpTile(
+              x = 0,
+              y = 0,
+              targetRegionId = region.wireValue,
+              targetBankId = start.bankId,
+              targetMapId = start.mapId,
+              targetX = start.x.toInt(),
+              targetY = start.y.toInt(),
+              exitFacing = Direction.DOWN,
+          ),
+      )
+    }
     characterStore.flushCharacterAsync(charId)
     ctx.reply(
         if (keepBuild) "Reset to the ${region.displayName} start. Party, PC and bag kept."

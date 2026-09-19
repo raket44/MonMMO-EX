@@ -56,7 +56,7 @@ constructor(
     characterStore.setStoryVar(charId, CrystalOnixRaid.WIN_DAY_KEY, WorldClock.today().toEpochDay().toInt())
     val info = current.info
     npcService.despawnRaidBoss(
-        ctx.session, info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt())
+        ctx.session, info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt())
 
     if (characterStore.addBattlePoints(charId, CrystalOnixRaid.BATTLE_POINTS)) {
       val balance = characterStore.getCharacter(charId)?.storyVars?.get(BATTLE_POINTS_KEY) ?: 0

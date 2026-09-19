@@ -64,9 +64,13 @@ constructor(
   /** The hide flag of a map npc on the player's current map (already namespaced), if set. */
   fun npcHideFlag(state: PlayerState, localId: Int): String? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
+    val regionId = info.positionRegionId.toInt()
+    val bankId = info.positionBankId.toInt() and 0xFF
+    val mapId = info.positionMapId.toInt() and 0xFF
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
-            ?: return null
+            ?: return ndsNpcs.of(regionId, bankId, mapId).firstOrNull { it.index == localId }
+                ?.flag?.takeIf { it != 0 }?.let { NdsStoryFlags.key(regionId, it) }
     return map.npcs.firstOrNull { it.entityIdx == localId }?.hideFlag?.takeIf { it.isNotBlank() }
   }
 
@@ -87,7 +91,7 @@ constructor(
     npcService.spawnNpc(
         session,
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         npc.entityIdx,
     )
@@ -97,14 +101,14 @@ constructor(
   fun npcMovementOverrideKey(state: PlayerState, localId: Int): String? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     return npcService.movementOverrideKey(
-        info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+        info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId)
   }
 
   fun npcXyOverrideKey(state: PlayerState, localId: Int): String? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     return npcService.xyOverrideKey(
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
     )
@@ -128,7 +132,7 @@ constructor(
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
     val regionId = info.positionRegionId.toInt()
-    val bankId = mapOverride?.first ?: info.positionBankId.toInt()
+    val bankId = mapOverride?.first ?: (info.positionBankId.toInt() and 0xFF)
     val mapId = mapOverride?.second ?: info.positionMapId.toInt()
     val map = mapManager.getMap(info.positionRegionId, bankId.toByte(), mapId.toByte())
     // Where the npc really stands: a scripted walk earlier this visit, else its spawned tile
@@ -166,7 +170,7 @@ constructor(
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     val pose =
         scriptedNpcPose(state, localId)
-            ?: ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)
+            ?: ndsNpcPose(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId)
             ?: return null
     return pose.x to pose.y
   }
@@ -176,7 +180,7 @@ constructor(
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     val pose =
         state.scriptedNpcPoses[
-            scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId)]
+            scriptedNpcKey(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId)]
             ?: return null
     return Pose(pose.x, pose.y, pose.facing)
   }
@@ -194,11 +198,11 @@ constructor(
         paths.mapNotNull { (localId, steps) ->
           val known =
               map?.npcs?.any { it.entityIdx == localId }
-                  ?: (ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId) != null)
+                  ?: (ndsNpcPose(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId) != null)
           if (!known) return@mapNotNull null
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
-              info.positionBankId.toInt(),
+              (info.positionBankId.toInt() and 0xFF),
               info.positionMapId.toInt(),
               localId,
           ) to steps
@@ -221,11 +225,11 @@ constructor(
         paths.mapNotNull { (localId, steps) ->
           val known =
               map?.npcs?.any { it.entityIdx == localId }
-                  ?: (ndsNpcPose(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId) != null)
+                  ?: (ndsNpcPose(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId) != null)
           if (!known) return@mapNotNull null
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
-              info.positionBankId.toInt(),
+              (info.positionBankId.toInt() and 0xFF),
               info.positionMapId.toInt(),
               localId,
           ) to steps
@@ -265,7 +269,7 @@ constructor(
     npcService.spawnNpc(
         session,
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
     )
@@ -278,7 +282,7 @@ constructor(
     npcService.spawnNpcAt(
         session,
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
         x,
@@ -293,7 +297,7 @@ constructor(
     npcService.repositionNpc(
         session,
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
         x,
@@ -318,7 +322,7 @@ constructor(
         NpcUpdatePacket(
             entityId = info.id,
             regionId = info.positionRegionId.toInt(),
-            bankId = info.positionBankId.toInt(),
+            bankId = (info.positionBankId.toInt() and 0xFF),
             mapId = info.positionMapId.toInt(),
             x = x,
             y = y,
@@ -336,11 +340,11 @@ constructor(
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
     state.scriptedNpcPoses.remove(
-        scriptedNpcKey(info.positionRegionId.toInt(), info.positionBankId.toInt(), info.positionMapId.toInt(), localId))
+        scriptedNpcKey(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId))
     npcService.despawnNpc(
         session,
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
     )
@@ -352,7 +356,7 @@ constructor(
     val info = characterStore.getCharacter(charId)?.info ?: return null
     return npcService.entityIdFor(
         info.positionRegionId.toInt(),
-        info.positionBankId.toInt(),
+        (info.positionBankId.toInt() and 0xFF),
         info.positionMapId.toInt(),
         localId,
     )
@@ -363,11 +367,19 @@ constructor(
     val charId = checkNotNull(state.characterId) { "Scene has no selected character" }
     val info =
         checkNotNull(characterStore.getCharacter(charId)?.info) { "Character $charId is missing" }
-    val map =
-        checkNotNull(
-            mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)) {
-              "No map ${info.positionRegionId}:${info.positionBankId}:${info.positionMapId}"
-            }
+    val regionId = info.positionRegionId.toInt()
+    val bankId = info.positionBankId.toInt() and 0xFF
+    val mapId = info.positionMapId.toInt() and 0xFF
+    // A DS map has no MapDef; its npcs come from the ROM's zone events (NdsNpcs), which the
+    // movement paths below already know how to pose. Demanding the MapDef here killed every DS
+    // cutscene that moves an npc ("No map 4:60:0", New Bark, 2026-09-19).
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    if (map == null) {
+      check(ndsNpcPose(regionId, bankId, mapId, localId) != null) {
+        "No npc with local id $localId on DS map $regionId:$bankId:$mapId"
+      }
+      return
+    }
     check(map.npcs.any { it.entityIdx == localId }) {
       "No npc with local id $localId on map ${map.regionId}:${map.bankId}:${map.mapId}"
     }
@@ -384,7 +396,7 @@ constructor(
         .firstOrNull { npc ->
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
-              info.positionBankId.toInt(),
+              (info.positionBankId.toInt() and 0xFF),
               info.positionMapId.toInt(),
               npc.entityIdx,
           ) == entityId
@@ -421,7 +433,7 @@ constructor(
         map.npcs.firstOrNull {
           npcService.entityIdFor(
               info.positionRegionId.toInt(),
-              info.positionBankId.toInt(),
+              (info.positionBankId.toInt() and 0xFF),
               info.positionMapId.toInt(),
               it.entityIdx,
           ) == entityId
@@ -432,7 +444,7 @@ constructor(
     val npc =
         npcService.effectiveNpc(
             info.positionRegionId.toInt(),
-            info.positionBankId.toInt(),
+            (info.positionBankId.toInt() and 0xFF),
             info.positionMapId.toInt(),
             template,
             stored?.storyFlags.orEmpty(),

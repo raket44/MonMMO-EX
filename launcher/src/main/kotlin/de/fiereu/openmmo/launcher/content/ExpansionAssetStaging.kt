@@ -110,9 +110,10 @@ class ExpansionAssetStaging(
               val scripted = script.size > 1 && front.height / FRAME > 1
               val packed = spritePack?.resolve(entry, bySymbol)
               val online = showdown?.resolve(entry.symbol)
-              // Battle sprites, best source first per side: Showdown's animated GIF (normal sides
-              // only - there are no shiny animations), the operator's Gen 5-style still, Showdown's
-              // still, and finally the Expansion's own art. Stills get the idle bounce.
+              // Battle sprites, best source first per side: Showdown's animated GIF (Gen 5-style
+              // where the Smogon project made one, otherwise the XY-era set, whose shiny animations
+              // are real; a Gen 5-style shiny is a recolour), the operator's Gen 5-style still,
+              // Showdown's still, and finally the Expansion's own art. Stills get the idle bounce.
               // A custom species' own animation wins; it has no shiny art, so both sides use it.
               val frontN =
                   customFront?.let { reencodeGif(it) to ANI }
@@ -123,6 +124,7 @@ class ExpansionAssetStaging(
                       else idleGif(front, normal, FRAME)) to EXPANSION
               val frontS =
                   customFront?.let { reencodeGif(it) to ANI }
+                      ?: online?.aniFrontShiny?.let { reencodeGif(it) to ANI }
                       ?: online?.let { o ->
                     if (o.aniFront != null && o.front != null && o.frontShiny != null)
                         shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
@@ -140,6 +142,7 @@ class ExpansionAssetStaging(
                       ?: idleGif(back, normal, FRAME) to EXPANSION
               val backS =
                   customBack?.let { reencodeGif(it) to ANI }
+                      ?: online?.aniBackShiny?.let { reencodeGif(it) to ANI }
                       ?: online?.let { o ->
                     if (o.aniBack != null && o.back != null && o.backShiny != null)
                         shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY
@@ -171,6 +174,16 @@ class ExpansionAssetStaging(
               // icon.png stacks the two idle-bounce frames the party UI alternates between.
               zip.write("$ICONS/$wireId-0.png", png(icon, iconPalette, ICON, 0))
               zip.write("$ICONS/$wireId-1.png", png(icon, iconPalette, ICON, ICON))
+              // The shiny icon (client name form ID-FRAME-s.png, f/c85; without it a shiny falls
+              // back to the normal icon). The Expansion has no shiny icon art - icons draw from six
+              // shared palettes - so the icon is recoloured through the species' own normal -> shiny
+              // sprite palettes: each icon colour takes the shiny counterpart of the nearest normal
+              // sprite colour. A custom species may ship monmmo_icon_shiny.pal instead.
+              val shinyIconPalette =
+                  customArt("monmmo_icon_shiny.pal")?.let { palette(it.toString()) }
+                      ?: shinyIconPalette(iconPalette, normal, shiny)
+              zip.write("$ICONS/$wireId-0-s.png", png(icon, shinyIconPalette, ICON, 0))
+              zip.write("$ICONS/$wireId-1-s.png", png(icon, shinyIconPalette, ICON, ICON))
 
               // A custom species that stands in the overworld as a plain file-sprite npc names its
               // sprite slot in monmmo_npc_sprite.txt as "region id" (the Crystal Onix raid boss no
@@ -491,6 +504,28 @@ class ExpansionAssetStaging(
       val (red, green, blue) = lines[3 + index].split(WHITESPACE).map(String::toInt)
       (0xff shl 24) or (red shl 16) or (green shl 8) or blue
     }
+  }
+
+  /**
+   * The icon palette recoloured the way the species' sprite goes shiny: every icon colour (index 0
+   * stays transparent) is replaced by the shiny palette entry that pairs with the closest normal
+   * palette entry, closeness being the plain RGB distance. Where the sprite keeps a colour (black
+   * outlines, whites, eyes) the icon keeps it too, because that colour maps onto itself.
+   */
+  private fun shinyIconPalette(iconPalette: IntArray, normal: IntArray, shiny: IntArray): IntArray =
+      IntArray(iconPalette.size) { index ->
+        if (index == 0) return@IntArray 0
+        val colour = iconPalette[index]
+        val nearest =
+            (1 until minOf(normal.size, shiny.size)).minByOrNull { rgbDistance(colour, normal[it]) }
+        if (nearest == null) colour else shiny[nearest]
+      }
+
+  private fun rgbDistance(a: Int, b: Int): Int {
+    val dr = ((a shr 16) and 0xff) - ((b shr 16) and 0xff)
+    val dg = ((a shr 8) and 0xff) - ((b shr 8) and 0xff)
+    val db = (a and 0xff) - (b and 0xff)
+    return dr * dr + dg * dg + db * db
   }
 
   /**

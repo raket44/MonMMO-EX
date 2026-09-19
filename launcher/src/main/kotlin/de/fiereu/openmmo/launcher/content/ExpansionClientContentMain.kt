@@ -1027,6 +1027,14 @@ private fun patchNames(
           textContent = value
         })
   }
+  RETAIL_R32920_STRINGS.forEach { (stringId, value) ->
+    require(stringId !in occupied) { "Client string $stringId is taken; retail r32920 line $stringId collides" }
+    root.appendChild(
+        document.createElement("string").apply {
+          setAttribute("id", stringId.toString())
+          textContent = value
+        })
+  }
   RAID_ABILITY_NAMES.forEach { (stringId, value) ->
     require(stringId !in occupied) { "Client string $stringId is taken; pick another ability id for the raid power" }
     root.appendChild(
@@ -1097,6 +1105,18 @@ private val DAYCARE_STRINGS =
     mapOf(
         16790020 to "Im the Day Care Man. Care to strike a bargain?\\n\\nIf you give me 2 Pokemon I can use as breeders I'll give you pick of the litter! How's that sound?",
         16790021 to "Are you sure? You wont get these Pokemon back.",
+    )
+
+/**
+ * Lines retail added in r32920 (diffed against r32645's strings_en.xml on 2026-09-18) that our
+ * r32645 base lacks. Same ids as retail, so a server feature built on them speaks the same text id
+ * on both. 16780477 is the crystal cave's attraction notice: {00} = type name argument, {STRING_0}
+ * = "Pokemon". 16808003 is the lucky-owner line retail attached to the Shiny Wars gift.
+ */
+private val RETAIL_R32920_STRINGS =
+    mapOf(
+        16780477 to "The crystal is emitting a mysterious glow...\\n\\nIt appears to be attracting {00}-Type {STRING_0} to the cave.",
+        16808003 to "This {00} appears to be searching for a lucky owner...",
     )
 
 /**

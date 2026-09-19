@@ -34,6 +34,8 @@ class ExpansionAssetStagingTest :
       fun stage(): Pair<Path, Path> {
         val root = Files.createTempDirectory("expansion-assets")
         Files.createDirectories(root.resolve("graphics/pokemon/icon_palettes"))
+        // The follower-art scan (parseAsymFollowers) lists this directory; empty is fine.
+        Files.createDirectories(root.resolve("src/data/pokemon/species_info"))
         indexedPng(root, "graphics/pokemon/front.png", 8)
         indexedPng(root, "graphics/pokemon/back.png", 8)
         indexedPng(root, "graphics/pokemon/icon.png", 8)
@@ -81,14 +83,27 @@ class ExpansionAssetStagingTest :
                   "sprites/battlesprites/",
                   "sprites/monstericons/",
                   "cries/",
-                  "sprites/battlesprites/696-front-n.gif",
-                  "sprites/battlesprites/696-front-s.gif",
-                  "sprites/battlesprites/696-back-n.gif",
-                  "sprites/battlesprites/696-back-s.gif",
-                  "sprites/monstericons/696-0.png",
-                  "sprites/monstericons/696-1.png",
-                  "cries/696.wav",
+                  "sprites/battlesprites/714-front-n.gif",
+                  "sprites/battlesprites/714-front-s.gif",
+                  "sprites/battlesprites/714-back-n.gif",
+                  "sprites/battlesprites/714-back-s.gif",
+                  "sprites/monstericons/714-0.png",
+                  "sprites/monstericons/714-1.png",
+                  "sprites/monstericons/714-0-s.png",
+                  "sprites/monstericons/714-1-s.png",
+                  "cries/714.wav",
               )
+        }
+      }
+
+      test("shiny icon takes the shiny counterpart of the nearest normal sprite colour") {
+        val (_, archive) = stage()
+        ZipFile(archive.toFile()).use { zip ->
+          fun read(name: String): BufferedImage =
+              ImageIO.read(ByteArrayInputStream(zip.getInputStream(zip.getEntry(name)).readBytes()))
+          // The icon palette is the sprite's red; the sprite goes blue when shiny, so must the icon.
+          read("sprites/monstericons/714-0.png").getRGB(0, 0) shouldBe red
+          read("sprites/monstericons/714-0-s.png").getRGB(0, 0) shouldBe blue
         }
       }
 
@@ -98,8 +113,8 @@ class ExpansionAssetStagingTest :
           fun read(name: String): BufferedImage =
               ImageIO.read(ByteArrayInputStream(zip.getInputStream(zip.getEntry(name)).readBytes()))
 
-          val normal = read("sprites/battlesprites/696-front-n.gif")
-          val shiny = read("sprites/battlesprites/696-front-s.gif")
+          val normal = read("sprites/battlesprites/714-front-n.gif")
+          val shiny = read("sprites/battlesprites/714-front-s.gif")
           normal.width shouldBe 64
           normal.getRGB(0, 0) shouldBe red
           shiny.getRGB(0, 0) shouldBe blue

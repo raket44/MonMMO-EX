@@ -21,9 +21,13 @@ import kotlinx.serialization.json.jsonPrimitive
  * Pokemon Showdown's Gen 5-style sprite set (the Smogon Sprite Project), fetched into
  * reference/sprite-packs/showdown and served to the mod ahead of the operator's still packs.
  *
- * Six folders matter: `gen5`, `gen5-shiny`, `gen5-back`, `gen5-back-shiny` (96x96 stills, every
- * species and form through Gen 9) and `gen5ani`, `gen5ani-back` (animated GIFs, Gen 6-8; there are
- * no shiny animations, so shinies stay stills). Files are named by Showdown's species id - the
+ * Ten folders matter: `gen5`, `gen5-shiny`, `gen5-back`, `gen5-back-shiny` (96x96 stills, every
+ * species and form through Gen 9), `gen5ani`, `gen5ani-back` (Gen 5-style animated GIFs, which stop
+ * where the Smogon project stopped and have no shinies) and `ani`, `ani-back`, `ani-shiny`,
+ * `ani-back-shiny` (the XY-era animated set: every later species, the fan Megas, and real shiny
+ * animations). A Gen 5-style animation is used first, the XY-era one when there is none, a still
+ * only when there is no animation at all - a still with a synthesized bob was the "looks like shit"
+ * the operator saw on Mega Clefable. Files are named by Showdown's species id - the
  * lower-cased name with a hyphenated form: `ninetales-alola`, `charizard-megax`, `vivillon-polar`.
  *
  * The scope is what the mod stages: everything past the client's stock Dex 1-649, plus the
@@ -105,6 +109,9 @@ class ShowdownIndex private constructor(private val byDex: Map<Int, List<Candida
 data class ShowdownSpriteSet(
     val aniFront: Path?,
     val aniBack: Path?,
+    /** Shiny animations exist only in the XY-era set; null means recolour the normal one. */
+    val aniFrontShiny: Path?,
+    val aniBackShiny: Path?,
     val front: Path?,
     val frontShiny: Path?,
     val back: Path?,
@@ -128,10 +135,14 @@ class ShowdownSprites(private val root: Path) {
     val slug = slugs[symbol] ?: return null
     fun file(folder: String, ext: String): Path? =
         root.resolve(folder).resolve("$slug.$ext").takeIf { Files.isRegularFile(it) }
+    val gen5Front = file("gen5ani", "gif")
+    val gen5Back = file("gen5ani-back", "gif")
     val set =
         ShowdownSpriteSet(
-            aniFront = file("gen5ani", "gif"),
-            aniBack = file("gen5ani-back", "gif"),
+            aniFront = gen5Front ?: file("ani", "gif"),
+            aniBack = gen5Back ?: file("ani-back", "gif"),
+            aniFrontShiny = if (gen5Front == null) file("ani-shiny", "gif") else null,
+            aniBackShiny = if (gen5Back == null) file("ani-back-shiny", "gif") else null,
             front = file("gen5", "png"),
             frontShiny = file("gen5-shiny", "png"),
             back = file("gen5-back", "png"),
@@ -142,7 +153,12 @@ class ShowdownSprites(private val root: Path) {
 
   companion object {
     const val MANIFEST = "manifest.csv"
-    val FOLDERS = listOf("gen5" to "png", "gen5-shiny" to "png", "gen5-back" to "png", "gen5-back-shiny" to "png", "gen5ani" to "gif", "gen5ani-back" to "gif")
+    val FOLDERS =
+        listOf(
+            "gen5" to "png", "gen5-shiny" to "png", "gen5-back" to "png", "gen5-back-shiny" to "png",
+            "gen5ani" to "gif", "gen5ani-back" to "gif",
+            "ani" to "gif", "ani-back" to "gif", "ani-shiny" to "gif", "ani-back-shiny" to "gif",
+        )
   }
 }
 

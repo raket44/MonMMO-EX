@@ -132,9 +132,16 @@ jteCodegen {
   }
   register("scriptCorpus") {
     mainClass.set("de.fiereu.openmmo.codegen.script.ScriptCorpusMain")
+    // Unova's "decomp" is the ROM extracts in server.game; declared, or a re-dumped
+    // nds-scripts-2.txt leaves the corpus stale (it did, 2026-09-19).
+    val unovaExtracts =
+        listOf("nds-scripts-2.txt", "nds-headers-2.txt", "nds-npcs-2.txt").map {
+          rootProject.layout.projectDirectory.file("server.game/$it")
+        }
     inputDirs.from(
         regionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") } +
-            dialogDataDir)
+            dialogDataDir +
+            unovaExtracts)
     extraArgs.set(
         listOf(dialogDataDir.asFile.absolutePath) +
             listOf(

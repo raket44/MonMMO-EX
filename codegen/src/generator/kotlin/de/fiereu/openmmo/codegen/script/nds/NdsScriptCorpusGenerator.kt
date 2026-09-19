@@ -1589,6 +1589,16 @@ class NdsScriptCorpusGenerator {
             "CMD_17B" -> b.lines += listOf("WildOutcome", v(0), "won")
             "CMD_17C" -> b.lines += listOf("WildOutcome", v(0), "outcome")
             "CMD_179", "CMD_17A" -> {}
+            // Whole-game pass: flag/trainer queries and warps on existing commands; unknown
+            // stores answer zero; date, music, money box and the musical/party-poke buffers vanish.
+            "SetVarFlagStatus" -> b.lines += listOf("CheckFlagVar", fl(0), v(1))
+            "StoreActiveTrainerID" -> b.lines += listOf("CheckTrainerFlag", tv(0), v(1))
+            "TeleportWarpNPC" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            // DoubleTrainerBattle ally, opponent, opponent, ?: no doubles engine yet, the first opponent fights.
+            "DoubleTrainerBattle" -> b.lines += listOf("TrainerBattle", tv(1), "0", "0", "0")
+            "StoreVar_CD", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" -> b.lines += listOf("SetVar", v(0), "0")
+            "StoreDate" -> { b.lines += listOf("SetVar", v(0), "0"); b.lines += listOf("SetVar", v(1), "0") }
+            "MoneyBox", "MusicalMessage", "SetVarPartyPoke", "PlayTrainerMusic" -> {}
             // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
             "RenamePokemon" -> b.lines += listOf("SetVar", v(0), "0")
             // Presentation and engine calls with no server counterpart on the opening route
@@ -1660,7 +1670,13 @@ class NdsScriptCorpusGenerator {
             "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
-            else -> b.lines += listOf(c.name) + a.map { it.removePrefix("@") }
+            // An opcode the table only numbers (CMD_xxx) goes out as ScrCmd_xxx with its var
+            // arguments marked, so the transpiler treats it the way it treats Platinum's unnamed
+            // engine calls: a zero into the var it answers, nothing otherwise. Named commands the
+            // dialect does not handle keep their name and reach the report as ds_<name>.
+            else ->
+                if (c.name.startsWith("CMD_")) b.lines += listOf("ScrCmd_" + c.name.removePrefix("CMD_")) + a.indices.map { tv(it) }
+                else b.lines += listOf(c.name) + a.map { it.removePrefix("@") }
           }
         }
         // Movement tables: Gen 5 (type, count) pairs into the Gen 4 macro names the transpiler maps.

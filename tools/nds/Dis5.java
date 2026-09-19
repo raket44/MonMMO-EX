@@ -5,6 +5,7 @@ import java.nio.file.*;import java.util.*;
  * u16 opcode + args. Table file: opcode;name;sizes (B=1,H=2,L=4).
  * Modes: validate <rom> <table>   - decode every entry of every file, report unknown opcodes
  *        dump <rom> <table> <out> - write the disassembly (file;entry;offset;name args) for the corpus
+ *        peek <rom> <table> <file> <offset> - raw bytes of a script file at an offset (unknown-opcode work)
  */
 public class Dis5{
  static byte[] rom;static Map<String,Integer> paths=new LinkedHashMap<>();
@@ -21,7 +22,7 @@ public class Dis5{
   for(int fi=0;fi<idx.length;fi++){
    byte[] f=Arrays.copyOfRange(rom,idx[fi][0],idx[fi][1]);if(f.length<4)continue;files++;
    List<Integer> entries=new ArrayList<>();int p=0;
-   while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length){break;}entries.add(tgt);p+=4;if(entries.size()>200)break;}
+   while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length){break;}entries.add(tgt);p+=4;if(entries.size()>2048)break;}
    Set<Integer> seen=new HashSet<>();
    for(int e=0;e<entries.size();e++){
     Deque<Integer> work=new ArrayDeque<>();work.add(entries.get(e));boolean bad=false;
@@ -43,6 +44,8 @@ public class Dis5{
   System.out.println("files="+files+" entriesOk="+okEntries+" entriesBad="+badEntries);
   List<Map.Entry<Integer,Integer>> u=new ArrayList<>(unknown.entrySet());u.sort((x,y)->y.getValue()-x.getValue());
   for(int i=0;i<Math.min(40,u.size());i++)System.out.println(String.format("unknown 0x%03X x%d  %s",u.get(i).getKey(),u.get(i).getValue(),ctx.get(u.get(i).getKey())));
+  if(a[0].equals("scan")){int[][] sx=narcIndex(a[3]);for(int fi=0;fi<sx.length;fi++){byte[] f=Arrays.copyOfRange(rom,sx[fi][0],sx[fi][1]);int p=0,n=0;while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length)break;n++;p+=4;if(n>4096)break;}if(n>0)System.out.println("scan "+a[3]+" file "+fi+" len="+f.length+" entries="+n);}}
+  if(a[0].equals("peek")){int[][] px=narcIndex("/a/0/5/7");int fi=Integer.parseInt(a[3]),po=Integer.parseInt(a[4]);byte[] pf=Arrays.copyOfRange(rom,px[fi][0],px[fi][1]);StringBuilder sb=new StringBuilder();for(int i=po;i<Math.min(pf.length,po+40);i++)sb.append(String.format("%02x ",pf[i]&0xFF));System.out.println("file "+fi+" len="+pf.length+" @"+po+": "+sb);}
   if(a[0].equals("dump"))Files.write(Paths.get(a[3]),out.toString().getBytes("UTF-8"));
   if(a[0].equals("infer"))infer(idx,a[3]);
   if(a[0].equals("headers")){byte[] hdr=narcFile("/a/0/1/2",0);StringBuilder sb=new StringBuilder("# hdr;region;bank;map;header;scriptFile;levelScript;textBank;events\n");for(int i=0;i<hdr.length/48;i++){int o=i*48;sb.append("hdr;2;").append(i&0xFF).append(';').append(i>>8).append(';').append(i).append(';').append(u16(hdr,o+6)).append(';').append(u16(hdr,o+8)).append(';').append(u16(hdr,o+10)).append(';').append(u16(hdr,o+22)).append((char)10);}
@@ -62,7 +65,7 @@ public class Dis5{
   for(int round=0;round<12;round++){
    Map<Integer,List<int[]>> occ=new TreeMap<>();
    for(int fi=0;fi<files.length;fi++){byte[] f=files[fi];if(f.length<4)continue;List<Integer> entries=new ArrayList<>();int p=0;
-    while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length)break;entries.add(tgt);p+=4;if(entries.size()>200)break;}
+    while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length)break;entries.add(tgt);p+=4;if(entries.size()>2048)break;}
     Set<Integer> seen=new HashSet<>();
     for(int e:entries){Deque<Integer> work=new ArrayDeque<>();work.add(e);
      while(!work.isEmpty()){int pc=work.poll();

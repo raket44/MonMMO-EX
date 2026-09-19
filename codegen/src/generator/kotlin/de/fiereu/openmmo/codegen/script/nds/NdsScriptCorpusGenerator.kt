@@ -1451,6 +1451,13 @@ class NdsScriptCorpusGenerator {
     private val bankByFile: Map<Int, Int> by lazy {
       val out = HashMap<Int, Int>()
       for (h in headerRows) out.putIfAbsent(h[4], h[6])
+      // The shared routines belong to no header: CallStd's file 862 (2805 bag check, 2811 obtain
+      // item) and the item balls' file 864 speak from story bank 283 - "{0} obtained {1}!" (0/1/3),
+      // "found" (4-6), "no more room" (7/8), "put the {1} in the {2} Case" (10/11), the entries
+      // they index. Left at bank 0 every item gift ended in the gourmet maid's and the ore
+      // collector's lines (Mom's Xtransceiver, 2026-09-19).
+      out.putIfAbsent(862, 283)
+      out.putIfAbsent(864, 283)
       out
     }
 

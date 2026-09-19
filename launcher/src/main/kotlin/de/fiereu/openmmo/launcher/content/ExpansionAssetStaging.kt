@@ -42,6 +42,7 @@ class ExpansionAssetStaging(
     private val expansionRoot: Path,
     private val spritePack: Gen5StyleSpritePack? = null,
     private val showdown: ShowdownSprites? = null,
+    private val ebs: EbsStripPack? = null,
 ) {
 
   /**
@@ -110,14 +111,19 @@ class ExpansionAssetStaging(
               val scripted = script.size > 1 && front.height / FRAME > 1
               val packed = spritePack?.resolve(entry, bySymbol)
               val online = showdown?.resolve(entry.symbol)
-              // Battle sprites, best source first per side: Showdown's Gen 5-style animated GIF
-              // (normal sides only - there are no shiny animations; the shiny is a recolour), the
-              // operator's Gen 5-style still, Showdown's still, and finally the Expansion's own art.
-              // Stills get the idle bounce. Gen 5-style ONLY: the XY-era 3D set is not approved.
+              // The EBS strip pack is keyed by Dex number and carries no forms, so only the base
+              // species resolves there; a form never borrows its base's strip.
+              val strips = if (entry.isForm) null else ebs?.resolve(entry.nationalDexId)
+              // Battle sprites, best source first per side, all Gen 5-style (owner: "animated,
+              // period, all gen 5"): Showdown's Gen 5-style animated GIF, then the DeviantArt BW-style
+              // animators' EBS strips (real shiny animations), then the operator's Gen 5-style still,
+              // Showdown's still, and finally the Expansion's own art. Stills get the idle bounce.
+              // The XY-era 3D set is not approved and is never used.
               // A custom species' own animation wins; it has no shiny art, so both sides use it.
               val frontN =
                   customFront?.let { reencodeGif(it) to ANI }
                       ?: online?.aniFront?.let { reencodeGif(it) to ANI }
+                      ?: strips?.front?.let { stripGif(it) to EBS }
                       ?: packed?.front?.let { packGif(it) to PACK }
                       ?: online?.front?.let { packGif(it) to SHOWDOWN }
                       ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
@@ -129,6 +135,7 @@ class ExpansionAssetStaging(
                         shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
                     else null
                   }
+                      ?: strips?.frontShiny?.let { stripGif(it) to EBS }
                       ?: packed?.frontShiny?.let { packGif(it) to PACK }
                       ?: online?.frontShiny?.let { packGif(it) to SHOWDOWN }
                       ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
@@ -136,6 +143,7 @@ class ExpansionAssetStaging(
               val backN =
                   customBack?.let { reencodeGif(it) to ANI }
                       ?: online?.aniBack?.let { reencodeGif(it) to ANI }
+                      ?: strips?.back?.let { stripGif(it) to EBS }
                       ?: packed?.back?.let { packGif(it) to PACK }
                       ?: online?.back?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, normal, FRAME) to EXPANSION
@@ -146,6 +154,7 @@ class ExpansionAssetStaging(
                         shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY
                     else null
                   }
+                      ?: strips?.backShiny?.let { stripGif(it) to EBS }
                       ?: packed?.backShiny?.let { packGif(it) to PACK }
                       ?: online?.backShiny?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, shiny, FRAME) to EXPANSION
@@ -155,7 +164,7 @@ class ExpansionAssetStaging(
               zip.write("$SPRITES/$wireId-back-s.gif", backS.first)
               val sources = listOf(frontN.second, frontS.second, backN.second, backS.second)
               if (frontN.second == EXPANSION && scripted) animated++
-              if (frontN.second == ANI) showdownAnimated++
+              if (frontN.second == ANI || frontN.second == EBS) showdownAnimated++
               if (sources.any { it != EXPANSION }) packSprites++
               packReport += "${entry.symbol},$wireId,${sources.joinToString(",")}"
               if (spritePack != null || showdown != null) {
@@ -261,6 +270,30 @@ class ExpansionAssetStaging(
    * sub-rectangle with restore-to-previous disposal, and the client showed those as a still.
    */
   private fun reencodeGif(path: Path): ByteArray = quantisedGif(decodeGif(path))
+
+  /**
+   * An EBS battler strip (see [EbsStripPack]) as the client's animated GIF: square frames, frame
+   * side = strip height, read left to right. Elite Battle System steps these strips at the game's
+   * 20 fps, so every frame gets 5 cs - the same pace as Showdown's Gen 5-style GIFs.
+   */
+  private fun stripGif(path: Path): ByteArray {
+    val strip = ImageIO.read(path.toFile()) ?: error("Unreadable EBS strip: $path")
+    val side = strip.height
+    val frames = maxOf(1, strip.width / side)
+    // The strips are cropped tight (Chespin is a 64px frame); the rest of the mod is on Showdown's
+    // 96x96 canvas, so each frame is centred on at least that, and a bigger frame keeps its size.
+    // Pixel scale is left as drawn: the animators worked at 1.1-1.4x the BW scale and a fractional
+    // downscale would destroy the pixel art (measured 2026-09-19 against the Showdown stills).
+    val canvas = maxOf(SHOWDOWN_CANVAS, side)
+    val offset = (canvas - side) / 2
+    return quantisedGif(
+        List(frames) { index ->
+          val frame = BufferedImage(canvas, canvas, BufferedImage.TYPE_INT_ARGB)
+          val source = strip.getSubimage(index * side, 0, side, side)
+          for (y in 0 until side) for (x in 0 until side) frame.setRGB(x + offset, y + offset, source.getRGB(x, y))
+          frame to EBS_FRAME_DELAY
+        })
+  }
 
   /**
    * An animated SHINY from the normal animation: Gen 5 shinies are palette swaps of the same
@@ -823,6 +856,11 @@ class ExpansionAssetStaging(
     /** Sprite source labels in the staging report. */
     const val ANI = "showdown-ani"
     const val ANI_SHINY = "showdown-ani-recoloured"
+    const val EBS = "ebs-bw-animated"
+    /** Centiseconds per EBS strip frame (20 fps). */
+    const val EBS_FRAME_DELAY = 5
+    /** Showdown's Gen 5-style sprites are all 96x96; EBS frames are centred on the same. */
+    const val SHOWDOWN_CANVAS = 96
     const val PACK = "pack"
     const val SHOWDOWN = "showdown"
     const val EXPANSION = "expansion"

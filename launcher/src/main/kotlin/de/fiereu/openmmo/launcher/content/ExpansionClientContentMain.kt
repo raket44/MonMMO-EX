@@ -477,8 +477,12 @@ fun main(args: Array<String>) {
   // has nothing (operator-directed: one source, no fallback chain).
   val showdown =
       args.getOrNull(5)?.let { Path.of(it) }?.let { ShowdownSprites(it) }?.takeIf { it.available }
+  // The DeviantArt BW-style animators' EBS strips sit beside the Showdown root (owner-approved
+  // download, 2026-09-19); they fill the species Showdown never animated.
+  val ebs =
+      args.getOrNull(5)?.let { Path.of(it).resolveSibling(EbsStripPack.DIR) }?.let { EbsStripPack(it) }?.takeIf { it.available }
   val assets =
-      ExpansionAssetStaging(expansionRoot, showdown = showdown)
+      ExpansionAssetStaging(expansionRoot, showdown = showdown, ebs = ebs)
           .stage(
               withAssets,
               outputData.parent.resolve("mods/monmmo-lost-knights.zip"),

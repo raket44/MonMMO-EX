@@ -44,7 +44,7 @@ public class SpritePreview {
          .append("table{border-collapse:collapse}td,th{padding:4px 8px;border-bottom:1px solid #333;text-align:center;vertical-align:middle}")
          .append("img{image-rendering:pixelated}.gif{width:96px;height:96px}.icon{width:32px;height:32px}")
          .append(".src{font-size:11px;color:#8ac}.expansion{color:#e88}.showdown{color:#cc8}.pack{color:#8c8}")
-         .append(".showdown-ani,.showdown-ani-recoloured{color:#8cf}")
+         .append(".showdown-ani,.showdown-ani-recoloured,.ebs-bw-animated{color:#8cf}.monmmo-custom{color:#f8c}")
          .append("#f{position:sticky;top:0;background:#14161a;padding:8px 0}</style>")
          .append("<div id=f><b>").append(rows.size()).append(" imported species</b> &nbsp; filter: ")
          .append("<select onchange=\"flt(this.value)\"><option value=''>all</option><option value='showdown-ani'>animated (gen5ani)</option>")

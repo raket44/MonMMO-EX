@@ -121,7 +121,7 @@ class ExpansionAssetStaging(
               // The XY-era 3D set is not approved and is never used.
               // A custom species' own animation wins; it has no shiny art, so both sides use it.
               val frontN =
-                  customFront?.let { reencodeGif(it) to ANI }
+                  customFront?.let { reencodeGif(it) to CUSTOM }
                       ?: online?.aniFront?.let { reencodeGif(it) to ANI }
                       ?: strips?.front?.let { stripGif(it) to EBS }
                       ?: packed?.front?.let { packGif(it) to PACK }
@@ -129,7 +129,7 @@ class ExpansionAssetStaging(
                       ?: (if (scripted) scriptedGif(front, normal, FRAME, script)
                       else idleGif(front, normal, FRAME)) to EXPANSION
               val frontS =
-                  customFront?.let { reencodeGif(it) to ANI }
+                  customFront?.let { reencodeGif(it) to CUSTOM }
                       ?: online?.let { o ->
                     if (o.aniFront != null && o.front != null && o.frontShiny != null)
                         shinyGif(o.aniFront, o.front, o.frontShiny) to ANI_SHINY
@@ -141,14 +141,14 @@ class ExpansionAssetStaging(
                       ?: (if (scripted) scriptedGif(front, shiny, FRAME, script)
                       else idleGif(front, shiny, FRAME)) to EXPANSION
               val backN =
-                  customBack?.let { reencodeGif(it) to ANI }
+                  customBack?.let { reencodeGif(it) to CUSTOM }
                       ?: online?.aniBack?.let { reencodeGif(it) to ANI }
                       ?: strips?.back?.let { stripGif(it) to EBS }
                       ?: packed?.back?.let { packGif(it) to PACK }
                       ?: online?.back?.let { packGif(it) to SHOWDOWN }
                       ?: idleGif(back, normal, FRAME) to EXPANSION
               val backS =
-                  customBack?.let { reencodeGif(it) to ANI }
+                  customBack?.let { reencodeGif(it) to CUSTOM }
                       ?: online?.let { o ->
                     if (o.aniBack != null && o.back != null && o.backShiny != null)
                         shinyGif(o.aniBack, o.back, o.backShiny) to ANI_SHINY
@@ -164,7 +164,7 @@ class ExpansionAssetStaging(
               zip.write("$SPRITES/$wireId-back-s.gif", backS.first)
               val sources = listOf(frontN.second, frontS.second, backN.second, backS.second)
               if (frontN.second == EXPANSION && scripted) animated++
-              if (frontN.second == ANI || frontN.second == EBS) showdownAnimated++
+              if (frontN.second == ANI || frontN.second == EBS || frontN.second == CUSTOM) showdownAnimated++
               if (sources.any { it != EXPANSION }) packSprites++
               packReport += "${entry.symbol},$wireId,${sources.joinToString(",")}"
               if (spritePack != null || showdown != null) {
@@ -857,6 +857,8 @@ class ExpansionAssetStaging(
     const val ANI = "showdown-ani"
     const val ANI_SHINY = "showdown-ani-recoloured"
     const val EBS = "ebs-bw-animated"
+    /** The species' own animation (codegen/custom-species, e.g. Crystal Onix). */
+    const val CUSTOM = "monmmo-custom"
     /** Centiseconds per EBS strip frame (20 fps). */
     const val EBS_FRAME_DELAY = 5
     /** Showdown's Gen 5-style sprites are all 96x96; EBS frames are centred on the same. */

@@ -1712,7 +1712,10 @@ class NdsScriptCorpusGenerator {
             "StoreGender" -> b.lines += listOf("GetPlayerGender", v(0))
             "StoreDay" -> b.lines += listOf("GetWeekday", v(0))
             "HealPokemon" -> b.lines += listOf("HealParty")
-            "GivePokemon" -> b.lines += listOf("GivePokemon", tv(0), tv(1), tv(2), v(3))
+            // Gen 5: result var, species, item, level (the monkeys `0x8010 511 0 10`, Magikarp
+            // `0x8010 129 0 5`, the starter `0x8010 0x8021 0 5`). Read in Gen 4 order the starter
+            // was species 0 at level 495 and never arrived (2026-09-19).
+            "GivePokemon" -> b.lines += listOf("GivePokemon", tv(1), tv(3), if (t(2) == "0") "ITEM_NONE" else item(2), v(0))
             "TakeMoney" -> b.lines += listOf("RemoveMoney", tv(0))
             "CheckMoney" -> b.lines += listOf("CheckMoney", tv(0), v(1))
             "CheckItemBagSpace" -> b.lines += listOf("CanFitItem", item(0), tv(1), v(2))
@@ -1747,14 +1750,26 @@ class NdsScriptCorpusGenerator {
             val type = pair[0]
             val n = pair.getOrElse(1) { 1 }
             val dir = listOf("North", "South", "West", "East")[type and 3]
+            // Read off the corpus (2026-09-19): 32-35 close nearly every walk with a turn to a
+            // partner (Cheren walks south then 34 = faces the player west), so they are turns, not
+            // the delays they were; 36-39 sit after fast walks (in place); 60-63 interleave a
+            // spinning npc's looks (`61 2 61 0 61 3 61 1`) and 75 opens walks - waits.
             val name =
                 when (type) {
                   in 0..3 -> "Face$dir"
                   in 4..7 -> "WalkSlow$dir"
                   in 8..15 -> "WalkNormal$dir"
                   in 16..23 -> "WalkFast$dir"
-                  in 24..43 -> "Delay8"
+                  in 24..31 -> "Delay8"
+                  in 32..35 -> "Face$dir"
+                  in 36..39 -> "WalkOnSpotFast$dir"
+                  in 40..43 -> "Delay8"
                   in 44..59 -> "WalkNormal$dir"
+                  60 -> "Delay2"
+                  61 -> "Delay4"
+                  62 -> "Delay8"
+                  63 -> "Delay16"
+                  75 -> "Delay8"
                   else -> continue
                 }
             block.lines += listOf(name, n.toString())

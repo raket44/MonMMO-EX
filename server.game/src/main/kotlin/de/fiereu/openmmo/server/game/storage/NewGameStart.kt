@@ -125,17 +125,20 @@ internal object NewGameStarts {
    * climbing the stairs lands (nds-map-spawns.txt).
    */
   /**
-   * White opens in the player's room in Nuvema Town (header 391 = bank 135, map 1; the ROM's
-   * spawn table puts the player at 9,2). The ROM has no decomp: its new-game init is script file
-   * 866 entry 0, whose 131 hide flags are listed in monmmo/unova-new-game-flags.txt (numeric ids,
-   * story keys unova/FLAG_<id>), plus var 0x4116 = 1.
+   * White opens in the player's room in Nuvema Town (header 391 = bank 135, map 1). The spawn
+   * table's 9,2 is the STAIRS - where the 1F warp lands and where Bianca appears in the opening
+   * scene (the owner started on the stairs, 2026-09-19). The scene itself places the player: Cheren
+   * (6,5) walks one south and turns west to talk, and the gift-box beat stands him at 6,6 and
+   * Bianca at 4,6 around the player - so the player starts between them, at 5,6. The ROM has no
+   * decomp: its new-game init is script file 866 entry 0, whose 131 hide flags are listed in
+   * monmmo/unova-new-game-flags.txt (numeric ids, story keys unova/FLAG_<id>), plus var 0x4116 = 1.
    */
   private fun unova(): NewGameStart =
       NewGameStart(
           bankId = 135.toByte(),
           mapId = 1,
-          x = 9,
-          y = 2,
+          x = 5,
+          y = 6,
           storyFlags = UNOVA_INITIAL_FLAGS,
           storyVars = mapOf("unova/VAR_0x4116" to 1),
       )

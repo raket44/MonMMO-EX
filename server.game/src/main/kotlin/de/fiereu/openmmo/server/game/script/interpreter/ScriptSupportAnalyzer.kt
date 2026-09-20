@@ -297,6 +297,7 @@ class ScriptSupportAnalyzer(
           "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
           "ds_countbadges" -> args.size == 1
+          "ds_itempocket" -> args.size == 2
           // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts [, index]
           "ds_startchoosestarterscene" -> args.size == 8 || (args.size == 9 && args[8].token == "index")
           "ds_startfirstbattle" -> args.size == 1
@@ -648,6 +649,7 @@ class ScriptSupportAnalyzer(
             "ds_buffer",
             "ds_pokemart",
             "ds_countbadges",
+            "ds_itempocket",
             "ds_startchoosestarterscene",
             "ds_startfirstbattle",
             "ds_starttagbattle",

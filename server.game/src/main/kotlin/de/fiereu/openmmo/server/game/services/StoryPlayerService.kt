@@ -232,6 +232,9 @@ constructor(
 
   fun itemByWireId(id: Int): ItemDef? = items.get(id)
 
+  /** The client wire id of [item] (the reverse of [itemByWireId]). */
+  fun itemWireId(item: ItemDef): Int = items.idOf(item)
+
   private fun paddedMoves(moveIds: List<Int>): List<PokemonMove> =
       moveIds.take(MAX_MOVES).map { id ->
         PokemonMove(id.toShort(), (moves.get(id)?.pp ?: DEFAULT_MOVE_PP).toByte())

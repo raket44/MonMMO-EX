@@ -255,7 +255,15 @@ class InterpretedScript(
                 "rival" -> RawMessageArg(slot.toByte(), 5, text = if (region == 4) "Silver" else "Barry")
                 // Platinum TEXT_BANK_COUNTERPART_NAMES: 0 Lucas, 1 Dawn - the other gender's assistant.
                 "counterpart" -> RawMessageArg(slot.toByte(), 5, text = if (ctx.playerGender() == 0) "Dawn" else "Lucas")
-                "item" -> RawMessageArg(slot.toByte(), 25, shorts = listOf((itemBand + valueOf(instruction.arg(2))).toShort()))
+                // White sends the NAME: the client's item-id arg (25) left the slot to the player's
+                // name ("raket received the raket", 2026-09-19), plain text (5) is what renders.
+                "item" ->
+                    if (program.id.source == "white") unovaItem(ctx, instruction.arg(2))?.let { RawMessageArg(slot.toByte(), 5, text = it.name) }
+                    else RawMessageArg(slot.toByte(), 25, shorts = listOf((itemBand + valueOf(instruction.arg(2))).toShort()))
+                // White SetVarBag: the pocket index CMD_BB answered (ROM item table numbers).
+                "pocket" -> RawMessageArg(slot.toByte(), 5, text = UNOVA_POCKETS.getOrElse(valueOf(instruction.arg(2))) { UNOVA_POCKETS[0] })
+                // White SetVarItem3: a TM/HM's move ("TM01 Hone Claws" -> "Hone Claws").
+                "tmmove" -> unovaItem(ctx, instruction.arg(2))?.let { RawMessageArg(slot.toByte(), 5, text = it.name.substringAfter(' ', "")) }
                 "number" -> RawMessageArg(slot.toByte(), 5, text = valueOf(instruction.arg(2)).toString())
                 // White SetVarPoke slot, species: the species name ("{player} chose {species}!",
                 // Nuvema's gift box). Unset, the client showed the player's name in the slot.
@@ -263,6 +271,13 @@ class InterpretedScript(
                 else -> null
               }
           arg?.let { ctx.setMessageArg(slot, it) }
+          state.pc++
+        }
+        // ds_itempocket VAR, item: White CMD_BB - the ROM item table's pocket (0 Items, 1 Medicine,
+        // 2 TMs & HMs, 3 Berries, 4 Key Items); the obtain-item routine picks its wording by it.
+        "ds_itempocket" -> {
+          val index = unovaItemIndex(ctx, instruction.arg(1))
+          ctx.setVar(namespaced(varArg(instruction, 0).token), UNOVA_ITEM_POCKETS.getOrElse(index) { 0 })
           state.pc++
         }
         "ds_countbadges" -> {
@@ -1168,6 +1183,19 @@ class InterpretedScript(
                 value(ctx, instruction.arg(1)),
                 value(ctx, instruction.arg(2)),
             )
+          } else if (target is MovementTarget.Player) {
+            // White SetOWPosition 255: the player is placed too, under the same fade - after the
+            // starter pick the script stands them at 4,6 for the battles; skipped, the owner was
+            // left by the gift box (2026-09-19). An optional fourth arg is the DS facing.
+            val facing =
+                when (instruction.args.getOrNull(3)?.let { value(ctx, it) }) {
+                  0 -> de.fiereu.openmmo.common.enums.Direction.UP
+                  1 -> de.fiereu.openmmo.common.enums.Direction.DOWN
+                  2 -> de.fiereu.openmmo.common.enums.Direction.LEFT
+                  3 -> de.fiereu.openmmo.common.enums.Direction.RIGHT
+                  else -> ctx.facingDirection
+                }
+            ctx.repositionSelf(value(ctx, instruction.arg(1)), value(ctx, instruction.arg(2)), facing)
           }
           state.pc++
         }
@@ -1735,6 +1763,22 @@ class InterpretedScript(
   }
 
   /** The client's wire region of this DS script's game (ds_warp's convention). */
+  /** A White item argument: a var holding the Gen 5 index (client id 5000 + index) or an ITEM_ name. */
+  private fun unovaItem(ctx: ScriptContext, arg: ScriptArg): de.fiereu.openmmo.items.ItemDef? =
+      when (arg) {
+        is VarArg -> ctx.resolveItemWire(UNOVA_ITEM_BAND + ctx.getVar(namespaced(arg.token)))
+        is IntArg -> ctx.resolveItemWire(UNOVA_ITEM_BAND + arg.value)
+        else -> ctx.resolveItem(arg.token)
+      }
+
+  /** The Gen 5 item index of a White item argument (see [unovaItem]). */
+  private fun unovaItemIndex(ctx: ScriptContext, arg: ScriptArg): Int =
+      when (arg) {
+        is VarArg -> ctx.getVar(namespaced(arg.token))
+        is IntArg -> arg.value
+        else -> ctx.resolveItem(arg.token)?.let { ctx.itemWireId(it) - UNOVA_ITEM_BAND } ?: -1
+      }
+
   private fun dsRegion(): Int =
       when (program.id.source) {
         "heartgold" -> 4
@@ -2327,6 +2371,18 @@ class InterpretedScript(
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1
+    /** White's items are the client's 5000 band (5000 + Gen 5 index). */
+    const val UNOVA_ITEM_BAND = 5000
+    /** Pocket names by the ROM item table's pocket number (Black/White's bag). */
+    val UNOVA_POCKETS = listOf("Items", "Medicine", "TMs & HMs", "Berries", "Key Items")
+    /** Pocket per Gen 5 item index, from the ROM item table (tools/nds/ItemPockets5). */
+    val UNOVA_ITEM_POCKETS: List<Int> by lazy {
+      InterpretedScript::class.java.getResourceAsStream("/monmmo/unova-item-pockets.txt")
+          ?.bufferedReader()?.readLines().orEmpty()
+          .firstOrNull { it.isNotBlank() && !it.startsWith("#") }
+          ?.trim()?.map { it.digitToInt(16) }
+          .orEmpty()
+    }
     /** Script sources whose object ids are the ROM zone-event indexes (0-based, 255 = player). */
     val DS_SOURCES = setOf("platinum", "heartgold", "white")
     val FIRE_RED_REMATCH_GATES =

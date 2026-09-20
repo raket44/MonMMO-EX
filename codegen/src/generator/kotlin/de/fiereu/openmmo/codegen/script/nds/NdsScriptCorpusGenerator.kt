@@ -450,6 +450,9 @@ class NdsScriptCorpusGenerator {
                   if (a.size >= 2) out += "ds_buffer ${a[0]}, number, ${a[1]}"
               // White SetVarPoke: the species by national number, a literal or a var.
               "BufferSpeciesName" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, species, ${a[1]}"
+              // White's obtain-item routine: a pocket index's name, and a TM item's move name.
+              "BufferUnovaPocket" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, pocket, ${a[1]}"
+              "BufferUnovaTmMove" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, tmmove, ${a[1]}"
               else -> {}
             }
         else -> when (name) {
@@ -574,7 +577,7 @@ class NdsScriptCorpusGenerator {
           }
         }
         "GetPlayerMapPos", "GetPlayerCoords" -> out += "getplayerxy ${a[0]}, ${a[1]}"
-        "SetObjectEventPos" -> out += "setobjectxy ${a[0]}, ${a[1]}, ${a[2]}"
+        "SetObjectEventPos" -> out += "setobjectxy ${a[0]}, ${a[1]}, ${a[2]}" + (a.getOrNull(3)?.let { ", $it" } ?: "")
         "GoToIfCannotFitItem" -> {
           out += "checkitemspace ${a[0]}, ${a[1]}"
           out += "compare VAR_RESULT, 0"
@@ -607,6 +610,8 @@ class NdsScriptCorpusGenerator {
         // water; each names the species through text slot 1). The script wants the INDEX back.
         // White's FadeScreen (see the first pass): 1 darkens, 0 restores - the GBA fadescreen modes.
         "ScreenFade" -> out += "fadescreen ${a[0]}"
+        // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
+        "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {
           val texts = listOf(19, 18, 17, 16).map { dialect.textId("T0430_%05d".format(it)) }
           if (texts.any { it == null }) out += "ds_startchoosestarterscene"
@@ -1484,11 +1489,14 @@ class NdsScriptCorpusGenerator {
     override fun constants(): Map<String, Int> = emptyMap()
 
     /**
-     * Script ids outside map files: 2000+ item balls (file 864, one entry per ball), 2800+ the
-     * standard routines CallStd names (file 862: 2805 bag-space check, 2811 obtain item),
-     * 10000+ hidden items (file 865).
+     * Script ids outside map files: 7000+ item balls (file 864: 306 entries for ids 7000-7305, all
+     * on sprite 110), 2800+ the standard routines CallStd names (file 862: 2805 bag-space check,
+     * 2811 obtain item), 3001-5449 trainers, 10000+ hidden items (file 865). Id 2000 EXACTLY is
+     * the "no talk script" placeholder 355 story actors carry (Mom outside the lab, Cheren, gym
+     * props): bound to file 864 it made Mom run item ball 0 - "raket received raket" - while the
+     * real item balls fell into the trainer range (2026-09-20).
      */
-    override fun chunkFiles(): Map<Int, String> = mapOf(2000 to "U864", 2800 to "U862", 3000 to "UTR", 10000 to "U865")
+    override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864", 10000 to "U865")
 
     /** Trainer npcs carry script 3000 + trainer id; one synthetic battle script serves them all. */
     override fun trainerChunkSize(base: Int): Int? = if (base == 3000) 616 else null
@@ -1650,20 +1658,33 @@ class NdsScriptCorpusGenerator {
             "MoneyBox", "MusicalMessage", "SetVarPartyPoke", "PlayTrainerMusic" -> {}
             // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
             "RenamePokemon" -> b.lines += listOf("SetVar", v(0), "0")
+            // Opcode 0x110 (table name "StorePokemonSex"): result, party slot, screen - the naming
+            // app Juniper opens in her lab (after CMD_1AD; the script branches on result == 1).
+            "StorePokemonSex" -> b.lines += listOf("SetVar", v(0), "0")
             // Presentation and engine calls with no server counterpart on the opening route
             // (contexts read in the corpus 2026-09-19): item-obtained fanfare/pocket (CMD_240),
             // type-name text buffer (SetVarType; DS buffers are all no-ops for now), relocator,
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
             "CMD_240", "SetVarType", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
-            "CMD_0FF", "CMD_208", "CMD_24F", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
+            "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
-            "Screen_B5", "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
-            "CMD_1F0", "CMD_24C", "CMD_4E", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
-            "SetVarItem", "SetVarItem2", "SetVarItem3" -> b.lines += listOf("BufferItemName", t(0), item(1))
+            "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
+            "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
+            "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
+            // The shared obtain-item routine (file 862, read 2026-09-19 after "raket received the
+            // raket ... put the raket in the raket Case"): CMD_4E slot, item, count, flag is the
+            // item name of messages 0/5/10/11; CMD_BB item -> var is the item's POCKET (the routine
+            // branches on 2 TMs & HMs / 4 Key Items, the ROM item table's own numbers) and
+            // SetVarBag slot, pocket var names it; SetVarItem3 slot, item is a TM's move name;
+            // opcode 0xB5 ("Screen_B5") item, count, result is the add-item itself.
+            "CMD_4E" -> b.lines += listOf("BufferItemName", t(0), item(1))
+            "SetVarItem3" -> b.lines += listOf("BufferUnovaTmMove", t(0), item(1))
+            "SetVarBag" -> b.lines += listOf("BufferUnovaPocket", t(0), tv(1))
+            "CMD_BB" -> b.lines += listOf("UnovaItemPocket", v(1), item(0))
+            "Screen_B5" -> b.lines += listOf("GiveItem", item(0), tv(1), v(2))
             "CloseShowMessageAt" -> b.lines += listOf("CloseMessage")
-            "SetVarBag", "CMD_6A", "CMD_19F" -> {}
-            "CMD_BB" -> b.lines += listOf("GetItemPocket", v(0), v(1))
+            "CMD_6A", "CMD_19F" -> {}
             "CMD_BA" -> b.lines += listOf("CheckItem", v(0), v(1), v(3))
             "ShowMessageAt" -> b.lines += listOf("Message", text(0))
             "SetBadge" -> b.lines += listOf("GiveBadge", t(0))
@@ -1707,11 +1728,12 @@ class NdsScriptCorpusGenerator {
             // in between (Cheren and Bianca step up beside the box) happen unseen on the cartridge,
             // so here the screen fades out at the open and back in at the close, and the picker
             // follows - the same fade the script itself uses around its later repositions.
-            "ResetScreen" -> when {
-              t(0) == "331" && t(1) == "339" && (t(2).toIntOrNull() ?: 0) >= 0x4000 -> { starterVar = v(2); b.lines += listOf("ScreenFade", "1") }
-              t(0) == "9" && (t(1).toIntOrNull() ?: 0) >= 0x4000 -> { stack.addLast(v(1)); stack.addLast("0") }
-              else -> {}
-            }
+            // (Opcode 0xB4 "ResetScreen" takes NO arguments: sized HHH it swallowed the next command -
+            // the app call below read as `ResetScreen 331 339 var`, the pick's own compare as
+            // `ResetScreen 9 var 8`, the player's SetOWPosition as `ResetScreen 109 255 4`.)
+            // CMD_153 var runs the starter-select app and leaves the pick 0/1/2 in the var.
+            "ResetScreen" -> {}
+            "CMD_153" -> { starterVar = v(0); b.lines += listOf("ScreenFade", "1") }
             "CMD_1AF" -> starterVar?.let { b.lines += listOf("ScreenFade", "0"); b.lines += listOf("ChooseUnovaStarter", it); starterVar = null }
             // type, from, to, speed: 0 -> 16 darkens, 16 -> 0 restores. Dropped, every reposition
             // the games hide behind a fade was a visible jump (Nuvema's gift box, 2026-09-19).
@@ -1751,7 +1773,11 @@ class NdsScriptCorpusGenerator {
             "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))
             // obj, x, z, y, facing (the corpus: z is 0/1/3 everywhere, facing 0-3; Nuvema's gift
             // box puts Cheren at 6,6 and Bianca at 4,6). Reading z as y put them on row 0.
-            "SetOWPosition" -> if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
+            // 255 is the player, placed under the same fades (4,6 facing east for the battles after
+            // the starter pick); the facing rides along for the player only.
+            "SetOWPosition" ->
+                if (t(0) == "255") b.lines += listOf("SetObjectEventPos", "LOCALID_PLAYER", t(1), t(3), t(4))
+                else if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
             "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}

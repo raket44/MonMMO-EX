@@ -315,9 +315,14 @@ constructor(
   ) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    val map =
-        mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) ?: return
-    if (!commitPose(charId, state, map, Pose(x, y, facing))) return
+    val map = mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
+    if (map == null) {
+      // DS map: no tile table to check against; the ROM script's own tile is trusted.
+      characterStore.updatePosition(charId, x.toShort(), y.toShort(), facing = facing)
+      state.x = x.toShort()
+      state.y = y.toShort()
+      state.facingDirection = facing
+    } else if (!commitPose(charId, state, map, Pose(x, y, facing))) return
     session.send(
         NpcUpdatePacket(
             entityId = info.id,

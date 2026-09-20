@@ -664,6 +664,9 @@ internal constructor(
   /** An item by client wire id (region * 1000 + the game's own index), for DS var-valued items. */
   fun resolveItemWire(id: Int): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByWireId(id)
 
+  /** The client wire id of [item]. */
+  fun itemWireId(item: ItemDef): Int = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemWireId(item)
+
   fun itemCount(item: ItemDef): Int =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemCount(state, item)
 

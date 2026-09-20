@@ -756,7 +756,13 @@ class InterpretedScript(
           state.activeProgram = target.program
           state.pc = target.pc
         }
-        "end" -> return
+        "end" -> {
+          val next =
+              DS_SCENE_CHAINS[program.id.stable.substringAfterLast(':')]?.let { branchTarget(program, it) }
+                  ?: return
+          state.activeProgram = next.first
+          state.pc = next.second
+        }
         "setflashlevel" -> {
           // The ROM's flash level: 0 is fully lit. The client keeps darkness per map (f/tM.Xl1),
           // so this lights the map the player stands in until the next map load, as the GBA does.
@@ -2451,6 +2457,26 @@ class InterpretedScript(
     }
     /** Script sources whose object ids are the ROM zone-event indexes (0-based, 255 = player). */
     val DS_SOURCES = setOf("platinum", "heartgold", "white")
+
+    /**
+     * DS scenes that run straight into the next one, by label suffix. The cartridge leaves the
+     * player standing and relies on the engine to carry on; the ROM has no command for it, so the
+     * hand-off is named here.
+     *
+     * Nuvema's "first steps together" (NDS_389_14, the seam trigger at y 739 once VAR 16512 == 2)
+     * walks the player up Route 1 with Cheren and Bianca and then just ends, leaving Juniper's
+     * catching lesson to be started by talking to her - and she is one npc on a wide route, so the
+     * owner walked past and skipped it. That dead-ends Route 1: its end-of-route comparison scene is
+     * gated on VAR 16508 == 1 and the lesson is the only thing that sets it.
+     *
+     * Verified against White (IRAO) 2026-09-20 rather than assumed - Route 1 has no trigger for the
+     * lesson (its event file holds exactly one trigger record, the comparison one) and no level
+     * script (file 635 is four zero bytes), and CMD_21 at the scene's tail is a screen-transition
+     * selector, not a chain (30 uses, almost all immediately before a warp). So the lesson opens with
+     * MoveCamera onto her and ApplyMovement for Juniper, Cheren, Bianca AND the player: it walks
+     * everyone into position itself, which is why it can be entered from wherever the walk-up ended.
+     */
+    val DS_SCENE_CHAINS = mapOf("NDS_389_14" to "NDS_317_1")
     val FIRE_RED_REMATCH_GATES =
         mapOf(
             1 to "FLAG_GOT_VS_SEEKER",

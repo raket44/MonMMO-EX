@@ -1690,7 +1690,7 @@ class NdsScriptCorpusGenerator {
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
-            "CMD_146", "CMD_400", "CMD_103", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
+            "CMD_146", "CMD_400", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
             // Text slots that were no-ops - and an unfilled slot shows the PLAYER'S name on the
@@ -1715,6 +1715,10 @@ class NdsScriptCorpusGenerator {
             "CMD_127" -> if (t(1) == "1") doors[v(0)] = tv(2) to tv(3)
             "CMD_129" -> doors[v(0)]?.let { (x, y) -> b.lines += listOf("DsDoor", t(1), x, y) }
             "CMD_12A" -> if (v(0) in doors) b.lines += listOf("WaitTime", "20")
+            // CMD_103 var: the PARTY COUNT. At the end of Route 1 Bianca reads it and branches on
+            // `<= 1`; as a no-op the var stayed 0, so she always took the "only your starter" line
+            // however many the owner was carrying (2026-09-20).
+            "CMD_103" -> b.lines += listOf("GetPartySize", v(0))
             "CMD_4E" -> b.lines += listOf("BufferItemName", t(0), item(1))
             "SetVarItem3" -> b.lines += listOf("BufferUnovaTmMove", t(0), item(1))
             "SetVarBag" -> b.lines += listOf("BufferUnovaPocket", t(0), tv(1))

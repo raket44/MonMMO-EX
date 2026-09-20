@@ -56,7 +56,7 @@
 58;ShowMessageAt;HHHH
 59;CloseShowMessageAt;
 60;Message;BBHHHH
-61;Message2;BBHHHH
+61;Message2;BBHHH
 62;CloseMessageKP;
 63;CloseMessageKP2;
 64;MoneyBox;HH
@@ -98,7 +98,7 @@
 100;ApplyMovement;HL
 101;WaitMovement;
 102;StoreHeroPosition_66;HH
-103;CMD_67;HH
+103;CMD_67;HHH
 104;StoreHeroPosition;HH
 105;MakeNPC;HHHHHH
 106;CMD_6A;HH
@@ -169,7 +169,7 @@
 181;Screen_B5;HHH
 182;TakeItem;HHH
 183;CheckItemBagSpace;HHH
-184;CheckItemBagNumber;HH
+184;CheckItemBagNumber;HHH
 185;StoreItemCount;HH
 186;CMD_BA;HHHH
 187;CMD_BB;HH
@@ -225,8 +225,8 @@
 251;CheckMoney;HH
 252;CMD_0FC;HH
 253;CMD_0FD;H
-254;StorePartySpecies;H
-255;CMD_0FF;
+254;StorePartySpecies;HH
+255;CMD_0FF;HH
 257;CMD_101;HH
 258;CMD_102;HH
 259;CMD_103;H
@@ -379,7 +379,7 @@
 475;CMD_1DB;
 476;CMD_1DC;HH
 478;CMD_1DE;HH
-480;CMD_1E0;HH
+480;CMD_1E0;HHH
 484;CMD_1E4;HH
 485;CMD_1E5;HHH
 486;CMD_1E6;HHHHHHHHH

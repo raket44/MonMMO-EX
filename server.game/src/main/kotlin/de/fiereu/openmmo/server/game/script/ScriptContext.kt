@@ -104,10 +104,16 @@ internal constructor(
     dialog.showAndWait(session, state, line.textId, SIGN, -1, presentation())
   }
 
+  /**
+   * The npc whose line the next dialogs are (DS Message names its speaker); null = the script's
+   * own entity. A scene script has no entity (-1), and a box with no speaker hangs on the player.
+   */
+  var speakerEntityId: Long? = null
+
   /** Show [line] from the interacted entity and wait for the player to go on. */
   suspend fun say(line: DialogLine) {
     holdScriptedFacing()
-    dialog.showAndWait(session, state, line.textId, NPC, entityId, presentation())
+    dialog.showAndWait(session, state, line.textId, NPC, speakerEntityId ?: entityId, presentation())
   }
 
   /** [say] attributed to another npc entity - the second trainer of a double sighting speaks for itself. */
@@ -140,7 +146,7 @@ internal constructor(
         state,
         line.textId,
         if (sign) SIGN else NPC,
-        if (sign) -1 else entityId,
+        if (sign) -1 else (speakerEntityId ?: entityId),
         presentation(),
     )
   }
@@ -1174,6 +1180,9 @@ internal constructor(
   /** Show a hidden npc (`addobject`). Clears its hide flag, mirroring the decomp command. */
   /** GBA addobject: spawn the npc as it is, leaving its hide flag alone. */
   fun addNpc(localId: Int) = movement.showNpc(session, state, localId)
+
+  /** The entity id of a map npc (its local id) on the player's current map. */
+  fun npcEntityIdOrNull(localId: Int): Long? = movement.npcEntityId(state, localId)
 
   /** Turn a map npc toward the player (the ROM's VAR_FACING branch ladders). */
   fun npcFacePlayer(localId: Int) {

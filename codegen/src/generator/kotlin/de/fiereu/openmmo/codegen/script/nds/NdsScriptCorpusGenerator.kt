@@ -610,6 +610,8 @@ class NdsScriptCorpusGenerator {
         // water; each names the species through text slot 1). The script wants the INDEX back.
         // White's FadeScreen (see the first pass): 1 darkens, 0 restores - the GBA fadescreen modes.
         "ScreenFade" -> out += "fadescreen ${a[0]}"
+        // White Message's speaker object for the next line ("none" = the script's own entity).
+        "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
         "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {
@@ -1621,9 +1623,9 @@ class NdsScriptCorpusGenerator {
             "PopStack", "AddStackVar" -> {}
             "End" -> b.lines += listOf("End")
             "EndRoutine", "ReturnStd" -> b.lines += listOf("Return")
-            // CheckItemBagNumber item, count[, var]: the table knows two args, the var rides as the
-            // following CMD_80xx; without one the second arg was the var all along.
-            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", item(0), trailingVar ?: v(1))
+            // CheckItemBagNumber item, count, result var (the table had two args until 2026-09-20;
+            // the var then rode along as a bare CMD_80xx).
+            "CheckItemBagNumber" -> b.lines += listOf("GetItemQuantity", item(0), v(2))
             "Multi" -> {
               menuVar = v(5)
               menuItems.clear()
@@ -1705,7 +1707,16 @@ class NdsScriptCorpusGenerator {
             "ReleaseAll" -> b.lines += listOf("ReleaseAll")
             "WaitButton" -> b.lines += listOf("WaitButton")
             "FacePlayer" -> b.lines += listOf("FacePlayer")
-            "Message2", "Message", "Message3" -> b.lines += listOf("Message", text(2))
+            // Message 0, 4, entry, SPEAKER, position, type: the fourth argument is the object whose
+            // line it is (bedroom scene: 0 Cheren, 1 Bianca; a var holds one too). Dropped, every
+            // scene line went out speaker-less and the client hung the box on the player
+            // (2026-09-20). Message2 is the talked-to npc's own line - its speaker is the script's.
+            "Message" -> {
+              val who = t(3).toIntOrNull() ?: 0
+              b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(3) else if (who < 250) "OBJ_$who" else "none")
+              b.lines += listOf("Message", text(2))
+            }
+            "Message2", "Message3" -> b.lines += listOf("Message", text(2))
             "BubbleMessage", "EventGreyMessage", "BorderedMessage", "AngryMessage" -> b.lines += listOf("Message", text(0))
             "CloseMessageKP", "CloseMessageKP2", "CloseEventGreyMessage", "CloseBorderedMessage", "CloseAngryMessage", "CloseMusicalMessage" -> b.lines += listOf("CloseMessage")
             "YesNoBox" -> b.lines += listOf("YesNo", v(0))
@@ -1798,32 +1809,17 @@ class NdsScriptCorpusGenerator {
             val type = pair[0]
             val n = pair.getOrElse(1) { 1 }
             val dir = listOf("North", "South", "West", "East")[type and 3]
-            // Read off the corpus (2026-09-19): 32-35 close nearly every walk with a turn to a
-            // partner (Cheren walks south then 34 = faces the player west), so they are turns, not
-            // the delays they were; 36-39 sit after fast walks (in place); 60-63 interleave a
-            // spinning npc's looks (`61 2 61 0 61 3 61 1`) and 75 opens walks - waits.
+            // Gen 5 kept Gen 4's movement action numbers (pokeplatinum generated/
+            // movement_actions.txt): every code read off the corpus by hand matched it - 32-35
+            // turn in place, 60-63 delays, 69/70 hide/show, 75 the "!" bubble. The hand-made table
+            // this replaces still had 24-31 (turns) as waits, 44-59 (jumps) as walks and DROPPED
+            // 76-99, which are real steps (Cheren's `79 76` = east, north): actors ended scenes
+            // on the wrong tile (Bianca beside Mom outside the lab, 2026-09-20). Names are the
+            // Gen 4 macro names MOVEMENT_STEPS already maps; unmapped ones (lock dir, warp) skip.
             val name =
                 when (type) {
-                  in 0..3 -> "Face$dir"
-                  in 4..7 -> "WalkSlow$dir"
-                  in 8..15 -> "WalkNormal$dir"
-                  in 16..23 -> "WalkFast$dir"
-                  in 24..31 -> "Delay8"
-                  in 32..35 -> "Face$dir"
-                  in 36..39 -> "WalkOnSpotFast$dir"
-                  in 40..43 -> "Delay8"
-                  in 44..59 -> "WalkNormal$dir"
-                  60 -> "Delay2"
-                  61 -> "Delay4"
-                  62 -> "Delay8"
-                  63 -> "Delay16"
-                  // The Gen 4 numbers carry over here: 0x45 hides the walker (it closes walks into
-                  // doors: `12 69`), 0x46 shows it, 0x4B is the "!" bubble (Bianca spotting the
-                  // player in her house: `13x2 75`; it opens most approach walks).
-                  69 -> "SetInvisible"
-                  70 -> "SetVisible"
-                  75 -> "EmoteExclamationMark"
-                  else -> continue
+                  in 0..99 -> GEN4_DIRECTIONAL.getOrNull(type / 4)?.let { it + dir } ?: GEN4_SINGLE[type] ?: continue
+                  else -> GEN4_SINGLE[type] ?: continue
                 }
             block.lines += listOf(name, n.toString())
           }
@@ -1887,6 +1883,22 @@ class NdsScriptCorpusGenerator {
     /** Platinum's CommonScript_TrySaveGame and HeartGold's std_prompt_save body (scr_seq_0003 _0646): VAR_RESULT 1 = saved. */
     val SILENT_SAVE_ROUTINES = setOf("CommonScript_TrySaveGame", "scr_seq_0003__0646")
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
+    /** Gen 4 movement actions 0-99 in groups of four (north, south, west, east); null = not directional. */
+    val GEN4_DIRECTIONAL: List<String?> =
+        listOf(
+            "Face", "WalkSlower", "WalkSlow", "WalkNormal", "WalkFast", "WalkFaster",
+            "WalkOnSpotSlower", "WalkOnSpotSlow", "WalkOnSpotNormal", "WalkOnSpotFast", "WalkOnSpotFaster",
+            "JumpOnSpotSlow", "JumpOnSpotFast", "JumpNearFast", "JumpFar",
+            null, null, null, null, // 60-75: delays, warp, visibility, direction lock, emote
+            "WalkSlightlyFast", "WalkSlightlyFaster", "WalkFastest", "Run",
+            null, // 92-95: west/east-only jumps
+            "WalkEverSoSlightlyFast")
+    /** The non-directional Gen 4 movement actions the transpiler has a step for. */
+    val GEN4_SINGLE: Map<Int, String> =
+        mapOf(
+            60 to "Delay1", 61 to "Delay2", 62 to "Delay4", 63 to "Delay8", 64 to "Delay15", 65 to "Delay16", 66 to "Delay32",
+            69 to "SetInvisible", 70 to "SetVisible", 75 to "EmoteExclamationMark",
+            92 to "JumpNearSlowWest", 93 to "JumpNearSlowEast", 94 to "JumpFartherWest", 95 to "JumpFartherEast")
     val TERMINAL = setOf("End", "Return", "GoTo", "EndMovement")
     /** ov01_022067C8 in pokeheartgold src/field/scrcmd_message.c. */
     val STD_MSG_BANKS = mapOf(0 to 752, 1 to 211, 2 to 30, 3 to 435)

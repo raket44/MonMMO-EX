@@ -36,6 +36,12 @@ data class PlayerState(
     @field:Volatile var characterId: Long? = null,
     @field:Volatile var justWarped: Boolean = false,
     @field:Volatile var facingDirection: Direction = Direction.DOWN,
+    /**
+     * True once the running script itself turned or placed the player. On a DS map the server's
+     * facing record can be stale (the client turns the player on a tap-to-talk without telling),
+     * so only a facing a script set is re-asserted there.
+     */
+    @field:Volatile var scriptedFacingSet: Boolean = false,
     @field:Volatile var dialogVisible: Boolean = false,
     @field:Volatile var scriptRunning: Boolean = false,
     @field:Volatile var scriptLockScope: ScriptLockScope = ScriptLockScope.NONE,

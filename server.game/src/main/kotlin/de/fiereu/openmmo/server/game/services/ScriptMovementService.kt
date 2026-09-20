@@ -322,6 +322,7 @@ constructor(
       state.x = x.toShort()
       state.y = y.toShort()
       state.facingDirection = facing
+      state.scriptedFacingSet = true
     } else if (!commitPose(charId, state, map, Pose(x, y, facing))) return
     session.send(
         NpcUpdatePacket(
@@ -433,7 +434,7 @@ constructor(
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
-            ?: return null
+            ?: return ndsAdjacentFaceStep(state, info, entityId)
     val template =
         map.npcs.firstOrNull {
           npcService.entityIdFor(
@@ -463,6 +464,38 @@ constructor(
     val dx = info.positionX.toInt() - (walked?.x ?: npc.x)
     val dy = info.positionY.toInt() - (walked?.y ?: npc.y)
     if (Math.abs(dx) + Math.abs(dy) != 1) return null
+    return when {
+      dy > 0 -> MovementStep.FACE_DOWN
+      dy < 0 -> MovementStep.FACE_UP
+      dx < 0 -> MovementStep.FACE_LEFT
+      else -> MovementStep.FACE_RIGHT
+    }
+  }
+
+  /**
+   * The DS half of [adjacentFaceStep]: a ROM npc that stands still (movement 0) or that a script
+   * walked is where the server knows it to be, so the tile delta is the truth - and it corrects
+   * the server's record of the PLAYER's facing too. That record goes stale when the client turns
+   * the player itself (a tap-to-talk sends no turn packet); re-asserted before the dialog, the
+   * stale facing turned the owner away from the npc he had just faced (2026-09-20).
+   */
+  private fun ndsAdjacentFaceStep(state: PlayerState, info: de.fiereu.openmmo.common.CharacterInfo, entityId: Long): MovementStep? {
+    val regionId = info.positionRegionId.toInt()
+    val bankId = info.positionBankId.toInt() and 0xFF
+    val mapId = info.positionMapId.toInt() and 0xFF
+    val npc = ndsNpcs.of(regionId, bankId, mapId).firstOrNull { npcService.entityIdFor(regionId, bankId, mapId, it.index) == entityId } ?: return null
+    val walked = scriptedNpcPose(state, npc.index)
+    if (walked == null && (npc.movement and 0xFF) != 0) return null
+    val dx = info.positionX.toInt() - (walked?.x ?: npc.x)
+    val dy = info.positionY.toInt() - (walked?.y ?: npc.y)
+    if (Math.abs(dx) + Math.abs(dy) != 1) return null
+    state.facingDirection =
+        when {
+          dy > 0 -> Direction.UP
+          dy < 0 -> Direction.DOWN
+          dx < 0 -> Direction.RIGHT
+          else -> Direction.LEFT
+        }
     return when {
       dy > 0 -> MovementStep.FACE_DOWN
       dy < 0 -> MovementStep.FACE_UP
@@ -508,6 +541,7 @@ constructor(
       state.x = end.x.toShort()
       state.y = end.y.toShort()
       state.facingDirection = end.facing
+      state.scriptedFacingSet = true
       return
     }
     // A player walked off the map with no neighbour there means the scene ran from a position it
@@ -614,6 +648,9 @@ constructor(
   /** A single facing re-assert with no hold - the scripted-state flag does the actual locking. */
   fun reassertScriptedFacing(session: SessionContext, state: PlayerState) {
     val charId = state.characterId ?: return
+    // A DS map: the record may be stale (see PlayerState.scriptedFacingSet) - only a facing the
+    // script itself set is pushed back at the client.
+    if (state.regionId in 2..4 && !state.scriptedFacingSet) return
     val face = faceStepOf(state.facingDirection) ?: return
     sendActions(session, charId, listOf(face))
   }
@@ -630,8 +667,10 @@ constructor(
     val charId = state.characterId ?: return
     log.info { "HOLD scripted-state ON facing=${state.facingDirection}" }
     session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
-    // Outside the arrival window only - the emergence walk owns the queue inside it.
-    if (System.currentTimeMillis() >= state.moveIgnoreUntil) {
+    state.scriptedFacingSet = false
+    // Outside the arrival window only - the emergence walk owns the queue inside it. Not on a DS
+    // map: the client knows its own facing better than the server does there.
+    if (System.currentTimeMillis() >= state.moveIgnoreUntil && state.regionId !in 2..4) {
       faceStepOf(state.facingDirection)?.let { face -> sendActions(session, charId, listOf(face)) }
     }
   }

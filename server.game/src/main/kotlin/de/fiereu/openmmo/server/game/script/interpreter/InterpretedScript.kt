@@ -273,6 +273,17 @@ class InterpretedScript(
           arg?.let { ctx.setMessageArg(slot, it) }
           state.pc++
         }
+        // ds_speaker OBJ|VAR|none: White Message's speaker - the npc the next lines belong to.
+        "ds_speaker" -> {
+          val token = instruction.arg(0).token
+          ctx.speakerEntityId =
+              if (token == "none") null
+              else
+                  (resolveMovementTarget(ctx, state.activeProgram, instruction, ObjectArg(token), allowNone = true)
+                          as? MovementTarget.Npc)
+                      ?.let { ctx.npcEntityIdOrNull(it.localId) }
+          state.pc++
+        }
         // ds_itempocket VAR, item: White CMD_BB - the ROM item table's pocket (0 Items, 1 Medicine,
         // 2 TMs & HMs, 3 Berries, 4 Key Items); the obtain-item routine picks its wording by it.
         "ds_itempocket" -> {
@@ -1409,6 +1420,18 @@ class InterpretedScript(
     check(instruction.args.size <= 2) {
       "Script ${program.id.stable} supports current-map waitmovement only in " +
           "`${instruction.sourceLine}`"
+    }
+    // The DS WaitMovement has no argument: it waits until EVERY running movement is done. The
+    // lowering writes `waitmovement 0`, which on the GBA means "the last target" - and since DS
+    // object ids became the ROM's own (0 = the first npc, 2026-09-19) it meant "npc 0 only":
+    // Bianca was removed mid-walk while the script waited for Cheren alone, and scenes with no
+    // npc 0 did not wait at all (the actors "poofed", 2026-09-20).
+    if (program.id.source in DS_SOURCES) {
+      val pending = state.pendingMovements.values.toList()
+      state.pendingMovements.clear()
+      if (pending.isNotEmpty()) tracedWait(ctx, "all movements") { pending.forEach { it.await() } }
+      state.pc++
+      return
     }
     val requested =
         instruction.args.firstOrNull()?.let {

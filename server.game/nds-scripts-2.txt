@@ -24463,7 +24463,16 @@ mv;296;1892;12,2 33,1
 296;1;367;End
 296;2;369;LockAll
 296;2;371;StoreValueInVar 32803 0
-296;2;377;DecodeStopped
+296;2;377;CMD_1E1 32803
+296;2;381;SetVarStoreValue5C 11 32803 2
+296;2;388;PlaySound 1351
+296;2;392;FacePlayer
+296;2;394;Message2 0 4 4 0 0
+296;2;404;WaitButton
+296;2;406;CloseMessageKP
+296;2;408;WaitMoment
+296;2;410;ReleaseAll
+296;2;412;End
 296;3;414;LockAll
 296;3;416;StoreValueInVar 32804 0
 296;3;422;DecodeStopped
@@ -24921,7 +24930,8 @@ mv;296;1920;15,1 13,1
 296;9;2477;EndRoutine
 296;9;2950;StoreValueInVar 32810 1
 298;0;48;StoreValueInVar 32801 0
-298;0;54;DecodeStopped
+298;0;54;CMD_1DD 0 16416 477 1 16417 477
+298;0;68;End
 298;1;592;LockAll
 298;1;594;StoreValueInVar 32806 0
 298;1;600;StoreValueInVar 32807 0
@@ -32191,7 +32201,10 @@ mv;456;1532;35,1
 464;0;20;AngryMessage 0 1 172
 464;0;27;CloseMessageKP2
 464;0;29;ReturnAfterDelay 180
-464;0;33;DecodeStopped
+464;0;33;CMD_1B8 433 40 16600 1 196 233 50 0 51 1 439 433
+464;0;59;WaitMoment
+464;0;61;ReleaseAll
+464;0;63;End
 466;0;6;End
 468;0;71;LockAll
 468;0;73;PlaySound 1351

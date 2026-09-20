@@ -59,12 +59,6 @@ class NdsNpcs @Inject constructor() {
    * Route 1 script could not find Bianca to move her, threw, and abandoned the rest of Juniper's
    * lesson (2026-09-20).
    */
-  /** Every script-made actor in a region, with the cell whose script made it. */
-  fun madeInRegion(region: Int): List<Pair<Pair<Int, Int>, Npc>> =
-      made.entries
-          .filter { it.key.first == region }
-          .flatMap { (cell, byId) -> byId.values.map { (cell.second to cell.third) to it } }
-
   fun madeAnywhere(region: Int, index: Int): Pair<Pair<Int, Int>, Npc>? {
     for ((cell, byId) in made) {
       if (cell.first != region) continue

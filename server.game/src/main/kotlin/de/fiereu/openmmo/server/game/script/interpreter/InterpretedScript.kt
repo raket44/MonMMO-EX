@@ -134,11 +134,6 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
           state.pc++
         }
-        // ds_refreshobjects: White CMD_25F, the field-object reload a scene ends with.
-        "ds_refreshobjects" -> {
-          ctx.reloadNdsFieldObjects()
-          state.pc++
-        }
         // ds_xtransceiver N: the client's own Xtransceiver call window (White OpenInterpoke).
         "ds_xtransceiver" -> {
           tracedWait(ctx, "xtransceiver call") { ctx.xtransceiverCall(value(ctx, instruction.arg(0))) }

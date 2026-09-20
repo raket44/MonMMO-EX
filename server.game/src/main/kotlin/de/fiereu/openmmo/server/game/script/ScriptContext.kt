@@ -92,9 +92,6 @@ internal constructor(
   /** A world packet of the scene (a door animation), ordered with its spawns and held while the map loads. */
   internal fun sendScenePacket(packet: Any) = movement.sendScenePacket(session, packet)
 
-  /** White CMD_25F: reload the field's objects (see ScriptMovementService.reloadNdsFieldObjects). */
-  fun reloadNdsFieldObjects() = movement.reloadNdsFieldObjects(session, state)
-
   /** Gen 5 MakeNPC: an actor the script creates itself (see ScriptMovementService.makeNdsNpc). */
   fun makeNdsNpc(id: Int, sprite: Int, x: Int, y: Int, dsFacing: Int) =
       movement.makeNdsNpc(session, state, id, sprite, x, y, dsFacing)

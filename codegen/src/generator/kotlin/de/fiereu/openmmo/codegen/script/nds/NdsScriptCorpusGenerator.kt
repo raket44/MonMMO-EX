@@ -1862,7 +1862,15 @@ class NdsScriptCorpusGenerator {
         }
       }
       val initBlocks = mutableListOf<Block>()
-      for ((h, targets) in init) initBlocks += Block("NDS_INIT_${h}_TRANSITION", false, targets.map { listOf("Call", it) }.toMutableList<List<String>>().also { it += listOf("End") })
+      // One program PER on-load entry. They used to be chained as `call A; call B; end`, but a ROM
+      // entry finishes with End, and `end` inside a call ends the whole script - so only the FIRST
+      // entry of a map ever ran. Nuvema Town has two (type 2 -> entry 17, type 4 -> entry 13), and
+      // the second is the one that stands Bianca by the player's house: she walked home from the
+      // lab instead (2026-09-20). The first keeps the old label; the rest are _TRANSITION_1, _2...
+      for ((h, targets) in init) targets.forEachIndexed { i, target ->
+        val label = if (i == 0) "NDS_INIT_${h}_TRANSITION" else "NDS_INIT_${h}_TRANSITION_$i"
+        initBlocks += Block(label, false, mutableListOf(listOf("GoTo", target), listOf("End")))
+      }
       for ((h, lines) in frame) initBlocks += Block("NDS_INIT_${h}_FRAME", false, lines.toMutableList().also { it += listOf("End") })
       out["UINIT"] = ParsedFile(emptyList(), initBlocks)
       // Gen 5 runs trainer npcs (script 3000 + id) inside the engine: intro speech from the ROM

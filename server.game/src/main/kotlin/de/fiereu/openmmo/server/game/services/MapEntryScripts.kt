@@ -76,7 +76,16 @@ constructor(
     val header = (mapId shl 8) or bankId
     val source = gbaScriptSource(regionId) ?: return null to null
     fun find(label: String) = runCatching { scriptRegistry.forLabel(label, source) }.getOrNull()
-    return find("NDS_INIT_${header}_TRANSITION") to find("NDS_INIT_${header}_FRAME")
+    // Every on-load entry of the header, in the ROM's order: the first is _TRANSITION, the rest
+    // _TRANSITION_1, _2... (one program each - a ROM entry's End would end a chained script).
+    val onLoad =
+        generateSequence(0) { it + 1 }
+            .map { i -> find(if (i == 0) "NDS_INIT_${header}_TRANSITION" else "NDS_INIT_${header}_TRANSITION_$i") }
+            .takeWhile { it != null }
+            .filterNotNull()
+            .toList()
+    val all = if (onLoad.isEmpty()) null else Script { ctx -> onLoad.forEach { it.run(ctx) } }
+    return all to find("NDS_INIT_${header}_FRAME")
   }
 
   /** One DS step trigger (the ROM's coord event): its rectangle, the story var and value it waits for, its script id. */

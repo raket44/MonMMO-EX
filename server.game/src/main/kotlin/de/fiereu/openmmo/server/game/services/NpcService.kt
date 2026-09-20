@@ -297,7 +297,10 @@ constructor(
     if (mapManager.getMap(regionId, bankId, mapId) == null) {
       // DS map: the npc comes from the ROM's zone events, not a MapDef (a script's AddNPC after
       // it cleared the npc's hide flag - Nuvema's Bianca, New Bark's Elm).
-      val npc = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+      val rom = findNdsNpc(regionId, bankId, mapId, localId) ?: return
+      // Where a script already placed this actor this visit, not its ROM tile.
+      val pose = ctx.attributes[PLAYER_STATE]?.scriptedNpcPoses?.get(de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, localId))
+      val npc = if (pose == null) rom else rom.copy(x = pose.x, y = pose.y)
       log.info { "Scripted DS spawn $regionId:$bankId:$mapId local=$localId sprite=${npc.sprite} at (${npc.x}, ${npc.y})" }
       sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
       return
@@ -405,7 +408,11 @@ constructor(
           if (state?.ndsPlacementOnly == true) return
           val held = maxOf(state?.moveIgnoreUntil ?: 0L, state?.sceneHoldUntil ?: 0L) > System.currentTimeMillis()
           if (held) {
-            ctx.send(ndsSpawnPacket(regionId, bankId, mapId, npc.copy(x = x, y = y)))
+            // Through the SAME ordered queue as a scripted spawn. Sent directly, this overtook the
+            // AddNPC spawn still waiting in that queue: leaving Juniper's lab, Bianca appeared at
+            // the door, began her walk - and the late spawn snapped her to her ROM tile by the lab
+            // (the owner's "poof to the default hidden npc", 2026-09-20).
+            sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc.copy(x = x, y = y)))
             return
           }
           ndsSpawnPacket(regionId, bankId, mapId, npc).facing

@@ -862,15 +862,20 @@ internal constructor(
 
   /**
    * The Unova Xtransceiver call (White OpenInterpoke): the client has the whole screen - s2c 0xB6
-   * world action 3, subject = the call 1-6, window f/md1 titled item 5621, which reads the ROM narc
-   * /a/1/3/1 file (subject + 62) with the names from Unova text table 198 and its four portraits.
-   * The script only names the call; the client plays it and acknowledges when the player closes it,
-   * like the Hall of Fame screen does.
+   * world action 3, window f/md1 titled item 5621, which reads the call out of the ROM narc
+   * /a/1/3/1 with the names from Unova text table 198 and its four portraits.
+   *
+   * The call id rides in the FIRST SHORT, not in the subject: f/hw1 range-checks that short, falls
+   * back to 1 when it is out of range, and opens narc file (short + 62). The subject is only echoed
+   * back in the close acknowledgement (md1.DT1 -> eb5.kB), like the Hall of Fame screen's region.
+   * Sent as the subject with a 0 short, every call fell back to call 1 - right for Route 1 by
+   * accident, wrong for the other five (2026-09-20).
    */
   suspend fun xtransceiverCall(call: Int) {
     val closed = dialog.expectAcknowledgement(session)
     sendScenePacket(
-        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(XTRANSCEIVER_ACTION, call.toByte(), listOf(0)))
+        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+            XTRANSCEIVER_ACTION, call.toByte(), listOf(call.toShort())))
     closed.await()
   }
 

@@ -112,6 +112,65 @@ object RetailEncounters {
     }
   }
 
+
+  /** A slot of a terrain table, with the horde size the retail row carries (0 = a single wild). */
+  data class TerrainSlot(val slot: Slot, val hordeSize: Int)
+
+  /**
+   * A DS terrain table as the retail dump actually models it: ONE distribution summing to 100%, with
+   * the horde rows as slots INSIDE it rather than a separate pool. Checked 2026-09-21: all 105 Unova
+   * (map, season) Dark Grass groups and all 141 Grass groups sum to exactly 100% only when the horde
+   * rows are counted - Route 1's spring dark grass is 10+30+30+25 singles plus 2.5+2.5 hordes.
+   *
+   * So dropping the horde rows, as [slotsOf] does, does not merely lose the horde outcome: it
+   * renormalises what is left over ~95% and silently inflates every single's odds. That is why dark
+   * grass never produced the doubles the owner asked about.
+   *
+   * A horde is always possible off a single encounter, on every terrain and in every region (owner,
+   * 2026-09-21), so [includeHordes] is normally true; it exists only for callers that want the old
+   * singles-only pool.
+   */
+  fun ndsTableForHeader(
+      header: Int,
+      regionId: Int,
+      types: Set<String>,
+      season: Season,
+      time: TimeOfDay,
+      includeHordes: Boolean,
+  ): List<TerrainSlot> =
+      terrainSlots(byNdsHeader[regionId to header].orEmpty(), types, season, time, includeHordes)
+
+  /** [ndsTableForHeader] for a GBA or Gen 4 decomp map, resolved by its source name. */
+  fun tableForSource(
+      sourceName: String,
+      regionId: Int,
+      types: Set<String>,
+      season: Season,
+      time: TimeOfDay,
+      includeHordes: Boolean,
+  ): List<TerrainSlot> = terrainSlots(entriesFor(sourceName, regionId), types, season, time, includeHordes)
+
+  private fun terrainSlots(
+      entries: List<Entry>,
+      types: Set<String>,
+      season: Season,
+      time: TimeOfDay,
+      includeHordes: Boolean,
+  ): List<TerrainSlot> =
+      entries
+          .asSequence()
+          .filter { it.type in types }
+          .filter { it.season == "Any" || it.season == season.label }
+          .filter { it.form < 0 }
+          .filter { includeHordes || (!it.horde3x && !it.horde5x) }
+          .mapNotNull { entry ->
+            val weight = percentWeight(entry.rarity(time)) ?: return@mapNotNull null
+            TerrainSlot(
+                Slot(entry.dexId, entry.minLevel, entry.maxLevel, weight),
+                if (entry.horde5x) 5 else if (entry.horde3x) 3 else 0,
+            )
+          }
+          .toList()
   /** Every entry of a DS map header, keyed exactly - no name matching, so floors stay apart. */
   private val byNdsHeader: Map<Pair<Int, Int>, List<Entry>> by lazy {
     allEntries

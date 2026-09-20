@@ -96,21 +96,41 @@ constructor(
           grassStep -> setOf("Grass", "Dark Grass")
           else -> FLOOR_TYPES
         }
-    val pool = RetailEncounters.wildPool(map.sourceName, map.regionId.toInt(), types, season, time)
-    if (pool.isNotEmpty()) {
+    // The whole table, horde slots included: a horde is always possible off a single encounter, in
+    // Kanto and Hoenn too (owner, 2026-09-21). The retail rows sum to 100% only when the horde slots
+    // are counted, so filtering them out also renormalised every single's odds upwards.
+    val table = RetailEncounters.tableForSource(map.sourceName, map.regionId.toInt(), types, season, time, includeHordes = true)
+    if (table.isNotEmpty()) {
       val rate = decompTable?.encounterRate ?: if (waterStep) DEFAULT_WATER_RATE else DEFAULT_ENCOUNTER_RATE
       // Water rates are low by design (FireRed's 4 against grass's 21), which reads as "no water
       // encounters"; every surfed step says what it rolled against.
-      if (waterStep) log.info { "[Encounter] char=$charId surf step at ($x, $y): rate $rate, pool ${pool.size}" }
+      if (waterStep) log.info { "[Encounter] char=$charId surf step at ($x, $y): rate $rate, pool ${table.size}" }
       if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(rate, lead)) return
-      val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
+      // Bias the PAIRED list: biasSlot filters the pool for a Static or Magnet Pull lead, so picking
+      // by index into a separate list would attach the wrong horde size to the wrong species.
+      val picked = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random)) ?: return
+      val slot = picked.slot
       val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
       if (repelBlocks(charId, lead, level)) return
+      freeze(session, charId, map, x, y)
+      if (picked.hordeSize > 0) {
+        val specs =
+            List(picked.hordeSize) {
+              BattleService.OpponentSpec(
+                  slot.dexId,
+                  random.nextInt(slot.minLevel, slot.maxLevel + 1),
+                  emptyList(),
+                  hints = abilities.hints(lead, slot.dexId, random),
+              )
+            }
+        log.info { "Wild horde of ${picked.hordeSize} x ${slot.dexId} for char=$charId at ($x, $y) [$season/$time]" }
+        battleService.startHordeBattle(session, specs, encounter)
+        return
+      }
       log.info {
         "Wild encounter for char=$charId at ($x, $y) [$season/$time]: " +
             "species ${slot.dexId} level $level"
       }
-      freeze(session, charId, map, x, y)
       battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), encounter)
       return
     }
@@ -206,12 +226,13 @@ constructor(
         type == 0 &&
             ndsLand.blocked(region, bank, map, x, y) == false &&
             RetailEncounters.ndsHeaderHasType(region, header, "Cave")
+    // Only where the map really has the separate pool: Gen 4's maps use the same tile number for
+    // plain very tall grass and have no Dark Grass tables at all.
+    val darkGrass =
+        ndsLand.isDarkGrass(type) && RetailEncounters.ndsHeaderHasType(region, header, "Dark Grass")
     val types =
         when {
-          // Only where the map really has the separate pool: Gen 4's maps use the same tile number
-          // for plain very tall grass and have no Dark Grass tables at all.
-          ndsLand.isDarkGrass(type) && RetailEncounters.ndsHeaderHasType(region, header, "Dark Grass") ->
-              setOf("Dark Grass")
+          darkGrass -> setOf("Dark Grass")
           ndsLand.isGrass(type) -> setOf("Grass")
           cave -> setOf("Cave")
           else -> return
@@ -220,23 +241,51 @@ constructor(
     val name = NdsMapTypes.nameOf(region, bank, map) ?: return
     val season = WorldClock.season()
     val time = WorldClock.timeOfDay()
-    // By header first; the name is the fallback for the one Sinnoh location whose id does not
-    // resolve to a map-directory entry.
-    val pool =
-        RetailEncounters.wildPoolForNdsHeader(header, region, types, season, time)
-            .ifEmpty { RetailEncounters.wildPoolForNdsName(name, region, types, season, time) }
-    if (pool.isEmpty()) {
+    // The WHOLE table, horde slots included: a horde is always possible off a single encounter, on
+    // every terrain and in every region (owner, 2026-09-21). The rarities are the chance of that
+    // species. horde showing up, not a mix.
+    val table = RetailEncounters.ndsTableForHeader(header, region, types, season, time, includeHordes = true)
+    if (table.isEmpty()) {
       log.debug { "[Encounter] DS map $region:$bank:$map '$name' (header $header) has no ${types.first()} table" }
       return
     }
     val lead = abilities.leadOf(characterStore, charId)
     if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(DEFAULT_ENCOUNTER_RATE, lead)) return
-    val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
+    // Bias the PAIRED list: biasSlot filters the pool for a Static or Magnet Pull lead, so picking
+    // by index into a separate list would attach the wrong horde size to the wrong species.
+    val picked = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random)) ?: return
+    val slot = picked.slot
     val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
     if (repelBlocks(charId, lead, level)) return
-    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
+    if (picked.hordeSize > 0) {
+      val specs =
+          List(picked.hordeSize) {
+            BattleService.OpponentSpec(
+                slot.dexId,
+                random.nextInt(slot.minLevel, slot.maxLevel + 1),
+                emptyList(),
+                hints = abilities.hints(lead, slot.dexId, random),
+            )
+          }
+      log.info { "Wild horde of ${picked.hordeSize} x ${slot.dexId} for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]" }
+      battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
+      return
+    }
+    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]: species ${slot.dexId} level $level" }
     battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave))
+  }
+
+  /** [pickRetailSlot] over the paired terrain table, so the horde size rides with its species. */
+  private fun pickTerrainSlot(pool: List<RetailEncounters.TerrainSlot>): RetailEncounters.TerrainSlot? {
+    val total = pool.sumOf { it.slot.weight }
+    if (total <= 0) return null
+    var roll = random.nextInt(total)
+    for (entry in pool) {
+      roll -= entry.slot.weight
+      if (roll < 0) return entry
+    }
+    return pool.lastOrNull()
   }
 
   /**

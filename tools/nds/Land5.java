@@ -1,16 +1,32 @@
 import java.nio.file.*;import java.util.*;
 /**
- * Unova (Black/White) tile permissions. World matrix /a/0/0/9 file 0: u16 w,h at +4/+6, then a
- * map-file plane (u32 per cell) and a header plane. Map file (/a/0/0/8): magic "WB"/"GC",
- * u16 sections, u32 section offsets; section 1 = permissions: u16 w, u16 h, then w*h records of
- * 8 bytes (u16 f0, u16 height, u16 type, u16 flags; flags & 0x80 blocks).
- * Modes: probe <rom> <cx> <cy>...   ASCII map + histogram for world cells
- *        dump <rom> <out>            every world cell's tiles as region;bank;map;x;y;type;coll (world coords)
+ * Unova (Black/White) tile permissions.
+ *
+ * Every map header (/a/0/1/2, 48-byte records) names its MATRIX at +4 - /a/0/0/9 holds 255 of them,
+ * not one: matrix 0 is the 29x27 overworld and the rest are the interiors and caves, mostly 1x1 or
+ * 1x2. Verified 2026-09-21 against White (IRAO): +4 is in range for all 427 headers and reaches
+ * 427/427 headers and 595/649 map files, where walking matrix 0 alone reached 40 headers and 109
+ * files, which is why Unova had no cave or building land data at all. (+0 is NOT the matrix id: it
+ * takes only 34 distinct values and is a map-type/flags field.)
+ *
+ * A matrix is u16 w,h at +4/+6, then w*h u32 map-file ids, then - only on the big overworld ones,
+ * so test the length - a w*h u32 header plane giving the owning header per cell. Where there is no
+ * header plane the cells belong to the header that named the matrix.
+ *
+ * Map file (/a/0/0/8): magic, u16 sections, u32 section offsets; section 1 (off at +8) = permissions:
+ * u16 w, u16 h, then w*h records of 8 bytes (u16 behaviour, u16 height, u16 f2, u16 flags; flags
+ * bit 0 set = walkable).
+ *
+ * Modes: probe <rom> <cx> <cy>...   ASCII map + histogram for overworld cells
+ *        map   <rom> <mapFile>...   ASCII map + histogram for a map file
+ *        dump  <rom> <out>          every map's tiles as region;bank;map;x;y;type;coll
  */
 public class Land5{
  static byte[] rom;static Map<String,Integer> paths=new LinkedHashMap<>();
  static int u16(byte[] b,int o){return (b[o]&0xFF)|((b[o+1]&0xFF)<<8);}
  static int u32(byte[] b,int o){return (b[o]&0xFF)|((b[o+1]&0xFF)<<8)|((b[o+2]&0xFF)<<16)|((b[o+3]&0xFF)<<24);}
+ /** Gen 5 tile behaviour -> the Gen 4 metatile_behavior number the server reads (NdsLand). */
+ static int type(int b){return b==0x10?2:(b==0x18?3:(b==0x08?21:0));}
  public static void main(String[] a)throws Exception{rom=Files.readAllBytes(Paths.get(a[1]));walk(u32(rom,0x40),0,"");
   byte[] mx=narcFile("/a/0/0/9",0);int w=u16(mx,4),h=u16(mx,6);
   if(a[0].equals("map")){for(int k=2;k<a.length;k++){int mf=Integer.parseInt(a[k]);byte[] f=narcFile("/a/0/0/8",mf);int off1=u32(f,8);int tw=u16(f,off1),th=u16(f,off1+2);int p=off1+4;System.out.println("mapFile "+mf+" plane "+tw+"x"+th);StringBuilder map=new StringBuilder();for(int y=0;y<th;y++){for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;int f0=u16(f,o),f3=u16(f,o+6);map.append((f3&1)==0?'#':(f0==0?'.':(f0==0x10?'g':(f0==0x08?'w':'?'))));}map.append((char)10);}Map<String,Integer> hist=new TreeMap<>();for(int y=0;y<th;y++)for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;hist.merge(String.format("%04x %04x %04x %04x",u16(f,o),u16(f,o+2),u16(f,o+4),u16(f,o+6)),1,Integer::sum);}System.out.println(map);hist.entrySet().stream().sorted((x,y)->y.getValue()-x.getValue()).limit(14).forEach(en->System.out.println("  "+en.getValue()+"  "+en.getKey()));}return;}
@@ -22,13 +38,29 @@ public class Land5{
       char c=(f3&1)==0?'#':(f0==0?'.':(f0==0x10?'g':(f0==0x08?'w':(f0==0x18?'t':'?'))));map.append(c);}map.append('\n');}
     System.out.println(map);hist.entrySet().stream().sorted((x,y)->y.getValue()-x.getValue()).limit(16).forEach(en->System.out.println("  "+en.getValue()+"  "+en.getKey()));}
    return;}
-  StringBuilder out=new StringBuilder();int cells=0;
-  for(int cy=0;cy<h;cy++)for(int cx=0;cx<w;cx++){long mapFile=u32(mx,8+(cy*w+cx)*4)&0xFFFFFFFFL;long hdr=u32(mx,8+w*h*4+(cy*w+cx)*4)&0xFFFFFFFFL;if(mapFile==0xFFFFFFFFL||hdr==0xFFFFFFFFL)continue;
-   int[][] idx=narcIndex("/a/0/0/8");if(mapFile>=idx.length)continue;byte[] f=Arrays.copyOfRange(rom,idx[(int)mapFile][0],idx[(int)mapFile][1]);if(f.length<16)continue;int off1=u32(f,8);if(off1+4>f.length)continue;int tw=u16(f,off1),th=u16(f,off1+2);int p=off1+4;if(tw!=32||th!=32)continue;cells++;
-   int bank=(int)(hdr&0xFF),map=(int)(hdr>>8);
-   for(int y=0;y<th;y++)for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;if(o+8>f.length)break;int t0=u16(f,o),flags=u16(f,o+6);int type=t0==0x10?2:(t0==0x18?3:(t0==0x08?21:0));int coll=(flags&1)==0?0x80:0;
-    out.append("2;").append(bank).append(';').append(map).append(';').append(cx*32+x).append(';').append(cy*32+y).append(';').append(type).append(";").append(coll).append('\n');}}
-  Files.write(Paths.get(a[2]),out.toString().getBytes("UTF-8"));System.out.println("cells "+cells);
+  int[][] mxIdx=narcIndex("/a/0/0/9");int[][] mapIdx=narcIndex("/a/0/0/8");
+  byte[] hdrs=narcFile("/a/0/1/2",0);int rec=48,headers=hdrs.length/rec;
+  StringBuilder out=new StringBuilder();int cells=0;Set<Integer> planeDone=new HashSet<>();Set<Integer> seenMaps=new TreeSet<>();
+  for(int hi=0;hi<headers;hi++){
+   int m=u16(hdrs,hi*rec+4);if(m>=mxIdx.length)continue;
+   byte[] mf=Arrays.copyOfRange(rom,mxIdx[m][0],mxIdx[m][1]);if(mf.length<8)continue;
+   int mw=u16(mf,4),mh=u16(mf,6);if(mw<=0||mh<=0||8+mw*mh*4>mf.length)continue;
+   boolean plane=mf.length>=8+mw*mh*8;
+   // A matrix with a header plane owns its own cells, so walk it once however many headers name it.
+   if(plane&&!planeDone.add(m))continue;
+   for(int c=0;c<mw*mh;c++){
+    long file=u32(mf,8+c*4)&0xFFFFFFFFL;if(file==0xFFFFFFFFL||file>=mapIdx.length)continue;
+    long owner=plane?(u32(mf,8+mw*mh*4+c*4)&0xFFFFFFFFL):hi;if(owner>=headers)continue;
+    byte[] f=Arrays.copyOfRange(rom,mapIdx[(int)file][0],mapIdx[(int)file][1]);if(f.length<16)continue;
+    int off1=u32(f,8);if(off1+4>f.length)continue;
+    int tw=u16(f,off1),th=u16(f,off1+2);int p=off1+4;if(tw<=0||th<=0||p+tw*th*8>f.length)continue;
+    cells++;seenMaps.add((int)file);
+    int bank=(int)(owner&0xFF),map=(int)(owner>>8);int cx=c%mw,cy=c/mw;
+    for(int y=0;y<th;y++)for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;int t0=u16(f,o),flags=u16(f,o+6);
+     out.append("2;").append(bank).append(';').append(map).append(';').append(cx*32+x).append(';').append(cy*32+y)
+        .append(';').append(type(t0)).append(';').append((flags&1)==0?0x80:0).append('\n');}}}
+  Files.write(Paths.get(a[2]),out.toString().getBytes("UTF-8"));
+  System.out.println("cells "+cells+"  distinct map files "+seenMaps.size()+" / "+mapIdx.length);
  }
  static int[][] narcIndex(String path){
   int fat=u32(rom,0x48);int s=u32(rom,fat+paths.get(path)*8);int p=s+0x10;int[] st=null,en=null;int img=0;int count=0;

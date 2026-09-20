@@ -9,6 +9,9 @@ private const val VALUE_8 = 0x8
 private const val VALUE_16 = 0x10
 private const val BATTLE_POINTS = 0x20
 private const val VALUE_64 = 0x40
+
+/** f/ig7.TE1, the "no lure" enum: its wire byte is -1. Kinds 0, 1, 2 are lure, premium, legendary. */
+const val LURE_KIND_NONE = -1
 private const val STATUS_CONDITIONS = 0x80
 private const val VALUE_256 = 0x100
 
@@ -81,8 +84,13 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
     val battlePoints = optionalField(m and BATTLE_POINTS != 0, S32LE) { it.battlePoints }
     val value64 =
         if (m and VALUE_64 != 0) {
+          // The lure counter. The client (f/jc3) decodes this byte through f/ig7.sr0 and reads the
+          // two shorts only when it is NOT the enum.s TE1 - whose byte is -1, NOT 0. Zero is a real
+          // lure kind (plain Lure; 1 premium, 2 legendary), so treating 0 as the empty case wrote a
+          // short pair fewer than the client reads and desynced every packet after it. Never fired
+          // because nothing sent this group until lures existed.
           val kind = field(S8) { it.value64!!.kind }
-          if (kind.toInt() != 0)
+          if (kind.toInt() != LURE_KIND_NONE)
               Value64Group(
                   kind,
                   field(S16LE) { it.value64!!.a!! },

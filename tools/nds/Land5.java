@@ -13,6 +13,7 @@ public class Land5{
  static int u32(byte[] b,int o){return (b[o]&0xFF)|((b[o+1]&0xFF)<<8)|((b[o+2]&0xFF)<<16)|((b[o+3]&0xFF)<<24);}
  public static void main(String[] a)throws Exception{rom=Files.readAllBytes(Paths.get(a[1]));walk(u32(rom,0x40),0,"");
   byte[] mx=narcFile("/a/0/0/9",0);int w=u16(mx,4),h=u16(mx,6);
+  if(a[0].equals("map")){for(int k=2;k<a.length;k++){int mf=Integer.parseInt(a[k]);byte[] f=narcFile("/a/0/0/8",mf);int off1=u32(f,8);int tw=u16(f,off1),th=u16(f,off1+2);int p=off1+4;System.out.println("mapFile "+mf+" plane "+tw+"x"+th);StringBuilder map=new StringBuilder();for(int y=0;y<th;y++){for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;int f0=u16(f,o),f3=u16(f,o+6);map.append((f3&1)==0?'#':(f0==0?'.':(f0==0x10?'g':(f0==0x08?'w':'?'))));}map.append((char)10);}Map<String,Integer> hist=new TreeMap<>();for(int y=0;y<th;y++)for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;hist.merge(String.format("%04x %04x %04x %04x",u16(f,o),u16(f,o+2),u16(f,o+4),u16(f,o+6)),1,Integer::sum);}System.out.println(map);hist.entrySet().stream().sorted((x,y)->y.getValue()-x.getValue()).limit(14).forEach(en->System.out.println("  "+en.getValue()+"  "+en.getKey()));}return;}
   if(a[0].equals("probe")){
    for(int k=2;k+1<a.length;k+=2){int cx=Integer.parseInt(a[k]),cy=Integer.parseInt(a[k+1]);int mapFile=u32(mx,8+(cy*w+cx)*4);int hdr=u32(mx,8+w*h*4+(cy*w+cx)*4);
     byte[] f=narcFile("/a/0/0/8",mapFile);int off1=u32(f,8);int p=off1+4;int tw=u16(f,off1),th=u16(f,off1+2);System.out.println("cell "+cx+","+cy+" mapFile "+mapFile+" header "+hdr+" plane "+tw+"x"+th);

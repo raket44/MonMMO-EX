@@ -24,10 +24,19 @@ systemctl stop monmmo-game.service
 T=$(mktemp -d)
 trap 'rm -rf "$T"; systemctl start monmmo-game.service' EXIT
 
-PH=$(zcat "$D" | grep -m1 '^COPY public.pokemon ')
-IH=$(zcat "$D" | grep -m1 '^COPY public.character_items ')
-zcat "$D" | awk -v c="$CHAR" '/^COPY public.pokemon /{f=1;next} /^\\\./{f=0} f&&$2==c' > "$T/pokemon.tsv"
-zcat "$D" | awk -v c="$CHAR" '/^COPY public.character_items /{f=1;next} /^\\\./{f=0} f&&$1==c' > "$T/items.tsv"
+# One decompression to a file: `zcat | grep -m1` dies of SIGPIPE under pipefail.
+zcat "$D" > "$T/dump.sql"
+PH=$(grep -m1 '^COPY public.pokemon ' "$T/dump.sql")
+IH=$(grep -m1 '^COPY public.character_items ' "$T/dump.sql")
+awk -v c="$CHAR" '/^COPY public.pokemon /{f=1;next} /^\\\./{f=0} f&&$2==c' "$T/dump.sql" > "$T/pokemon.tsv"
+awk -v c="$CHAR" '/^COPY public.character_items /{f=1;next} /^\\\./{f=0} f&&$1==c' "$T/dump.sql" > "$T/items.tsv"
+# A Pokemon traded away since the dump belongs to someone else now: it stays theirs, not doubled.
+docker exec game-db psql -U "$GAME_DB_USER" -d "$GAME_DB_NAME" -At \
+  -c "select id from pokemon where owner_id<>$CHAR" > "$T/others.ids"
+awk 'NR==FNR{o[$1]=1;next} !($1 in o)' "$T/others.ids" "$T/pokemon.tsv" > "$T/pokemon.keep"
+skipped=$(( $(wc -l < "$T/pokemon.tsv") - $(wc -l < "$T/pokemon.keep") ))
+[ "$skipped" = 0 ] || echo "skipping $skipped pokemon that now belong to another character"
+mv "$T/pokemon.keep" "$T/pokemon.tsv"
 echo "dump holds $(wc -l < "$T/pokemon.tsv") pokemon and $(wc -l < "$T/items.tsv") item stacks for $CHAR"
 [ -s "$T/pokemon.tsv" ] || { echo "nothing to restore"; exit 1; }
 

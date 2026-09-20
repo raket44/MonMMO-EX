@@ -84,6 +84,53 @@ object RetailEncounters {
   private val byLocation: Map<String, List<Entry>> by lazy { allEntries.groupBy { normalize(it.locationName) } }
 
   /**
+   * The retail dump's `location_id` per (region, full location name), from
+   * `retail-location-ids.csv`. For the DS regions this id IS the server's map header
+   * (`map shl 8 or bank`) - verified against White 2026-09-21: all 115 Unova ids resolve to a real
+   * map-directory entry. That matters because the tables are split per FLOOR through the full name
+   * ("Wellspring Cave (1F)" / "(B1F)", Chargestone "(1F)/(B1F)/(B2F)") while `map-directory.txt`
+   * names every floor of a cave the same, so matching by name merges pools that the client and the
+   * retail data keep apart.
+   */
+  private val locationIdByName: Map<Pair<Int, String>, Int> by lazy {
+    val stream =
+        RetailEncounters::class.java.getResourceAsStream("/monmmo/retail-location-ids.csv")
+            ?: return@lazy emptyMap<Pair<Int, String>, Int>().also {
+              log.warn { "retail-location-ids.csv missing; DS encounters fall back to name matching" }
+            }
+    stream.bufferedReader().useLines { lines ->
+      lines
+          .filterNot { it.startsWith("#") || it.isBlank() }
+          .mapNotNull { line ->
+            val p = line.split(';', limit = 3)
+            if (p.size < 3) return@mapNotNull null
+            val region = p[0].toIntOrNull() ?: return@mapNotNull null
+            val id = p[1].toIntOrNull() ?: return@mapNotNull null
+            (region to normalize(p[2])) to id
+          }
+          .toMap()
+    }
+  }
+
+  /** Every entry of a DS map header, keyed exactly - no name matching, so floors stay apart. */
+  private val byNdsHeader: Map<Pair<Int, Int>, List<Entry>> by lazy {
+    allEntries
+        .mapNotNull { e -> locationIdByName[e.regionId to normalize(e.fullName)]?.let { (e.regionId to it) to e } }
+        .groupBy({ it.first }, { it.second })
+  }
+
+  /** True when this DS map has any entry of [type] at all, whatever the season or time. */
+  fun ndsHeaderHasType(regionId: Int, header: Int, type: String): Boolean =
+      byNdsHeader[regionId to header].orEmpty().any { it.type == type }
+
+  /**
+   * The wild pool for a DS map by its header id. Preferred over [wildPoolForNdsName]: a cave's
+   * floors share one directory name but have different tables.
+   */
+  fun wildPoolForNdsHeader(header: Int, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay): List<Slot> =
+      slotsOf(byNdsHeader[regionId to header].orEmpty(), types, season, time)
+
+  /**
    * All entries for a decomp map, matched by normalized name prefix before any floor suffix AND by
    * region: "Route 3" exists in every region, and matching by name alone put wild Blitzle - Unova's
    * Route 3 - on Kanto's. The retail dump numbers regions 0 Kanto, 1 Hoenn, 2 Unova, 3 Sinnoh, 4

@@ -62,6 +62,15 @@ class NdsLand @Inject constructor() {
   }
 
   fun isGrass(type: Int): Boolean = type == TALL_GRASS || type == VERY_TALL_GRASS
+
+  /**
+   * Unova's dark grass, where the retail tables keep a separate (and higher level) pool and the
+   * doubles live. The extractor maps the Gen 5 behaviour 0x18 onto Gen 4's VERY_TALL_GRASS -
+   * confirmed 2026-09-21 by correlation, not by eye: all 22 Unova maps with a retail "Dark Grass"
+   * table have 0x18 tiles, and all 32 with a "Grass" table have 0x10. Gen 4's own maps use 3 for
+   * plain very tall grass, so callers must check the map HAS a Dark Grass table before splitting.
+   */
+  fun isDarkGrass(type: Int): Boolean = type == VERY_TALL_GRASS
   fun isCaveFloor(type: Int): Boolean = type == CAVE_FLOOR
   fun isWater(type: Int): Boolean = type == WATER_RIVER || type == WHIRLPOOL || type == WATERFALL || type == WATER_SEA
 

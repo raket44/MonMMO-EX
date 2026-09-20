@@ -194,19 +194,39 @@ constructor(
 
   fun onNdsStep(session: SessionContext, charId: Long, region: Int, bank: Int, map: Int, x: Int, y: Int) {
     val type = ndsLand.typeAt(region, bank, map, x, y) ?: return
+    // The retail dump's location_id IS this header for the DS regions, so the tables resolve per
+    // FLOOR - a cave's floors share one directory name but not one pool.
+    val header = (map shl 8) or bank
+    // Gen 5 has no cave-floor tile behaviour: a cave's floor reads as ordinary walkable ground
+    // (Wellspring Cave is 851 of ~1024 tiles at behaviour 0x0000), so being in a cave is a property
+    // of the MAP, not of the tile, and isCaveFloor never matched - which is why all 1798 Unova Cave
+    // entries were unreachable. A cave roll is therefore a walkable plain tile on a header that has
+    // a Cave table at all.
+    val cave =
+        type == 0 &&
+            ndsLand.blocked(region, bank, map, x, y) == false &&
+            RetailEncounters.ndsHeaderHasType(region, header, "Cave")
     val types =
         when {
-          ndsLand.isGrass(type) -> setOf("Grass", "Dark Grass")
-          ndsLand.isCaveFloor(type) -> setOf("Cave")
+          // Only where the map really has the separate pool: Gen 4's maps use the same tile number
+          // for plain very tall grass and have no Dark Grass tables at all.
+          ndsLand.isDarkGrass(type) && RetailEncounters.ndsHeaderHasType(region, header, "Dark Grass") ->
+              setOf("Dark Grass")
+          ndsLand.isGrass(type) -> setOf("Grass")
+          cave -> setOf("Cave")
           else -> return
         }
     if (battleService.inBattle(charId) || !hasUsablePartyMon(charId)) return
     val name = NdsMapTypes.nameOf(region, bank, map) ?: return
     val season = WorldClock.season()
     val time = WorldClock.timeOfDay()
-    val pool = RetailEncounters.wildPoolForNdsName(name, region, types, season, time)
+    // By header first; the name is the fallback for the one Sinnoh location whose id does not
+    // resolve to a map-directory entry.
+    val pool =
+        RetailEncounters.wildPoolForNdsHeader(header, region, types, season, time)
+            .ifEmpty { RetailEncounters.wildPoolForNdsName(name, region, types, season, time) }
     if (pool.isEmpty()) {
-      log.debug { "[Encounter] DS map $region:$bank:$map '$name' has no ${types.first()} table" }
+      log.debug { "[Encounter] DS map $region:$bank:$map '$name' (header $header) has no ${types.first()} table" }
       return
     }
     val lead = abilities.leadOf(characterStore, charId)
@@ -214,9 +234,9 @@ constructor(
     val slot = pickRetailSlot(abilities.biasSlot(pool, { it.dexId }, lead, random)) ?: return
     val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
     if (repelBlocks(charId, lead, level)) return
-    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: species ${slot.dexId} level $level" }
+    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]: species ${slot.dexId} level $level" }
     freeze(session, charId, null, x, y)
-    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = ndsLand.isCaveFloor(type)))
+    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave))
   }
 
   /**

@@ -1,0 +1,630 @@
+# regionId;locationId;locationNameFull  (DS regions: locationId == map header = map<<8|bank)
+0;10241;Victory Road (2F)
+0;10243;Route 21 (South)
+0;1025;S.S. Anne
+0;10497;Victory Road (3F)
+0;10499;Route 22
+0;10755;Route 23
+0;11011;Route 24
+0;11267;Route 25
+0;11523;Kindle Road
+0;11779;Treasure Beach
+0;12035;Cape Brink
+0;12291;Bond Bridge
+0;12547;Three Isle Port
+0;1283;Vermilion City
+0;13827;Resort Gorgeous
+0;14083;Water Labyrinth
+0;14339;Five Isle Meadow
+0;14595;Memorial Pillar
+0;14851;Outcast Island
+0;15105;Pokémon Mansion (1F)
+0;15107;Green Path
+0;15361;Pokémon Mansion (2F)
+0;15363;Water Path
+0;1539;Celadon City
+0;15617;Pokémon Mansion (3F)
+0;15619;Ruin Valley
+0;15873;Pokémon Mansion (B1F)
+0;15875;Trainer Tower
+0;16129;Safari Zone (Center Area)
+0;16131;Canyon Entrance
+0;16385;Safari Zone (East Area)
+0;16387;Sevault Canyon
+0;16641;Safari Zone (North Area)
+0;16643;Tanoby Ruins
+0;16897;Safari Zone (West Area)
+0;1795;Fuchsia City
+0;18433;Cerulean Cave (1F)
+0;18689;Cerulean Cave (2F)
+0;18945;Cerulean Cave (B1F)
+0;1;Viridian Forest
+0;2051;Cinnabar Island
+0;20737;Rock Tunnel (1F)
+0;20993;Rock Tunnel (B1F)
+0;21249;Seafoam Islands (1F)
+0;21505;Seafoam Islands (B1F)
+0;21761;Seafoam Islands (B2F)
+0;22017;Seafoam Islands (B3F)
+0;22273;Seafoam Islands (B4F)
+0;23041;Pokémon Tower (3F)
+0;23297;Pokémon Tower (4F)
+0;23553;Pokémon Tower (5F)
+0;23809;Pokémon Tower (6F)
+0;24065;Pokémon Tower (7F)
+0;24321;Power Plant
+0;24833;Mt. Ember (Outside)
+0;25089;Mt. Ember (1F)
+0;25345;Mt. Ember (2F)
+0;25601;Mt. Ember (3F)
+0;257;Mt. Moon (1F)
+0;259;Viridian City
+0;26369;Mt. Ember (B1F)
+0;26625;Mt. Ember (B2F)
+0;26881;Mt. Ember (B3F)
+0;27137;Mt. Ember (B4F)
+0;27393;Mt. Ember (B3F)
+0;27649;Mt. Ember (B2F)
+0;27905;Berry Forest
+0;28161;Icefall Cave
+0;28417;Icefall Cave (Inner)
+0;28673;Icefall Cave (B1F)
+0;28929;Icefall Cave (Back Room)
+0;3075;One Island
+0;30977;Pattern Bush
+0;31233;Altering Cave
+0;3330;Lost Cave (???)
+0;3586;Lost Cave (???)
+0;3842;Lost Cave (???)
+0;3843;Four Island
+0;3;Pallet Town
+0;4098;Lost Cave (???)
+0;4099;Five Island
+0;4354;Lost Cave (???)
+0;4610;Lost Cave (???)
+0;4866;Lost Cave (???)
+0;4867;Route 1
+0;5122;Lost Cave (???)
+0;5123;Route 2
+0;513;Mt. Moon (B1F)
+0;5378;Lost Cave (???)
+0;5379;Route 3
+0;5634;Lost Cave (???)
+0;5635;Route 4
+0;5890;Lost Cave (???)
+0;5891;Route 5
+0;6146;Lost Cave (???)
+0;6147;Route 6
+0;6402;Lost Cave (???)
+0;6403;Route 7
+0;6658;Lost Cave (???)
+0;6659;Route 8
+0;6914;Monean Chamber
+0;6915;Route 9
+0;7170;Liptoo Chamber
+0;7171;Route 10
+0;7426;Weepth Chamber
+0;7427;Route 11
+0;7682;Dilford Chamber
+0;7683;Route 12
+0;769;Mt. Moon (B2F)
+0;771;Cerulean City
+0;7938;Scufib Chamber
+0;7939;Route 13
+0;8194;Rixy Chamber
+0;8195;Route 14
+0;8450;Viapois Chamber
+0;8451;Route 15
+0;8707;Route 16
+0;8963;Route 17
+0;9219;Route 18
+0;9473;Diglett'S Cave (B1F)
+0;9475;Route 19
+0;9731;Route 20
+0;9985;Victory Road (1F)
+0;9987;Route 21 (North)
+1;10034;Route 124
+1;10058;Cave Of Origin
+1;10290;Route 125
+1;10314;Cave Of Origin
+1;10546;Route 126
+1;10570;Cave Of Origin
+1;10802;Route 127
+1;1098;Rusturf Tunnel
+1;11058;Route 128
+1;11082;Victory Road (1F)
+1;11314;Route 129
+1;11338;Victory Road (B1F)
+1;11570;Route 130
+1;11594;Victory Road (B2F)
+1;11826;Route 131
+1;11850;Shoal Cave (Entrance)
+1;12082;Route 132
+1;12106;Shoal Cave (1F)
+1;12338;Route 133
+1;12362;Shoal Cave (B1F)
+1;12594;Route 134
+1;12618;Shoal Cave (B1F)
+1;12850;Underwater (Route 124)
+1;12874;Shoal Cave (Entrance)
+1;13106;Underwater (Route 126)
+1;13130;Shoal Cave (1F)
+1;1330;Lilycove City
+1;13386;New Mauville (Entrance)
+1;13642;New Mauville (Interior)
+1;14922;Abandoned Ship
+1;1586;Mossdeep City
+1;16714;Abandoned Ship
+1;18250;Sealed Chamber
+1;1842;Sootopolis City
+1;1866;Granite Cave (1F)
+1;18762;Scorched Slab
+1;19530;Aqua Hideout
+1;20298;Sky Pillar (1F)
+1;20554;Sky Pillar (2F)
+1;20810;Sky Pillar (3F)
+1;2098;Ever Grande City
+1;21066;Sky Pillar (4F)
+1;2122;Granite Cave (B1F)
+1;21322;Shoal Cave (B2F)
+1;21578;Sky Pillar (5F)
+1;22090;Magma Hideout
+1;22346;Magma Hideout
+1;22602;Magma Hideout
+1;22858;Magma Hideout
+1;23114;Magma Hideout
+1;23370;Magma Hideout
+1;23626;Magma Hideout
+1;2378;Granite Cave (B2F)
+1;23882;Magma Hideout
+1;24138;Mirage Tower (1F)
+1;24394;Mirage Tower (2F)
+1;24650;Mirage Tower (3F)
+1;24906;Mirage Tower (4F)
+1;25162;Desert Underpass
+1;25418;Artisan Cave (B1F)
+1;25674;Artisan Cave (1F)
+1;2634;Granite Cave (Back Room)
+1;27210;Altering Cave
+1;27466;Meteor Falls (Northwest Room)
+1;2866;Dewford Town
+1;2890;Petalburg Woods
+1;306;Slateport City
+1;3148;Safari Zone (Northeast Area)
+1;330;Meteor Falls (Upper Interior)
+1;332;Safari Zone (North Area)
+1;3402;Jagged Pass
+1;3404;Safari Zone (Southeast Area)
+1;3658;Fiery Path
+1;3660;Battle Frontier
+1;3890;Pacifidlog Town
+1;3914;Mt. Pyre (1F)
+1;4146;Route 101
+1;4170;Mt. Pyre (2F)
+1;4402;Route 102
+1;4426;Mt. Pyre (3F)
+1;4658;Route 103
+1;4682;Mt. Pyre (4F)
+1;4914;Route 104
+1;4938;Mt. Pyre (5F)
+1;50;Petalburg City
+1;5170;Route 105
+1;5194;Mt. Pyre (6F)
+1;5426;Route 106
+1;5450;Mt. Pyre (Mountainside)
+1;5682;Route 107
+1;5706;Mt. Pyre (Summit)
+1;586;Meteor Falls (Lower Interior)
+1;588;Safari Zone (Southwest Area)
+1;5938;Route 108
+1;5962;Aqua Hideout
+1;6194;Route 109
+1;6450;Route 110
+1;6474;Aqua Hideout
+1;6706;Route 111
+1;6962;Route 112
+1;6986;Seafloor Cavern
+1;7218;Route 113
+1;7242;Seafloor Cavern
+1;7474;Route 114
+1;7498;Seafloor Cavern
+1;74;Meteor Falls (Entrance)
+1;76;Safari Zone (Northwest Area)
+1;7730;Route 115
+1;7754;Seafloor Cavern
+1;7986;Route 116
+1;8010;Seafloor Cavern
+1;818;Rustboro City
+1;8242;Route 117
+1;8266;Seafloor Cavern
+1;842;Meteor Falls (Back Room)
+1;844;Safari Zone (South Area)
+1;8498;Route 118
+1;8522;Seafloor Cavern
+1;8754;Route 119
+1;8778;Seafloor Cavern
+1;9010;Route 120
+1;9034;Seafloor Cavern
+1;9266;Route 121
+1;9522;Route 122
+1;9546;Cave Of Origin (Entrance)
+1;9778;Route 123
+1;9802;Cave Of Origin (1F)
+2;113;Icirrus City
+2;152;Dreamyard
+2;153;Dreamyard (B1F)
+2;154;Pinwheel Forest (Outer)
+2;155;Pinwheel Forest (Inner)
+2;157;Desert Resort (Outer)
+2;158;Desert Resort (Inner)
+2;160;Relic Castle (1F)
+2;161;Relic Castle (B1F)
+2;162;Relic Castle (B2F)
+2;163;Relic Castle (B3F)
+2;164;Relic Castle (B4F)
+2;165;Relic Castle (B5F)
+2;166;Relic Castle (B6F)
+2;167;Relic Castle (Depths)
+2;168;Relic Castle (Depths)
+2;169;Relic Castle (Depths)
+2;170;Relic Castle (Depths)
+2;171;Relic Castle (Depths)
+2;172;Relic Castle (Depths)
+2;173;Relic Castle (Depths)
+2;174;Relic Castle (Depths)
+2;175;Relic Castle (Depths)
+2;176;Relic Castle (Depths)
+2;177;Relic Castle (Depths)
+2;178;Relic Castle (Depths)
+2;179;Relic Castle (Depths)
+2;180;Relic Castle (Depths)
+2;181;Relic Castle (Depths)
+2;182;Relic Castle (Depths)
+2;183;Relic Castle (B6F)
+2;184;Relic Castle (B6F)
+2;185;Relic Castle (B5F)
+2;186;Relic Castle (B4F)
+2;187;Relic Castle (B3F)
+2;188;Relic Castle (B2F)
+2;189;Relic Castle (B1F)
+2;190;Relic Castle (1F)
+2;191;Cold Storage
+2;194;Chargestone Cave
+2;195;Chargestone Cave (1F)
+2;196;Chargestone Cave (B1F)
+2;197;Chargestone Cave (B2F)
+2;198;Twist Mountain (Outside)
+2;200;Twist Mountain (Tunnel)
+2;201;Twist Mountain (Tunnel)
+2;202;Twist Mountain (Tunnel)
+2;203;Twist Mountain (Cold Room)
+2;205;Dragonspiral Tower (Outside)
+2;206;Dragonspiral Tower (Entryway)
+2;207;Dragonspiral Tower (1F)
+2;208;Dragonspiral Tower (2F)
+2;213;Dragonspiral Tower (7F)
+2;214;Victory Road (Outside)
+2;215;Victory Road (1F)
+2;216;Victory Road (2F)
+2;217;Victory Road (3F)
+2;218;Victory Road (4F)
+2;219;Victory Road (2F)
+2;220;Victory Road (1F)
+2;221;Victory Road (3F)
+2;222;Victory Road (1F)
+2;223;Victory Road (3F)
+2;224;Victory Road (4F)
+2;225;Victory Road (5F)
+2;226;Victory Road (6F)
+2;227;Victory Road (6F)
+2;228;Victory Road (7F)
+2;229;Trial Chamber
+2;230;Giant Chasm (Entrance)
+2;231;Giant Chasm (Cave)
+2;232;Giant Chasm (Forest)
+2;234;Giant Chasm (Cave)
+2;238;P2 Laboratory
+2;240;Undella Bay
+2;253;Driftveil Drawbridge
+2;255;Village Bridge
+2;263;Marvelous Bridge
+2;317;Route 1
+2;319;Route 2
+2;321;Route 3
+2;324;Wellspring Cave (1F)
+2;325;Wellspring Cave (B1F)
+2;326;Route 4
+2;329;Route 5
+2;331;Route 6
+2;333;Mistralton Cave (1F)
+2;334;Mistralton Cave (2F)
+2;335;Guidance Chamber
+2;337;Route 7
+2;339;Celestial Tower (2F)
+2;340;Celestial Tower (3F)
+2;341;Celestial Tower (4F)
+2;342;Celestial Tower (Rooftop)
+2;345;Route 8
+2;346;Moor of Icirrus
+2;348;Route 9
+2;352;Challenger's Cave (1F)
+2;353;Challenger's Cave (B1F)
+2;354;Challenger's Cave (B2F)
+2;355;Route 10
+2;358;Route 10 (Gate)
+2;365;Route 11
+2;368;Route 12
+2;370;Route 13
+2;374;Route 14
+2;376;Abundant Shrine
+2;378;Route 15
+2;383;Route 16
+2;385;Lostlorn Forest
+2;387;Route 18
+2;412;Undella Town
+2;423;Route 17
+2;6;Striaton City
+2;96;Driftveil City
+3;120;Pastoria City
+3;150;Sunyshore City
+3;172;Pokémon League
+3;198;Oreburgh Mine (1F)
+3;199;Oreburgh Mine (B1F)
+3;1;Honey Tree
+3;200;Valley Windworks
+3;203;Eterna Forest
+3;204;Fuego Ironworks
+3;207;Mt. Coronet (1F West)
+3;208;Mt. Coronet (2F)
+3;209;Mt. Coronet (3F)
+3;210;Mt. Coronet (North Mountainside)
+3;211;Mt. Coronet (South Mountainside)
+3;212;Mt. Coronet (4F South)
+3;213;Mt. Coronet (4F North)
+3;214;Mt. Coronet (5F)
+3;215;Mt. Coronet (6F)
+3;216;Mt. Coronet (Center)
+3;217;Mt. Coronet (1F North)
+3;218;Mt. Coronet (1F East)
+3;219;Mt. Coronet (B1F)
+3;225;Solaceon Ruins
+3;227;Solaceon Ruins
+3;228;Solaceon Ruins
+3;229;Solaceon Ruins
+3;230;Solaceon Ruins
+3;231;Solaceon Ruins
+3;232;Solaceon Ruins
+3;233;Solaceon Ruins
+3;234;Solaceon Ruins
+3;235;Solaceon Ruins
+3;236;Solaceon Ruins
+3;237;Solaceon Ruins
+3;238;Solaceon Ruins
+3;239;Solaceon Ruins
+3;240;Solaceon Ruins
+3;241;Solaceon Ruins
+3;242;Solaceon Ruins
+3;244;Victory Road (1F)
+3;245;Victory Road (2F)
+3;246;Victory Road (B1F)
+3;247;Victory Road (B1F East)
+3;248;Victory Road (1F East)
+3;249;Victory Road (B2F East)
+3;254;Ravaged Path
+3;258;Oreburgh Gate (1F)
+3;259;Oreburgh Gate (B1F)
+3;262;Stark Mountain (Outside)
+3;263;Stark Mountain (Entrance)
+3;264;Stark Mountain (Inner)
+3;267;Sendoff Spring
+3;269;Turnback Cave (???)
+3;270;Turnback Cave (???)
+3;271;Turnback Cave (???)
+3;272;Turnback Cave (???)
+3;273;Turnback Cave (???)
+3;278;Snowpoint Temple (1F)
+3;279;Snowpoint Temple (B1F)
+3;280;Snowpoint Temple (B2F)
+3;281;Snowpoint Temple (B3F)
+3;282;Snowpoint Temple (B4F)
+3;283;Snowpoint Temple (B5F)
+3;284;Wayward Cave (1F)
+3;285;Wayward Cave (B1F)
+3;286;Ruin Maniac Cave
+3;287;Trophy Garden
+3;288;Iron Island (Outside)
+3;289;Iron Island (1F)
+3;290;Iron Island (B1F West)
+3;291;Iron Island (B1F East)
+3;292;Iron Island (B2F East)
+3;293;Iron Island (B2F West)
+3;294;Iron Island (B3F West)
+3;295;Old Chateau (1F)
+3;296;Old Chateau (Dining Room)
+3;297;Old Chateau (2F)
+3;298;Old Chateau (2F)
+3;299;Old Chateau (2F)
+3;300;Old Chateau (2F)
+3;301;Old Chateau (2F)
+3;302;Old Chateau (2F)
+3;303;Old Chateau (2F)
+3;311;Lake Verity
+3;312;Lake Verity
+3;315;Lake Valor
+3;318;Lake Acuity
+3;336;Valor Lakefront
+3;33;Canalave City
+3;340;Acuity Lakefront
+3;342;Route 201
+3;343;Route 202
+3;344;Route 203
+3;345;Route 204 (South)
+3;346;Route 204 (North)
+3;347;Route 205 (South)
+3;349;Route 205 (North)
+3;350;Route 206
+3;353;Route 207
+3;354;Route 208
+3;356;Route 209
+3;357;Route 209 (Tower 1F)
+3;358;Route 209 (Tower 2F)
+3;359;Route 209 (Tower 3F)
+3;360;Route 209 (Tower 4F)
+3;361;Route 209 (Tower 5F)
+3;362;Route 210 (South)
+3;363;Route 210 (North)
+3;365;Route 211 (West)
+3;366;Route 211 (East)
+3;367;Route 212 (North)
+3;371;Route 212 (South)
+3;373;Route 213
+3;380;Route 214
+3;382;Route 215
+3;383;Route 216
+3;385;Route 217
+3;388;Route 218
+3;391;Route 219
+3;392;Route 221
+3;395;Route 222
+3;399;Route 224
+3;400;Route 225
+3;403;Route 227
+3;406;Route 228
+3;407;Route 229
+3;411;Twinleaf Town
+3;442;Celestic Town
+3;457;Resort Area
+3;467;Route 220
+3;468;Route 223
+3;469;Route 226
+3;471;Route 230
+3;504;Great Marsh (Area 1)
+3;505;Great Marsh (Area 2)
+3;506;Great Marsh (Area 3)
+3;507;Great Marsh (Area 4)
+3;508;Great Marsh (Area 5)
+3;509;Great Marsh (Area 6)
+3;512;Ruin Maniac Cave
+3;513;Maniac Tunnel
+3;515;Solaceon Ruins
+3;518;Turnback Cave (???)
+3;519;Turnback Cave (???)
+3;520;Turnback Cave (???)
+3;521;Turnback Cave (???)
+3;522;Turnback Cave (???)
+3;523;Turnback Cave (???)
+3;524;Turnback Cave (???)
+3;525;Turnback Cave (???)
+3;526;Turnback Cave (???)
+3;527;Turnback Cave (???)
+3;528;Turnback Cave (???)
+3;529;Turnback Cave (???)
+3;530;Turnback Cave (???)
+3;531;Turnback Cave (???)
+3;532;Turnback Cave (???)
+3;593;Stark Mountain (Back Room)
+3;65;Eterna City
+4;113;Ruins of Alph (Outside)
+4;117;Ilex Forest
+4;119;Mt. Mortar (Entrance)
+4;120;Ice Path (1F)
+4;121;Whirl Islands (1F)
+4;122;Mt. Silver Cave (1F)
+4;123;Dark Cave (North)
+4;124;Victory Road (1F)
+4;126;Tohjo Falls
+4;151;Route 47
+4;152;Route 48
+4;153;Union Cave (B1F)
+4;154;Union Cave (B2F)
+4;155;Sprout Tower (2F)
+4;156;Sprout Tower (3F)
+4;174;Safari Zone Gate
+4;176;Dark Cave (South)
+4;177;SLOWPOKE Well (B2F)
+4;178;Victory Road (B1F)
+4;179;Victory Road (B2F)
+4;181;SLOWPOKE Well (B3F)
+4;217;Burned Tower (B1F)
+4;237;Ice Path (B1F)
+4;238;Ice Path (B2F)
+4;239;Ice Path (B3F)
+4;242;Whirl Islands (B1F)
+4;243;Whirl Islands (B2F)
+4;247;Team Rocket HQ (B1F)
+4;248;Team Rocket HQ (B2F)
+4;249;Team Rocket HQ (B3F)
+4;250;Mt. Mortar (1F)
+4;251;Mt. Mortar (2F)
+4;252;Mt. Mortar (B1F)
+4;253;Dragon's Den (B1F)
+4;279;Cliff Edge Gate
+4;280;Pokéathlon Dome
+4;298;Tohjo Falls (Hidden Room)
+4;30;Route 26
+4;315;Ruins of Alph
+4;31;Route 27
+4;323;Ruins of Alph
+4;32;Route 28
+4;332;Bell Tower (2F)
+4;333;Bell Tower (3F)
+4;334;Bell Tower (4F)
+4;335;Bell Tower (5F)
+4;336;Bell Tower (6F)
+4;337;Bell Tower (7F)
+4;338;Bell Tower (8F)
+4;339;Bell Tower (9F)
+4;33;Route 29
+4;341;Bell Tower (10F)
+4;342;Cliff Cave
+4;343;Safari Zone
+4;344;Safari Zone
+4;345;Safari Zone
+4;346;Safari Zone
+4;347;Safari Zone
+4;348;Safari Zone
+4;349;Safari Zone
+4;34;Route 30
+4;350;Safari Zone
+4;351;Safari Zone
+4;352;Safari Zone
+4;353;Safari Zone
+4;354;Safari Zone
+4;35;Route 31
+4;36;Route 32
+4;37;Route 33
+4;38;Route 34
+4;39;Route 35
+4;40;Route 36
+4;41;Route 37
+4;42;Route 38
+4;43;Route 39
+4;44;Route 42
+4;459;Mt. Silver Cave (Upper Mountainside)
+4;45;Route 43
+4;460;Mt. Silver Cave (Lower Mountainside)
+4;461;Mt. Silver Cave (Southern Room)
+4;462;Mt. Silver Cave (Northern Room)
+4;463;Mt. Silver Cave (2F)
+4;464;Mt. Silver Cave (3F)
+4;46;Route 44
+4;47;Route 45
+4;486;Whirl Islands (B3F)
+4;48;Route 46
+4;491;Ruins of Alph
+4;60;New Bark Town
+4;67;Cherrygrove City
+4;73;Violet City
+4;74;Azalea Town
+4;75;Cianwood City
+4;77;Olivine City
+4;78;Ecruteak City
+4;7;Burned Tower (1F)
+4;87;Mahogany Town
+4;88;Lake of Rage
+4;89;Blackthorn City
+4;90;Mt. Silver (Outside)
+4;94;Route 40
+4;95;Route 41
+4;96;National Park
+4;99;Union Cave (1F)

@@ -28,7 +28,7 @@ public class Dis5{
     Deque<Integer> work=new ArrayDeque<>();work.add(entries.get(e));boolean bad=false;
     while(!work.isEmpty()){int pc=work.poll();
      while(pc>=0&&pc+2<=f.length&&!seen.contains(pc)){seen.add(pc);int op=u16(f,pc);String[] c=cmds.get(op);
-      if(c==null){unknown.merge(op,1,Integer::sum);if(!ctx.containsKey(op)){StringBuilder sb=new StringBuilder();for(int i=pc;i<Math.min(f.length,pc+24);i++)sb.append(String.format("%02x ",f[i]&0xFF));ctx.put(op,"file "+fi+" @"+pc+": "+sb);}bad=true;break;}
+      if(c==null){unknown.merge(op,1,Integer::sum);if(!ctx.containsKey(op)){StringBuilder sb=new StringBuilder();for(int i=pc;i<Math.min(f.length,pc+24);i++)sb.append(String.format("%02x ",f[i]&0xFF));ctx.put(op,"file "+fi+" @"+pc+": "+sb);}if(a[0].equals("dump"))out.append(fi).append(';').append(e).append(';').append(pc).append(";DecodeStopped").append((char)10);bad=true;break;}
       int q=pc+2;StringBuilder args=new StringBuilder();
       for(char s:c[1].toCharArray()){int n=s=='B'?1:s=='H'?2:4;if(q+n>f.length){bad=true;break;}long v=n==1?(f[q]&0xFF):n==2?u16(f,q):(u32(f,q)&0xFFFFFFFFL);
        if(n==4&&(op==0x1E||op==0x1F||op==0x20||op==0x04||op==0x64)){int tgt=(int)(q+4+(int)v);args.append(" @").append(tgt);if(op!=0x64&&tgt>=0&&tgt<f.length)work.add(tgt);}

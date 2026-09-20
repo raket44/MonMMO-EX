@@ -27,6 +27,13 @@ class UnovaScriptDecodeAuditTest :
         commands.count { it[0].matches(Regex("CMD_[48][0-9A-F]{3}")) } shouldBeLessThanOrEqual 13
       }
 
+      test("entries the decoder cannot finish are marked, and do not grow") {
+        // Dis5 writes DecodeStopped where it met an opcode the table lacks; the generator ends the
+        // script there. Without the marker a truncated entry fell through into the NEXT script of
+        // its file - Nuvema's exit ran on into the post-game scenes (2026-09-20). 87 at first.
+        commands.count { it[0] == "DecodeStopped" } shouldBeLessThanOrEqual 85
+      }
+
       test("no command's last argument is really the next command's opcode") {
         // WaitButton, CloseMessageKP(2), Jump, YesNoBox, ApplyMovement, WaitMovement, RemoveNPC:
         // what follows a text or precedes a walk. A command whose LAST argument is one of these in

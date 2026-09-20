@@ -1665,6 +1665,12 @@ class NdsScriptCorpusGenerator {
             "StoreDate" -> { b.lines += listOf("SetVar", v(0), "0"); b.lines += listOf("SetVar", v(1), "0") }
             "MoneyBox", "MusicalMessage", "PlayTrainerMusic" -> {}
             // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
+            // Dis5 could not read on from here (an opcode the table lacks; 85 entries): the script
+            // ENDS. A block without a terminator gets a fall-through goto into the next label, and
+            // for a truncated entry that label is a stranger's script - leaving Nuvema ran on into
+            // the post-game scenes filed after it (Looker, Cedric Juniper's National Dex, Black
+            // City, Cheren and the Seven Sages; 2026-09-20).
+            "DecodeStopped" -> b.lines += listOf("End")
             "RenamePokemon" -> b.lines += listOf("SetVar", v(0), "0")
             // Opcode 0x110 (table name "StorePokemonSex"): result, party slot, screen - the naming
             // app Juniper opens in her lab (after CMD_1AD; the script branches on result == 1).

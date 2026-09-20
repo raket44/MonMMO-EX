@@ -612,6 +612,8 @@ class NdsScriptCorpusGenerator {
         "ScreenFade" -> out += "fadescreen ${a[0]}"
         // White Message's speaker object for the next line ("none" = the script's own entity).
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
+        // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
+        "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
         // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
         "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {
@@ -1546,6 +1548,8 @@ class NdsScriptCorpusGenerator {
         val menuItems = mutableListOf<Pair<String, String>>()
         // The starter-select app's result var, from its open (0xB4 331 339 var) to its close (CMD_1AF).
         var starterVar: String? = null
+        // Door objects a script made (CMD_127 handle var -> its tile), until it frees them (CMD_128).
+        val doors = HashMap<String, Pair<String, String>>()
         val list = cmds.values.toList()
         for ((ci, c) in list.withIndex()) {
           // A command whose last (var) argument the table lacks leaves it decoded as a bare
@@ -1671,8 +1675,8 @@ class NdsScriptCorpusGenerator {
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
-            "CMD_146", "CMD_400", "CMD_103", "CMD_127", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
-            "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_129", "CMD_12A", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
+            "CMD_146", "CMD_400", "CMD_103", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
+            "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
             // The shared obtain-item routine (file 862, read 2026-09-19 after "raket received the
             // raket ... put the raket in the raket Case"): CMD_4E slot, item, count, flag is the
@@ -1680,6 +1684,15 @@ class NdsScriptCorpusGenerator {
             // branches on 2 TMs & HMs / 4 Key Items, the ROM item table's own numbers) and
             // SetVarBag slot, pocket var names it; SetVarItem3 slot, item is a TM's move name;
             // opcode 0xB5 ("Screen_B5") item, count, result is the add-item itself.
+            // The scripted door: CMD_127 handle, kind, x, y makes a map object (kind 1 = a door, 21 of
+            // 29 uses; 5/6/8 are other effects and stay silent), CMD_129 handle, 0|1 opens / closes
+            // it, CMD_12A waits for the animation, CMD_128 frees it. The client plays it through
+            // s2c 0x1F with the same 0 = open / 1 = close (its own door code: kind 0, arg 0 / 1) -
+            // probe-verified on Juniper's lab door 2026-09-20. Until now all four were no-ops, so
+            // Cheren and Bianca walked into a shut lab and Cilan into a shut gym.
+            "CMD_127" -> if (t(1) == "1") doors[v(0)] = tv(2) to tv(3)
+            "CMD_129" -> doors[v(0)]?.let { (x, y) -> b.lines += listOf("DsDoor", t(1), x, y) }
+            "CMD_12A" -> if (v(0) in doors) b.lines += listOf("WaitTime", "20")
             "CMD_4E" -> b.lines += listOf("BufferItemName", t(0), item(1))
             "SetVarItem3" -> b.lines += listOf("BufferUnovaTmMove", t(0), item(1))
             "SetVarBag" -> b.lines += listOf("BufferUnovaPocket", t(0), tv(1))
@@ -1690,7 +1703,8 @@ class NdsScriptCorpusGenerator {
             "CMD_BA" -> b.lines += listOf("CheckItem", v(0), v(1), v(3))
             "ShowMessageAt" -> b.lines += listOf("Message", text(0))
             "SetBadge" -> b.lines += listOf("GiveBadge", t(0))
-            "CMD_128", "CMD_11E", "CMD_107", "Xtransciever4", "Xtransciever5", "Xtransciever7" -> {}
+            "CMD_128" -> doors.remove(v(0))
+            "CMD_11E", "CMD_107", "Xtransciever4", "Xtransciever5", "Xtransciever7" -> {}
             "SetVarStoreValue5C" -> b.lines += listOf("BufferNumber", t(0), v(1))
             "CallRoutine" -> b.lines += listOf("Call", jump(0))
             "Jump" -> b.lines += listOf("GoTo", jump(0))

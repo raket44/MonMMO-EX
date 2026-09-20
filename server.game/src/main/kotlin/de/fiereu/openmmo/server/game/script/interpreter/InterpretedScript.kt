@@ -134,6 +134,18 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
           state.pc++
         }
+        // ds_door 0|1, x, y: open / close the map door at a tile (White CMD_129 on a CMD_127 door).
+        // s2c 0x1F with the client's own values - kind 0, flag 1, arg 0 open / 1 close.
+        "ds_door" -> {
+          ctx.send(
+              de.fiereu.openmmo.net.game.packets.DoorAnimationPacket(
+                  kind = 0,
+                  open = 1,
+                  x = value(ctx, instruction.arg(1)).toShort(),
+                  y = value(ctx, instruction.arg(2)).toShort(),
+                  arg = value(ctx, instruction.arg(0)).toShort()))
+          state.pc++
+        }
         // Gen 4 facing codes: 0 up, 1 down, 2 left, 3 right.
         "ds_getplayerdir" -> {
           val code =

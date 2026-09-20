@@ -136,8 +136,10 @@ class InterpretedScript(
         }
         // ds_door 0|1, x, y: open / close the map door at a tile (White CMD_129 on a CMD_127 door).
         // s2c 0x1F with the client's own values - kind 0, flag 1, arg 0 open / 1 close.
+        // Through the arrival queue: a scene that starts as the player arrives (leaving Juniper's
+        // lab) opens the door at once, and the client drops a packet for a map it is still loading.
         "ds_door" -> {
-          ctx.send(
+          ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.DoorAnimationPacket(
                   kind = 0,
                   open = 1,
@@ -272,6 +274,11 @@ class InterpretedScript(
                 "item" ->
                     if (program.id.source == "white") unovaItem(ctx, instruction.arg(2))?.let { RawMessageArg(slot.toByte(), 5, text = it.name) }
                     else RawMessageArg(slot.toByte(), 25, shorts = listOf((itemBand + valueOf(instruction.arg(2))).toShort()))
+                // White SetVarPartyPokemonNick / SetVarPartyPoke / SetVarMove / SetVarType.
+                "partynick" -> ctx.partyNickname(valueOf(instruction.arg(2)))?.let { RawMessageArg(slot.toByte(), 5, text = it) }
+                "partyspecies" -> ctx.partySpeciesName(valueOf(instruction.arg(2)))?.let { RawMessageArg(slot.toByte(), 5, text = it) }
+                "move" -> ctx.moveName(valueOf(instruction.arg(2)))?.let { RawMessageArg(slot.toByte(), 5, text = it) }
+                "type" -> GEN5_TYPES.getOrNull(valueOf(instruction.arg(2)))?.let { RawMessageArg(slot.toByte(), 5, text = it) }
                 // White SetVarBag: the pocket index CMD_BB answered (ROM item table numbers).
                 "pocket" -> RawMessageArg(slot.toByte(), 5, text = UNOVA_POCKETS.getOrElse(valueOf(instruction.arg(2))) { UNOVA_POCKETS[0] })
                 // White SetVarItem3: a TM/HM's move ("TM01 Hone Claws" -> "Hone Claws").
@@ -2406,6 +2413,15 @@ class InterpretedScript(
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1
+    /**
+     * Gen 5 type numbers (no Fairy, no ???). Checked against Striaton's leader, who names the type
+     * your starter is weak to: SetVarType 9 for Snivy (Fire), 10 for Tepig (Water), 11 for
+     * Oshawott (Grass).
+     */
+    val GEN5_TYPES =
+        listOf(
+            "Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel",
+            "Fire", "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark")
     /** White's items are the client's 5000 band (5000 + Gen 5 index). */
     const val UNOVA_ITEM_BAND = 5000
     /** Pocket names by the ROM item table's pocket number (Black/White's bag). */

@@ -88,6 +88,9 @@ internal constructor(
 
   internal fun send(packet: Any) = session.send(packet)
 
+  /** A world packet of the scene (a door animation), ordered with its spawns and held while the map loads. */
+  internal fun sendScenePacket(packet: Any) = movement.sendScenePacket(session, packet)
+
   internal fun traceInterpreter(message: () -> String) = developerTools?.trace(message)
 
   /**
@@ -1050,6 +1053,10 @@ internal constructor(
     val mon = characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) } ?: return null
     return mon.nickname.ifEmpty { speciesName(mon.dexId) }
   }
+
+  /** The species name of the party monster in [slot] (not its nickname). */
+  fun partySpeciesName(slot: Int): String? =
+      characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) }?.let { speciesName(it.dexId) }
 
   fun moveName(moveId: Int): String? = moves?.get(moveId)?.name
 

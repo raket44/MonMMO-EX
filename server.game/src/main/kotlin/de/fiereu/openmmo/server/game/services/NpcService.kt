@@ -337,7 +337,7 @@ constructor(
    * tile to the step in front of it; the reposition went out first and the late spawn put her
    * back in the doorway (2026-09-12).
    */
-  private fun sendAfterArrival(ctx: SessionContext, packet: Any) {
+  fun sendAfterArrival(ctx: SessionContext, packet: Any) {
     val state = ctx.attributes[PLAYER_STATE]
     val wait = maxOf(state?.moveIgnoreUntil ?: 0L, state?.sceneHoldUntil ?: 0L) - System.currentTimeMillis()
     val pending = heldForArrival[ctx]

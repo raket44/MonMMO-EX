@@ -41,6 +41,12 @@ constructor(
     private val presence: PresenceService? = null,
 ) {
 
+  /**
+   * A scene's world packet (a door animation) in the same ordered queue as scripted spawns and
+   * placements: sent directly while the client is still loading the map, it is dropped.
+   */
+  fun sendScenePacket(session: SessionContext, packet: Any) = npcService.sendAfterArrival(session, packet)
+
   /** A live change to the player's entity: to the player and to everyone watching them. */
   fun announce(ctx: de.fiereu.network.SessionContext, packet: Any) {
     presence?.announce(ctx, packet) ?: ctx.send(packet)

@@ -452,6 +452,8 @@ class NdsScriptCorpusGenerator {
               "BufferSpeciesName" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, species, ${a[1]}"
               // White's obtain-item routine: a pocket index's name, and a TM item's move name.
               "BufferUnovaPocket" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, pocket, ${a[1]}"
+              // slot, kind (partynick | partyspecies | move | type), value
+              "BufferUnovaText" -> if (a.size >= 3) out += "ds_buffer ${a[0]}, ${a[1]}, ${a[2]}"
               "BufferUnovaTmMove" -> if (a.size >= 2) out += "ds_buffer ${a[0]}, tmmove, ${a[1]}"
               else -> {}
             }
@@ -1661,7 +1663,7 @@ class NdsScriptCorpusGenerator {
             "DoubleTrainerBattle" -> b.lines += listOf("TrainerBattle", tv(1), "0", "0", "0")
             "StoreVar_CD", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" -> b.lines += listOf("SetVar", v(0), "0")
             "StoreDate" -> { b.lines += listOf("SetVar", v(0), "0"); b.lines += listOf("SetVar", v(1), "0") }
-            "MoneyBox", "MusicalMessage", "SetVarPartyPoke", "PlayTrainerMusic" -> {}
+            "MoneyBox", "MusicalMessage", "PlayTrainerMusic" -> {}
             // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
             "RenamePokemon" -> b.lines += listOf("SetVar", v(0), "0")
             // Opcode 0x110 (table name "StorePokemonSex"): result, party slot, screen - the naming
@@ -1671,13 +1673,20 @@ class NdsScriptCorpusGenerator {
             // (contexts read in the corpus 2026-09-19): item-obtained fanfare/pocket (CMD_240),
             // type-name text buffer (SetVarType; DS buffers are all no-ops for now), relocator,
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
-            "CMD_240", "SetVarType", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
+            "CMD_240", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "CMD_146", "CMD_400", "CMD_103", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
+            // Text slots that were no-ops - and an unfilled slot shows the PLAYER'S name on the
+            // client ("What are you and raket going to do?" for the starter's name, 2026-09-20):
+            // a party monster's nickname / species, a move, a type (Gen 5 type numbers).
+            "SetVarPartyPokemonNick" -> b.lines += listOf("BufferUnovaText", t(0), "partynick", tv(1))
+            "SetVarPartyPoke" -> b.lines += listOf("BufferUnovaText", t(0), "partyspecies", tv(1))
+            "SetVarMove" -> b.lines += listOf("BufferUnovaText", t(0), "move", tv(1))
+            "SetVarType" -> b.lines += listOf("BufferUnovaText", t(0), "type", tv(1))
             // The shared obtain-item routine (file 862, read 2026-09-19 after "raket received the
             // raket ... put the raket in the raket Case"): CMD_4E slot, item, count, flag is the
             // item name of messages 0/5/10/11; CMD_BB item -> var is the item's POCKET (the routine
@@ -1763,7 +1772,7 @@ class NdsScriptCorpusGenerator {
             // type, from, to, speed: 0 -> 16 darkens, 16 -> 0 restores. Dropped, every reposition
             // the games hide behind a fade was a visible jump (Nuvema's gift box, 2026-09-19).
             "FadeScreen" -> b.lines += listOf("ScreenFade", if (t(2) == "16") "1" else "0")
-            "StoreVarItem", "SetVarPartyPokemonNick", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
+            "StoreVarItem", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
             // 255 = player; 250-254 = camera/follower slots the server does not animate.
             "ApplyMovement" -> if (t(0).toInt() in 250..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
             "WaitMovement" -> b.lines += listOf("WaitMovement")

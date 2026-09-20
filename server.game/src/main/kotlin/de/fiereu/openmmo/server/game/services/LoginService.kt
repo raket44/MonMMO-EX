@@ -698,14 +698,21 @@ constructor(
       StoryClientState.flags(info.positionRegionId, stored.storyFlags).forEach(ctx::send)
     }
 
-    npcService.spawnNpcsWithNeighbors(
-        ctx,
-        info.positionBankId.toInt() and 0xFF,
-        info.positionMapId.toInt() and 0xFF,
-        info.positionRegionId.toInt() and 0xFF,
-    )
+    val spawnNpcs = {
+      npcService.spawnNpcsWithNeighbors(
+          ctx,
+          info.positionBankId.toInt() and 0xFF,
+          info.positionMapId.toInt() and 0xFF,
+          info.positionRegionId.toInt() and 0xFF,
+      )
+    }
     if (info.positionRegionId.toInt() in 2..4) {
-      mapScriptService.onNdsEnter(ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
+      // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter).
+      mapScriptService.onNdsEnter(
+          ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF,
+          spawnNpcs = spawnNpcs)
+    } else {
+      spawnNpcs()
     }
 
     // Unsigned on purpose: NDS banks run past 127 (see preloadMapAndJoin).

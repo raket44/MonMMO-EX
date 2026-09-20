@@ -42,6 +42,12 @@ data class PlayerState(
      * so only a facing a script set is re-asserted there.
      */
     @field:Volatile var scriptedFacingSet: Boolean = false,
+    /**
+     * A DS map's on-load script is running BEFORE its npcs are spawned, the way the cartridge runs
+     * it before drawing: placements are only recorded (scriptedNpcPoses) and the spawn that follows
+     * puts each actor where the script left it.
+     */
+    @field:Volatile var ndsPlacementOnly: Boolean = false,
     @field:Volatile var dialogVisible: Boolean = false,
     @field:Volatile var scriptRunning: Boolean = false,
     @field:Volatile var scriptLockScope: ScriptLockScope = ScriptLockScope.NONE,

@@ -126,14 +126,60 @@ constructor(
   }
 
   /** A DS map arrival: the header's init and frame-table scripts, once per logical arrival. */
-  fun onNdsEnter(session: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int) {
-    if (state.scriptOwnsMapEntry || state.blocksNewScript) return
+  /**
+   * [spawnNpcs], when given, is the map's npc spawn, and this call owns it: the cartridge runs a
+   * map's on-load script BEFORE it draws anything, so the script's placements (Bianca and her dad
+   * set up for their argument, Bianca stood by the player's house) are where the actors first
+   * appear. Spawned first and placed 1 ms later, an actor flickered at its ROM tile - and outdoors
+   * the map's npcs were spawned a second time from their ROM tiles, so Bianca walked home from the
+   * lab (2026-09-20). The on-load script runs with placements only recorded, then the spawn puts
+   * everyone where it left them, then the frame scene plays. Called exactly once, whatever happens.
+   */
+  fun onNdsEnter(
+      session: SessionContext,
+      state: PlayerState,
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      spawnNpcs: (() -> Unit)? = null,
+  ) {
+    val spawned = java.util.concurrent.atomic.AtomicBoolean(false)
+    fun spawnOnce() {
+      if (spawned.compareAndSet(false, true)) spawnNpcs?.invoke()
+    }
+    if (state.scriptOwnsMapEntry || state.blocksNewScript) return spawnOnce()
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
-    if (state.entryScriptsMapKey == arrivalKey) return
+    if (state.entryScriptsMapKey == arrivalKey) return spawnOnce()
     state.entryScriptsMapKey = arrivalKey
-    val entry = entryScripts.onNdsEntry(regionId, bankId, mapId)
-    if (entry.isEmpty()) return
-    scriptRunner.run(session, state, Script { ctx -> entry.forEach { it.run(ctx) } }, entityId = -1)
+    val (onLoad, frame) = entryScripts.onNdsEntryPhases(regionId, bankId, mapId)
+    if (onLoad == null && frame == null) return spawnOnce()
+    try {
+      scriptRunner.run(
+          session,
+          state,
+          Script { ctx ->
+            try {
+              if (onLoad != null) {
+                state.ndsPlacementOnly = spawnNpcs != null
+                try {
+                  onLoad.run(ctx)
+                } finally {
+                  state.ndsPlacementOnly = false
+                }
+              }
+            } finally {
+              spawnOnce()
+            }
+            frame?.run(ctx)
+          },
+          entityId = -1)
+      // The runner declines silently when it cannot start (a dead scope, a script that slipped in):
+      // the npcs must still appear. Idempotent, so a script that did start is unaffected.
+      if (!state.scriptRunning) spawnOnce()
+    } catch (e: Exception) {
+      spawnOnce()
+      throw e
+    }
   }
 
   /**

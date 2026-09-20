@@ -400,6 +400,9 @@ constructor(
           // popped across the room (2026-09-19). The client takes DS spawns while it loads, so
           // during the arrival window the npc is simply spawned again at its new tile.
           val state = ctx.attributes[PLAYER_STATE]
+          // The on-load script is running ahead of the spawn (MapScriptService.onNdsEnter): the
+          // pose is recorded by the caller, and the spawn that follows uses it. Nothing to send.
+          if (state?.ndsPlacementOnly == true) return
           val held = maxOf(state?.moveIgnoreUntil ?: 0L, state?.sceneHoldUntil ?: 0L) > System.currentTimeMillis()
           if (held) {
             ctx.send(ndsSpawnPacket(regionId, bankId, mapId, npc.copy(x = x, y = y)))
@@ -458,9 +461,13 @@ constructor(
     val npcs = ndsNpcs.of(regionId, bankId, mapId)
     if (npcs.isEmpty()) return
     val storyFlags = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)?.storyFlags.orEmpty()
+    // An actor the map's on-load script placed (it runs before this spawn) appears where the script
+    // left it, and so does one a scene moved if the map's npcs are ever spawned again this visit.
+    val poses = ctx.attributes[PLAYER_STATE]?.scriptedNpcPoses
     for (npc in npcs) {
       if (NdsStoryFlags.isHidden(regionId, npc.flag, storyFlags)) continue
-      ctx.send(ndsSpawnPacket(regionId, bankId, mapId, npc))
+      val pose = poses?.get(de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index))
+      ctx.send(ndsSpawnPacket(regionId, bankId, mapId, if (pose == null) npc else npc.copy(x = pose.x, y = pose.y)))
     }
     log.info { "Spawned ${npcs.size} ROM npcs on DS map $regionId:$bankId:$mapId" }
   }

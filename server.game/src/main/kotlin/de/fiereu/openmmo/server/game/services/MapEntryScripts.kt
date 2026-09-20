@@ -71,6 +71,14 @@ constructor(
     }
   }
 
+  /** [onNdsEntry] split: the on-load (TRANSITION) script and the frame-table scene, either may be absent. */
+  fun onNdsEntryPhases(regionId: Int, bankId: Int, mapId: Int): Pair<Script?, Script?> {
+    val header = (mapId shl 8) or bankId
+    val source = gbaScriptSource(regionId) ?: return null to null
+    fun find(label: String) = runCatching { scriptRegistry.forLabel(label, source) }.getOrNull()
+    return find("NDS_INIT_${header}_TRANSITION") to find("NDS_INIT_${header}_FRAME")
+  }
+
   /** One DS step trigger (the ROM's coord event): its rectangle, the story var and value it waits for, its script id. */
   private data class NdsCoordTrigger(
       val x: Int,

@@ -842,6 +842,20 @@ internal constructor(
   }
 
   /**
+   * The Unova Xtransceiver call (White OpenInterpoke): the client has the whole screen - s2c 0xB6
+   * world action 3, subject = the call 1-6, window f/md1 titled item 5621, which reads the ROM narc
+   * /a/1/3/1 file (subject + 62) with the names from Unova text table 198 and its four portraits.
+   * The script only names the call; the client plays it and acknowledges when the player closes it,
+   * like the Hall of Fame screen does.
+   */
+  suspend fun xtransceiverCall(call: Int) {
+    val closed = dialog.expectAcknowledgement(session)
+    sendScenePacket(
+        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(XTRANSCEIVER_ACTION, call.toByte(), listOf(0)))
+    closed.await()
+  }
+
+  /**
    * special EnterHallOfFame: the client's own Hall of Fame screen (see [HallOfFame]) - record the
    * entry, unlock the encounter counter, show the screen, wait for the player to close it, then
    * wake them up in the bedroom the game started in. The ROM's hall-of-fame and credits never run.
@@ -1307,6 +1321,8 @@ internal constructor(
   }
 
   private companion object {
+    /** 0xB6 world action that opens the client's Xtransceiver call window. */
+    const val XTRANSCEIVER_ACTION: Byte = 3
     // Sign boxes have no speaker, npc boxes point at the entity.
     const val SIGN = 3
     const val NPC = 4

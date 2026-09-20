@@ -134,6 +134,11 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
           state.pc++
         }
+        // ds_xtransceiver N: the client's own Xtransceiver call window (White OpenInterpoke).
+        "ds_xtransceiver" -> {
+          tracedWait(ctx, "xtransceiver call") { ctx.xtransceiverCall(value(ctx, instruction.arg(0))) }
+          state.pc++
+        }
         // ds_makenpc id, sprite, x, y, facing: the script's own actor (Gen 5 MakeNPC).
         "ds_makenpc" -> {
           ctx.makeNdsNpc(

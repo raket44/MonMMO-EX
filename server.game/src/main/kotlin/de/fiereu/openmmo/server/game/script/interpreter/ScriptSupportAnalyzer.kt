@@ -301,6 +301,7 @@ class ScriptSupportAnalyzer(
           "ds_speaker" -> args.size == 1
           "ds_door" -> args.size == 3
           "ds_makenpc" -> args.size == 5
+          "ds_xtransceiver" -> args.size == 1
           // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts [, index]
           "ds_startchoosestarterscene" -> args.size == 8 || (args.size == 9 && args[8].token == "index")
           "ds_startfirstbattle" -> args.size == 1
@@ -656,6 +657,7 @@ class ScriptSupportAnalyzer(
             "ds_speaker",
             "ds_door",
             "ds_makenpc",
+            "ds_xtransceiver",
             "ds_startchoosestarterscene",
             "ds_startfirstbattle",
             "ds_starttagbattle",

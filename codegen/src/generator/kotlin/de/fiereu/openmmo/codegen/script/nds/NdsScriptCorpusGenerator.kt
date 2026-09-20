@@ -612,6 +612,8 @@ class NdsScriptCorpusGenerator {
         // water; each names the species through text slot 1). The script wants the INDEX back.
         // White's FadeScreen (see the first pass): 1 darkens, 0 restores - the GBA fadescreen modes.
         "ScreenFade" -> out += "fadescreen ${a[0]}"
+        // White OpenInterpoke: the client's own Xtransceiver call window, by call id.
+        "DsXtransceiver" -> out += "ds_xtransceiver ${a[0]}"
         // White MakeNPC: id, sprite, x, y, DS facing - an actor the script creates.
         "DsMakeNpc" -> out += "ds_makenpc ${a[0]}, ${a[1]}, ${a[2]}, ${a[3]}, ${a[4]}"
         // White Message's speaker object for the next line ("none" = the script's own entity).
@@ -1687,7 +1689,7 @@ class NdsScriptCorpusGenerator {
             // type-name text buffer (SetVarType; DS buffers are all no-ops for now), relocator,
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
             "CMD_240", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
-            "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "OpenInterpoke", "CMD_01B",
+            "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "CMD_146", "CMD_400", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
@@ -1719,6 +1721,8 @@ class NdsScriptCorpusGenerator {
             // `<= 1`; as a no-op the var stayed 0, so she always took the "only your starter" line
             // however many the owner was carrying (2026-09-20).
             "CMD_103" -> b.lines += listOf("GetPartySize", v(0))
+            // The Xtransceiver call: the client has the window and reads the call from the ROM.
+            "OpenInterpoke" -> b.lines += listOf("DsXtransceiver", tv(0))
             "CMD_4E" -> b.lines += listOf("BufferItemName", t(0), item(1))
             "SetVarItem3" -> b.lines += listOf("BufferUnovaTmMove", t(0), item(1))
             "SetVarBag" -> b.lines += listOf("BufferUnovaPocket", t(0), tv(1))

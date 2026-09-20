@@ -31,7 +31,7 @@ class UnovaScriptDecodeAuditTest :
         // Dis5 writes DecodeStopped where it met an opcode the table lacks; the generator ends the
         // script there. Without the marker a truncated entry fell through into the NEXT script of
         // its file - Nuvema's exit ran on into the post-game scenes (2026-09-20). 87 at first.
-        commands.count { it[0] == "DecodeStopped" } shouldBeLessThanOrEqual 82
+        commands.count { it[0] == "DecodeStopped" } shouldBeLessThanOrEqual 81
       }
 
       test("no command's last argument is really the next command's opcode") {

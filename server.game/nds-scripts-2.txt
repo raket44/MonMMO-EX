@@ -40649,7 +40649,94 @@ mv;634;676;12,1
 634;0;146;ApplyMovement 255 @676
 634;0;154;WaitMovement
 634;0;156;EndCameraEvent
-634;0;158;DecodeStopped
+634;0;158;CMD_17D
+634;0;160;StartCameraEvent
+634;0;162;LockCamera
+634;0;164;MoveCamera 9688 0 53248 14 32768 788 0 0 32768 721 1
+634;0;188;EndCameraEvent
+634;0;190;CMD_179
+634;0;192;MoveCamera 9688 0 53248 14 32768 788 0 0 32768 723 16
+634;0;216;ApplyMovement 2 @692
+mv;634;692;13,2 63,1 
+634;0;224;WaitMovement
+634;0;226;EndCameraEvent
+634;0;228;Message 0 4 4 2 5 0
+634;0;240;CloseMessageKP
+634;0;242;SetStackDerefVar 32768
+634;0;246;SetStackDerefVar 32769
+634;0;250;StoreDerefVarInVar 32768 4
+634;0;256;StoreDerefVarInVar 32769 5
+634;0;262;CallStd 2805
+634;0;266;GetStackVar 32769
+634;0;270;GetStackVar 32768
+634;0;274;SetVarHero 0
+634;0;277;Message 0 4 6 2 5 0
+634;0;289;CloseMessageKP
+634;0;291;ApplyMovement 2 @720
+mv;634;720;12,12 
+634;0;299;WaitMovement
+634;0;301;RemoveNPC 2
+634;0;305;Message 0 4 7 250 3 0
+634;0;317;CloseMessageKP
+634;0;319;ApplyMovement 250 @744
+mv;634;744;35,1 
+634;0;327;WaitMovement
+634;0;329;Message 0 4 8 250 3 0
+634;0;341;CloseMessageKP
+634;0;343;ApplyMovement 240 @736
+mv;634;736;34,1 
+634;0;351;WaitMovement
+634;0;353;Message 0 4 9 240 5 0
+634;0;365;CloseMessageKP
+634;0;367;ApplyMovement 240 @752
+mv;634;752;75,1 
+634;0;375;WaitMovement
+634;0;377;Message 0 4 10 240 5 0
+634;0;389;CloseMessageKP
+634;0;391;ApplyMovement 250 @728
+mv;634;728;32,1 
+634;0;399;WaitMovement
+634;0;401;Message 0 4 11 250 3 0
+634;0;413;CloseMessageKP
+634;0;415;ApplyMovement 240 @736
+634;0;423;Message 0 4 12 240 5 0
+634;0;435;WaitMovement
+634;0;437;CloseMessageKP
+634;0;439;ApplyMovement 250 @744
+634;0;447;WaitMovement
+634;0;449;Message 0 4 13 250 3 0
+634;0;461;CloseMessageKP
+634;0;463;SetStackDerefVar 16432
+634;0;467;SetStackVar 0
+634;0;471;Condition 1
+634;0;475;When 255 @493
+634;0;482;SetVarPoke 0 501
+634;0;487;Jump @528
+634;0;493;SetStackDerefVar 16432
+634;0;497;SetStackVar 1
+634;0;501;Condition 1
+634;0;505;When 255 @523
+634;0;512;SetVarPoke 0 495
+634;0;517;Jump @528
+634;0;528;Message 0 4 14 240 5 0
+634;0;540;CloseMessageKP
+634;0;542;ResetCamera 64
+634;0;546;ApplyMovement 250 @780
+mv;634;780;12,9 
+634;0;554;ApplyMovement 240 @788
+mv;634;788;12,9 
+634;0;562;WaitMovement
+634;0;564;RemoveNPC 250
+634;0;568;RemoveNPC 240
+634;0;572;EndCameraEvent
+634;0;574;ReleaseCamera
+634;0;576;StopCameraEvent
+634;0;578;SetFlag 508
+634;0;582;StoreValueInVar 16508 1
+634;0;588;WaitMoment
+634;0;590;ReleaseAll
+634;0;592;End
+634;0;523;SetVarPoke 0 498
 634;1;796;LockAll
 634;1;798;SetStackDerefVar 32768
 634;1;802;SetStackDerefVar 32769

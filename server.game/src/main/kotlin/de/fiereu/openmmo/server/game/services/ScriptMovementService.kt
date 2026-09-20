@@ -294,6 +294,21 @@ constructor(
   fun repositionNpc(session: SessionContext, state: PlayerState, localId: Int, x: Int, y: Int) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
+    // A DS actor that was PLACED stands there for everything after it: moveNpc starts a walk from
+    // the scripted pose, else the ROM tile - and a placement was not a pose. Nuvema's on-load
+    // script puts Bianca by the player's house; her walk home then started from her ROM tile at
+    // the lab, and she missed her mark in Mom's Town Map scene too (2026-09-20). DS maps only:
+    // on a GBA map a recorded pose also changes how clearflag respawns behave.
+    if (mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) == null) {
+      val regionId = info.positionRegionId.toInt()
+      val bankId = info.positionBankId.toInt() and 0xFF
+      val mapId = info.positionMapId.toInt() and 0xFF
+      val facing =
+          state.scriptedNpcPoses[scriptedNpcKey(regionId, bankId, mapId, localId)]?.facing
+              ?: ndsNpcPose(regionId, bankId, mapId, localId)?.facing
+              ?: Direction.DOWN
+      state.scriptedNpcPoses[scriptedNpcKey(regionId, bankId, mapId, localId)] = ScriptedNpcPose(x, y, facing)
+    }
     npcService.repositionNpc(
         session,
         info.positionRegionId.toInt(),

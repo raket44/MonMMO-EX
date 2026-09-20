@@ -377,6 +377,8 @@ constructor(
       state.y = y.toShort()
       state.facingDirection = facing
       state.scriptedFacingSet = true
+      // Placed across the seam, same as walked across (see moveSelf).
+      movementService?.get()?.crossNdsSeam(session, charId, state, x, y)
     } else if (!commitPose(charId, state, map, Pose(x, y, facing))) return
     session.send(
         NpcUpdatePacket(
@@ -591,6 +593,11 @@ constructor(
       state.y = end.y.toShort()
       state.facingDirection = end.facing
       state.scriptedFacingSet = true
+      // A scene that WALKS the player onto the next map cell crosses the seam without the client
+      // ever sending a step, and the seam check hung off the step handler alone - so the new cell
+      // was never loaded and its npcs never spawned. Juniper stood invisible on Route 1 until the
+      // owner took a step of his own, which is what finally ran it (2026-09-20).
+      movementService?.get()?.crossNdsSeam(session, charId, state, end.x, end.y)
       return
     }
     // A player walked off the map with no neighbour there means the scene ran from a position it

@@ -1088,7 +1088,7 @@ constructor(
    * does not own and another header on the same matrix does, the tracking moves: position,
    * presence group, that header's npcs (once per session, like a map load) and its entry scripts.
    */
-  private fun crossNdsSeam(ctx: SessionContext, charId: Long, state: PlayerState, x: Int, y: Int) {
+  fun crossNdsSeam(ctx: SessionContext, charId: Long, state: PlayerState, x: Int, y: Int) {
     val region = state.regionId
     if (!ndsLand.has(region, state.bankId, state.mapId)) return
     if (ndsLand.typeAt(region, state.bankId, state.mapId, x, y) != null) return

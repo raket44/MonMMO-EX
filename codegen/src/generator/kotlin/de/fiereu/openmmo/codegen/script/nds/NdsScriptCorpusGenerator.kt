@@ -304,43 +304,14 @@ class NdsScriptCorpusGenerator {
       val candidates = names[number].orEmpty()
       return candidates.firstOrNull { it in referenced } ?: candidates.minOrNull() ?: "VAR_0x" + number.toString(16).uppercase()
     }
-    val rows =
-        file.readLines().filter { it.startsWith("coord;") }.mapNotNull { line ->
-          val p = line.split(';')
-          if (p.size < 13) return@mapNotNull null
-          // p: kind, region, bank, map, idx, script, x, y, w, h, height, value, var
-          val n = p.subList(5, 13).map { it.toIntOrNull() ?: return@mapNotNull null }
-          "${p[2]};${p[3]};${n[1]};${n[2]};${n[3]};${n[4]};${varName(n[7])};${n[6]};${n[0]}"
-        }
-    return rows + added(dialect, ::varName)
+    return file.readLines().filter { it.startsWith("coord;") }.mapNotNull { line ->
+      val p = line.split(';')
+      if (p.size < 13) return@mapNotNull null
+      // p: kind, region, bank, map, idx, script, x, y, w, h, height, value, var
+      val n = p.subList(5, 13).map { it.toIntOrNull() ?: return@mapNotNull null }
+      "${p[2]};${p[3]};${n[1]};${n[2]};${n[3]};${n[4]};${varName(n[7])};${n[6]};${n[0]}"
+    }
   }
-
-  /**
-   * Triggers MonMMO adds on purpose, kept apart from the extracted ones because
-   * `tools/nds/Triggers5.java` rewrites every `coord;` line of `nds-npcs-2.txt` when the ROM is
-   * re-read, so a row hand-added there would be silently lost.
-   *
-   * Route 1's catching lesson (map header 317, script id 1 = file 634 entry 0). On the cartridge it
-   * is simply Professor Juniper's npc script, and there is no trigger for it anywhere - verified
-   * against White (IRAO) 2026-09-20 rather than assumed: Route 1's event file holds exactly ONE
-   * trigger record (the end-of-route comparison scene) and its level script, file 635, is four zero
-   * bytes. Nuvema's seam triggers hand the player over to Route 1 (VAR 16512 == 2 at y 739 runs the
-   * walk up together) and then stop; nothing starts the lesson.
-   *
-   * Npcs are solid, but she is one npc on a wide route, so the player simply walks around her. That
-   * dead-ends Route 1: the comparison scene at the north end is a real ROM trigger gated on
-   * VAR 16508 == 1, and this lesson is the only thing that ever sets it, so a player who walks past
-   * reaches Cheren and Bianca with nothing able to fire. The owner asked for her to start on
-   * approach, which is also how the region's other tutorials are handled.
-   *
-   * The band covers the route's full width for the seven rows leading up to and level with her
-   * (she stands at 788,724), so it cannot be walked around, and it fires on the first step taken
-   * inside it - including when the hand-over scene releases the player already within it. It is
-   * gated on the lesson's own completion var, which the scene flips to 1 as it ends, so it runs once.
-   */
-  private fun added(dialect: Dialect, varName: (Int) -> String): List<String> =
-      if (dialect.region != 2) emptyList()
-      else listOf("61;1;740;720;60;7;${varName(VAR_ROUTE_1_LESSON_DONE)};0;1")
 
   // ---------------------------------------------------------------- source parsing
 
@@ -1974,9 +1945,6 @@ class NdsScriptCorpusGenerator {
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
     /** Object ids a Gen 5 script can create with MakeNPC (252-254 are engine slots, 255 the player). */
     val SCRIPT_ACTOR_IDS = 224..251
-
-    /** Route 1's lesson sets this to 1 as it ends; the end-of-route comparison trigger waits for 1. */
-    const val VAR_ROUTE_1_LESSON_DONE = 16508
 
     /** Gen 4 movement actions 0-99 in groups of four (north, south, west, east); null = not directional. */
     val GEN4_DIRECTIONAL: List<String?> =

@@ -28,6 +28,9 @@ private const val ENCOUNTER_RATE_SCALE = 16
 // The GBA's standard cave rate, for retail-covered maps with no decomp table of their own.
 private const val DEFAULT_ENCOUNTER_RATE = 10
 
+/** Share of non-horde dark grass encounters that come out as a 2v2 (owner: "at least 50/50"). */
+private const val DARK_GRASS_DOUBLE_PERCENT = 50
+
 // The GBA's usual surfing rate (FireRed's water tables), for maps whose decomp table lacks one.
 private const val DEFAULT_WATER_RATE = 4
 
@@ -272,6 +275,28 @@ constructor(
       battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
       return
     }
+    // Dark grass: half of the encounters that are NOT a horde come out as a 2v2, the only wild
+    // double in the game (owner, 2026-09-21). It is two independent draws of the same table, so the
+    // two can differ and duplicates are fine; a horde row drawn as one of the two contributes a
+    // single of that species rather than a horde. A horde landed on the MAIN roll above is still a
+    // full horde - dark grass does not take that away.
+    if (darkGrass && random.nextInt(100) < DARK_GRASS_DOUBLE_PERCENT) {
+      val partner = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random))?.slot
+      if (partner != null) {
+        val specs =
+            listOf(slot, partner).map {
+              BattleService.OpponentSpec(
+                  it.dexId,
+                  random.nextInt(it.minLevel, it.maxLevel + 1),
+                  emptyList(),
+                  hints = abilities.hints(lead, it.dexId, random),
+              )
+            }
+        log.info { "Wild 2v2 in dark grass for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: ${slot.dexId} + ${partner.dexId}" }
+        battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
+        return
+      }
+    }
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]: species ${slot.dexId} level $level" }
     battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave))
   }
@@ -321,7 +346,7 @@ constructor(
     val cave =
         if (map != null) map.mapType == MapType.UNDERGROUND
         else ndsLand.typeAt(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt()).let { it == null || !ndsLand.isGrass(it) }
-    battleService.startHordeBattle(session, specs, EncounterContext(surfing = state.surfing, cave = cave))
+    battleService.startHordeBattle(session, specs, EncounterContext(surfing = state.surfing, cave = cave), sweetScent = true)
     return null
   }
 

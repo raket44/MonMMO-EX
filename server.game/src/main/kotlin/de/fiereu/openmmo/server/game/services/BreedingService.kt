@@ -251,7 +251,9 @@ constructor(
             iVs = rollOffspringIVs(first, second, rng),
             isEgg = true,
             isShiny = base.isShiny || inheritsShiny,
-            isSecret = PokemonRarityFlag.SECRET_SHINY.isSet(flags),
+            // Hatching counts as a single encounter (owner, 2026-09-21), so a shiny the egg rolls here
+            // takes its own 1-in-12 Secret roll inside wildMons.create; inheritance ORs on top.
+            isSecret = base.isSecret || PokemonRarityFlag.SECRET_SHINY.isSet(flags),
             isAlpha = PokemonRarityFlag.ALPHA.isSet(flags),
             hasHiddenAbility = PokemonRarityFlag.HIDDEN_ABILITY.isSet(flags),
         )

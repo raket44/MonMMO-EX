@@ -23,11 +23,18 @@ private const val TACKLE_ID = 33
 
 private const val LAST_RETAIL_DEX = 649
 
+/** A shiny takes a 1 in this many roll to be SECRET (owner, 2026-09-21). */
+const val SECRET_SHINY_DENOMINATOR = 12
+
 /**
  * Rolls a wild monster: random nature seed, random IVs, computed stats, full hp, and with a
  * [shinyDenominator] above zero a 1 in that many chance of being shiny (every monster rolls on
  * its own, so each horde member has the full chance). Zero, the default, never rolls one: a
- * trainer's monsters, starters and give commands stay plain.
+ * trainer.s monsters, starters and give commands stay plain.
+ *
+ * A shiny that rolls then takes one more roll to be SECRET, 1 in [SECRET_SHINY_DENOMINATOR]
+ * (owner, 2026-09-21). Sweet Scent is the only thing that cannot produce one, so [secretAllowed]
+ * is false only there; step hordes roll for it like anything else, and so do hatched eggs.
  */
 @Singleton
 class WildMonFactory
@@ -41,7 +48,14 @@ constructor(
         de.fiereu.openmmo.server.game.services.RetailHeldItems(),
 ) {
 
-  fun create(requestedDexId: Int, level: Int, rng: BattleRng, shinyDenominator: Int = 0, hints: WildRollHints? = null): Pokemon? {
+  fun create(
+      requestedDexId: Int,
+      level: Int,
+      rng: BattleRng,
+      shinyDenominator: Int = 0,
+      hints: WildRollHints? = null,
+      secretAllowed: Boolean = true,
+  ): Pokemon? {
     // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
     // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
     // are the same monster server-side. Ids for genuinely new species (650+) keep the offset.
@@ -85,6 +99,9 @@ constructor(
     val moveset =
         moveIds.map { PokemonMove(it.toShort(), (moves.get(it)?.pp ?: DEFAULT_MOVE_PP).toByte()) } +
             List(MAX_MOVE_SLOTS - moveIds.size) { PokemonMove(0, 0) }
+    val shiny = shinyDenominator > 0 && rng.pick(shinyDenominator) == 0
+    // Only a shiny rolls for Secret, and only where the encounter allows it.
+    val secret = shiny && secretAllowed && rng.pick(SECRET_SHINY_DENOMINATOR) == 0
     val mon =
         Pokemon(
             id = entityIds.newMonsterId(),
@@ -101,10 +118,10 @@ constructor(
             eVs = EVs(),
             iVs = ivs,
             moves = moveset,
-            isShiny = shinyDenominator > 0 && rng.pick(shinyDenominator) == 0,
+            isShiny = shiny,
             hasHiddenAbility = false,
             isAlpha = false,
-            isSecret = false,
+            isSecret = secret,
             isFatefulEncounter = false,
             isRaidEncounter = false,
             caughtAt = LocalDateTime.now(),

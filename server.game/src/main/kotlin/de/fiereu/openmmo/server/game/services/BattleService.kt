@@ -454,17 +454,29 @@ constructor(
     return battle.completion.await()
   }
 
-  /** A horde: several wild monsters on the opposing field at once (Sweet Scent). */
+  /**
+   * A multi-monster wild battle. [sweetScent] separates the two ways one starts: Sweet Scent, which
+   * the tracker counts under its own kind and which is the ONE encounter that can never produce a
+   * Secret shiny, and a horde landed off an ordinary step roll, which is a plain wild encounter and
+   * rolls for Secret like any other (owner, 2026-09-21). Before that distinction existed every
+   * horde was logged as Sweet Scent.
+   */
   fun startHordeBattle(
       session: SessionContext,
       specs: List<OpponentSpec>,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+      sweetScent: Boolean = false,
   ): BattleInstance? {
-    val battle = createBattle(session, specs, catchable = true, escapable = true, encounter = encounter)
-    // Hordes are Sweet Scent's: the tracker's "Wild Sweet Scent" kind, one hit per monster.
+    val battle =
+        createBattle(session, specs, catchable = true, escapable = true, encounter = encounter, secretAllowed = !sweetScent)
     val charId = session.attributes[PLAYER_STATE]?.characterId
     if (battle != null && charId != null) {
-      encounterTracker?.onEncounter(session, charId, specs.map { it.dexId }, EncounterTrackerService.TYPE_SWEET_SCENT)
+      encounterTracker?.onEncounter(
+          session,
+          charId,
+          specs.map { it.dexId },
+          if (sweetScent) EncounterTrackerService.TYPE_SWEET_SCENT else EncounterTrackerService.TYPE_WILD,
+      )
     }
     return battle
   }
@@ -539,6 +551,9 @@ constructor(
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
       formatOverride: BattleFormat? = null,
+      // Sweet Scent is the ONE encounter that cannot produce a Secret shiny (owner, 2026-09-21);
+      // step hordes, dark grass doubles and hatched eggs all roll for it.
+      secretAllowed: Boolean = true,
       /** The Crystal Onix raid: [opponents] opens with the boss, then its summoned Onix. */
       raid: Boolean = false,
   ): BattleInstance? {
@@ -576,12 +591,15 @@ constructor(
     // Only the wild roll for shiny; a trainer's monsters never do.
     val shinyDenominator = if (trainer == null) wildShinyDenominator else 0
     for (spec in opponents) {
-      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints)
+      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints, secretAllowed)
       if (rolled == null) {
         session.send(notice("Unknown species ${spec.dexId}."))
         return null
       }
-      if (rolled.isShiny) log.info { "Shiny wild ${spec.dexId} L${spec.level} rolled for char=$charId (1 in $shinyDenominator)" }
+      if (rolled.isShiny) {
+        val secretTag = if (rolled.isSecret) " - SECRET" else ""
+        log.info { "Shiny wild ${spec.dexId} L${spec.level} rolled for char=$charId (1 in $shinyDenominator)$secretTag" }
+      }
       if (spec.shiny || spec.alpha) rolled = rolled.copy(isShiny = rolled.isShiny || spec.shiny, isAlpha = spec.alpha)
       if (spec.moveIds.isNotEmpty()) {
         rolled =

@@ -42,6 +42,36 @@ constructor(
 ) {
 
   /**
+   * White CMD_25F: the cartridge RELOADS the field's objects, which every scene does just after it
+   * changes the flags and vars that decide who is on the map and just before it releases the player
+   * (7 uses, all that shape) - the same reload the GBA does after a battle (despawnHiddenNpcs).
+   *
+   * Two things go: the scene's own temporary actors, and anyone whose hide flag the scene just set.
+   * Without it Nuvema's exit left its stand-in Cheren and Bianca standing on Route 1 next to the
+   * real ones, and the stand-ins have no talk script - so they ignored the owner (2026-09-20).
+   */
+  fun reloadNdsFieldObjects(session: SessionContext, state: PlayerState) {
+    val charId = state.characterId ?: return
+    val stored = characterStore.getCharacter(charId) ?: return
+    val info = stored.info
+    if (mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId) != null) return
+    val regionId = info.positionRegionId.toInt()
+    for ((cell, npc) in ndsNpcs.madeInRegion(regionId)) {
+      val key = scriptedNpcKey(regionId, cell.first, cell.second, npc.index)
+      if (!state.madeNdsNpcs.remove(key)) continue
+      state.scriptedNpcPoses.remove(key)
+      npcService.despawnNpc(session, regionId, cell.first, cell.second, npc.index)
+    }
+    val bankId = info.positionBankId.toInt() and 0xFF
+    val mapId = info.positionMapId.toInt() and 0xFF
+    for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
+      if (NdsStoryFlags.isHidden(regionId, npc.flag, stored.storyFlags)) {
+        npcService.despawnNpc(session, regionId, bankId, mapId, npc.index)
+      }
+    }
+  }
+
+  /**
    * Gen 5 MakeNPC: a script creates an actor of its own - object id, sprite, tile, DS facing. It is
    * defined in the DS npc table (so walks, facing, speaker and remove find it like a ROM npc), marked
    * alive for this player, and spawned - unless the map's on-load script is running ahead of the

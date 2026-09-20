@@ -40,6 +40,7 @@ constructor(
     private val raidPlacement: CrystalOnixRaidPlacement,
     private val berryPlots: BerryPlotService,
     private val raid: CrystalOnixRaidService,
+    private val ndsStandardScripts: NdsStandardScripts,
 ) {
 
   /**
@@ -76,6 +77,12 @@ constructor(
     val mapId = state.mapId
     val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
     scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
+    // The engine's own scripts (the Pokemon Center nurse, the mart clerk) have no script file to
+    // bind, so they used to answer nothing at all.
+    ndsStandardScripts.scriptFor(npc.script, regionId)?.let {
+      runScript(session, state, it, npcEntityId)
+      return
+    }
     // Ids from 2000 up are Platinum's shared script chunks (common, signposts, trainers...).
     val label =
         if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"

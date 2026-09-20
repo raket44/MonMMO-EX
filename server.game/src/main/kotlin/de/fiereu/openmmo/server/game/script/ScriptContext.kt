@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.script
 
+import de.fiereu.openmmo.server.game.script.interpreter.DS_COMMON_MART
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.common.DynamicWarp
 import de.fiereu.openmmo.common.dialog.DialogLine
@@ -697,6 +698,24 @@ internal constructor(
    */
   fun pokemart(vararg items: ItemDef) =
       checkNotNull(shops) { "Shop service is unavailable" }.open(session, entityId, items.toList())
+
+  /**
+   * The DS common mart shelf, which widens with the badges - what the engine's own mart clerk sells
+   * (Unova script 2101). The item numbers are the games' own and carry over from Gen 4; Unova's
+   * client ids are the 5000 band, the other DS regions' are region * 1000.
+   */
+  fun pokemartCommon() {
+    val badges = (0 until 16).count { isFlagSet(namespacedVar("FLAG_DS_BADGE_$it")) }
+    val tier = when (badges) { 0 -> 1; 1, 2 -> 2; 3, 4 -> 3; 5, 6 -> 4; 7 -> 5; else -> 6 }
+    val band = if (state.regionId == 2) 5000 else state.regionId * 1000
+    val shelf = DS_COMMON_MART.filter { it.second <= tier }.mapNotNull { resolveItemWire(band + it.first) }
+    if (shelf.isEmpty()) return
+    pokemart(*shelf.toTypedArray())
+  }
+
+  /** A story key in the region the player stands in (the interpreter's own namespacing). */
+  private fun namespacedVar(token: String): String =
+      (Region.byId(state.regionId)?.name?.lowercase() ?: "kanto") + "/" + token
 
   /** Run a non-catchable, non-escapable story battle and wait for its result. */
   suspend fun battle(dexId: Int, level: Int, vararg moveIds: Int): BattleResult =

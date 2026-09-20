@@ -2585,5 +2585,5 @@ private const val B_OUTCOME_RAN = 4
 private const val B_OUTCOME_CAUGHT = 7
 
 /** The Gen 4 common mart shelf: (item index, badge tier) - identical in Platinum and HeartGold. */
-private val DS_COMMON_MART: List<Pair<Int, Int>> =
+internal val DS_COMMON_MART: List<Pair<Int, Int>> =
     listOf(4 to 1, 3 to 3, 2 to 4, 17 to 1, 26 to 2, 25 to 4, 24 to 5, 23 to 6, 28 to 3, 18 to 1, 22 to 1, 21 to 2, 19 to 2, 20 to 2, 27 to 4, 78 to 2, 79 to 2, 83 to 3, 84 to 4)

@@ -81,6 +81,7 @@ constructor(
     state.loadedMaps.clear()
     state.spawnedNpcMaps.clear()
     state.scriptedNpcPoses.clear()
+    state.madeNdsNpcs.clear()
     state.loadedMaps.add(mapCacheKey(map.regionId.toInt(), map.bankId.toInt(), map.mapId.toInt()))
   }
 

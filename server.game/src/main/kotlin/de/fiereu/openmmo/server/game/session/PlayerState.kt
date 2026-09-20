@@ -255,6 +255,8 @@ data class PlayerState(
      * [spawnedNpcMaps], since the client keeps the npc until then.
      */
     val scriptedNpcPoses: MutableMap<Long, ScriptedNpcPose> = ConcurrentHashMap(),
+    /** Script-made DS actors alive for this player on the current map (scriptedNpcKey); cleared with the poses. */
+    val madeNdsNpcs: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /**
      * The map whose entry scripts already ran for this arrival. The client re-requests its player
      * several times while loading an outdoor map (once per connection), and each request used to

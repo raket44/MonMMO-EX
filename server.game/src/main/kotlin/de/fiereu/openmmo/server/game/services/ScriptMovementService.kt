@@ -42,6 +42,27 @@ constructor(
 ) {
 
   /**
+   * Gen 5 MakeNPC: a script creates an actor of its own - object id, sprite, tile, DS facing. It is
+   * defined in the DS npc table (so walks, facing, speaker and remove find it like a ROM npc), marked
+   * alive for this player, and spawned - unless the map's on-load script is running ahead of the
+   * spawn, which then shows it. As a no-op, every script naming such an actor was refused whole
+   * ("unresolved object OBJ_240"): Nuvema's first step onto Route 1 never played and Juniper stood
+   * mute on Route 1 (2026-09-20).
+   */
+  fun makeNdsNpc(session: SessionContext, state: PlayerState, id: Int, sprite: Int, x: Int, y: Int, dsFacing: Int) {
+    val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return
+    val regionId = info.positionRegionId.toInt()
+    val bankId = info.positionBankId.toInt() and 0xFF
+    val mapId = info.positionMapId.toInt() and 0xFF
+    ndsNpcs.define(
+        regionId, bankId, mapId,
+        NdsNpcs.Npc(index = id, id = id, sprite = sprite, movement = 0, flag = 0, script = 0, facing = dsFacing, xRange = 0, yRange = 0, x = x, y = y))
+    state.madeNdsNpcs += scriptedNpcKey(regionId, bankId, mapId, id)
+    state.scriptedNpcPoses.remove(scriptedNpcKey(regionId, bankId, mapId, id))
+    if (!state.ndsPlacementOnly) npcService.spawnNpc(session, regionId, bankId, mapId, id)
+  }
+
+  /**
    * A scene's world packet (a door animation) in the same ordered queue as scripted spawns and
    * placements: sent directly while the client is still loading the map, it is dropped.
    */

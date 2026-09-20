@@ -471,8 +471,12 @@ constructor(
     // An actor the map's on-load script placed (it runs before this spawn) appears where the script
     // left it, and so does one a scene moved if the map's npcs are ever spawned again this visit.
     val poses = ctx.attributes[PLAYER_STATE]?.scriptedNpcPoses
+    val alive = ctx.attributes[PLAYER_STATE]?.madeNdsNpcs
     for (npc in npcs) {
       if (NdsStoryFlags.isHidden(regionId, npc.flag, storyFlags)) continue
+      // A script-made actor exists only for the player whose script made it.
+      if (ndsNpcs.isMade(regionId, bankId, mapId, npc.index) &&
+          alive?.contains(de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)) != true) continue
       val pose = poses?.get(de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index))
       ctx.send(ndsSpawnPacket(regionId, bankId, mapId, if (pose == null) npc else npc.copy(x = pose.x, y = pose.y)))
     }

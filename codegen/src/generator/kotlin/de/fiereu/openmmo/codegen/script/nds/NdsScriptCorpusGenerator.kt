@@ -612,6 +612,8 @@ class NdsScriptCorpusGenerator {
         // water; each names the species through text slot 1). The script wants the INDEX back.
         // White's FadeScreen (see the first pass): 1 darkens, 0 restores - the GBA fadescreen modes.
         "ScreenFade" -> out += "fadescreen ${a[0]}"
+        // White MakeNPC: id, sprite, x, y, DS facing - an actor the script creates.
+        "DsMakeNpc" -> out += "ds_makenpc ${a[0]}, ${a[1]}, ${a[2]}, ${a[3]}, ${a[4]}"
         // White Message's speaker object for the next line ("none" = the script's own entity).
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
@@ -1484,6 +1486,11 @@ class NdsScriptCorpusGenerator {
           out["OBJ_${p[5]}"] = p[4].toInt()
         }
       }
+      // Ids a script creates with MakeNPC exist on no map's event list, and the one that makes an
+      // actor is often not the one that moves it (Nuvema's file 778 makes 240 in its exit trigger,
+      // then entry 14 and Route 1's own script walk it). Declared here so those movements resolve:
+      // the actor's definition arrives at runtime (ScriptMovementService.makeNdsNpc).
+      for (id in SCRIPT_ACTOR_IDS) out.putIfAbsent("OBJ_$id", id)
       return out
     }
 
@@ -1808,7 +1815,11 @@ class NdsScriptCorpusGenerator {
             // (a same-map reload on the cartridge); warped there the owner stood in a blue void
             // (2026-09-19). Only a real header goes out.
             "FallWarp" -> if (t(0) != "0") b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
-            "MakeNPC", "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
+            // MakeNPC x, y, dir, id, sprite, ?: the script makes its own actor (Cheren and Bianca
+            // at Nuvema's Route 1 exit, Juniper on Route 1). Only ids under 250 are addressable
+            // objects; 250/251 are the camera and follower slots the server does not animate.
+            "MakeNPC" -> if ((t(3).toIntOrNull() ?: 255) < 250) b.lines += listOf("DsMakeNpc", t(3), t(4), t(0), t(1), t(2))
+            "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
             "RemoveNPC" -> if (t(0).toInt() < 250) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
             "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))
             // obj, x, z, y, facing (the corpus: z is 0/1/3 everywhere, facing 0-3; Nuvema's gift
@@ -1920,6 +1931,9 @@ class NdsScriptCorpusGenerator {
     /** Platinum's CommonScript_TrySaveGame and HeartGold's std_prompt_save body (scr_seq_0003 _0646): VAR_RESULT 1 = saved. */
     val SILENT_SAVE_ROUTINES = setOf("CommonScript_TrySaveGame", "scr_seq_0003__0646")
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
+    /** Object ids a Gen 5 script can create with MakeNPC (250/251 are camera and follower slots). */
+    val SCRIPT_ACTOR_IDS = 224..249
+
     /** Gen 4 movement actions 0-99 in groups of four (north, south, west, east); null = not directional. */
     val GEN4_DIRECTIONAL: List<String?> =
         listOf(

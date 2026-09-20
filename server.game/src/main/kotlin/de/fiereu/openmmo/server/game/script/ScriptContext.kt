@@ -91,6 +91,10 @@ internal constructor(
   /** A world packet of the scene (a door animation), ordered with its spawns and held while the map loads. */
   internal fun sendScenePacket(packet: Any) = movement.sendScenePacket(session, packet)
 
+  /** Gen 5 MakeNPC: an actor the script creates itself (see ScriptMovementService.makeNdsNpc). */
+  fun makeNdsNpc(id: Int, sprite: Int, x: Int, y: Int, dsFacing: Int) =
+      movement.makeNdsNpc(session, state, id, sprite, x, y, dsFacing)
+
   internal fun traceInterpreter(message: () -> String) = developerTools?.trace(message)
 
   /**

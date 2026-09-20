@@ -134,6 +134,16 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
           state.pc++
         }
+        // ds_makenpc id, sprite, x, y, facing: the script's own actor (Gen 5 MakeNPC).
+        "ds_makenpc" -> {
+          ctx.makeNdsNpc(
+              value(ctx, instruction.arg(0)),
+              value(ctx, instruction.arg(1)),
+              value(ctx, instruction.arg(2)),
+              value(ctx, instruction.arg(3)),
+              value(ctx, instruction.arg(4)))
+          state.pc++
+        }
         // ds_door 0|1, x, y: open / close the map door at a tile (White CMD_129 on a CMD_127 door).
         // s2c 0x1F with the client's own values - kind 0, flag 1, arg 0 open / 1 close.
         // Through the arrival queue: a scene that starts as the player arrives (leaving Juniper's

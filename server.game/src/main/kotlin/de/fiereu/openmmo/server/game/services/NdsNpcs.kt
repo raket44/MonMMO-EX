@@ -36,7 +36,26 @@ class NdsNpcs @Inject constructor() {
 
   private val byMap: Map<Triple<Int, Int, Int>, List<Npc>> by lazy { load() }
 
-  fun of(region: Int, bank: Int, map: Int): List<Npc> = byMap[Triple(region, bank, map)].orEmpty()
+  /**
+   * Actors a script makes (Gen 5 MakeNPC x, y, dir, id, sprite: ids 224-227, 240, 250, 251 - Cheren
+   * and Bianca at Nuvema's Route 1 exit, Juniper's Route 1 lesson). Their DEFINITION lives here so
+   * every lookup finds them like a ROM npc; whether one is ALIVE is per player
+   * (PlayerState.madeNdsNpcs), so it only appears for someone whose script made it.
+   */
+  private val made = java.util.concurrent.ConcurrentHashMap<Triple<Int, Int, Int>, java.util.concurrent.ConcurrentHashMap<Int, Npc>>()
+
+  fun define(region: Int, bank: Int, map: Int, npc: Npc) {
+    made.computeIfAbsent(Triple(region, bank, map)) { java.util.concurrent.ConcurrentHashMap() }[npc.index] = npc
+  }
+
+  fun isMade(region: Int, bank: Int, map: Int, index: Int): Boolean =
+      made[Triple(region, bank, map)]?.containsKey(index) == true
+
+  fun of(region: Int, bank: Int, map: Int): List<Npc> {
+    val rom = byMap[Triple(region, bank, map)].orEmpty()
+    val extra = made[Triple(region, bank, map)] ?: return rom
+    return rom.filterNot { it.index in extra.keys } + extra.values
+  }
 
   private fun load(): Map<Triple<Int, Int, Int>, List<Npc>> {
     val out = HashMap<Triple<Int, Int, Int>, MutableList<Npc>>()

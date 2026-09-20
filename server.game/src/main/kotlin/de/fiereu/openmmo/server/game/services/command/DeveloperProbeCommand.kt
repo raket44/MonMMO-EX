@@ -25,7 +25,7 @@ constructor(
 ) : ChatCommand {
   override val name = "probe"
   override val usage =
-      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin|world <action> <subject> [shorts]|entityaction <action>>"
+      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin|world <action> <subject> [shorts]|door <open> <x> <y> [kind] [arg]|entityaction <action>>"
   override val description = "sends one candidate packet to see how the client renders it"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -176,6 +176,23 @@ constructor(
         ctx.session.send(
             de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(action.toByte(), subject.toByte(), args))
         ctx.reply("Sent world action=$action subject=$subject args=$args")
+      }
+      // s2c 0x1F (client f/wi7), the door animation: "/probe door <open 0|1> <x> <y> [kind] [arg]".
+      // kind defaults to the current region, arg to 0 - both go straight into the client's door
+      // routine and are not understood yet, so this is how they get found.
+      "door" -> {
+        val open = ctx.args.getOrNull(1)?.toIntOrNull()
+        val x = ctx.args.getOrNull(2)?.toIntOrNull()
+        val y = ctx.args.getOrNull(3)?.toIntOrNull()
+        if (open == null || x == null || y == null) {
+          ctx.reply("/probe door <open 0|1> <x> <y> [kind] [arg]")
+          return
+        }
+        val kind = ctx.args.getOrNull(4)?.toIntOrNull() ?: ctx.state.regionId
+        val arg = ctx.args.getOrNull(5)?.toIntOrNull() ?: 0
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.DoorAnimationPacket(kind.toByte(), open.toShort(), x.toShort(), y.toShort(), arg.toShort()))
+        ctx.reply("Sent door open=$open at ($x, $y) kind=$kind arg=$arg")
       }
       // s2c 0xB0 (client f/om1): entity uid + action byte, handed to the active scene.
       // "/probe entityaction <action>" targets your own entity.

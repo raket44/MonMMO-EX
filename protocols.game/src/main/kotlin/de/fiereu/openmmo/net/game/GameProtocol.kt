@@ -109,7 +109,7 @@ object GameProtocol : Protocol() {
 
     s2c<OverworldWeatherControlPacket>(0x1Eu, OverworldWeatherControlPacketCodec)
 
-    s2c<OverworldParticleSpawnPacket>(0x1Fu, OverworldParticleSpawnPacketCodec)
+    s2c<DoorAnimationPacket>(0x1Fu, DoorAnimationPacketCodec)
 
     c2s<NullPacket>(0x20u, NullPacketCodec)
     s2c<TokenPayloadPacket>(0x20u, TokenPayloadPacketCodec)

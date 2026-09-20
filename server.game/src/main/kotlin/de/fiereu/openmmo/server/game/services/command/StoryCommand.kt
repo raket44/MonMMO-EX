@@ -33,7 +33,7 @@ constructor(
     private val mapManager: de.fiereu.openmmo.maps.MapManager,
 ) : ChatCommand {
   override val name = "story"
-  override val usage = "/story [checkpoint|reset|reset keep]"
+  override val usage = "/story [checkpoint|reset|reset wipe]"
 
   private val ALL_BIKE_ITEMS = REGIONAL_BIKE_ITEMS + CLIENT_BICYCLE_ITEM + DUPLICATE_BICYCLE_ITEM
   override val description = "jumps to a story scene, or lists the scenes with no argument"
@@ -43,8 +43,8 @@ constructor(
     val wanted = ctx.args.firstOrNull()
     if (wanted == null) {
       KANTO_CHECKPOINTS.forEach { ctx.reply("${it.name} - ${it.description}") }
-      ctx.reply("reset - starts the region's story over, keeping money and the counters")
-      ctx.reply("reset keep - the same, but your party, PC and bag stay as they are")
+      ctx.reply("reset - starts this region's story over; your party, PC and bag stay")
+      ctx.reply("reset wipe - the same, and EMPTIES your party, PC and bag")
       return
     }
     // A jump warps out from under a parked script or a running battle, and neither recovers.
@@ -57,7 +57,15 @@ constructor(
       return
     }
     if (wanted.equals("reset", ignoreCase = true)) {
-      reset(ctx, keepBuild = ctx.args.getOrNull(1).equals("keep", ignoreCase = true))
+      // The party, PC and bag belong to every region, the story to one: a plain reset keeps them.
+      // It used to wipe them unless the second word was exactly "keep" - a typo there cost the
+      // owner his whole Kanto build while resetting Unova (2026-09-19). Emptying now has to be
+      // asked for by name, and anything else is refused rather than guessed at.
+      when (ctx.args.getOrNull(1)?.lowercase()) {
+        null, "keep" -> reset(ctx, keepBuild = true)
+        "wipe" -> reset(ctx, keepBuild = false)
+        else -> ctx.reply("Unknown option. /story reset keeps your party, PC and bag; /story reset wipe empties them.")
+      }
       return
     }
     val checkpoint = KANTO_CHECKPOINTS.find { it.name.equals(wanted, ignoreCase = true) }
@@ -83,8 +91,16 @@ constructor(
     // Every bike quest is reset with the flags, so every bike goes with them even when the bag is
     // kept: the login reclaim only runs at login, and a reset made mid-session left the Bicycle
     // in the bag until the next relog (2026-09-08).
-    val keptItems = stored.items.filterKeys { it !in ALL_BIKE_ITEMS }
-    val takenBikes = stored.items.keys.filter { it in ALL_BIKE_ITEMS }
+    // Only THIS region's bike quest restarts, so only its bike goes: a Unova reset used to take
+    // Kanto's Bicycle too (2026-09-19).
+    val regionBikes: Set<Int> =
+        when (region) {
+          Region.KANTO -> setOf(CLIENT_BICYCLE_ITEM, DUPLICATE_BICYCLE_ITEM)
+          Region.HOENN -> de.fiereu.openmmo.server.game.services.HOENN_BIKE_ITEMS.toSet()
+          else -> setOf(region.wireValue.toInt() * 1000 + 433)
+        }
+    val keptItems = stored.items.filterKeys { it !in regionBikes }
+    val takenBikes = stored.items.keys.filter { it in regionBikes }
     characterStore.replaceProgress(
         characterId = charId,
         party = if (keepBuild) stored.pokemon.toList() else emptyList(),

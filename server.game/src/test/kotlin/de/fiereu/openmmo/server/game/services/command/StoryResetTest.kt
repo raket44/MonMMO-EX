@@ -139,12 +139,36 @@ class StoryResetTest :
           after.storyFlags.filter { it.startsWith("kanto/") }.toSet() shouldBe NewGameStarts.forRegion(Region.KANTO, female = false).storyFlags
           after.storyFlags.filterNot { it.startsWith("kanto/") }.toSet() shouldBe before.filterNot { it.startsWith("kanto/") }.toSet()
           after.storyVars.filterKeys { it.startsWith("kanto/") } shouldBe emptyMap()
-          after.items shouldBe emptyMap()
+          // The bag belongs to every region: a plain reset keeps it (it used to be emptied).
+          after.items shouldBe mapOf(4 to 5)
           session.sent.filterIsInstance<ChatMessagePacket>().last().message shouldContain "Reset"
         }
       }
 
-      test("reset empties the party and the pc") {
+      test("a mistyped reset option is refused and destroys nothing") {
+        runTest {
+          val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
+          val charId = developer(store)
+          val factory =
+              WildMonFactory(SpeciesRegistry(), MoveRegistry(), LearnsetRegistry(), EntityIdService())
+          store.addPokemon(charId, factory.create(1, 5, BattleRng(seed = 1))!!)
+          store.addItem(charId, itemId = 4, amount = 5)
+          store.setStoryFlag(charId, KantoFlags.FLAG_SYS_POKEMON_GET)
+          val session = FakeSession(characterId = charId)
+          val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
+
+          // The owner's typo (2026-09-19): "keep" misspelt used to mean "wipe everything".
+          service.tryHandle(session, "/story reset kepe") shouldBe true
+
+          val after = store.getCharacter(charId)!!
+          after.pokemon.size shouldBe 1
+          after.items shouldBe mapOf(4 to 5)
+          after.storyFlags shouldContain KantoFlags.FLAG_SYS_POKEMON_GET
+          session.sent.filterIsInstance<ChatMessagePacket>().last().message shouldContain "Unknown option"
+        }
+      }
+
+      test("reset wipe empties the party and the pc") {
         runTest {
           val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
           val charId = developer(store)
@@ -163,7 +187,7 @@ class StoryResetTest :
           val session = FakeSession(characterId = charId)
           val service = ChatCommandService(store, setOf(storyCommand(store)), enabledTools())
 
-          service.tryHandle(session, "/story reset") shouldBe true
+          service.tryHandle(session, "/story reset wipe") shouldBe true
 
           val after = store.getCharacter(charId)!!
           after.pokemon shouldBe emptyList()

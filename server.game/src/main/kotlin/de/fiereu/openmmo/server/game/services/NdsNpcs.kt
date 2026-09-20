@@ -51,6 +51,22 @@ class NdsNpcs @Inject constructor() {
   fun isMade(region: Int, bank: Int, map: Int, index: Int): Boolean =
       made[Triple(region, bank, map)]?.containsKey(index) == true
 
+  /**
+   * A script-made actor anywhere in this region, with the cell whose script made it. A scene's
+   * actors walk with the player across the seam between connected cells (Nuvema's exit makes
+   * Cheren and Bianca at the town edge and Route 1's own script keeps moving them - it makes none
+   * of its own), and the client simply keeps the entity. The server filed them per cell, so the
+   * Route 1 script could not find Bianca to move her, threw, and abandoned the rest of Juniper's
+   * lesson (2026-09-20).
+   */
+  fun madeAnywhere(region: Int, index: Int): Pair<Pair<Int, Int>, Npc>? {
+    for ((cell, byId) in made) {
+      if (cell.first != region) continue
+      byId[index]?.let { return (cell.second to cell.third) to it }
+    }
+    return null
+  }
+
   fun of(region: Int, bank: Int, map: Int): List<Npc> {
     val rom = byMap[Triple(region, bank, map)].orEmpty()
     val extra = made[Triple(region, bank, map)] ?: return rom

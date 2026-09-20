@@ -1749,7 +1749,7 @@ class NdsScriptCorpusGenerator {
             // (2026-09-20). Message2 is the talked-to npc's own line - its speaker is the script's.
             "Message" -> {
               val who = t(3).toIntOrNull() ?: 0
-              b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(3) else if (who < 250) "OBJ_$who" else "none")
+              b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(3) else if (who < 252) "OBJ_$who" else "none")
               b.lines += listOf("Message", text(2))
             }
             "Message2", "Message3" -> b.lines += listOf("Message", text(2))
@@ -1786,8 +1786,12 @@ class NdsScriptCorpusGenerator {
             // the games hide behind a fade was a visible jump (Nuvema's gift box, 2026-09-19).
             "FadeScreen" -> b.lines += listOf("ScreenFade", if (t(2) == "16") "1" else "0")
             "StoreVarItem", "CMD_243", "CMD_13D", "CMD_17E", "CMD_1AE", "CMD_12B", "CMD_1A9", "CMD_1AD", "CMD_1B1" -> {}
+            // 250 and 251 are ACTORS a script makes, not camera slots: both carry a sprite in
+            // MakeNPC (Nuvema makes Cheren as 250 sprite 7 and Bianca as 240 at the town edge) and
+            // both get walks. Dropped as camera, Cheren never appeared on Route 1 (2026-09-20).
+            // 252-254 are never made and stay dropped; 255 is the player.
             // 255 = player; 250-254 = camera/follower slots the server does not animate.
-            "ApplyMovement" -> if (t(0).toInt() in 250..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
+            "ApplyMovement" -> if (t(0).toInt() in 252..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
             "WaitMovement" -> b.lines += listOf("WaitMovement")
             "SingleTrainerBattle", "TrainerBattle" -> b.lines += listOf("TrainerBattle", tv(0), "0", "0", "0")
             "StoreBattleResult" -> b.lines += listOf("CheckBattleWon", v(0))
@@ -1818,17 +1822,17 @@ class NdsScriptCorpusGenerator {
             // MakeNPC x, y, dir, id, sprite, ?: the script makes its own actor (Cheren and Bianca
             // at Nuvema's Route 1 exit, Juniper on Route 1). Only ids under 250 are addressable
             // objects; 250/251 are the camera and follower slots the server does not animate.
-            "MakeNPC" -> if ((t(3).toIntOrNull() ?: 255) < 250) b.lines += listOf("DsMakeNpc", t(3), t(4), t(0), t(1), t(2))
+            "MakeNPC" -> if ((t(3).toIntOrNull() ?: 255) < 252) b.lines += listOf("DsMakeNpc", t(3), t(4), t(0), t(1), t(2))
             "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
-            "RemoveNPC" -> if (t(0).toInt() < 250) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
-            "AddNPC" -> if (t(0).toInt() < 250) b.lines += listOf("AddObject", "OBJ_" + t(0))
+            "RemoveNPC" -> if (t(0).toInt() < 252) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
+            "AddNPC" -> if (t(0).toInt() < 252) b.lines += listOf("AddObject", "OBJ_" + t(0))
             // obj, x, z, y, facing (the corpus: z is 0/1/3 everywhere, facing 0-3; Nuvema's gift
             // box puts Cheren at 6,6 and Bianca at 4,6). Reading z as y put them on row 0.
             // 255 is the player, placed under the same fades (4,6 facing east for the battles after
             // the starter pick); the facing rides along for the player only.
             "SetOWPosition" ->
                 if (t(0) == "255") b.lines += listOf("SetObjectEventPos", "LOCALID_PLAYER", t(1), t(3), t(4))
-                else if (t(0).toInt() < 250) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
+                else if (t(0).toInt() < 252) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
             "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
@@ -1931,8 +1935,8 @@ class NdsScriptCorpusGenerator {
     /** Platinum's CommonScript_TrySaveGame and HeartGold's std_prompt_save body (scr_seq_0003 _0646): VAR_RESULT 1 = saved. */
     val SILENT_SAVE_ROUTINES = setOf("CommonScript_TrySaveGame", "scr_seq_0003__0646")
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
-    /** Object ids a Gen 5 script can create with MakeNPC (250/251 are camera and follower slots). */
-    val SCRIPT_ACTOR_IDS = 224..249
+    /** Object ids a Gen 5 script can create with MakeNPC (252-254 are engine slots, 255 the player). */
+    val SCRIPT_ACTOR_IDS = 224..251
 
     /** Gen 4 movement actions 0-99 in groups of four (north, south, west, east); null = not directional. */
     val GEN4_DIRECTIONAL: List<String?> =

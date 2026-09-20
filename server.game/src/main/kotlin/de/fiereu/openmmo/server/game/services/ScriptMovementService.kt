@@ -88,6 +88,17 @@ constructor(
 
   data class Pose(val x: Int, val y: Int, val facing: Direction)
 
+  /**
+   * The cell to address a DS npc on: the player's own, unless the id belongs to a script-made actor
+   * that a neighbouring cell's script created - a scene's actors walk across the seam with the
+   * player (see NdsNpcs.madeAnywhere). Keeping their original cell also keeps their entity id, so
+   * the client goes on animating the actor it already has instead of gaining a second one.
+   */
+  private fun ndsCell(regionId: Int, bankId: Int, mapId: Int, localId: Int): Pair<Int, Int> {
+    if (ndsNpcs.of(regionId, bankId, mapId).any { it.index == localId }) return bankId to mapId
+    return ndsNpcs.madeAnywhere(regionId, localId)?.first ?: (bankId to mapId)
+  }
+
   /** The hide flag of a map npc on the player's current map (already namespaced), if set. */
   fun npcHideFlag(state: PlayerState, localId: Int): String? {
     val info = state.characterId?.let(characterStore::getCharacter)?.info ?: return null
@@ -159,8 +170,9 @@ constructor(
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
     val regionId = info.positionRegionId.toInt()
-    val bankId = mapOverride?.first ?: (info.positionBankId.toInt() and 0xFF)
-    val mapId = mapOverride?.second ?: info.positionMapId.toInt()
+    val here = ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
+    val bankId = mapOverride?.first ?: here.first
+    val mapId = mapOverride?.second ?: here.second
     val map = mapManager.getMap(info.positionRegionId, bankId.toByte(), mapId.toByte())
     // Where the npc really stands: a scripted walk earlier this visit, else its spawned tile
     // (story placement and setobjectxyperm included), else the DS event table.
@@ -387,27 +399,22 @@ constructor(
   fun removeNpc(session: SessionContext, state: PlayerState, localId: Int) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
-    state.scriptedNpcPoses.remove(
-        scriptedNpcKey(info.positionRegionId.toInt(), (info.positionBankId.toInt() and 0xFF), info.positionMapId.toInt(), localId))
-    npcService.despawnNpc(
-        session,
-        info.positionRegionId.toInt(),
-        (info.positionBankId.toInt() and 0xFF),
-        info.positionMapId.toInt(),
-        localId,
-    )
+    val regionId = info.positionRegionId.toInt()
+    val (bankId, mapId) =
+        ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
+    state.scriptedNpcPoses.remove(scriptedNpcKey(regionId, bankId, mapId, localId))
+    state.madeNdsNpcs.remove(scriptedNpcKey(regionId, bankId, mapId, localId))
+    npcService.despawnNpc(session, regionId, bankId, mapId, localId)
   }
 
   /** Resolves local NPC ids to entity ids. */
   fun npcEntityId(state: PlayerState, localId: Int): Long? {
     val charId = state.characterId ?: return null
     val info = characterStore.getCharacter(charId)?.info ?: return null
-    return npcService.entityIdFor(
-        info.positionRegionId.toInt(),
-        (info.positionBankId.toInt() and 0xFF),
-        info.positionMapId.toInt(),
-        localId,
-    )
+    val regionId = info.positionRegionId.toInt()
+    val (bankId, mapId) =
+        ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
+    return npcService.entityIdFor(regionId, bankId, mapId, localId)
   }
 
   /** Fails before an interpreted movement starts if the map-local npc does not exist. */
@@ -416,8 +423,8 @@ constructor(
     val info =
         checkNotNull(characterStore.getCharacter(charId)?.info) { "Character $charId is missing" }
     val regionId = info.positionRegionId.toInt()
-    val bankId = info.positionBankId.toInt() and 0xFF
-    val mapId = info.positionMapId.toInt() and 0xFF
+    val (bankId, mapId) =
+        ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
     // A DS map has no MapDef; its npcs come from the ROM's zone events (NdsNpcs), which the
     // movement paths below already know how to pose. Demanding the MapDef here killed every DS
     // cutscene that moves an npc ("No map 4:60:0", New Bark, 2026-09-19).

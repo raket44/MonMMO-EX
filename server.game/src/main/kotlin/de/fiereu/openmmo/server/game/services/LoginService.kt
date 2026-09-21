@@ -566,11 +566,6 @@ constructor(
         characterStore.updatePosition(charId, tx.toShort(), ty.toShort())
         state.x = tx.toShort()
         state.y = ty.toShort()
-        // The walk-out IS a step, so the tile it lands on gets its coord trigger. Without this a
-        // trigger on the tile just inside a door never fired: the Striaton gym arms its curtain
-        // puzzle from the three tiles in front of the door, and the owner had to step off and
-        // back on to start it (2026-09-21).
-        mapScriptService.onNdsStep(ctx, state, regionId, state.bankId, state.mapId, tx, ty)
       } else {
         // The client may play this walk LATE (queued behind the map load) and never reports
         // server-commanded moves back; the validator's one-tile heal reconciles whichever
@@ -631,12 +626,24 @@ constructor(
         ctx.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
       }
     }
+    // The walk-out IS a step, so the tile it lands on gets its coord trigger - but only once the
+    // walk has PLAYED. A trigger on the tile just inside a door never fired at all until this
+    // (the Striaton gym arms its curtain puzzle from the three tiles in front of its door, and
+    // the owner had to step off and back on); fired at commit time instead, the scene played over
+    // the player's own walk-out and the gym guide appeared to greet him from across the room
+    // without ever walking up (owner, 2026-09-21).
+    val stepTrigger: () -> Unit = {
+      if (regionId in 2..4 && ctx.channel.isActive) {
+        mapScriptService.onNdsStep(ctx, state, regionId, state.bankId, state.mapId, tx, ty)
+      }
+    }
     // The +120ms keeps the release AFTER the server's own move-refusal window closes - freed
     // input whose first step lands inside the window would be dropped and read as a desync.
     if (stepDelay == 0L) {
       sendStep()
       scope.launch {
         delay(EMERGENCE_STEP_WALK_MS + 120)
+        stepTrigger()
         releaseLock()
       }
     } else {
@@ -644,6 +651,7 @@ constructor(
         delay(stepDelay)
         if (ctx.channel.isActive) sendStep()
         delay(EMERGENCE_STEP_WALK_MS + 120)
+        stepTrigger()
         releaseLock()
       }
     }

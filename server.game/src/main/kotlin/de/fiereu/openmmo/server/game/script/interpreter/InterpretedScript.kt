@@ -180,6 +180,27 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), de.fiereu.openmmo.server.game.services.WorldClock.today().dayOfWeek.value % 7)
           state.pc++
         }
+        /**
+         * The in-game date, month then day, from the owner's game clock (WorldClock, America/
+         * Chicago) rather than the VPS's UTC. The Pokemon Center nurse reads it to compare against
+         * the player's birthday.
+         */
+        "ds_storedate2" -> {
+          val today = de.fiereu.openmmo.server.game.services.WorldClock.today()
+          ctx.setVar(namespaced(varArg(instruction, 0).token), today.monthValue)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), today.dayOfMonth)
+          state.pc++
+        }
+        /**
+         * The player's birthday, month then day. Birthdays are not modelled yet (owner: "birthdays
+         * are null right now"), so this answers 0 - which no real month can equal, so the nurse's
+         * birthday greeting stays silent instead of firing on every heal.
+         */
+        "ds_storebirthday2" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), 0)
+          ctx.setVar(namespaced(varArg(instruction, 1).token), 0)
+          state.pc++
+        }
         "ds_flagtovar" -> {
           val set = ctx.isFlagSet(namespaced(flagArg(instruction, 0).token))
           ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)

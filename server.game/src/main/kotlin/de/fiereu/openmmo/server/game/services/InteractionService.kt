@@ -77,13 +77,7 @@ constructor(
     val mapId = state.mapId
     val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
     scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
-    // The engine's own scripts (the Pokemon Center nurse, the mart clerk) have no script file to
-    // bind, so they used to answer nothing at all.
-    ndsStandardScripts.scriptFor(npc.script, regionId)?.let {
-      runScript(session, state, it, npcEntityId)
-      return
-    }
-    // Ids from 2000 up are Platinum's shared script chunks (common, signposts, trainers...).
+    // Ids from 2000 up are shared script chunks (common scripts, signposts, trainers...).
     val label =
         if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"
     val script =
@@ -95,9 +89,20 @@ constructor(
         }
     if (script != null) {
       runScript(session, state, script, npcEntityId)
-    } else {
-      log.info { "DS npc idx=${npc.index} script=${npc.script} ($label) has no wired dialog" }
+      return
     }
+    // The ROM script comes first now. The Pokemon Center nurse is the reason: her real script (file
+    // 855 entry 0, bound as NDS_CHUNK_2100) is the ONLY thing that sets VAR 16507 to 2, the Accumula
+    // tour hand-off, so the hardcoded stand-in below silently soft-locked the Unova story at the
+    // first heal (owner, 2026-09-21). The stand-ins stay as a FALLBACK rather than being deleted:
+    // healing is the one thing a player cannot work around, so if the ROM script ever fails to
+    // resolve, the counter still answers and still heals.
+    ndsStandardScripts.scriptFor(npc.script, regionId)?.let {
+      log.info { "DS npc idx=${npc.index} $label unavailable; using the built-in stand-in" }
+      runScript(session, state, it, npcEntityId)
+      return
+    }
+    log.info { "DS npc idx=${npc.index} script=${npc.script} ($label) has no wired dialog" }
   }
 
   /** The player pressed the action button on a specific entity, that is an npc. */

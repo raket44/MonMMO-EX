@@ -283,7 +283,7 @@ class ScriptSupportAnalyzer(
           "applymovement" -> args.size in 2..3
           "waitmovement" -> args.size <= 2
           "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
-          "ds_flagtovar" -> args.size == 2
+          "ds_flagtovar", "ds_storedate2", "ds_storebirthday2" -> args.size == 2
           "ds_warp" -> args.size == 3
           // ds_menu VAR, cursor, (textId, value)+ ; ds_setdynamicwarp header, x, y ; ds_dynamicwarpfloor VAR
           "ds_menu" -> args.size >= 4 && args.size % 2 == 0
@@ -640,6 +640,9 @@ class ScriptSupportAnalyzer(
             "ds_yesno",
             "ds_getplayerdir",
             "ds_getweekday",
+        // The nurse compares the in-game date against the player's birthday (see InterpretedScript).
+        "ds_storedate2",
+        "ds_storebirthday2",
             "ds_flagtovar",
             "ds_warp",
             "ds_menu",

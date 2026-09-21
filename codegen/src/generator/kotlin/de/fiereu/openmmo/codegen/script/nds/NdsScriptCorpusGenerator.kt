@@ -53,6 +53,14 @@ class NdsScriptCorpusGenerator {
     /** Script id chunks that live outside map headers (Platinum's common scripts and friends). */
     fun chunkFiles(): Map<Int, String> = emptyMap()
 
+    /**
+     * One script id bound to ONE entry of a shared file, for engine ids that do not sit in a
+     * base+offset run. Unova's counter scripts are like this: the nurse is file 855 entry 0 and the
+     * mart is a different file entirely (856, the one with MoneyBox), so a base of 2100 over 855
+     * would hand id 2101 the nurse file's second entry instead of the mart.
+     */
+    fun soloChunks(): Map<Int, Pair<String, Int>> = emptyMap()
+
     /** Convenience macros the scripts use as commands, expanded to their plain-command bodies. */
     fun macros(): Map<String, Macro> = emptyMap()
 
@@ -236,6 +244,17 @@ class NdsScriptCorpusGenerator {
           programs += ScriptCorpusProgramRecord(label, sourceFile, listOf("goto $target", "end"), objectIds)
           interactable += label
         }
+      }
+      // Single-id bindings (see Dialect.soloChunks): one engine script id -> one entry of a shared
+      // file. Checked rather than silently skipped, because a miss here is a counter npc that
+      // answers nothing.
+      dialect.soloChunks().filterValues { it.first == fileName }.forEach { (id, where) ->
+        val target = parsed.entries.getOrNull(where.second)
+        checkNotNull(target) { "solo chunk $id: ${where.first} has no entry ${where.second}" }
+        val label = "NDS_CHUNK_$id"
+        programs += ScriptCorpusProgramRecord(label, sourceFile, listOf("goto $target", "end"), emptyMap())
+        interactable += label
+        println("[script-corpus] solo chunk $id -> ${where.first} entry ${where.second} ($target)")
       }
       // Chunk bindings (Platinum common scripts etc.): global ids -> entry label.
       dialect.chunkFiles().filterValues { it == fileName }.keys.forEach { base ->
@@ -1552,6 +1571,18 @@ class NdsScriptCorpusGenerator {
      */
     override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864", 10000 to "U865")
 
+    /**
+     * The Pokemon Center nurse, script id 2100 on all fourteen of them (sprite 78). Her script is
+     * file 855 entry 0 - the one with HealPokemon - and it is the ONLY thing that sets VAR 16507 to
+     * 2, which is the Accumula tour hand-off, so the hardcoded stand-in soft-locked the story at the
+     * first heal (owner, 2026-09-21).
+     *
+     * The mart (2101) is deliberately NOT bound yet: it is a different file, 856, the one with
+     * MoneyBox, and which of its two entries the id wants is unconfirmed. The hardcoded clerk still
+     * serves it.
+     */
+    override fun soloChunks(): Map<Int, Pair<String, Int>> = mapOf(2100 to ("U855" to 0))
+
     /** Trainer npcs carry script 3000 + trainer id; one synthetic battle script serves them all. */
     override fun trainerChunkSize(base: Int): Int? = if (base == 3000) 616 else null
 
@@ -1709,8 +1740,14 @@ class NdsScriptCorpusGenerator {
             "TeleportWarpNPC" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             // DoubleTrainerBattle ally, opponent, opponent, ?: no doubles engine yet, the first opponent fights.
             "DoubleTrainerBattle" -> b.lines += listOf("TrainerBattle", tv(1), "0", "0", "0")
-            "StoreVar_CD", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" -> b.lines += listOf("SetVar", v(0), "0")
-            "StoreDate" -> { b.lines += listOf("SetVar", v(0), "0"); b.lines += listOf("SetVar", v(1), "0") }
+            "StoreVar_CD", "StoreVar_CE", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" ->
+                b.lines += listOf("SetVar", v(0), "0")
+            // The nurse compares the date against the player's birthday. Both used to stub to 0, which
+            // made them EQUAL - she would have wished the owner happy birthday on every single heal.
+            // The date is real (WorldClock, the owner's game clock); the birthday answers 0, and a
+            // real month is 1-12, so the greeting simply never fires until birthdays exist.
+            "StoreDate" -> b.lines += listOf("StoreDate2", v(0), v(1))
+            "StoreBirthDay" -> b.lines += listOf("StoreBirthDay2", v(0), v(1))
             "MoneyBox", "MusicalMessage", "PlayTrainerMusic" -> {}
             // Nickname prompts are never asked in story (owner's rule): declined, answer 0.
             // Dis5 could not read on from here (an opcode the table lacks; 85 entries): the script
@@ -1838,7 +1875,20 @@ class NdsScriptCorpusGenerator {
             // both get walks. Dropped as camera, Cheren never appeared on Route 1 (2026-09-20).
             // 252-254 are never made and stay dropped; 255 is the player.
             // 255 = player; 250-254 = camera/follower slots the server does not animate.
-            "ApplyMovement" -> if (t(0).toInt() in 252..254) {} else b.lines += listOf("ApplyMovement", if (t(0) == "255") "obj_player" else "OBJ_" + t(0), "M${file}_" + t(1).drop(1))
+            // Object 32785 (VAR 0x8011) is the npc the script belongs to - the one being talked to.
+            // The nurse moves herself with it, and her sibling script uses it as the message
+            // speaker, which is the same thing the GBA side already calls VAR_LAST_TALKED.
+            "ApplyMovement" ->
+                if (t(0).toInt() in 252..254) {} else
+                    b.lines +=
+                        listOf(
+                            "ApplyMovement",
+                            when (t(0)) {
+                              "255" -> "obj_player"
+                              SELF_OBJECT.toString() -> "VAR_LAST_TALKED"
+                              else -> "OBJ_" + t(0)
+                            },
+                            "M${file}_" + t(1).drop(1))
             "WaitMovement" -> b.lines += listOf("WaitMovement")
             "SingleTrainerBattle", "TrainerBattle" -> b.lines += listOf("TrainerBattle", tv(0), "0", "0", "0")
             "StoreBattleResult" -> b.lines += listOf("CheckBattleWon", v(0))
@@ -1984,6 +2034,9 @@ class NdsScriptCorpusGenerator {
     val MESSAGE_COMMANDS = setOf("Message", "MessageInstant", "MessageNoSkip", "MessageSynchronized", "NPCMessage", "EventMessage", "NPCMsg", "NonNPCMsg", "SimpleNPCMsg", "GenderMsgBox")
     /** Object ids a Gen 5 script can create with MakeNPC (252-254 are engine slots, 255 the player). */
     val SCRIPT_ACTOR_IDS = 224..251
+
+    /** VAR 0x8011: the npc a script belongs to, which the GBA side already calls VAR_LAST_TALKED. */
+    const val SELF_OBJECT = 32785
 
     /** Nuvema's walk up Route 1 (U778 entry 13 = NDS_389_14) ends by entering Juniper's lesson. */
     const val SCENE_CHAIN_FILE = "U778"

@@ -25,7 +25,7 @@ constructor(
 ) : ChatCommand {
   override val name = "probe"
   override val usage =
-      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin|world <action> <subject> [shorts]|door <open> <x> <y> [kind] [arg]|entityaction <action>>"
+      "/probe <transport <n>|notice <type> [text]|msg <id> [argType] [text]|dialog <textId>|menu <kind>|storyflag <region> <id> [value]|pc|pcwin|world <action> <subject> [shorts]|door <open> <x> <y> [kind] [arg]|tileattr [bx] [by] [bz] [attr]|entityaction <action>>"
   override val description = "sends one candidate packet to see how the client renders it"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -167,6 +167,25 @@ constructor(
       // HealPokemon (clear them) - and this is the only decoded packet shaped like a per-slot
       // placement. Never sent by the server, so nothing here can regress; it is here to be watched.
       // "/probe slot <blockX> <blockY> <blockZ> <slot> <present 0|1> [objX] [objY] [objZ] [relative]"
+      // s2c 0xB3, MapTileAttributeSet: three BYTE coordinates and one attribute byte. The GBA's
+      // metatile override (0x22) and footer switch (0x2D) do not reach a 3D DS map, so this is the
+      // only decoded packet shaped like "change what one tile is" there - the question being
+      // whether `attribute` is the permission the client walks on (the Striaton gym curtains).
+      // The coordinates cannot be world tiles: Unova's run to 800+ and these are bytes. They are
+      // read as tile-within-block, so the defaults are the player's own tile mod 32 (which is also
+      // why `/probe slot`, defaulting to the raw tile, may have been aimed at nothing).
+      "tileattr" -> {
+        val bx = ctx.args.getOrNull(1)?.toIntOrNull() ?: (ctx.state.x.toInt() and 31)
+        val by = ctx.args.getOrNull(2)?.toIntOrNull() ?: (ctx.state.y.toInt() and 31)
+        val bz = ctx.args.getOrNull(3)?.toIntOrNull() ?: 0
+        val attribute = ctx.args.getOrNull(4)?.toIntOrNull() ?: 1
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.MapTileAttributeSetPacket(
+                bx.toByte(), by.toByte(), bz.toByte(), attribute.toByte()))
+        ctx.reply(
+            "Sent tileattr block=($bx,$by,$bz) attribute=$attribute " +
+                "(you are at (${ctx.state.x}, ${ctx.state.y}))")
+      }
       "slot" -> {
         // The block defaults to the tile the player stands on, so this is usable from the counter -
         // in Accumula the nurse is at (7, 10) and the player takes the tour trigger at (7, 13), so

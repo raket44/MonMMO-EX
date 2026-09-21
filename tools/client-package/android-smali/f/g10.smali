@@ -532,6 +532,14 @@
     # by c85.ZY1 under the bundled-sound region 10) plays through the same file player as the client's
     # own sounds/10 oggs. Retail only knows ROM cries - loadSSEQ(2, 1, species) on the Black ROM - so an
     # Expansion species had no cry at all on this client. Anything without a file still takes the ROM path.
+    #
+    # RETAIL SPECIES NEVER CONSULT THE MOD MAP. Region 10 is shared with the client's OWN bundled
+    # sounds (ids 1..22, the mount engine loop among them), so asking it for species 6 handed
+    # Charizard the motorcycle the owner rides (2026-09-21). Only ids at or above the first
+    # Expansion species (650 - the same 0x28a the retail code above uses as its no-ROM-cry marker)
+    # may have a mod file, and every cry we ship is 668 or higher.
+    const/16 v0, 0x28a
+    if-lt v1, v0, :monmmo_rom_cry
     sget-object v0, Lf/p37;->X20:Lf/t72;
     iget-object v0, v0, Lf/aw3;->SE0:Lf/k89;
     const/high16 v5, 0xa0000

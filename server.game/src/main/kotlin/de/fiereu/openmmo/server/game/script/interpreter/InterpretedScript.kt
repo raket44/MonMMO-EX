@@ -1548,7 +1548,10 @@ class InterpretedScript(
     repeat(MAX_PEEK_HOPS) {
       val instruction = program.instructions.getOrNull(pc) ?: return null
       when (instruction.command) {
-        "waitmessage" -> pc++
+        // Bookkeeping between the question and its box does not break the pairing - the rule is
+        // that the LAST text before a yes/no box is its prompt, and only another message changes
+        // which one. The nurse asks from a routine that sets a var on the way out.
+        in PEEK_SKIPPED -> pc++
         "goto" -> {
           val target = branchTarget(program, instruction.arg(0).token) ?: return null
           program = target.first
@@ -2606,6 +2609,9 @@ internal object TrainerStoryState {
 
 /** The GBA answer when a multichoice is cancelled with B. */
 private const val MAX_PEEK_HOPS = 32
+
+/** Commands that display nothing and wait for nothing, so they cannot separate a question from its box. */
+private val PEEK_SKIPPED = setOf("waitmessage", "setvar", "copyvar", "compare", "addvar", "subvar")
 
 private const val MULTI_B_PRESSED = 127
 

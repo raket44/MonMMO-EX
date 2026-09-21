@@ -436,7 +436,7 @@ class InterpretedScript(
           var next = state.pc + 1
           while (state.activeProgram.instructions.getOrNull(next)?.command == "waitmessage") next++
           state.currentMessage = line
-          if (state.activeProgram.instructions.getOrNull(next)?.command == "yesnobox" || multichoiceFollows(state)) {
+          if (nextEffectiveCommand(state) == "yesnobox" || multichoiceFollows(state)) {
             state.skipNextWaitMessage = true
           } else {
             ctx.showMessage(line)
@@ -560,7 +560,7 @@ class InterpretedScript(
           var next = state.pc + 1
           while (state.activeProgram.instructions.getOrNull(next)?.command == "waitmessage") next++
           state.currentMessage = line
-          if (state.activeProgram.instructions.getOrNull(next)?.command == "yesnobox" || multichoiceFollows(state)) {
+          if (nextEffectiveCommand(state) == "yesnobox" || multichoiceFollows(state)) {
             state.skipNextWaitMessage = true
           } else {
             ctx.showMessage(line)
@@ -1528,6 +1528,43 @@ class InterpretedScript(
     return MovementStep.fromPretCommand(action.command)
         ?: throw UnsupportedMovementActionException(
             movement.id.stable, action.command, action.sourceLine)
+  }
+
+  /**
+   * The command that will REALLY run next, following waitmessage, goto and return across blocks.
+   *
+   * A message whose yes/no box follows is not shown on its own - it is stashed and the box displays
+   * it as the prompt. Peeking only at the next instruction of the CURRENT program missed the case
+   * where the message ends a called routine and the box sits in the caller, so the message was
+   * shown AND then shown again by the box: the Pokemon Center nurse "repeats her entire dialogue
+   * just to show the yes or no box" (owner, 2026-09-21).
+   */
+  private fun nextEffectiveCommand(state: RuntimeState): String? {
+    var program = state.activeProgram
+    var pc = state.pc + 1
+    // addLast/removeLast, so the innermost caller is the LAST element of the snapshot.
+    val frames = state.callStack.toList()
+    var depth = frames.size
+    repeat(MAX_PEEK_HOPS) {
+      val instruction = program.instructions.getOrNull(pc) ?: return null
+      when (instruction.command) {
+        "waitmessage" -> pc++
+        "goto" -> {
+          val target = branchTarget(program, instruction.arg(0).token) ?: return null
+          program = target.first
+          pc = target.second
+        }
+        "return" -> {
+          if (depth <= 0) return null
+          val frame = frames[depth - 1]
+          program = frame.program
+          pc = frame.pc
+          depth--
+        }
+        else -> return instruction.command
+      }
+    }
+    return null
   }
 
   private fun resolveMovementTarget(
@@ -2568,6 +2605,8 @@ internal object TrainerStoryState {
 }
 
 /** The GBA answer when a multichoice is cancelled with B. */
+private const val MAX_PEEK_HOPS = 32
+
 private const val MULTI_B_PRESSED = 127
 
 /** include/constants/seagallop.h and the sSeagallopDestStrings texts (src/strings.c). */

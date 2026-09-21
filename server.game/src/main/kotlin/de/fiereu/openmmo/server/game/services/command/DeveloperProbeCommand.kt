@@ -168,15 +168,14 @@ constructor(
       // placement. Never sent by the server, so nothing here can regress; it is here to be watched.
       // "/probe slot <blockX> <blockY> <blockZ> <slot> <present 0|1> [objX] [objY] [objZ] [relative]"
       "slot" -> {
-        val bx = ctx.args.getOrNull(1)?.toIntOrNull()
-        val by = ctx.args.getOrNull(2)?.toIntOrNull()
-        val bz = ctx.args.getOrNull(3)?.toIntOrNull()
-        val slot = ctx.args.getOrNull(4)?.toIntOrNull()
+        // The block defaults to the tile the player stands on, so this is usable from the counter -
+        // in Accumula the nurse is at (7, 10) and the player takes the tour trigger at (7, 13), so
+        // the machine is the couple of tiles behind her.
+        val bx = ctx.args.getOrNull(1)?.toIntOrNull() ?: ctx.state.x.toInt()
+        val by = ctx.args.getOrNull(2)?.toIntOrNull() ?: ctx.state.y.toInt()
+        val bz = ctx.args.getOrNull(3)?.toIntOrNull() ?: 0
+        val slot = ctx.args.getOrNull(4)?.toIntOrNull() ?: 0
         val present = (ctx.args.getOrNull(5)?.toIntOrNull() ?: 1) != 0
-        if (bx == null || by == null || bz == null || slot == null) {
-          ctx.reply("/probe slot <blockX> <blockY> <blockZ> <slot> <present 0|1> [objX] [objY] [objZ] [relative]")
-          return
-        }
         val ox = ctx.args.getOrNull(6)?.toIntOrNull() ?: 0
         val oy = ctx.args.getOrNull(7)?.toIntOrNull() ?: 0
         val oz = ctx.args.getOrNull(8)?.toIntOrNull() ?: 0

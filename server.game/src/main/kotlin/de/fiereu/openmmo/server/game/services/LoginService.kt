@@ -566,6 +566,11 @@ constructor(
         characterStore.updatePosition(charId, tx.toShort(), ty.toShort())
         state.x = tx.toShort()
         state.y = ty.toShort()
+        // The walk-out IS a step, so the tile it lands on gets its coord trigger. Without this a
+        // trigger on the tile just inside a door never fired: the Striaton gym arms its curtain
+        // puzzle from the three tiles in front of the door, and the owner had to step off and
+        // back on to start it (2026-09-21).
+        mapScriptService.onNdsStep(ctx, state, regionId, state.bankId, state.mapId, tx, ty)
       } else {
         // The client may play this walk LATE (queued behind the map load) and never reports
         // server-commanded moves back; the validator's one-tile heal reconciles whichever

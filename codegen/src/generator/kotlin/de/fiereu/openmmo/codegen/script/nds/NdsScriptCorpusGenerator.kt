@@ -152,6 +152,44 @@ class NdsScriptCorpusGenerator {
         }
       }
 
+      // Nuvema's "first steps together" runs straight into Juniper's catching lesson. The scene
+      // (U778 entry 13, bound as NDS_389_14, reached from the seam trigger at y 739 once
+      // VAR 16512 == 2) walks the player up Route 1 with Cheren and Bianca and then just ends,
+      // leaving the lesson to be started by talking to Juniper - and she is one npc on a wide
+      // route, so the owner walked past and skipped it. That dead-ends Route 1: the end-of-route
+      // comparison scene is gated on VAR 16508 == 1 and the lesson is the only thing that sets it.
+      //
+      // Verified against White (IRAO) 2026-09-20 rather than assumed - the ROM has nothing that
+      // chains it: Route 1's event file holds exactly one trigger record (the comparison one), its
+      // level script file 635 is four zero bytes, and CMD_21 at the scene's tail is a screen
+      // transition selector, not a hand-off. Entering the lesson from wherever the walk-up ended is
+      // safe because the lesson opens with MoveCamera onto Juniper and ApplyMovement for her,
+      // Cheren, Bianca AND the player: it walks everyone into position itself.
+      //
+      // Written as an ordinary GoTo on the scene's own terminator, the way any other script hands
+      // over. A rule in the interpreter's `end` handler was tried first and trapped the owner in a
+      // repeating tutorial, because `end` is shared by every script in every region; this is inert
+      // data in one block and cannot loop - the lesson's own End is still an End.
+      // MUST run before the loop below turns the blocks into programs: the first attempt sat after
+      // it, rewrote a block nobody read again, and the hand-off silently did nothing while the
+      // generator reported success. It now fails loudly instead of quietly.
+      if (fileName == SCENE_CHAIN_FILE) {
+        // The entry block is only the scene's FIRST chunk - it is split at every label and leaves off
+        // with a GoTo into the next one - so walk that chain to the block that actually ends it.
+        var scene = parsed.blocks.firstOrNull { it.label == parsed.entries.getOrNull(SCENE_CHAIN_ENTRY) }
+        var hops = 0
+        while (scene != null && scene.lines.lastOrNull()?.firstOrNull() == "GoTo" && hops++ < 32) {
+          val next = scene.lines.last().getOrNull(1)
+          scene = parsed.blocks.firstOrNull { it.label == next }
+        }
+        checkNotNull(scene) { "$SCENE_CHAIN_FILE entry $SCENE_CHAIN_ENTRY leads nowhere; cannot hand over to $SCENE_CHAIN_TARGET" }
+        check(scene.lines.lastOrNull()?.firstOrNull() == "End") {
+          "$SCENE_CHAIN_FILE entry $SCENE_CHAIN_ENTRY ends with ${scene.lines.lastOrNull()}, not End; the hand-off to $SCENE_CHAIN_TARGET would be lost"
+        }
+        scene.lines[scene.lines.size - 1] = listOf("GoTo", SCENE_CHAIN_TARGET)
+        println("[script-corpus] scene hand-off: $SCENE_CHAIN_FILE entry $SCENE_CHAIN_ENTRY ends at block ${scene.label} -> $SCENE_CHAIN_TARGET")
+      }
+
       for (block in parsed.blocks) {
         if (block.movement) {
           val actions = transpileMovement(block.lines)
@@ -190,31 +228,6 @@ class NdsScriptCorpusGenerator {
         }
       }
 
-      // Nuvema's "first steps together" runs straight into Juniper's catching lesson. The scene
-      // (U778 entry 13, bound as NDS_389_14, reached from the seam trigger at y 739 once
-      // VAR 16512 == 2) walks the player up Route 1 with Cheren and Bianca and then just ends,
-      // leaving the lesson to be started by talking to Juniper - and she is one npc on a wide
-      // route, so the owner walked past and skipped it. That dead-ends Route 1: the end-of-route
-      // comparison scene is gated on VAR 16508 == 1 and the lesson is the only thing that sets it.
-      //
-      // Verified against White (IRAO) 2026-09-20 rather than assumed - the ROM has nothing that
-      // chains it: Route 1's event file holds exactly one trigger record (the comparison one), its
-      // level script file 635 is four zero bytes, and CMD_21 at the scene's tail is a screen
-      // transition selector, not a hand-off. Entering the lesson from wherever the walk-up ended is
-      // safe because the lesson opens with MoveCamera onto Juniper and ApplyMovement for her,
-      // Cheren, Bianca AND the player: it walks everyone into position itself.
-      //
-      // Written as an ordinary GoTo on the scene's own terminator, the way any other script hands
-      // over. A rule in the interpreter's `end` handler was tried first and trapped the owner in a
-      // repeating tutorial, because `end` is shared by every script in every region; this is inert
-      // data in one block and cannot loop - the lesson's own End is still an End.
-      if (fileName == SCENE_CHAIN_FILE) {
-        val target = parsed.entries.getOrNull(SCENE_CHAIN_ENTRY)
-        val scene = parsed.blocks.firstOrNull { it.label == target }
-        if (scene != null && scene.lines.lastOrNull()?.firstOrNull() == "End") {
-          scene.lines[scene.lines.size - 1] = listOf("GoTo", SCENE_CHAIN_TARGET)
-        }
-      }
 
       // Header bindings: script index k (1-based, the ROM's own event numbering) -> entry label.
       for (header in owners) {

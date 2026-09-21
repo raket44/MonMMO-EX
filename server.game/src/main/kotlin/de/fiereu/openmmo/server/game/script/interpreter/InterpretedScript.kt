@@ -2611,7 +2611,21 @@ internal object TrainerStoryState {
 private const val MAX_PEEK_HOPS = 32
 
 /** Commands that display nothing and wait for nothing, so they cannot separate a question from its box. */
-private val PEEK_SKIPPED = setOf("waitmessage", "setvar", "copyvar", "compare", "addvar", "subvar")
+private val PEEK_SKIPPED =
+    setOf(
+        "waitmessage",
+        "setvar",
+        "copyvar",
+        "setorcopyvar",
+        "compare",
+        "addvar",
+        "subvar",
+        // The nurse's FIRST-visit greeting ends its routine on the long welcome and the caller then
+        // sets the seen-it flag before the box, so flag bookkeeping has to be transparent too.
+        "setflag",
+        "clearflag",
+        "checkflag",
+    )
 
 private const val MULTI_B_PRESSED = 127
 

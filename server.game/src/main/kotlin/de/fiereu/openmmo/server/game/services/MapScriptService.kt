@@ -151,6 +151,7 @@ constructor(
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
     if (state.entryScriptsMapKey == arrivalKey) return spawnOnce()
     state.entryScriptsMapKey = arrivalKey
+    state.ndsFrameFollowUps = 0
     val (onLoad, frame) = entryScripts.onNdsEntryPhases(regionId, bankId, mapId)
     if (onLoad == null && frame == null) return spawnOnce()
     try {
@@ -180,6 +181,31 @@ constructor(
       spawnOnce()
       throw e
     }
+  }
+
+  /**
+   * The cartridge re-checks a map's frame table (its type-3 level script) every frame, so a scene
+   * that advances the story var while the player stands still is picked up at once: the Accumula
+   * nurse's own ROM script ends with VAR 16507 = 2, which is Juniper's cue to carry her tour on.
+   * Ours runs the table on arrival only, so the tour stalled at the heal with the player never
+   * having moved (2026-09-21). After any script that wrote a story var, look at the table again.
+   *
+   * Bounded per map arrival and per player input, so a branch that rewrites the var it tests on
+   * cannot spin. Called from [ScriptRunner] once the previous script has released the lock.
+   */
+  fun runNdsFrameFollowUp(session: SessionContext, state: PlayerState) {
+    if (!state.storyVarWritten) return
+    state.storyVarWritten = false
+    if (state.scriptRunning || state.scriptOwnsMapEntry || state.blocksNewScript) return
+    if (state.ndsFrameFollowUps >= MAX_NDS_FRAME_FOLLOW_UPS) return
+    // Null on a GBA map: the labels are NDS_INIT_*, so no region test is needed here.
+    val frame = entryScripts.onNdsEntryPhases(state.regionId, state.bankId, state.mapId).second ?: return
+    state.ndsFrameFollowUps++
+    log.info {
+      "DS frame table re-checked after a story var write on ${state.bankId}:${state.mapId} " +
+          "(${state.ndsFrameFollowUps}/$MAX_NDS_FRAME_FOLLOW_UPS)"
+    }
+    scriptRunner.run(session, state, frame, entityId = -1)
   }
 
   /**
@@ -256,6 +282,9 @@ constructor(
             de.fiereu.openmmo.common.enums.MapType.UNDERWATER,
             de.fiereu.openmmo.common.enums.MapType.UNKNOWN_0x06,
         )
+
+    /** Frame re-checks allowed per map arrival and per player input; a scene chain needs a few. */
+    private const val MAX_NDS_FRAME_FOLLOW_UPS = 8
 
     fun entryScriptsKey(map: MapDef): Long =
         (map.regionId.toLong() and 0xFF shl 40) or

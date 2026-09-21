@@ -214,6 +214,10 @@ data class PlayerState(
      * the tile before it, and a runner past the sailor was the symptom (2026-09-08).
      */
     @field:Volatile var deferredTrigger: DeferredTrigger? = null,
+    /** True when the running script wrote a story var, so a DS frame table is worth re-checking. */
+    @field:Volatile var storyVarWritten: Boolean = false,
+    /** DS frame re-checks used since this map was entered; bounded so a branch cannot spin. */
+    @field:Volatile var ndsFrameFollowUps: Int = 0,
     /**
      * Creative mode for world-building admins: collision and wild encounters are skipped, so
      * walking anywhere to place warps is unobstructed. Toggled by /gm, developer-gated.

@@ -63,4 +63,33 @@ class UnovaNurseScriptTest :
         texts.isNotEmpty() shouldBe true
         texts.all { it.startsWith("T0346_") } shouldBe true
       }
+
+      /**
+       * The other half of the hand-off: the Accumula Pokemon Center's frame table (header 398)
+       * branches on that same var, 2 -> the tour scene. The cartridge re-checks that table every
+       * frame, so the nurse's write lands at once; ours ran it on arrival only and the tour stalled
+       * with the player standing at the counter, which MapScriptService.runNdsFrameFollowUp fixes.
+       */
+      test("the Accumula frame table hands the tour back when the nurse sets the var") {
+        val reg = InterpretedScripts.sources.first { it.corpus.source == "white" }
+        val frame = reg.scriptsByLabel["NDS_INIT_398_FRAME"]
+        frame shouldNotBe null
+        val ins = frame!!.program.instructions
+        println("FRAME 398: " + ins.joinToString(" | ") { i -> i.command + " " + i.args.joinToString(",") { it.token } })
+        // compare <tour var>, 2 immediately followed by the goto_if_eq that runs the scene.
+        val at =
+            ins.indices.firstOrNull { i ->
+              ins[i].command == "compare" &&
+                  ins[i].args.size >= 2 &&
+                  ins[i].args[0].token.contains("407B") &&
+                  ins[i].args[1].token == "2"
+            }
+        at shouldNotBe null
+        val branch = ins[at!! + 1]
+        branch.command shouldBe "goto_if_eq"
+        val target = branch.args.first().token
+        println("FRAME 398: tour resumes at $target")
+        // It has to resolve, or the re-check would find the branch and go nowhere.
+        reg.scriptsByLabel[target] shouldNotBe null
+      }
     })

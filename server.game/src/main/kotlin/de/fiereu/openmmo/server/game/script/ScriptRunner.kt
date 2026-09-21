@@ -97,6 +97,8 @@ constructor(
       if (state.scriptRunning) return
       state.scriptRunning = true
     }
+    // Fresh player input: the DS frame table may be re-checked again from here.
+    if (entityId != -1L) state.ndsFrameFollowUps = 0
     // Existing Kotlin scripts rely on the runner's historical whole-script player lock.
     state.lockLocal(entityId)
     // Seize the client's movement controller IMMEDIATELY, on the packet thread - this is what
@@ -175,6 +177,10 @@ constructor(
         runCatching { movementService.awaitSelfActions(state) }
         movementService.releasePlayerHold(session, state)
         runDeferredTrigger(session, state)
+        // A DS scene advances its story var and ends without the player moving (the Accumula
+        // nurse handing back to Juniper), so the map frame table gets another look - unless the
+        // deferred trigger above just took the lock, in which case its own end will do it.
+        if (!state.scriptRunning) mapScripts?.get()?.runNdsFrameFollowUp(session, state)
       }
     }
   }

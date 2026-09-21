@@ -570,6 +570,10 @@ internal constructor(
 
   fun setVar(key: String, value: Int) {
     characterId?.let { story.setVar(it, key, value) }
+    // A DS map's frame table is the cartridge's type-3 level script and is re-checked continuously;
+    // ours runs on arrival, so a scene that advances its var while the player stands still needs
+    // the runner to look again when it ends (ScriptRunner.runNdsFrameFollowUp).
+    state.storyVarWritten = true
     // A scene variable that arms or disarms an elevation lock on this map (the badge gates) is
     // re-evaluated at once, so the guard's "go right ahead" lifts the row before the release.
     de.fiereu.openmmo.server.game.services.MapEntryPolish.onVarChanged(this, key)

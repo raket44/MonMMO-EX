@@ -26,6 +26,7 @@ constructor(
     private val scriptRunner: ScriptRunner,
     private val npcService: NpcService,
     private val characterStore: de.fiereu.openmmo.server.game.storage.CharacterStore,
+    private val curtainWalls: NdsCurtainWalls? = null,
     private val layoutVariants: LayoutVariants? = null,
     private val presence: PresenceService? = null,
 ) {
@@ -145,7 +146,9 @@ constructor(
   ) {
     val spawned = java.util.concurrent.atomic.AtomicBoolean(false)
     fun spawnOnce() {
-      if (spawned.compareAndSet(false, true)) spawnNpcs?.invoke()
+      if (!spawned.compareAndSet(false, true)) return
+      spawnNpcs?.invoke()
+      syncCurtainWalls(session, state)
     }
     if (state.scriptOwnsMapEntry || state.blocksNewScript) return spawnOnce()
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
@@ -197,6 +200,9 @@ constructor(
     if (!state.storyVarWritten) return
     state.storyVarWritten = false
     if (state.scriptRunning || state.scriptOwnsMapEntry || state.blocksNewScript) return
+    // Before the frame test: the Striaton gym has no frame table at all, and its buttons are
+    // exactly the scripts whose var write has to move its walls.
+    syncCurtainWalls(session, state)
     if (state.ndsFrameFollowUps >= MAX_NDS_FRAME_FOLLOW_UPS) return
     // Null on a GBA map: the labels are NDS_INIT_*, so no region test is needed here.
     val frame = entryScripts.onNdsEntryPhases(state.regionId, state.bankId, state.mapId).second ?: return
@@ -206,6 +212,17 @@ constructor(
           "(${state.ndsFrameFollowUps}/$MAX_NDS_FRAME_FOLLOW_UPS)"
     }
     scriptRunner.run(session, state, frame, entityId = -1)
+  }
+
+  /**
+   * The Striaton gym's curtains block their whole opening while they are closed, see
+   * [NdsCurtainWalls]. Run wherever the state can have changed: the map spawn and the end of any
+   * script that wrote a story var (its buttons write the puzzle's own var).
+   */
+  private fun syncCurtainWalls(session: SessionContext, state: PlayerState) {
+    val walls = curtainWalls ?: return
+    val vars = state.characterId?.let(characterStore::getCharacter)?.storyVars ?: return
+    walls.sync(session, state, vars)
   }
 
   /**

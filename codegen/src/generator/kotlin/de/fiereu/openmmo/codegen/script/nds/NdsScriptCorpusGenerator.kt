@@ -684,6 +684,11 @@ class NdsScriptCorpusGenerator {
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
         "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
+        // Every Ds* intermediate name needs its own case here: the fallback writes
+        // ds_<name.lowercase()>, which for DsMapGimmick was `ds_dsmapgimmick` - an unknown
+        // command, so every Striaton button script failed to resolve and the buttons did
+        // nothing at all (owner, 2026-09-21).
+        "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
         // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
         "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {
@@ -1891,7 +1896,12 @@ class NdsScriptCorpusGenerator {
             "BubbleMessage", "EventGreyMessage", "BorderedMessage", "AngryMessage" -> b.lines += listOf("Message", text(0))
             "CloseMessageKP", "CloseMessageKP2", "CloseEventGreyMessage", "CloseBorderedMessage", "CloseAngryMessage", "CloseMusicalMessage" -> b.lines += listOf("CloseMessage")
             "YesNoBox" -> b.lines += listOf("YesNo", v(0))
-            "StoreBadge" -> b.lines += listOf("CheckBadge", t(0), v(1))
+            // StoreBadge VAR, badge - the var it answers into comes FIRST (every use in the game
+            // reads `StoreBadge 32776 0`, and 32776 is the 0x8000 var band). Passed through in
+            // ROM order these were swapped, so the answer went into VAR_0x0 and the gym scripts
+            // branched on whatever 32776 still held: Striaton greeted the owner as though he had
+            // already won the badge (2026-09-21).
+            "StoreBadge" -> b.lines += listOf("CheckBadge", t(1), v(0))
             "StoreVersion" -> b.lines += listOf("GetGameVersion", v(0))
             "Store_D2" -> b.lines += listOf("SetVar", v(0), "0")
             "DoubleMessage" -> b.lines += listOf("Message", text(3))

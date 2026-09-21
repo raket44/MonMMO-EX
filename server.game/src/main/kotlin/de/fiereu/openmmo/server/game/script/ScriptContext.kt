@@ -644,7 +644,20 @@ internal constructor(
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }
           .givePokemon(session, state, dexId, level, moveIds.toList())
 
-  fun healParty() = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.healParty(session, state)
+  /**
+   * The heal, with the jingle the cartridge plays over it. The sequence is Unova's SEQ_SE_RECOVERY
+   * (1391, read from the ROM's own SDAT symbol table), and the packet names the sequence's region
+   * apart from the player's, so one sound serves every region - the owner's call, and the only way
+   * the GBA regions can have it at all (they play through agbplay, not the SSEQ engine).
+   */
+  fun healParty() {
+    playSharedSound(SEQ_SE_RECOVERY)
+    checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.healParty(session, state)
+  }
+
+  /** A sound effect from the Unova SDAT, wherever the player is standing. */
+  fun playSharedSound(song: Int) =
+      sendScenePacket(de.fiereu.openmmo.net.game.packets.SoundPacket.effect(UNOVA_SDAT, song))
 
   suspend fun giveItem(item: ItemDef, quantity: Int = 1): Boolean =
       checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.giveItem(session, state, item, quantity)
@@ -1359,6 +1372,14 @@ internal constructor(
   }
 
   private companion object {
+    /**
+     * Sound sequences by their SDAT symbol name, read out of the White ROM: the DS SSEQ engine
+     * loads them by region, and region 2's table is the one every region can reach.
+     */
+    const val UNOVA_SDAT = 2
+    const val SEQ_SE_RECOVERY = 1391
+    const val SEQ_SE_PC_ON = 1371
+
     /** 0xB6 world action that opens the client's Xtransceiver call window. */
     const val XTRANSCEIVER_ACTION: Byte = 3
     // Sign boxes have no speaker, npc boxes point at the entity.

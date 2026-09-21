@@ -696,6 +696,9 @@ class NdsScriptCorpusGenerator {
         "PlaySound" -> a.getOrNull(0)?.toIntOrNull()?.let { out += "ds_playsound $it" }
         "ChangeMusic" -> a.getOrNull(0)?.toIntOrNull()?.let { out += "ds_changemusic $it" }
         "WaitSound", "WaitSoundA7" -> out += "ds_waitsound"
+        // The PC's boot sound is an engine call with no id; the ROM's own SDAT names it
+        // SEQ_SE_PC_ON (1371).
+        "BootPCSound" -> out += "ds_playsound 1371"
         // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
         "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {

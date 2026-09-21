@@ -2,7 +2,9 @@ package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
+import de.fiereu.openmmo.net.game.packets.LURE_KIND_NONE
 import de.fiereu.openmmo.net.game.packets.Value16Group
+import de.fiereu.openmmo.net.game.packets.Value64Group
 import de.fiereu.openmmo.common.enums.EncounterMethod
 import de.fiereu.openmmo.common.enums.MapType
 import de.fiereu.openmmo.server.game.battle.EncounterContext
@@ -30,6 +32,9 @@ private const val DEFAULT_ENCOUNTER_RATE = 10
 
 /** Share of non-horde dark grass encounters that come out as a 2v2 (owner: "at least 50/50"). */
 private const val DARK_GRASS_DOUBLE_PERCENT = 50
+
+/** The level cap a lured foe is never pushed past. */
+private const val MAX_LEVEL = 100
 
 // The GBA's usual surfing rate (FireRed's water tables), for maps whose decomp table lacks one.
 private const val DEFAULT_WATER_RATE = 4
@@ -104,34 +109,47 @@ constructor(
     // are counted, so filtering them out also renormalised every single's odds upwards.
     val table = RetailEncounters.tableForSource(map.sourceName, map.regionId.toInt(), types, season, time, includeHordes = true)
     if (table.isNotEmpty()) {
-      val rate = decompTable?.encounterRate ?: if (waterStep) DEFAULT_WATER_RATE else DEFAULT_ENCOUNTER_RATE
+      val tier = activeLure(charId)
+      val base = decompTable?.encounterRate ?: if (waterStep) DEFAULT_WATER_RATE else DEFAULT_ENCOUNTER_RATE
+      // A lure raises the encounter rate by its tier's percentage.
+      val rate = base * (100 + (tier?.encounterRatePercent ?: 0)) / 100
       // Water rates are low by design (FireRed's 4 against grass's 21), which reads as "no water
       // encounters"; every surfed step says what it rolled against.
       if (waterStep) log.info { "[Encounter] char=$charId surf step at ($x, $y): rate $rate, pool ${table.size}" }
       if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(rate, lead)) return
+      val lured =
+          withLure(table, RetailEncounters.lureSlotsForSource(map.sourceName, map.regionId.toInt(), types, season, time), tier)
       // Bias the PAIRED list: biasSlot filters the pool for a Static or Magnet Pull lead, so picking
       // by index into a separate list would attach the wrong horde size to the wrong species.
-      val picked = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random)) ?: return
+      val picked = pickTerrainSlot(abilities.biasSlot(lured, { it.slot.dexId }, lead, random)) ?: return
       val slot = picked.slot
-      val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
+      val level = luredLevel(abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return, tier)
       if (repelBlocks(charId, lead, level)) return
       freeze(session, charId, map, x, y)
       if (picked.hordeSize > 0) {
-        val specs =
-            List(picked.hordeSize) {
-              BattleService.OpponentSpec(
-                  slot.dexId,
-                  random.nextInt(slot.minLevel, slot.maxLevel + 1),
-                  emptyList(),
-                  hints = abilities.hints(lead, slot.dexId, random),
-              )
-            }
-        log.info { "Wild horde of ${picked.hordeSize} x ${slot.dexId} for char=$charId at ($x, $y) [$season/$time]" }
+        val size = luredHordeSize(picked.hordeSize, tier)
+        val specs = List(size) { hordeSpec(slot, lead, tier) }
+        log.info { "Wild horde of $size x ${slot.dexId} for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}" }
         battleService.startHordeBattle(session, specs, encounter)
         return
       }
+      // A lure may bring one or two more foes, each its own draw of the table. There is no dark
+      // grass outside Unova, so the double never comes from the terrain here.
+      val foes = foeCount(darkGrass = false, tier = tier)
+      if (foes > 1) {
+        val extra =
+            (2..foes).mapNotNull {
+              pickTerrainSlot(abilities.biasSlot(lured, { s -> s.slot.dexId }, lead, random))?.slot
+            }
+        if (extra.isNotEmpty()) {
+          val specs = (listOf(slot) + extra).map { hordeSpec(it, lead, tier) }
+          log.info { "Wild ${specs.size}-foe encounter for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}" }
+          battleService.startHordeBattle(session, specs, encounter)
+          return
+        }
+      }
       log.info {
-        "Wild encounter for char=$charId at ($x, $y) [$season/$time]: " +
+        "Wild encounter for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}: " +
             "species ${slot.dexId} level $level"
       }
       battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), encounter)
@@ -187,11 +205,17 @@ constructor(
   fun inBattle(charId: Long): Boolean = battleService.inBattle(charId)
 
   /**
-   * Every completed step burns one repel step (src/item_use.c / field_player_avatar.c): the HUD's
-   * "{00} repel step(s)" line follows through the local delta's 0x10 group, and the last step
-   * announces the end the way the cartridge does.
+   * Every completed step burns one repel step and one lure step (src/item_use.c /
+   * field_player_avatar.c): the HUD's "{00} repel step(s)" line follows through the local delta's
+   * 0x10 group and the lure's through the 0x40 group, and the last step of each announces the end
+   * the way the cartridge does. They are independent - a lure burns whether or not a repel runs.
    */
   fun onAnyStep(session: SessionContext, charId: Long) {
+    burnRepelStep(session, charId)
+    burnLureStep(session, charId)
+  }
+
+  private fun burnRepelStep(session: SessionContext, charId: Long) {
     val stored = characterStore.getCharacter(charId) ?: return
     val left = stored.info.repelLeft.toInt()
     if (left <= 0) return
@@ -204,6 +228,35 @@ constructor(
       session.send(notice("The Repel's effect wore off."))
       log.info { "[Repel] char=$charId wore off" }
     }
+  }
+
+  /**
+   * The lure's own step burn, the repel's twin. Its HUD line rides the local delta's 0x40 group:
+   * the f/ig7 kind byte that picks the label, then the steps left. When it runs out the kind goes
+   * to LURE_KIND_NONE, which is the client's -1, and the line disappears.
+   */
+  private fun burnLureStep(session: SessionContext, charId: Long) {
+    val stored = characterStore.getCharacter(charId) ?: return
+    val left = stored.info.lureLeft.toInt()
+    if (left <= 0) return
+    val next = left - 1
+    val item: Short = if (next == 0) 0 else stored.info.lureItemId
+    characterStore.updateCharacter(stored.info.copy(lureLeft = next.toShort(), lureItemId = item))
+    val kind = if (next == 0) LURE_KIND_NONE else Lures.of(stored.info.lureItemId.toInt())?.kind ?: LURE_KIND_NONE
+    session.send(
+        LocalCharacterDeltaPacket(value64 = Value64Group(kind.toByte(), next.toShort(), item)))
+    if (next == 0) {
+      characterStore.flushCharacterAsync(charId)
+      session.send(notice("The lure's effect wore off."))
+      log.info { "[Lure] char=$charId wore off" }
+    }
+  }
+
+  /** The tier of the lure running for this character, null when none is. */
+  private fun activeLure(charId: Long): Lures.Tier? {
+    val info = characterStore.getCharacter(charId)?.info ?: return null
+    if (info.lureLeft <= 0) return null
+    return Lures.of(info.lureItemId.toInt())
   }
 
   /** An active repel turns away any wild monster below the lead's level (wild_encounter.c IsWildLevelAllowed). */
@@ -253,53 +306,100 @@ constructor(
       return
     }
     val lead = abilities.leadOf(characterStore, charId)
-    if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(DEFAULT_ENCOUNTER_RATE, lead)) return
+    val tier = activeLure(charId)
+    // A lure raises the encounter rate by its tier's percentage.
+    val rate = DEFAULT_ENCOUNTER_RATE * (100 + (tier?.encounterRatePercent ?: 0)) / 100
+    if (random.nextInt(ENCOUNTER_ROLL_MAX) >= abilities.scaledRate(rate, lead)) return
+    val lured = withLure(table, RetailEncounters.ndsLureSlotsForHeader(header, region, types, season, time), tier)
     // Bias the PAIRED list: biasSlot filters the pool for a Static or Magnet Pull lead, so picking
     // by index into a separate list would attach the wrong horde size to the wrong species.
-    val picked = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random)) ?: return
+    val picked = pickTerrainSlot(abilities.biasSlot(lured, { it.slot.dexId }, lead, random)) ?: return
     val slot = picked.slot
-    val level = abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return
+    val level = luredLevel(abilities.levelFor(slot.minLevel, slot.maxLevel, lead, random) ?: return, tier)
     if (repelBlocks(charId, lead, level)) return
     freeze(session, charId, null, x, y)
     if (picked.hordeSize > 0) {
-      val specs =
-          List(picked.hordeSize) {
-            BattleService.OpponentSpec(
-                slot.dexId,
-                random.nextInt(slot.minLevel, slot.maxLevel + 1),
-                emptyList(),
-                hints = abilities.hints(lead, slot.dexId, random),
-            )
-          }
-      log.info { "Wild horde of ${picked.hordeSize} x ${slot.dexId} for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]" }
+      val size = luredHordeSize(picked.hordeSize, tier)
+      val specs = List(size) { hordeSpec(slot, lead, tier) }
+      log.info { "Wild horde of $size x ${slot.dexId} for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}" }
       battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
       return
     }
-    // Dark grass: half of the encounters that are NOT a horde come out as a 2v2, the only wild
-    // double in the game (owner, 2026-09-21). It is two independent draws of the same table, so the
-    // two can differ and duplicates are fine; a horde row drawn as one of the two contributes a
-    // single of that species rather than a horde. A horde landed on the MAIN roll above is still a
-    // full horde - dark grass does not take that away.
-    if (darkGrass && random.nextInt(100) < DARK_GRASS_DOUBLE_PERCENT) {
-      val partner = pickTerrainSlot(abilities.biasSlot(table, { it.slot.dexId }, lead, random))?.slot
-      if (partner != null) {
-        val specs =
-            listOf(slot, partner).map {
-              BattleService.OpponentSpec(
-                  it.dexId,
-                  random.nextInt(it.minLevel, it.maxLevel + 1),
-                  emptyList(),
-                  hints = abilities.hints(lead, it.dexId, random),
-              )
-            }
-        log.info { "Wild 2v2 in dark grass for char=$charId on DS map '$name' at ($x, $y) [$season/$time]: ${slot.dexId} + ${partner.dexId}" }
+    // Dark grass turns half of its non-horde encounters into a 2v2, and a lure may bring one or two
+    // more foes; each extra is its own draw of the same table, so they can differ and duplicates
+    // are fine. A horde row drawn as an extra contributes a single of that species.
+    val foes = foeCount(darkGrass, tier)
+    if (foes > 1) {
+      val extra =
+          (2..foes).mapNotNull {
+            pickTerrainSlot(abilities.biasSlot(lured, { s -> s.slot.dexId }, lead, random))?.slot
+          }
+      if (extra.isNotEmpty()) {
+        val specs = (listOf(slot) + extra).map { hordeSpec(it, lead, tier) }
+        log.info { "Wild ${specs.size}-foe encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}" }
         battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
         return
       }
     }
-    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]: species ${slot.dexId} level $level" }
+    log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: species ${slot.dexId} level $level" }
     battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave))
   }
+
+  /** One member of a multi-foe wild battle, at its own rolled level. */
+  private fun hordeSpec(slot: RetailEncounters.Slot, lead: OverworldAbilities.Lead?, tier: Lures.Tier?) =
+      BattleService.OpponentSpec(
+          slot.dexId,
+          luredLevel(random.nextInt(slot.minLevel, slot.maxLevel + 1), tier),
+          emptyList(),
+          hints = abilities.hints(lead, slot.dexId, random),
+      )
+
+  private fun lureTag(tier: Lures.Tier?) = if (tier == null) "" else " [${tier.name}]"
+
+  /**
+   * The terrain table as an active lure reshapes it: the lure-exclusive rows take the tier's share
+   * of the roll (5%, 10% or 8%, the client's own numbers) and everything already there is scaled
+   * down to the rest, which keeps the normal species' odds RELATIVE to each other and keeps the
+   * table summing to 100% - the invariant that caught the horde bug. With no lure up, or no
+   * exclusive rows on this terrain, the table is returned untouched.
+   */
+  private fun withLure(
+      table: List<RetailEncounters.TerrainSlot>,
+      lureRows: List<RetailEncounters.TerrainSlot>,
+      tier: Lures.Tier?,
+  ): List<RetailEncounters.TerrainSlot> {
+    if (tier == null || lureRows.isEmpty() || table.isEmpty()) return table
+    val total = table.sumOf { it.slot.weight }
+    if (total <= 0) return table
+    val share = total * tier.exclusivePercent / 100
+    if (share <= 0) return table
+    val scaled = table.map { it.copy(slot = it.slot.copy(weight = it.slot.weight * (100 - tier.exclusivePercent) / 100)) }
+    val each = (share / lureRows.size).coerceAtLeast(1)
+    return scaled + lureRows.map { it.copy(slot = it.slot.copy(weight = each)) }
+  }
+
+  /**
+   * How many foes a single encounter brings. A lure "may encounter more foes at the same time":
+   * one, two or three at a third each, every one rolled on its own, so unlike a Sweet Scent horde
+   * they can differ. Dark grass independently makes half its encounters a 2v2. Where both apply the
+   * LARGER wins rather than the two adding up (owner, 2026-09-21), so dark grass under a lure is
+   * two or three, never one - which leaves about one in six of those still a single.
+   */
+  private fun foeCount(darkGrass: Boolean, tier: Lures.Tier?): Int {
+    val fromLure = if (tier != null) 1 + random.nextInt(3) else 1
+    val fromGrass = if (darkGrass && random.nextInt(100) < DARK_GRASS_DOUBLE_PERCENT) 2 else 1
+    return maxOf(fromLure, fromGrass)
+  }
+
+  /** A lured foe is a few levels stronger, never past the species' own cap for the slot. */
+  private fun luredLevel(level: Int, tier: Lures.Tier?): Int =
+      if (tier == null) level
+      else (level + Lures.MIN_LEVEL_BONUS + random.nextInt(Lures.MAX_LEVEL_BONUS - Lures.MIN_LEVEL_BONUS + 1))
+          .coerceAtMost(MAX_LEVEL)
+
+  /** Premium lures say "small hordes (3) may increase in size"; the other tiers leave them alone. */
+  private fun luredHordeSize(size: Int, tier: Lures.Tier?): Int =
+      if (size == 3 && tier?.growsHordes == true) 5 else size
 
   /** [pickRetailSlot] over the paired terrain table, so the horde size rides with its species. */
   private fun pickTerrainSlot(pool: List<RetailEncounters.TerrainSlot>): RetailEncounters.TerrainSlot? {

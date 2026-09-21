@@ -14,6 +14,7 @@ import de.fiereu.openmmo.net.game.packets.EntitySpriteChangePacket
 import de.fiereu.openmmo.net.game.packets.EntityTransportationPacket
 import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
 import de.fiereu.openmmo.net.game.packets.Value16Group
+import de.fiereu.openmmo.net.game.packets.Value64Group
 import de.fiereu.openmmo.net.game.packets.PartyReorderPacket
 import de.fiereu.openmmo.net.game.packets.PokedexSpeciesUnlockPacket
 import de.fiereu.openmmo.net.game.packets.PokemonContainerPacket
@@ -138,6 +139,10 @@ constructor(
       }
       repelSteps[itemId]?.let { steps ->
         useRepel(ctx, charId, stored, itemId, steps)
+        return
+      }
+      if (Lures.isLure(itemId)) {
+        useLure(ctx, charId, stored, itemId)
         return
       }
       if (itemId == BICYCLE_ITEM_ID) {
@@ -418,6 +423,30 @@ constructor(
     sendStack(ctx, charId, itemId)
     ctx.reply("Used the ${kind.label}. Its effect lasts one hour.")
     log.info { "[UseItem] CHARM char=$charId item=$itemId kind=${kind.name} for ${Boosts.DURATION_SECONDS}s" }
+  }
+
+  /**
+   * A lure from the bag, the repel's twin: the counter goes into the character
+   * (CharacterInfo.lureLeft/lureItemId) and to the client through the local delta's 0x40 group,
+   * which carries the f/ig7 kind byte that picks the HUD label plus the steps left.
+   * EncounterService burns a step per step and applies the effects.
+   */
+  private suspend fun useLure(ctx: SessionContext, charId: Long, stored: StoredCharacter, itemId: Int) {
+    val tier = Lures.of(itemId) ?: return
+    if (stored.info.lureLeft > 0) {
+      ctx.reply("The effect of the previous ${items.get(stored.info.lureItemId.toInt())?.name ?: "lure"} still lingers.")
+      return
+    }
+    characters.updateCharacter(
+        stored.info.copy(lureLeft = tier.steps.toShort(), lureItemId = itemId.toShort()))
+    characters.addItem(charId, itemId, -1)
+    characters.flushCharacterAsync(charId)
+    sendStack(ctx, charId, itemId)
+    ctx.send(
+        LocalCharacterDeltaPacket(
+            value64 = Value64Group(tier.kind.toByte(), tier.steps.toShort(), itemId.toShort())))
+    ctx.reply("Used the ${tier.name}. Wild monsters will be drawn to you for ${tier.steps} steps.")
+    log.info { "[UseItem] LURE char=$charId item=$itemId kind=${tier.kind} steps=${tier.steps}" }
   }
 
   private suspend fun useRepel(ctx: SessionContext, charId: Long, stored: StoredCharacter, itemId: Int, steps: Int) {

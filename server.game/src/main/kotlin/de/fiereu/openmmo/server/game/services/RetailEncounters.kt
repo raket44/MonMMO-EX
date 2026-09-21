@@ -116,6 +116,9 @@ object RetailEncounters {
   /** A slot of a terrain table, with the horde size the retail row carries (0 = a single wild). */
   data class TerrainSlot(val slot: Slot, val hordeSize: Int)
 
+  /** The rarity the dump writes on a lure-exclusive row instead of a percentage. */
+  const val LURE_RARITY = "Lure"
+
   /**
    * A DS terrain table as the retail dump actually models it: ONE distribution summing to 100%, with
    * the horde rows as slots INSIDE it rather than a separate pool. Checked 2026-09-21: all 105 Unova
@@ -139,6 +142,29 @@ object RetailEncounters {
       includeHordes: Boolean,
   ): List<TerrainSlot> =
       terrainSlots(byNdsHeader[regionId to header].orEmpty(), types, season, time, includeHordes)
+
+  /**
+   * The lure-exclusive rows of a terrain. Their rarity is the literal word "Lure" rather than a
+   * percentage - 760 rows across the dump, all with rarity_flags 256 and never a horde flag - so
+   * [percentWeight] drops them and they are invisible to the ordinary table. The caller gives them
+   * a share of the roll from the lure's own tier (5%, 10% or 8% per the client's descriptions).
+   */
+  fun ndsLureSlotsForHeader(header: Int, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay): List<TerrainSlot> =
+      lureSlots(byNdsHeader[regionId to header].orEmpty(), types, season, time)
+
+  /** [ndsLureSlotsForHeader] for a GBA or Gen 4 decomp map, resolved by its source name. */
+  fun lureSlotsForSource(sourceName: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay): List<TerrainSlot> =
+      lureSlots(entriesFor(sourceName, regionId), types, season, time)
+
+  private fun lureSlots(entries: List<Entry>, types: Set<String>, season: Season, time: TimeOfDay): List<TerrainSlot> =
+      entries
+          .asSequence()
+          .filter { it.type in types }
+          .filter { it.season == "Any" || it.season == season.label }
+          .filter { it.form < 0 }
+          .filter { it.rarity(time) == LURE_RARITY }
+          .map { TerrainSlot(Slot(it.dexId, it.minLevel, it.maxLevel, 0), 0) }
+          .toList()
 
   /** [ndsTableForHeader] for a GBA or Gen 4 decomp map, resolved by its source name. */
   fun tableForSource(

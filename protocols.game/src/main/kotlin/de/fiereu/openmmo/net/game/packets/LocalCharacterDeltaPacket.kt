@@ -85,7 +85,7 @@ object LocalCharacterDeltaPacketCodec : PacketCodec<LocalCharacterDeltaPacket>()
     val value64 =
         if (m and VALUE_64 != 0) {
           // The lure counter. The client (f/jc3) decodes this byte through f/ig7.sr0 and reads the
-          // two shorts only when it is NOT the enum.s TE1 - whose byte is -1, NOT 0. Zero is a real
+          // two shorts only when it is NOT the enum's TE1 - whose byte is -1, NOT 0. Zero is a real
           // lure kind (plain Lure; 1 premium, 2 legendary), so treating 0 as the empty case wrote a
           // short pair fewer than the client reads and desynced every packet after it. Never fired
           // because nothing sent this group until lures existed.

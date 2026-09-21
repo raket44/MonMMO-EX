@@ -30,7 +30,7 @@ const val SECRET_SHINY_DENOMINATOR = 12
  * Rolls a wild monster: random nature seed, random IVs, computed stats, full hp, and with a
  * [shinyDenominator] above zero a 1 in that many chance of being shiny (every monster rolls on
  * its own, so each horde member has the full chance). Zero, the default, never rolls one: a
- * trainer.s monsters, starters and give commands stay plain.
+ * trainer's monsters, starters and give commands stay plain.
  *
  * A shiny that rolls then takes one more roll to be SECRET, 1 in [SECRET_SHINY_DENOMINATOR]
  * (owner, 2026-09-21). Sweet Scent is the only thing that cannot produce one, so [secretAllowed]

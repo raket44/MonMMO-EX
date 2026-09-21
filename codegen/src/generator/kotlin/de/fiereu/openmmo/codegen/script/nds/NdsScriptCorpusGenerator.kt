@@ -1699,7 +1699,7 @@ class NdsScriptCorpusGenerator {
           // is the only place in the whole game that touches ROM flag 16, so it IS the running
           // flag. Named here, it rides the same synthetic key the decomp regions use and the
           // server mirrors to the client id the client's own Yb0 gate reads.
-          fun fl(i: Int) = if (t(i) == "16") "FLAG_DS_RUNNING_SHOES" else "FLAG_" + t(i)
+          fun fl(i: Int) = "FLAG_" + t(i)
           fun isVarArg(token: String) = (token.toIntOrNull() ?: 0) >= 0x4000
           /** A value-or-var argument: Gen 5 passes vars (0x4000+) where a value is expected. */
           fun tv(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else t(i)
@@ -1814,7 +1814,7 @@ class NdsScriptCorpusGenerator {
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
             "CMD_240", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "CMD_01B",
-            "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
+            "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "CMD_146", "CMD_400", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248" -> {}
@@ -1822,6 +1822,12 @@ class NdsScriptCorpusGenerator {
             // map load (Striaton Gym 7 -> f/iu5) and s2c 0xB6 action 6 hands it [opcode, args] -
             // the ROM's own opcodes. 0x188 k opens curtain k, 0x187/0x189 work its switches,
             // 0x186 restores the open ones. Stubbed out, the gym curtains never moved.
+            // Mom's Route 2 scene (file 638 entry 0) hands over the Running Shoes: her fanfare,
+            // the grey "received" box, then this. The client gates running on ITS flag 2403, which
+            // no script in the game sets - the engine does it here. Bound to this one script, not
+            // to the opcode everywhere: its only other use is in the opening chunk, which would
+            // hand the shoes over before she ever speaks (owner, 2026-09-21).
+            "CMD_E3" -> if (file == 638) b.lines += listOf("SetFlag", "FLAG_DS_RUNNING_SHOES")
             "CMD_186" -> b.lines += listOf("DsMapGimmick", "390", tv(0), tv(1))
             "CMD_187" -> b.lines += listOf("DsMapGimmick", "391", tv(0))
             "CMD_188" -> b.lines += listOf("DsMapGimmick", "392", tv(0))

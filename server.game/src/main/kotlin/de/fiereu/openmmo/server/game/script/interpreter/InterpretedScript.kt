@@ -139,6 +139,22 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
           state.pc++
         }
+        // The ROM's own sound calls. The client plays the region's SDAT itself (s2c 0x00); we
+        // dropped every one of them, so the DS regions were silent where the cartridge is not.
+        // ds_waitsound has nothing to wait ON - the client never answers - so it is the short
+        // beat the script expects, which is also what keeps the player held while a curtain opens.
+        "ds_playsound" -> {
+          ctx.playRomSound(value(ctx, instruction.arg(0)))
+          state.pc++
+        }
+        "ds_changemusic" -> {
+          ctx.playRomMusic(value(ctx, instruction.arg(0)))
+          state.pc++
+        }
+        "ds_waitsound" -> {
+          delay(SOUND_WAIT_MILLIS)
+          state.pc++
+        }
         // ds_mapgimmick opcode, args...: the loaded map's own gimmick handler (f/vc0 subclass,
         // picked by ROM header) gets the ROM's opcode and its arguments through 0xB6 action 6.
         // It is how the Striaton gym curtains are drawn - they are part of the building model,
@@ -2503,6 +2519,13 @@ class InterpretedScript(
     /** A cartridge screen fade: sixteen frames. */
     const val FADE_MILLIS = 16 * 17L
     const val MAX_DELAY_MILLIS = 5_000L
+
+    /**
+     * WaitSound waits for the sound effect to finish on the cartridge and the client never tells
+     * us it has, so this is the beat the script expects - long enough for a jingle, and what keeps
+     * the player held while the Striaton curtain it just opened finishes moving.
+     */
+    const val SOUND_WAIT_MILLIS = 40 * 17L
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1

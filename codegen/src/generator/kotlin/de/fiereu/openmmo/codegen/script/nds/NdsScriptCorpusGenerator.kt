@@ -689,6 +689,13 @@ class NdsScriptCorpusGenerator {
         // command, so every Striaton button script failed to resolve and the buttons did
         // nothing at all (owner, 2026-09-21).
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
+        // The ROM asks for its own sounds and the client can play them (s2c 0x00 -> the region's
+        // SDAT); dropping them left the DS regions silent where the cartridge is not. Only a
+        // numeric id goes out - a decomp symbol we cannot resolve stays dropped rather than
+        // risking the client's sound engine, which mutes the whole session on one bad id.
+        "PlaySound" -> a.getOrNull(0)?.toIntOrNull()?.let { out += "ds_playsound $it" }
+        "ChangeMusic" -> a.getOrNull(0)?.toIntOrNull()?.let { out += "ds_changemusic $it" }
+        "WaitSound", "WaitSoundA7" -> out += "ds_waitsound"
         // White CMD_BB: the item's pocket (0 Items .. 4 Key Items) into a var.
         "UnovaItemPocket" -> out += "ds_itempocket ${a[0]}, ${a[1]}"
         "ChooseUnovaStarter" -> {
@@ -2209,7 +2216,7 @@ class NdsScriptCorpusGenerator {
             "TouchscreenMenuShow", "ToggleFollowingPokemonMovement", "WaitFollowingPokemonMovement",
             "FollowingPokemonMovement", "ReturnToField", "RestoreOverworld", "Noop", "Dummy", "SetObjectFlagIsPersistent",
             // Gen 5 (disassembly names): sound, camera, waits with no server counterpart.
-            "WaitMoment", "Nop", "Nop2", "PlaySound", "WaitSound", "WaitSoundA7", "Cry", "ChangeMusic", "FadeToDefaultMusic",
+            "WaitMoment", "Nop", "Nop2", "Cry", "FadeToDefaultMusic",
             "StartCameraEvent", "StopCameraEvent", "LockCamera", "ReleaseCamera", "MoveCamera", "EndCameraEvent", "ResetCamera",
             "CallStart", "CallEnd", "EndBattle", "DisableTrainer", "ChangeMusicVolume", "SetTextScriptMessage", "CloseMulti",
             // HeartGold opens most npc scripts with this argument-less command; nothing observable follows it.

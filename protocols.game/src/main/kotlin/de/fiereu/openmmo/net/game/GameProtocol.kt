@@ -25,6 +25,8 @@ object GameProtocol : Protocol() {
     s2c<Probe8APacket>(0x8Au, OpcodeProbeCodec(::Probe8APacket))
     s2c<Probe9FPacket>(0x9Fu, OpcodeProbeCodec(::Probe9FPacket))
     s2c<ProbeAFPacket>(0xAFu, OpcodeProbeCodec(::ProbeAFPacket))
+    s2c<SoundPacket>(0x00u, SoundPacketCodec)
+
     s2c<JoinResponsePacket>(0x01u, JoinResponsePacketCodec)
 
     c2s<RequestCharactersPacket>(0x02u, RequestCharactersPacketCodec)

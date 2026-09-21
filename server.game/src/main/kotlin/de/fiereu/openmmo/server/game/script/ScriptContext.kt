@@ -93,6 +93,16 @@ internal constructor(
   internal fun sendScenePacket(packet: Any) = movement.sendScenePacket(session, packet)
 
   /** Gen 5 MakeNPC: an actor the script creates itself (see ScriptMovementService.makeNdsNpc). */
+  /**
+   * The scripts' own PlaySound / ChangeMusic: s2c 0x00, the sound the ROM asks for, from the
+   * region the player is standing in (the DS regions each have their own SDAT).
+   */
+  fun playRomSound(song: Int) =
+      sendScenePacket(de.fiereu.openmmo.net.game.packets.SoundPacket.effect(state.regionId, song))
+
+  fun playRomMusic(song: Int) =
+      sendScenePacket(de.fiereu.openmmo.net.game.packets.SoundPacket.music(state.regionId, song))
+
   fun makeNdsNpc(id: Int, sprite: Int, x: Int, y: Int, dsFacing: Int) =
       movement.makeNdsNpc(session, state, id, sprite, x, y, dsFacing)
 

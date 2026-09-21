@@ -91,12 +91,11 @@ class GameProtocolTest :
       }
 
       test("bidi packets are registered both directions") {
-        val bidi =
-            listOf(
-                ChatMessagePacket::class,
-                LoadMapPacket::class,
-                KeepAlivePacket::class,
-            )
+        // Chat and map loading are NOT bidi and never were: each direction is its own class on its
+        // own opcode - ChatMessagePacket s2c 0x09 against ChatMessageSendPacket c2s 0x08, and
+        // LoadMapPacket s2c 0x10 against MapLoadedAckPacket c2s 0x33. They sat in this list
+        // asserting the opposite, so the whole module suite was red and could not guard anything.
+        val bidi = listOf(KeepAlivePacket::class)
         for (type in bidi) {
           val serverOut = GameProtocol.outgoingRegistration(Side.SERVER, type)
           val clientOut = GameProtocol.outgoingRegistration(Side.CLIENT, type)

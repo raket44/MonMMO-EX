@@ -38,17 +38,19 @@ object Lures {
       val encounterRatePercent: Int,
       val exclusivePercent: Int,
       val growsHordes: Boolean,
+      /** The premium tier's "Secret Shiny rates are increased by +25%"; 0 on the others. */
+      val secretBonusPercent: Int,
   )
 
   private val tiers =
       listOf(
-          Tier(1041, "Lure", 100, KIND_STANDARD, 10, 5, false),
-          Tier(1042, "Super Lure", 200, KIND_STANDARD, 10, 5, false),
-          Tier(1043, "Expert Lure", 250, KIND_STANDARD, 10, 5, false),
-          Tier(1044, "Premium Lure", 200, KIND_PREMIUM, 25, 10, true),
-          Tier(1045, "Premium Super Lure", 300, KIND_PREMIUM, 25, 10, true),
-          Tier(1046, "Premium Max Lure", 400, KIND_PREMIUM, 25, 10, true),
-          Tier(1475, "Legendary Lure", 300, KIND_LEGENDARY, 15, 8, false),
+          Tier(1041, "Lure", 100, KIND_STANDARD, 10, 5, false, 0),
+          Tier(1042, "Super Lure", 200, KIND_STANDARD, 10, 5, false, 0),
+          Tier(1043, "Expert Lure", 250, KIND_STANDARD, 10, 5, false, 0),
+          Tier(1044, "Premium Lure", 200, KIND_PREMIUM, 25, 10, true, 25),
+          Tier(1045, "Premium Super Lure", 300, KIND_PREMIUM, 25, 10, true, 25),
+          Tier(1046, "Premium Max Lure", 400, KIND_PREMIUM, 25, 10, true, 25),
+          Tier(1475, "Legendary Lure", 300, KIND_LEGENDARY, 15, 8, false, 0),
       )
 
   private val byItem = tiers.associateBy { it.itemId }

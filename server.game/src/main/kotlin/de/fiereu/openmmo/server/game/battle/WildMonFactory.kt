@@ -55,6 +55,7 @@ constructor(
       shinyDenominator: Int = 0,
       hints: WildRollHints? = null,
       secretAllowed: Boolean = true,
+      secretBonusPercent: Int = 0,
   ): Pokemon? {
     // ONE identity per species (operator-directed): an expansion-offset id whose original dex is
     // 1-649 collapses to the plain canonical id here, so a /giveexp Ditto and a wild-caught one
@@ -101,7 +102,11 @@ constructor(
             List(MAX_MOVE_SLOTS - moveIds.size) { PokemonMove(0, 0) }
     val shiny = shinyDenominator > 0 && rng.pick(shinyDenominator) == 0
     // Only a shiny rolls for Secret, and only where the encounter allows it.
-    val secret = shiny && secretAllowed && rng.pick(SECRET_SHINY_DENOMINATOR) == 0
+    // 1 in SECRET_SHINY_DENOMINATOR, raised by [secretBonusPercent] - a premium lure's "Secret
+    // Shiny rates are increased by +25%". Rolled out of a hundred times the denominator so the
+    // bonus is a percentage OF the odds: at +0 this is 100/1200 = 1 in 12, at +25 it is 125/1200.
+    val secret =
+        shiny && secretAllowed && rng.pick(SECRET_SHINY_DENOMINATOR * 100) < 100 + secretBonusPercent
     val mon =
         Pokemon(
             id = entityIds.newMonsterId(),

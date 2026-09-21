@@ -374,6 +374,7 @@ constructor(
       level: Int,
       hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+      secretBonusPercent: Int = 0,
   ) {
     // Inside the Safari Game every wild encounter is a safari battle: no moves, Ball / Bait / Rock.
     val charId = session.attributes[PLAYER_STATE]?.characterId
@@ -387,7 +388,18 @@ constructor(
                 escapeFactor = (def.safariZoneFleeRate * 100 / 1275).coerceAtLeast(2),
             )
         else null
-    val battle = createWildBattle(session, dexId, level, catchable = true, escapable = true, safari = safariState, hints = hints, encounter = encounter)
+    val battle =
+        createWildBattle(
+            session,
+            dexId,
+            level,
+            catchable = true,
+            escapable = true,
+            safari = safariState,
+            hints = hints,
+            encounter = encounter,
+            secretBonusPercent = secretBonusPercent,
+        )
     if (battle != null && charId != null) encounterTracker?.onWildEncounter(session, charId, dexId)
   }
 
@@ -466,9 +478,18 @@ constructor(
       specs: List<OpponentSpec>,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
       sweetScent: Boolean = false,
+      secretBonusPercent: Int = 0,
   ): BattleInstance? {
     val battle =
-        createBattle(session, specs, catchable = true, escapable = true, encounter = encounter, secretAllowed = !sweetScent)
+        createBattle(
+            session,
+            specs,
+            catchable = true,
+            escapable = true,
+            encounter = encounter,
+            secretAllowed = !sweetScent,
+            secretBonusPercent = secretBonusPercent,
+        )
     val charId = session.attributes[PLAYER_STATE]?.characterId
     if (battle != null && charId != null) {
       encounterTracker?.onEncounter(
@@ -535,8 +556,17 @@ constructor(
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
       hints: de.fiereu.openmmo.server.game.battle.WildRollHints? = null,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
+      secretBonusPercent: Int = 0,
   ): BattleInstance? =
-      createBattle(session, listOf(OpponentSpec(dexId, level, moveIds, hints = hints)), catchable, escapable, safari = safari, encounter = encounter)
+      createBattle(
+          session,
+          listOf(OpponentSpec(dexId, level, moveIds, hints = hints)),
+          catchable,
+          escapable,
+          safari = safari,
+          encounter = encounter,
+          secretBonusPercent = secretBonusPercent,
+      )
 
   private fun createBattle(
       session: SessionContext,
@@ -554,6 +584,8 @@ constructor(
       // Sweet Scent is the ONE encounter that cannot produce a Secret shiny (owner, 2026-09-21);
       // step hordes, dark grass doubles and hatched eggs all roll for it.
       secretAllowed: Boolean = true,
+      // A premium lure raises the Secret odds by 25%.
+      secretBonusPercent: Int = 0,
       /** The Crystal Onix raid: [opponents] opens with the boss, then its summoned Onix. */
       raid: Boolean = false,
   ): BattleInstance? {
@@ -591,7 +623,8 @@ constructor(
     // Only the wild roll for shiny; a trainer's monsters never do.
     val shinyDenominator = if (trainer == null) wildShinyDenominator else 0
     for (spec in opponents) {
-      var rolled = wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints, secretAllowed)
+      var rolled =
+          wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints, secretAllowed, secretBonusPercent)
       if (rolled == null) {
         session.send(notice("Unknown species ${spec.dexId}."))
         return null

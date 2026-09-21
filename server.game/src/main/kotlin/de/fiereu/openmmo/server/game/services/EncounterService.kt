@@ -130,7 +130,7 @@ constructor(
         val size = luredHordeSize(picked.hordeSize, tier)
         val specs = List(size) { hordeSpec(slot, lead, tier) }
         log.info { "Wild horde of $size x ${slot.dexId} for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}" }
-        battleService.startHordeBattle(session, specs, encounter)
+        battleService.startHordeBattle(session, specs, encounter, secretBonusPercent = tier?.secretBonusPercent ?: 0)
         return
       }
       // A lure may bring one or two more foes, each its own draw of the table. There is no dark
@@ -144,7 +144,7 @@ constructor(
         if (extra.isNotEmpty()) {
           val specs = (listOf(slot) + extra).map { hordeSpec(it, lead, tier) }
           log.info { "Wild ${specs.size}-foe encounter for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}" }
-          battleService.startHordeBattle(session, specs, encounter)
+          battleService.startHordeBattle(session, specs, encounter, secretBonusPercent = tier?.secretBonusPercent ?: 0)
           return
         }
       }
@@ -152,7 +152,7 @@ constructor(
         "Wild encounter for char=$charId at ($x, $y) [$season/$time]${lureTag(tier)}: " +
             "species ${slot.dexId} level $level"
       }
-      battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), encounter)
+      battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), encounter, secretBonusPercent = tier?.secretBonusPercent ?: 0)
       return
     }
 
@@ -322,7 +322,7 @@ constructor(
       val size = luredHordeSize(picked.hordeSize, tier)
       val specs = List(size) { hordeSpec(slot, lead, tier) }
       log.info { "Wild horde of $size x ${slot.dexId} for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}" }
-      battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
+      battleService.startHordeBattle(session, specs, EncounterContext(cave = cave), secretBonusPercent = tier?.secretBonusPercent ?: 0)
       return
     }
     // Dark grass turns half of its non-horde encounters into a 2v2, and a lure may bring one or two
@@ -337,12 +337,12 @@ constructor(
       if (extra.isNotEmpty()) {
         val specs = (listOf(slot) + extra).map { hordeSpec(it, lead, tier) }
         log.info { "Wild ${specs.size}-foe encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}" }
-        battleService.startHordeBattle(session, specs, EncounterContext(cave = cave))
+        battleService.startHordeBattle(session, specs, EncounterContext(cave = cave), secretBonusPercent = tier?.secretBonusPercent ?: 0)
         return
       }
     }
     log.info { "Wild encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: species ${slot.dexId} level $level" }
-    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave))
+    battleService.startWildBattle(session, slot.dexId, level, abilities.hints(lead, slot.dexId, random), EncounterContext(cave = cave), secretBonusPercent = tier?.secretBonusPercent ?: 0)
   }
 
   /** One member of a multi-foe wild battle, at its own rolled level. */

@@ -42,7 +42,9 @@ class GameCodecRoundtripTest :
       test("MovementPacket decodes the running flag") {
         val pkt = MovementPacket(x = 100, y = 250, direction = Direction.UP, running = true)
         MovementPacketCodec.encodeToBytes(pkt) shouldBe byteArrayOf(100, 0, -6, 0, -127)
-        MovementPacketCodec.decodeBytes(byteArrayOf(100, 0, -6, 0, -127)) shouldBe pkt
+        // Decoding also fills stateRaw with the whole byte (0x81 here). The field was added for the
+        // unmapped bits 2-6 without updating this expectation, which left the suite red.
+        MovementPacketCodec.decodeBytes(byteArrayOf(100, 0, -6, 0, -127)) shouldBe pkt.copy(stateRaw = 0x81)
       }
 
       test("DialogStatePacket roundtrip") {

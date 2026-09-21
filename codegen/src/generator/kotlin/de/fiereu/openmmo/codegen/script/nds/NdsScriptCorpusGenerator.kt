@@ -1831,7 +1831,7 @@ class NdsScriptCorpusGenerator {
             "CMD_186" -> b.lines += listOf("DsMapGimmick", "390", tv(0))
             "CMD_187" -> b.lines += listOf("DsMapGimmick", "391", tv(0))
             "CMD_188" -> b.lines += listOf("DsMapGimmick", "392", tv(0))
-            "CMD_189" -> b.lines += listOf("DsMapGimmick", "393")
+            "CMD_189" -> b.lines += listOf("DsMapGimmick", "393", tv(0))
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
             // Text slots that were no-ops - and an unfilled slot shows the PLAYER'S name on the
             // client ("What are you and raket going to do?" for the starter's name, 2026-09-20):

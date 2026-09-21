@@ -155,8 +155,8 @@ class DialogInterpreterTest :
                   .run(fixture.ctx)
             }
             runCurrent()
-            respond(fixture)
-            runCurrent()
+            // ONE dialog: the line merges into the box that asks over it, so there is nothing
+            // to acknowledge first.
             respond(fixture, clientResult)
             job.join()
 
@@ -281,6 +281,47 @@ class DialogInterpreterTest :
 
           fixture.ctx.state.dialogTextColor shouldBe DialogTextColor.DEFAULT
           fixture.ctx.state.dialogMessageMode shouldBe DialogMessageMode.NORMAL
+        }
+      }
+
+      /**
+       * The Pokemon Center nurse, twice over: the Gen 5 transpiler writes a line and its question
+       * as `Message` + `YesNo`, where the GBA writes one `msgbox MSGBOX_YESNO`. `yesnobox` asks
+       * over state.currentMessage, so showing the message here too read her whole greeting out and
+       * then read it out again with Yes/No attached (owner, 2026-09-21). Her greeting ends a called
+       * routine and the box sits two jumps later in the caller, so the lookahead has to cross the
+       * return as well - this is that exact shape.
+       */
+      test("a message merges into the yes/no that follows it across a return and a goto") {
+        runTest {
+          val fixture = fixture(backgroundScope)
+          val job = launch {
+            script(
+                    listOf(
+                        "call Greeting",
+                        "goto Ask",
+                        "Greeting:",
+                        "message First_Text",
+                        "waitmessage",
+                        "goto Tail",
+                        "Tail:",
+                        "setvar VAR_0x8000, 0",
+                        "return",
+                        "Ask:",
+                        "yesnobox 20, 8",
+                        "end",
+                    ))
+                .run(fixture.ctx)
+          }
+          runCurrent()
+          // One dialog is open, and it is the question - not the line on its own.
+          respond(fixture, 1)
+          job.join()
+
+          fixture.ctx.getVar("kanto/VAR_RESULT") shouldBe 1
+          fixture.session.sent.filterIsInstance<DialogActionPacket>().count {
+            it.actionType.toInt() != 100
+          } shouldBe 1
         }
       }
     })

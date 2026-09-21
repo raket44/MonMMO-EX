@@ -1680,7 +1680,12 @@ class NdsScriptCorpusGenerator {
           val a = c.args
           fun t(i: Int) = a.getOrElse(i) { "0" }
           fun v(i: Int) = "VAR_0x" + t(i).toInt().toString(16).uppercase()
-          fun fl(i: Int) = "FLAG_" + t(i)
+          // Mom's Running Shoes scene on Route 2 (file 638 entry 7: her yes/no, then SetFlag 16)
+          // is the only place in the whole game that touches ROM flag 16, so it IS the running
+          // flag. Named here, it rides the same synthetic key the decomp regions use and the
+          // server mirrors to the client id the client's own Yb0 gate reads.
+          fun fl(i: Int) = if (t(i) == "16") "FLAG_DS_RUNNING_SHOES" else "FLAG_" + t(i)
+          fun isVarArg(token: String) = (token.toIntOrNull() ?: 0) >= 0x4000
           /** A value-or-var argument: Gen 5 passes vars (0x4000+) where a value is expected. */
           fun tv(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else t(i)
           /** An item argument: a var stays a var, a Gen 5 index becomes the client item's ITEM_ constant. */
@@ -1792,12 +1797,20 @@ class NdsScriptCorpusGenerator {
             // (contexts read in the corpus 2026-09-19): item-obtained fanfare/pocket (CMD_240),
             // type-name text buffer (SetVarType; DS buffers are all no-ops for now), relocator,
             // camera/screen effects, the Interpoke/PC, save prompts, badge case, and the like.
-            "CMD_240", "CMD_188", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
+            "CMD_240", "CMD_21C", "ActivateRelocator", "CMD_02D", "CMD_0D8", "CMD_0DA",
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "CMD_E3", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
             "CMD_146", "CMD_400", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
-            "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248", "CMD_187", "CMD_189" -> {}
+            "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248" -> {}
+            // The map's own gimmick handler: the client picks an f/vc0 subclass by ROM header at
+            // map load (Striaton Gym 7 -> f/iu5) and s2c 0xB6 action 6 hands it [opcode, args] -
+            // the ROM's own opcodes. 0x188 k opens curtain k, 0x187/0x189 work its switches,
+            // 0x186 restores the open ones. Stubbed out, the gym curtains never moved.
+            "CMD_186" -> b.lines += listOf("DsMapGimmick", "390", tv(0), tv(1))
+            "CMD_187" -> b.lines += listOf("DsMapGimmick", "391", tv(0))
+            "CMD_188" -> b.lines += listOf("DsMapGimmick", "392", tv(0))
+            "CMD_189" -> b.lines += listOf("DsMapGimmick", "393")
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
             // Text slots that were no-ops - and an unfilled slot shows the PLAYER'S name on the
             // client ("What are you and raket going to do?" for the starter's name, 2026-09-20):
@@ -1850,8 +1863,11 @@ class NdsScriptCorpusGenerator {
             "CallRoutine" -> b.lines += listOf("Call", jump(0))
             "Jump" -> b.lines += listOf("GoTo", jump(0))
             "ReturnAfterDelay" -> b.lines += listOf("WaitTime", t(0))
-            "SetFlag" -> b.lines += listOf("SetFlag", fl(0))
-            "ClearFlag" -> b.lines += listOf("ClearFlag", fl(0))
+            // A flag id held in a VAR is the shared routines' way of naming the actor's own flag
+            // (the item ball sets its own before removing itself). Written out as FLAG_32784 it
+            // was a flag that does not exist; the removal persists the right one by itself.
+            "SetFlag" -> if (!isVarArg(t(0))) b.lines += listOf("SetFlag", fl(0))
+            "ClearFlag" -> if (!isVarArg(t(0))) b.lines += listOf("ClearFlag", fl(0))
             "StoreValueInVar" -> b.lines += listOf("SetVar", v(0), t(1))
             // The second argument is a var OR a literal (StoreDerefVarInVar VAR_0x8000, 504 puts the
             // item index in the var); read as a var it pointed at nothing and hidden items gave item 0.
@@ -1956,8 +1972,16 @@ class NdsScriptCorpusGenerator {
             // objects; 250/251 are the camera and follower slots the server does not animate.
             "MakeNPC" -> if ((t(3).toIntOrNull() ?: 255) < 252) b.lines += listOf("DsMakeNpc", t(3), t(4), t(0), t(1), t(2))
             "ShowDiploma", "Unknown_0F", "StoreVar_CF" -> {}
-            "RemoveNPC" -> if (t(0).toInt() < 252) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
-            "AddNPC" -> if (t(0).toInt() < 252) b.lines += listOf("AddObject", "OBJ_" + t(0))
+            // SELF_OBJECT is how the shared chunk scripts name the actor that was talked to, and
+            // the item-ball routine (file 864) ends `SetFlag <its own flag>; RemoveNPC SELF`.
+            // Dropped for not being under 252, the ball stayed on the ground and could be picked
+            // up again and again (owner, 2026-09-21).
+            "RemoveNPC" ->
+                if (t(0) == SELF_OBJECT.toString()) b.lines += listOf("RemoveObject", "VAR_LAST_TALKED")
+                else if (t(0).toInt() < 252) b.lines += listOf("RemoveObject", "OBJ_" + t(0))
+            "AddNPC" ->
+                if (t(0) == SELF_OBJECT.toString()) b.lines += listOf("AddObject", "VAR_LAST_TALKED")
+                else if (t(0).toInt() < 252) b.lines += listOf("AddObject", "OBJ_" + t(0))
             // obj, x, z, y, facing (the corpus: z is 0/1/3 everywhere, facing 0-3; Nuvema's gift
             // box puts Cheren at 6,6 and Bianca at 4,6). Reading z as y put them on row 0.
             // 255 is the player, placed under the same fades (4,6 facing east for the battles after

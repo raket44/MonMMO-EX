@@ -83,8 +83,13 @@ class InterpretedScript(
         }
         "message", "messageautoscroll" -> {
           // A multichoice right after re-presents the same text with the choice attached, so
-          // showing it here too would put the identical dialog up twice in a row.
-          if (multichoiceFollows(state)) {
+          // showing it here too would put the identical dialog up twice in a row. A yes/no box
+          // does the same (runYesNoBox asks over state.currentMessage) - the Gen 5 transpiler
+          // emits Message + YesNo as two commands where the GBA writes one msgbox MSGBOX_YESNO,
+          // so the nurse read her whole greeting out and then read it out again with the
+          // question attached (owner, 2026-09-21; the same merge was already on ds_messagevar
+          // and ds_messagefrombank, which is why it looked fixed and was not).
+          if (multichoiceFollows(state) || nextEffectiveCommand(state) == "yesnobox") {
             state.currentMessage = textLine(textArg(instruction, 0).token, instruction)
             // Nothing was shown, so the waitmessage between here and the multichoice would
             // wait forever on a dialog that never opened.
@@ -132,6 +137,18 @@ class InterpretedScript(
         "ds_yesno" -> {
           val yes = ctx.getVar(namespaced("VAR_RESULT")) == 1
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (yes) 0 else 1)
+          state.pc++
+        }
+        // ds_mapgimmick opcode, args...: the loaded map's own gimmick handler (f/vc0 subclass,
+        // picked by ROM header) gets the ROM's opcode and its arguments through 0xB6 action 6.
+        // It is how the Striaton gym curtains are drawn - they are part of the building model,
+        // so nothing else can move them.
+        "ds_mapgimmick" -> {
+          ctx.sendScenePacket(
+              de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+                  action = 6,
+                  subject = 0,
+                  args = instruction.args.map { value(ctx, it).toShort() }))
           state.pc++
         }
         // ds_xtransceiver N: the client's own Xtransceiver call window (White OpenInterpoke).

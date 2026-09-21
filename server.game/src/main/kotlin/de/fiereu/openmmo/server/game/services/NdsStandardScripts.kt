@@ -23,7 +23,7 @@ class NdsStandardScripts @Inject constructor() {
     if (regionId != UNOVA) return null
     return when (scriptId) {
       NURSE -> Script { ctx -> nurse(ctx) }
-      MART -> Script { ctx -> ctx.pokemartCommon() }
+      MART, MART_LEFT, MART_RIGHT -> Script { ctx -> ctx.pokemartCommon() }
       else -> null
     }
   }
@@ -49,6 +49,16 @@ class NdsStandardScripts @Inject constructor() {
     /** Unova npc script ids the engine owns. */
     const val NURSE = 2100
     const val MART = 2101
+
+    /**
+     * The other two clerks at every Center's counter, 10100 (sprite 82) and 10105 (sprite 81),
+     * thirteen of each. Their ids sit in the engine's 10000+ standard-script space, which was
+     * wrongly bound to the hidden-item file and had them handing out a Pearl; un-bound, they went
+     * silent (owner, 2026-09-21). They sell, through the client's own shop window like Kanto.
+     * OPEN: retail may give them stock of their own rather than the common shelf.
+     */
+    const val MART_LEFT = 10100
+    const val MART_RIGHT = 10105
 
     /** A Unova ROM text id: region 2, the DS bit, then the bank and entry (the corpus' own T-label). */
     private fun text(bank: Int, entry: Int) = (UNOVA shl 28) or (1 shl 27) or (bank shl 16) or entry

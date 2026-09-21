@@ -96,6 +96,7 @@ internal object StoryClientState {
             Regex("FLAG_DS_BADGE_(\\d+)$").find(key)?.groupValues?.get(1)?.toIntOrNull()?.let { n ->
               ClientStoryWhitelist.badgeIds[regionId.toInt()]?.getOrNull(n)
             }
+                ?: DS_RUNNING_SHOES_IDS[regionId.toInt()]?.takeIf { key.endsWith("FLAG_DS_RUNNING_SHOES") }
       }
 
   private fun varId(regionId: Byte, key: String): Int? =
@@ -104,6 +105,15 @@ internal object StoryClientState {
         HOENN_REGION -> HoennVars.numericId(key)
         else -> null
       }
+
+  /**
+   * The client gates running on ONE story flag per region, read by its own `f/ey7.Yb0()`:
+   * Kanto 0x82F, Hoenn 0x8C0, Unova 0x963, and no check at all for Sinnoh and Johto. The GBA
+   * regions reach it through their real ROM flag (Kanto FLAG_SYS_B_DASH IS 2095); a DS region has
+   * no forwardable ROM id, so its scripts set the synthetic key and it maps here, the same way
+   * FLAG_DS_BADGE_n maps onto the client badge ids. Unova sets it in Mom's Route 2 scene.
+   */
+  private val DS_RUNNING_SHOES_IDS: Map<Int, Int> = mapOf(2 to 2403)
 
   private const val KANTO_REGION = 0
   private const val HOENN_REGION = 1

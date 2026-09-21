@@ -473,10 +473,27 @@ constructor(
           }
       pools = { n -> RetailEncounters.hordePool(map.sourceName, map.regionId.toInt(), types, season, time, n) }
     } else {
+      // Sweet Scent brings out what is UNDER the player, so the terrain it scents must be the one
+      // tile they stand on - not grass and dark grass together. Merging them let Sweet Scent in
+      // light grass call a dark grass horde: on Route 1 that is Scraggy, the only Autumn dark-grass
+      // horde there, at levels 30-31, while the light grass is levels 2-4 (owner, 2026-09-21). The
+      // dark grass on that route is across water and unreachable early, so it could not be right.
+      val header = (state.mapId shl 8) or state.bankId
       val type = ndsLand.typeAt(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt())
-      val types = if (type != null && ndsLand.isGrass(type)) setOf("Grass", "Dark Grass") else setOf("Cave")
-      val name = NdsMapTypes.nameOf(state.regionId, state.bankId, state.mapId) ?: return HordePlan.Blocked("This map has no encounter table.")
-      pools = { n -> RetailEncounters.hordePoolForNdsName(name, state.regionId, types, season, time, n) }
+      val types =
+          when {
+            type != null &&
+                ndsLand.isDarkGrass(type) &&
+                RetailEncounters.ndsHeaderHasType(state.regionId, header, "Dark Grass") -> setOf("Dark Grass")
+            type != null && ndsLand.isGrass(type) -> setOf("Grass")
+            // The same rule onNdsStep uses: Gen 5 has no cave-floor tile, so a cave is a property
+            // of the MAP - a walkable plain tile on a header that has a Cave table.
+            type == 0 &&
+                ndsLand.blocked(state.regionId, state.bankId, state.mapId, state.x.toInt(), state.y.toInt()) == false &&
+                RetailEncounters.ndsHeaderHasType(state.regionId, header, "Cave") -> setOf("Cave")
+            else -> return HordePlan.Blocked("Nothing here answers the scent.")
+          }
+      pools = { n -> RetailEncounters.hordePoolForNdsHeader(header, state.regionId, types, season, time, n) }
     }
     val wanted = if (size >= 5) 5 else 3
     val (count, pool) =

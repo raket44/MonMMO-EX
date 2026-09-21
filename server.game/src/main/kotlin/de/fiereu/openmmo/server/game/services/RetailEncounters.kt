@@ -375,6 +375,12 @@ object RetailEncounters {
   fun hordePool(sourceName: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
       hordeSlotsOf(entriesFor(sourceName, regionId), types, season, time, size)
 
+  /**
+   * [hordePoolForNdsName] keyed by map header instead, so a cave's floors keep their own pools.
+   */
+  fun hordePoolForNdsHeader(header: Int, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
+      hordeSlotsOf(byNdsHeader[regionId to header].orEmpty(), types, season, time, size)
+
   fun hordePoolForNdsName(name: String, regionId: Int, types: Set<String>, season: Season, time: TimeOfDay, size: Int): List<Slot> =
       hordeSlotsOf(entriesForNdsName(name, regionId), types, season, time, size)
 

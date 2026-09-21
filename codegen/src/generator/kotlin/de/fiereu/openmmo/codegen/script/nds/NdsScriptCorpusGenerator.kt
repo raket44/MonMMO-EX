@@ -61,6 +61,12 @@ class NdsScriptCorpusGenerator {
      */
     fun soloChunks(): Map<Int, Pair<String, Int>> = emptyMap()
 
+    /**
+     * Engine standard-script ids with no script of their own: a CallStd to one is dropped instead
+     * of being emitted as an unresolvable call (which aborts the script at that line).
+     */
+    fun unboundStdCalls(): IntRange? = null
+
     /** Convenience macros the scripts use as commands, expanded to their plain-command bodies. */
     fun macros(): Map<String, Macro> = emptyMap()
 
@@ -949,7 +955,14 @@ class NdsScriptCorpusGenerator {
               val items = lastVar8004?.let { dialect.martTables()[it] }
               if (items == null) out += "ds_pokemartspecialties ${lastVar8004 ?: "?"}" else out += "ds_pokemart ${items.joinToString(", ")}"
             }
-            else -> out += "call NDS_CHUNK_${id ?: a[0]}"
+            else ->
+                // Gen 5 engine standard scripts (10000+) have no script file of their own: file
+                // 865 is the HIDDEN ITEM file and binding the band to it made `CallStd 10110`,
+                // 55 call sites, hand out item 88, while the Center counter npcs (10100, 10105)
+                // each gave a one-off Pearl - the owner found them on the mart clerks 2026-09-21.
+                // Unbound ones are dropped: an unresolvable call aborts the script where it sits.
+                if (dialect.unboundStdCalls()?.contains(id) == true) Unit
+                else out += "call NDS_CHUNK_${id ?: a[0]}"
           }
         }
         "GiveItemNoCheck" -> {
@@ -1570,12 +1583,21 @@ class NdsScriptCorpusGenerator {
     /**
      * Script ids outside map files: 7000+ item balls (file 864: 306 entries for ids 7000-7305, all
      * on sprite 110), 2800+ the standard routines CallStd names (file 862: 2805 bag-space check,
-     * 2811 obtain item), 3001-5449 trainers, 10000+ hidden items (file 865). Id 2000 EXACTLY is
+     * 2811 obtain item), 3001-5449 trainers. Id 2000 EXACTLY is
      * the "no talk script" placeholder 355 story actors carry (Mom outside the lab, Cheren, gym
      * props): bound to file 864 it made Mom run item ball 0 - "raket received raket" - while the
      * real item balls fell into the trainer range (2026-09-20).
      */
-    override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864", 10000 to "U865")
+    override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864")
+
+    /**
+     * 10000+ is the engine's own standard-script space, NOT file 865: 865 is the hidden-item file
+     * (entry N = give item, set flag), it stops at entry 176, and the band bound to it handed the
+     * Pokemon Center counter npcs (10100, 10105 on all fourteen Centers) a one-off item each and
+     * made the 55 `CallStd 10110` sites give item 88. Hidden items are bg events, which are not
+     * extracted at all yet, so nothing wants that binding today.
+     */
+    override fun unboundStdCalls(): IntRange = 10000..19999
 
     /**
      * The Pokemon Center nurse, script id 2100 on all fourteen of them (sprite 78). Her script is
@@ -1813,7 +1835,14 @@ class NdsScriptCorpusGenerator {
             "CloseShowMessageAt" -> b.lines += listOf("CloseMessage")
             "CMD_6A", "CMD_19F" -> {}
             "CMD_BA" -> b.lines += listOf("CheckItem", v(0), v(1), v(3))
-            "ShowMessageAt" -> b.lines += listOf("Message", text(0))
+            // ShowMessageAt text, OBJECT, position, window: a bubble over one actor, closed by
+            // window id (CloseShowMessageAt). Speaker-less it inherited the last Message's
+            // speaker, so Accumula's crowd chatter came out of Ghetsis (owner, 2026-09-21).
+            "ShowMessageAt" -> {
+              val who = t(1).toIntOrNull() ?: 0
+              b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(1) else if (who < 252) "OBJ_$who" else "none")
+              b.lines += listOf("Message", text(0))
+            }
             "SetBadge" -> b.lines += listOf("GiveBadge", t(0))
             "CMD_128" -> doors.remove(v(0))
             "CMD_11E", "CMD_107", "Xtransciever4", "Xtransciever5", "Xtransciever7" -> {}

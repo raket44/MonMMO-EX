@@ -54,7 +54,7 @@
 56;BubbleMessage;HB
 57;CloseBubbleMessage;
 58;ShowMessageAt;HHHH
-59;CloseShowMessageAt;
+59;CloseShowMessageAt;H
 60;Message;BBHHHH
 61;Message2;BBHHH
 62;CloseMessageKP;

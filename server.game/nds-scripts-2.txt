@@ -2886,49 +2886,30 @@ mv;32;3728;15,2 12,1
 32;11;3157;ShowMessageAt 59 22 14 3
 32;11;3167;CloseAngryMessage
 32;11;3169;CloseMessageKP
-32;11;3171;CloseShowMessageAt
-32;11;3173;Nop2
-32;11;3175;CloseShowMessageAt
-32;11;3177;End
-32;11;2258;ApplyMovement 255 @3740
-mv;32;3740;15,1 12,1 
-32;11;2266;WaitMovement
-32;11;2268;Jump @2449
-32;11;2274;Compare 32802 644
-32;11;2280;When 1 @2293
-32;11;2287;Jump @2309
-32;11;2293;ApplyMovement 255 @3752
-mv;32;3752;12,1 
-32;11;2301;WaitMovement
-32;11;2303;Jump @2449
-32;11;2309;Compare 32802 645
-32;11;2315;When 1 @2328
-32;11;2322;Jump @2344
-32;11;2328;ApplyMovement 255 @3760
-mv;32;3760;14,1 12,1 
-32;11;2336;WaitMovement
-32;11;2338;Jump @2449
-32;11;2344;Compare 32802 646
-32;11;2350;When 1 @2363
-32;11;2357;Jump @2379
-32;11;2363;ApplyMovement 255 @3772
-mv;32;3772;14,2 12,1 
-32;11;2371;WaitMovement
-32;11;2373;Jump @2449
-32;11;2379;Compare 32802 647
-32;11;2385;When 1 @2398
-32;11;2392;Jump @2414
-32;11;2398;ApplyMovement 255 @3784
-mv;32;3784;14,3 12,1 
-32;11;2406;WaitMovement
-32;11;2408;Jump @2449
-32;11;2414;Compare 32802 648
-32;11;2420;When 1 @2433
-32;11;2427;Jump @2449
-32;11;2433;ApplyMovement 255 @3796
-mv;32;3796;14,4 12,1 
-32;11;2441;WaitMovement
-32;11;2443;Jump @2449
+32;11;3171;CloseShowMessageAt 1
+32;11;3175;CloseShowMessageAt 2
+32;11;3179;CloseShowMessageAt 3
+32;11;3183;ReturnAfterDelay 24
+32;11;3187;ApplyMovement 13 @3560
+32;11;3195;WaitMovement
+32;11;3197;ApplyMovement 13 @3576
+32;11;3205;WaitMovement
+32;11;3207;Message 0 4 60 13 6 0
+32;11;3219;CloseMessageKP
+32;11;3221;ApplyMovement 11 @3568
+32;11;3229;Message 0 4 61 11 4 0
+32;11;3241;CloseMessageKP
+32;11;3243;WaitMovement
+32;11;3245;ApplyMovement 11 @3596
+32;11;3253;ApplyMovement 13 @3596
+32;11;3261;WaitMovement
+32;11;3263;SetVarHero 0
+32;11;3266;Message 0 4 62 11 4 0
+32;11;3278;CloseMessageKP
+32;11;3280;MoveCamera 9688 0 53248 14 32768 642 0 0 32768 584 24
+32;11;3304;EndCameraEvent
+32;11;3306;Xtransciever1 11 323 9694 0
+32;11;3316;DecodeStopped
 32;12;3892;LockAll
 32;12;3894;SetVarHero 0
 32;12;3897;PlaySound 1351
@@ -3361,11 +3342,67 @@ mv;34;2040;164,3
 34;16;1715;ReturnAfterDelay 20
 34;16;1719;CloseMessageKP
 34;16;1721;ReturnAfterDelay 8
-34;16;1725;CloseShowMessageAt
-34;16;1727;Nop2
+34;16;1725;CloseShowMessageAt 1
 34;16;1729;ReturnAfterDelay 8
-34;16;1733;CloseShowMessageAt
-34;16;1735;End
+34;16;1733;CloseShowMessageAt 2
+34;16;1737;ApplyMovement 13 @1348
+34;16;1745;ReturnAfterDelay 4
+34;16;1749;ApplyMovement 15 @1348
+34;16;1757;ReturnAfterDelay 2
+34;16;1761;ApplyMovement 12 @1348
+34;16;1769;ReturnAfterDelay 1
+34;16;1773;ApplyMovement 16 @1348
+34;16;1781;WaitMovement
+34;16;1783;FadeScreen 12 0 16 4
+34;16;1793;ResetScreen
+34;16;1795;SetFlag 648
+34;16;1799;RemoveNPC 11
+34;16;1803;RemoveNPC 14
+34;16;1807;RemoveNPC 13
+34;16;1811;RemoveNPC 12
+34;16;1815;RemoveNPC 15
+34;16;1819;RemoveNPC 16
+34;16;1823;SetFlag 569
+34;16;1827;RemoveNPC 8
+34;16;1831;StoreValueInVar 32804 0
+34;16;1837;CMD_127 32804 8 14 15
+34;16;1847;CMD_129 32804 0
+34;16;1853;FadeScreen 12 16 0 4
+34;16;1863;PlaySound 1923
+34;16;1867;ResetScreen
+34;16;1869;WaitSound
+34;16;1871;CMD_12A 32804
+34;16;1875;CMD_128 32804
+34;16;1879;ReturnAfterDelay 32
+34;16;1883;MoveCamera 9694 0 53291 14 32768 12 0 0 32768 12 32
+34;16;1907;EndCameraEvent
+34;16;1909;ApplyMovement 251 @1324
+34;16;1917;ApplyMovement 255 @1324
+34;16;1925;WaitMovement
+34;16;1927;ApplyMovement 251 @2096
+mv;34;2096;5,2 
+34;16;1935;WaitMovement
+34;16;1937;Message 0 4 18 251 4 0
+34;16;1949;CloseMessageKP2
+34;16;1951;ApplyMovement 251 @2104
+mv;34;2104;18,5 17,10 
+34;16;1959;ReturnAfterDelay 40
+34;16;1963;ApplyMovement 2 @1340
+mv;34;1340;30,1 
+34;16;1971;WaitMovement
+34;16;1973;ApplyMovement 2 @1348
+34;16;1981;WaitMovement
+34;16;1983;Message 0 4 19 2 6 0
+34;16;1995;CloseMessageKP2
+34;16;1997;RemoveNPC 251
+34;16;2001;ResetCamera 8
+34;16;2005;EndCameraEvent
+34;16;2007;ReleaseCamera
+34;16;2009;StopCameraEvent
+34;16;2011;StoreValueInVar 16516 3
+34;16;2017;WaitMoment
+34;16;2019;ReleaseAll
+34;16;2021;End
 34;16;1502;SetStackDerefVar 32802
 34;16;1506;SetStackVar 12
 34;16;1510;Condition 1
@@ -11194,20 +11231,187 @@ mv;112;1480;34,1
 112;0;447;CloseAngryMessage
 112;0;449;CloseMessageKP2
 112;0;451;ReturnAfterDelay 5
-112;0;455;CloseShowMessageAt
-112;0;457;Nop2
+112;0;455;CloseShowMessageAt 1
 112;0;459;ReturnAfterDelay 5
-112;0;463;CloseShowMessageAt
-112;0;465;End
+112;0;463;CloseShowMessageAt 2
+112;0;467;ApplyMovement 1 @1464
+mv;112;1464;33,1 
+112;0;475;ApplyMovement 2 @1464
+112;0;483;Message 0 4 12 6 4 0
+112;0;495;CloseMessageKP2
+112;0;497;ApplyMovement 6 @1496
+mv;112;1496;12,1 
+112;0;505;WaitMovement
+112;0;507;Message 0 4 13 6 4 0
+112;0;519;CloseMessageKP2
+112;0;521;ApplyMovement 0 @1464
+112;0;529;WaitMovement
+112;0;531;Message 0 4 14 0 5 0
+112;0;543;CloseMessageKP2
+112;0;545;ApplyMovement 0 @1472
+112;0;553;Message 0 4 15 0 5 0
+112;0;565;CloseMessageKP2
+112;0;567;WaitMovement
+112;0;569;ApplyMovement 5 @1480
+112;0;577;WaitMovement
+112;0;579;ApplyMovement 0 @1464
+112;0;587;ApplyMovement 5 @1464
+112;0;595;WaitMovement
+112;0;597;MakeNPC 9 5 1 251 126 0
+112;0;611;PlayCry 517 0
+112;0;617;WaitCry
+112;0;619;ApplyMovement 251 @1668
+mv;112;1668;3,1 63,1 2,1 63,1 3,1 63,1 1,1 13,1 63,1 75,1 13,2 63,1 
+112;0;627;WaitMovement
+112;0;629;PlayCry 517 0
+112;0;635;WaitCry
+112;0;637;ApplyMovement 8 @1456
+mv;112;1456;32,1 
+112;0;645;WaitMovement
+112;0;647;RemoveNPC 251
+112;0;651;Message 0 4 16 8 0 0
+112;0;663;CloseMessageKP2
+112;0;665;ApplyMovement 7 @1528
+mv;112;1528;48,1 35,1 
+112;0;673;WaitMovement
+112;0;675;Message 0 4 17 7 0 0
+112;0;687;CloseMessageKP2
+112;0;689;SetStackDerefVar 16432
+112;0;693;SetStackVar 0
+112;0;697;Condition 1
+112;0;701;When 255 @719
+112;0;708;SetVarPoke 0 501
+112;0;713;Jump @754
 112;0;134;ApplyMovement 255 @1328
 mv;112;1328;12,1 
 112;0;142;Jump @181
 112;0;148;Compare 32800 8
 112;0;154;When 1 @167
 112;0;161;Jump @181
+112;0;719;SetStackDerefVar 16432
+112;0;723;SetStackVar 1
+112;0;727;Condition 1
+112;0;731;When 255 @749
+112;0;738;SetVarPoke 0 495
+112;0;743;Jump @754
+112;0;754;ApplyMovement 8 @1480
+112;0;762;WaitMovement
+112;0;764;Message 0 4 18 8 0 0
+112;0;776;CloseMessageKP2
+112;0;778;ApplyMovement 0 @1464
+112;0;786;WaitMovement
+112;0;788;ApplyMovement 8 @1456
+112;0;796;ApplyMovement 7 @1456
+112;0;804;WaitMovement
+112;0;806;Message 0 4 19 0 5 0
+112;0;818;CloseMessageKP2
+112;0;820;FadeToDefaultMusic
+112;0;822;FadeScreen 3 0 16 4
+112;0;832;ResetScreen
+112;0;834;ReturnAfterDelay 30
+112;0;838;CMD_144 1
+112;0;842;EndCameraEvent
+112;0;844;ReleaseCamera
+112;0;846;StopCameraEvent
+112;0;848;RemoveNPC 0
+112;0;852;RemoveNPC 1
+112;0;856;RemoveNPC 2
+112;0;860;RemoveNPC 3
+112;0;864;RemoveNPC 5
+112;0;868;RemoveNPC 4
+112;0;872;ClearFlag 843
+112;0;876;AddNPC 9
+112;0;880;FadeScreen 3 16 0 4
+112;0;890;ResetScreen
+112;0;892;ApplyMovement 7 @1540
+mv;112;1540;16,1 18,1 50,1 
+112;0;900;WaitMovement
+112;0;902;Message 0 4 20 7 0 0
+112;0;914;CloseMessageKP2
+112;0;916;ApplyMovement 6 @1472
+112;0;924;WaitMovement
+112;0;926;Message 0 4 21 6 0 0
+112;0;938;CloseMessageKP2
+112;0;940;ApplyMovement 8 @1556
+mv;112;1556;12,1 34,1 
+112;0;948;WaitMovement
+112;0;950;Message 0 4 22 8 0 0
+112;0;962;CloseMessageKP2
+112;0;964;ApplyMovement 7 @1472
+112;0;972;WaitMovement
+112;0;974;Message 0 4 23 7 0 0
+112;0;986;CloseMessageKP2
+112;0;988;Message 0 4 24 6 0 0
+112;0;1000;CloseMessageKP2
+112;0;1002;ApplyMovement 7 @1480
+112;0;1010;WaitMovement
+112;0;1012;ApplyMovement 8 @1488
+mv;112;1488;14,1 
+112;0;1020;WaitMovement
+112;0;1022;Message 0 4 25 8 0 0
+112;0;1034;CloseMessageKP2
+112;0;1036;ApplyMovement 7 @1580
+mv;112;1580;75,1 51,1 
+112;0;1044;WaitMovement
+112;0;1046;Message 0 4 26 7 0 0
+112;0;1058;CloseMessageKP2
+112;0;1060;Message 0 4 27 8 0 0
+112;0;1072;CloseMessageKP2
+112;0;1074;Message 0 4 28 6 0 0
+112;0;1086;CloseMessageKP2
+112;0;1088;ApplyMovement 7 @1464
+112;0;1096;WaitMovement
+112;0;1098;Message3 0 4 29 30 7 0 0
+112;0;1112;CloseMessageKP2
+112;0;1114;SetStackDerefVar 32768
+112;0;1118;SetStackDerefVar 32769
+112;0;1122;StoreDerefVarInVar 32768 188
+112;0;1128;StoreDerefVarInVar 32769 1
+112;0;1134;CallStd 2805
+112;0;1138;GetStackVar 32769
+112;0;1142;GetStackVar 32768
+112;0;1146;Message 0 4 31 7 0 0
+112;0;1158;CloseMessageKP2
+112;0;1160;ApplyMovement 7 @1592
+mv;112;1592;16,1 19,1 13,1 17,4 69,1 
+112;0;1168;ApplyMovement 8 @1616
+mv;112;1616;63,1 13,1 17,3 69,1 
+112;0;1176;ReturnAfterDelay 5
+112;0;1180;ShowMessageAt 32 20 5 3
+112;0;1190;ReturnAfterDelay 15
+112;0;1194;CloseShowMessageAt 3
+112;0;1198;ReturnAfterDelay 5
+112;0;1202;ShowMessageAt 33 22 9 4
+112;0;1212;ReturnAfterDelay 20
+112;0;1216;CloseShowMessageAt 4
+112;0;1220;RemoveNPC 7
+112;0;1224;RemoveNPC 8
+112;0;1228;PlaySound 1369
+112;0;1232;WaitSound
+112;0;1234;ApplyMovement 6 @1636
+mv;112;1636;13,1 35,1 
+112;0;1242;WaitMovement
+112;0;1244;ApplyMovement 255 @1480
+112;0;1252;WaitMovement
+112;0;1254;SetVarHero 0
+112;0;1257;Message3 0 4 34 35 6 0 0
+112;0;1271;CloseMessageKP2
+112;0;1273;ApplyMovement 6 @1648
+mv;112;1648;13,2 15,1 13,1 69,1 
+112;0;1281;WaitMovement
+112;0;1283;RemoveNPC 6
+112;0;1287;PlaySound 1369
+112;0;1291;WaitSound
+112;0;1293;StoreValueInVar 16601 2
+112;0;1299;SetFlag 799
+112;0;1303;StoreValueInVar 16599 1
+112;0;1309;WaitMoment
+112;0;1311;ReleaseAll
+112;0;1313;End
 112;0;167;ApplyMovement 255 @1336
 mv;112;1336;14,1 12,1 
 112;0;175;Jump @181
+112;0;749;SetVarPoke 0 498
 112;1;10;LockAll
 112;1;12;PlaySound 1351
 112;1;16;RemoveNPC 9
@@ -21354,11 +21558,195 @@ mv;240;3152;2,1
 240;0;1268;CloseAngryMessage
 240;0;1270;CloseMessageKP
 240;0;1272;ReturnAfterDelay 5
-240;0;1276;CloseShowMessageAt
-240;0;1278;Nop2
+240;0;1276;CloseShowMessageAt 1
 240;0;1280;ReturnAfterDelay 5
-240;0;1284;CloseShowMessageAt
-240;0;1286;End
+240;0;1284;CloseShowMessageAt 2
+240;0;1288;ReturnAfterDelay 5
+240;0;1292;CloseShowMessageAt 3
+240;0;1296;ApplyMovement 10 @3144
+240;0;1304;ApplyMovement 15 @3144
+240;0;1312;ApplyMovement 12 @3144
+240;0;1320;ApplyMovement 14 @3144
+240;0;1328;ApplyMovement 16 @3144
+240;0;1336;ApplyMovement 17 @3144
+240;0;1344;WaitMovement
+240;0;1346;ApplyMovement 9 @3092
+mv;240;3092;10,2 33,0 
+240;0;1354;WaitMovement
+240;0;1356;Message 0 4 6 9 0 0
+240;0;1368;CloseMessageKP
+240;0;1370;ApplyMovement 9 @3104
+mv;240;3104;11,4 33,0 
+240;0;1378;WaitMovement
+240;0;1380;Message 0 4 7 9 0 0
+240;0;1392;CloseMessageKP
+240;0;1394;ApplyMovement 9 @3116
+mv;240;3116;10,2 33,0 
+240;0;1402;WaitMovement
+240;0;1404;Message 0 4 8 9 0 0
+240;0;1416;ApplyMovement 9 @3128
+mv;240;3128;100,1 
+240;0;1424;WaitMovement
+240;0;1426;ApplyMovement 10 @3136
+240;0;1434;ApplyMovement 15 @3144
+240;0;1442;ApplyMovement 12 @3160
+240;0;1450;ApplyMovement 14 @3152
+240;0;1458;ApplyMovement 16 @3160
+240;0;1466;ApplyMovement 17 @3152
+240;0;1474;WaitMovement
+240;0;1476;ReturnAfterDelay 10
+240;0;1480;ShowMessageAt 9 3 8 4
+240;0;1490;ReturnAfterDelay 10
+240;0;1494;ShowMessageAt 10 17 15 5
+240;0;1504;CloseAngryMessage
+240;0;1506;CloseMessageKP
+240;0;1508;ReturnAfterDelay 5
+240;0;1512;CloseShowMessageAt 4
+240;0;1516;ReturnAfterDelay 5
+240;0;1520;CloseShowMessageAt 5
+240;0;1524;ApplyMovement 10 @3144
+240;0;1532;ApplyMovement 15 @3144
+240;0;1540;ApplyMovement 12 @3144
+240;0;1548;ApplyMovement 14 @3144
+240;0;1556;ApplyMovement 16 @3144
+240;0;1564;ApplyMovement 17 @3144
+240;0;1572;WaitMovement
+240;0;1574;Message 0 4 11 9 0 0
+240;0;1586;CloseMessageKP
+240;0;1588;ReturnAfterDelay 16
+240;0;1592;ApplyMovement 18 @3168
+mv;240;3168;33,0 
+240;0;1600;ApplyMovement 24 @3168
+240;0;1608;RemoveNPC 27
+240;0;1612;RemoveNPC 28
+240;0;1616;WaitMovement
+240;0;1618;ReturnAfterDelay 16
+240;0;1622;ApplyMovement 18 @3176
+mv;240;3176;13,2 15,1 34,0 
+240;0;1630;ApplyMovement 19 @3192
+mv;240;3192;13,1 34,0 
+240;0;1638;ApplyMovement 20 @3204
+mv;240;3204;14,1 34,0 
+240;0;1646;ApplyMovement 21 @3216
+mv;240;3216;15,2 34,0 
+240;0;1654;ApplyMovement 22 @3228
+mv;240;3228;15,1 13,1 34,0 
+240;0;1662;ApplyMovement 23 @3244
+mv;240;3244;13,2 34,0 
+240;0;1670;ApplyMovement 24 @3256
+mv;240;3256;13,1 34,0 
+240;0;1678;WaitMovement
+240;0;1680;ApplyMovement 18 @3280
+mv;240;3280;14,5 12,1 
+240;0;1688;ApplyMovement 19 @3280
+240;0;1696;ApplyMovement 20 @3280
+240;0;1704;ApplyMovement 21 @3280
+240;0;1712;ApplyMovement 22 @3280
+240;0;1720;ApplyMovement 23 @3280
+240;0;1728;ApplyMovement 24 @3280
+240;0;1736;ApplyMovement 9 @3280
+240;0;1744;WaitMovement
+240;0;1746;ApplyMovement 24 @3268
+mv;240;3268;13,2 14,3 
+240;0;1754;WaitMovement
+240;0;1756;ApplyMovement 18 @3292
+mv;240;3292;12,8 15,5 12,3 
+240;0;1764;ApplyMovement 19 @3292
+240;0;1772;ApplyMovement 20 @3292
+240;0;1780;ApplyMovement 21 @3292
+240;0;1788;ApplyMovement 22 @3292
+240;0;1796;ApplyMovement 23 @3292
+240;0;1804;ApplyMovement 24 @3292
+240;0;1812;ApplyMovement 9 @3292
+240;0;1820;WaitMovement
+240;0;1822;ApplyMovement 10 @3136
+240;0;1830;ApplyMovement 15 @3144
+240;0;1838;ApplyMovement 12 @3160
+240;0;1846;ApplyMovement 14 @3152
+240;0;1854;ApplyMovement 16 @3160
+240;0;1862;ApplyMovement 17 @3152
+240;0;1870;WaitMovement
+240;0;1872;Message 0 4 12 10 0 0
+240;0;1884;CloseMessageKP
+240;0;1886;Message 0 4 13 11 0 0
+240;0;1898;CloseMessageKP
+240;0;1900;Message 0 4 14 12 0 0
+240;0;1912;CloseMessageKP
+240;0;1914;FadeToDefaultMusic
+240;0;1916;FadeScreen 3 0 16 4
+240;0;1926;ApplyMovement 13 @3308
+mv;240;3308;15,3 12,2 15,4 
+240;0;1934;ApplyMovement 10 @3308
+240;0;1942;ApplyMovement 11 @3308
+240;0;1950;ApplyMovement 12 @3324
+mv;240;3324;12,1 14,5 12,6 
+240;0;1958;ApplyMovement 14 @3324
+240;0;1966;ApplyMovement 15 @3340
+mv;240;3340;14,8 
+240;0;1974;ApplyMovement 16 @3348
+mv;240;3348;15,8 
+240;0;1982;ApplyMovement 17 @3348
+240;0;1990;WaitMovement
+240;0;1992;ResetScreen
+240;0;1994;ReturnAfterDelay 8
+240;0;1998;RemoveNPC 10
+240;0;2002;RemoveNPC 11
+240;0;2006;RemoveNPC 12
+240;0;2010;RemoveNPC 13
+240;0;2014;RemoveNPC 14
+240;0;2018;RemoveNPC 15
+240;0;2022;RemoveNPC 16
+240;0;2026;RemoveNPC 17
+240;0;2030;RemoveNPC 9
+240;0;2034;RemoveNPC 18
+240;0;2038;RemoveNPC 19
+240;0;2042;RemoveNPC 20
+240;0;2046;RemoveNPC 21
+240;0;2050;RemoveNPC 22
+240;0;2054;RemoveNPC 23
+240;0;2058;RemoveNPC 24
+240;0;2062;FadeScreen 3 16 0 4
+240;0;2072;ResetScreen
+240;0;2074;ApplyMovement 7 @3404
+mv;240;3404;32,0 
+240;0;2082;ApplyMovement 6 @3396
+mv;240;3396;33,0 
+240;0;2090;WaitMovement
+240;0;2092;Message 0 4 15 7 2 0
+240;0;2104;CloseMessageKP
+240;0;2106;Message 0 4 16 6 1 0
+240;0;2118;CloseMessageKP
+240;0;2120;CMD_144 30
+240;0;2124;EndCameraEvent
+240;0;2126;ReleaseCamera
+240;0;2128;StopCameraEvent
+240;0;2130;ApplyMovement 8 @3364
+mv;240;3364;34,0 
+240;0;2138;ApplyMovement 255 @3356
+mv;240;3356;35,0 
+240;0;2146;WaitMovement
+240;0;2148;Message 0 4 17 8 5 0
+240;0;2160;CloseMessageKP
+240;0;2162;ApplyMovement 8 @3372
+mv;240;3372;12,3 15,1 
+240;0;2170;ApplyMovement 255 @3384
+mv;240;3384;12,4 15,2 
+240;0;2178;WaitMovement
+240;0;2180;Message 0 4 18 8 4 0
+240;0;2192;CloseMessageKP
+240;0;2194;ApplyMovement 7 @3412
+mv;240;3412;34,0 
+240;0;2202;ApplyMovement 6 @3412
+240;0;2210;WaitMovement
+240;0;2212;StoreValueInVar 32804 0
+240;0;2218;StoreHeroGender 32804
+240;0;2222;SetStackDerefVar 32804
+240;0;2226;SetStackVar 0
+240;0;2230;Condition 1
+240;0;2234;When 255 @2261
+240;0;2241;Message 0 4 19 7 2 0
+240;0;2253;CloseMessageKP
+240;0;2255;Jump @2275
 240;0;943;ApplyMovement 8 @2852
 mv;240;2852;15,3 13,3 15,4 13,2 15,3 32,0 
 240;0;951;ApplyMovement 255 @2852
@@ -21381,6 +21769,21 @@ mv;240;2812;13,2 14,1
 240;0;566;Jump @582
 240;0;572;ApplyMovement 8 @2792
 240;0;580;WaitMovement
+240;0;2261;Message 0 4 20 7 2 0
+240;0;2273;CloseMessageKP
+240;0;2275;Message 0 4 21 6 1 0
+240;0;2287;CloseMessageKP
+240;0;2289;Message 0 4 22 8 4 0
+240;0;2301;CloseMessageKP
+240;0;2303;SetStackDerefVar 32801
+240;0;2307;SetStackVar 20
+240;0;2311;Condition 1
+240;0;2315;When 255 @2356
+240;0;2322;Message 0 4 23 7 2 0
+240;0;2334;CloseMessageKP
+240;0;2336;Message 0 4 25 6 1 0
+240;0;2348;CloseMessageKP
+240;0;2350;Jump @2384
 240;0;986;ApplyMovement 8 @2880
 mv;240;2880;15,6 13,4 15,4 32,0 
 240;0;994;ApplyMovement 255 @2880
@@ -21397,6 +21800,82 @@ mv;240;3036;15,3 13,1 15,4 13,1 15,3 13,1 32,0
 240;0;814;Compare 32803 177
 240;0;820;When 1 @833
 240;0;827;Jump @857
+240;0;2356;Message 0 4 24 7 2 0
+240;0;2368;CloseMessageKP
+240;0;2370;Message 0 4 26 6 1 0
+240;0;2382;CloseMessageKP
+240;0;2384;Message 0 4 27 8 4 0
+240;0;2396;CloseMessageKP
+240;0;2398;Message 0 4 28 6 1 0
+240;0;2410;CloseMessageKP
+240;0;2412;ApplyMovement 7 @3420
+mv;240;3420;50,1 
+240;0;2420;WaitMovement
+240;0;2422;Message 0 4 29 7 2 0
+240;0;2434;CloseMessageKP
+240;0;2436;Message 0 4 30 8 4 0
+240;0;2448;CloseMessageKP
+240;0;2450;ApplyMovement 8 @3428
+mv;240;3428;32,0 
+240;0;2458;ApplyMovement 255 @3436
+mv;240;3436;33,0 
+240;0;2466;WaitMovement
+240;0;2468;Message 0 4 31 8 4 0
+240;0;2480;CloseMessageKP
+240;0;2482;ApplyMovement 8 @3356
+240;0;2490;WaitMovement
+240;0;2492;Message 0 4 32 8 4 0
+240;0;2504;CloseMessageKP
+240;0;2506;ApplyMovement 8 @3456
+mv;240;3456;13,1 15,8 
+240;0;2514;ApplyMovement 255 @3444
+mv;240;3444;65,1 35,0 
+240;0;2522;ApplyMovement 6 @3444
+240;0;2530;ApplyMovement 7 @3444
+240;0;2538;WaitMovement
+240;0;2540;ApplyMovement 7 @3404
+240;0;2548;ApplyMovement 6 @3396
+240;0;2556;WaitMovement
+240;0;2558;Message 0 4 33 7 2 0
+240;0;2570;CloseMessageKP
+240;0;2572;Message 0 4 34 6 1 0
+240;0;2584;CloseMessageKP
+240;0;2586;ApplyMovement 7 @3412
+240;0;2594;ApplyMovement 6 @3412
+240;0;2602;WaitMovement
+240;0;2604;Message 0 4 35 6 1 0
+240;0;2616;CloseMessageKP
+240;0;2618;ApplyMovement 6 @3468
+mv;240;3468;15,7 
+240;0;2626;ApplyMovement 7 @3476
+mv;240;3476;78,1 76,1 34,0 
+240;0;2634;ReturnAfterDelay 20
+240;0;2638;DoubleMessage 0 4 36 37 7 2 0
+240;0;2652;CloseMessageKP
+240;0;2654;WaitMovement
+240;0;2656;RemoveNPC 6
+240;0;2660;RemoveNPC 8
+240;0;2664;ApplyMovement 7 @3492
+mv;240;3492;15,10 
+240;0;2672;ApplyMovement 255 @3492
+240;0;2680;WaitMovement
+240;0;2682;ApplyMovement 7 @3404
+240;0;2690;WaitMovement
+240;0;2692;Message 0 4 38 7 2 0
+240;0;2704;CloseMessageKP
+240;0;2706;ApplyMovement 7 @3500
+mv;240;3500;12,9 33,0 
+240;0;2714;ApplyMovement 255 @3404
+240;0;2722;WaitMovement
+240;0;2724;SetFlag 2489
+240;0;2728;SetFlag 619
+240;0;2732;StoreValueInVar 16552 1
+240;0;2738;SetFlag 751
+240;0;2742;ClearFlag 564
+240;0;2746;CMD_13E
+240;0;2748;WaitMoment
+240;0;2750;ReleaseAll
+240;0;2752;End
 240;0;1029;ApplyMovement 8 @2900
 mv;240;2900;15,3 13,1 15,4 13,2 15,3 32,0 
 240;0;1037;ApplyMovement 255 @2900
@@ -28530,8 +29009,7 @@ mv;386;2492;13,8
 386;5;1891;ApplyMovement 1 @2500
 mv;386;2500;13,9 
 386;5;1899;ReturnAfterDelay 32
-386;5;1903;CloseShowMessageAt
-386;5;1905;Nop2
+386;5;1903;CloseShowMessageAt 1
 386;5;1907;WaitMovement
 386;5;1909;RemoveNPC 11
 386;5;1913;RemoveNPC 0
@@ -28546,8 +29024,91 @@ mv;386;2520;13,1 15,1 13,7
 386;5;1953;ApplyMovement 8 @2536
 mv;386;2536;15,1 13,1 15,1 13,7 
 386;5;1961;ReturnAfterDelay 32
-386;5;1965;CloseShowMessageAt
-386;5;1967;End
+386;5;1965;CloseShowMessageAt 2
+386;5;1969;WaitMovement
+386;5;1971;RemoveNPC 4
+386;5;1975;RemoveNPC 6
+386;5;1979;RemoveNPC 8
+386;5;1983;PlaySound 1369
+386;5;1987;WaitSound
+386;5;1989;ShowMessageAt 27 20 10 3
+386;5;1999;ApplyMovement 12 @2556
+mv;386;2556;14,1 
+386;5;2007;ApplyMovement 10 @2564
+mv;386;2564;13,1 
+386;5;2015;WaitMovement
+386;5;2017;ApplyMovement 12 @2572
+mv;386;2572;13,7 
+386;5;2025;ApplyMovement 10 @2580
+mv;386;2580;14,1 13,7 
+386;5;2033;ApplyMovement 7 @2592
+mv;386;2592;14,2 13,7 
+386;5;2041;ApplyMovement 5 @2604
+mv;386;2604;14,3 13,7 
+386;5;2049;ReturnAfterDelay 32
+386;5;2053;CloseShowMessageAt 3
+386;5;2057;WaitMovement
+386;5;2059;RemoveNPC 12
+386;5;2063;RemoveNPC 10
+386;5;2067;RemoveNPC 7
+386;5;2071;RemoveNPC 5
+386;5;2075;PlaySound 1369
+386;5;2079;WaitSound
+386;5;2081;ApplyMovement 13 @2616
+mv;386;2616;13,8 
+386;5;2089;ApplyMovement 9 @2624
+mv;386;2624;13,9 
+386;5;2097;ApplyMovement 2 @2632
+mv;386;2632;13,10 
+386;5;2105;WaitMovement
+386;5;2107;RemoveNPC 13
+386;5;2111;RemoveNPC 9
+386;5;2115;RemoveNPC 2
+386;5;2119;PlaySound 1369
+386;5;2123;WaitSound
+386;5;2125;ApplyMovement 255 @2640
+mv;386;2640;12,1 14,2 33,1 
+386;5;2133;ApplyMovement 3 @2656
+mv;386;2656;12,1 15,3 33,1 
+386;5;2141;ApplyMovement 14 @2672
+mv;386;2672;32,1 
+386;5;2149;WaitMovement
+386;5;2151;Message 0 4 28 14 6 0
+386;5;2163;CloseMessageKP
+386;5;2165;ApplyMovement 14 @2680
+mv;386;2680;13,5 
+386;5;2173;WaitMovement
+386;5;2175;RemoveNPC 14
+386;5;2179;PlaySound 1369
+386;5;2183;WaitSound
+386;5;2185;ApplyMovement 255 @2688
+386;5;2193;ApplyMovement 3 @2696
+386;5;2201;WaitMovement
+386;5;2203;Message 0 4 29 3 3 0
+386;5;2215;CloseMessageKP
+386;5;2217;ApplyMovement 3 @2704
+mv;386;2704;13,7 
+386;5;2225;ReturnAfterDelay 8
+386;5;2229;ApplyMovement 255 @2408
+386;5;2237;WaitMovement
+386;5;2239;RemoveNPC 3
+386;5;2243;PlaySound 1369
+386;5;2247;WaitSound
+386;5;2249;ResetCamera 16
+386;5;2253;EndCameraEvent
+386;5;2255;ReleaseCamera
+386;5;2257;StopCameraEvent
+386;5;2259;StoreValueInVar 16523 8
+386;5;2265;SetFlag 626
+386;5;2269;SetFlag 546
+386;5;2273;SetFlag 716
+386;5;2277;SetFlag 805
+386;5;2281;SetFlag 559
+386;5;2285;StoreValueInVar 16527 2
+386;5;2291;ClearFlag 557
+386;5;2295;ClearFlag 555
+386;5;2299;SetFlag 560
+386;5;2303;EndRoutine
 386;5;1671;ApplyMovement 255 @2432
 mv;386;2432;13,1 15,2 34,1 
 386;5;1679;ApplyMovement 3 @2468
@@ -32542,11 +33103,88 @@ mv;470;1848;15,1
 470;14;346;ReturnAfterDelay 16
 470;14;350;ShowMessageAt 24 10 9 2
 470;14;360;ReturnAfterDelay 16
-470;14;364;CloseShowMessageAt
-470;14;366;Nop2
+470;14;364;CloseShowMessageAt 1
 470;14;368;ReturnAfterDelay 16
-470;14;372;CloseShowMessageAt
-470;14;374;End
+470;14;372;CloseShowMessageAt 2
+470;14;376;ShowMessageAt 25 4 6 1
+470;14;386;ReturnAfterDelay 16
+470;14;390;ShowMessageAt 26 10 11 2
+470;14;400;ReturnAfterDelay 16
+470;14;404;CloseShowMessageAt 1
+470;14;408;ReturnAfterDelay 16
+470;14;412;CloseShowMessageAt 2
+470;14;416;ApplyMovement 17 @1648
+mv;470;1648;15,5 13,5 15,4 
+470;14;424;ApplyMovement 19 @1632
+mv;470;1632;15,1 13,5 15,4 
+470;14;432;ApplyMovement 18 @1664
+mv;470;1664;63,2 13,1 15,3 13,5 15,4 
+470;14;440;ApplyMovement 20 @1688
+mv;470;1688;63,3 12,1 15,3 13,5 15,4 
+470;14;448;ApplyMovement 11 @1712
+mv;470;1712;15,2 13,5 15,4 
+470;14;456;ApplyMovement 10 @1728
+mv;470;1728;15,3 13,5 15,4 
+470;14;464;ApplyMovement 9 @1744
+mv;470;1744;15,4 13,5 15,4 
+470;14;472;ApplyMovement 255 @1760
+mv;470;1760;63,3 13,3 
+470;14;480;WaitMovement
+470;14;482;RemoveNPC 9
+470;14;486;RemoveNPC 10
+470;14;490;RemoveNPC 11
+470;14;494;RemoveNPC 17
+470;14;498;RemoveNPC 18
+470;14;502;RemoveNPC 19
+470;14;506;RemoveNPC 20
+470;14;510;SetVarHero 0
+470;14;513;Message 0 4 27 12 1 0
+470;14;525;CloseMessageKP
+470;14;527;ApplyMovement 255 @1772
+mv;470;1772;13,2 
+470;14;535;WaitMovement
+470;14;537;Message 0 4 28 12 1 0
+470;14;549;CloseMessageKP
+470;14;551;Message 0 4 29 12 1 0
+470;14;563;CloseMessageKP
+470;14;565;ApplyMovement 21 @1796
+mv;470;1796;18,4 
+470;14;573;WaitMovement
+470;14;575;Message 0 4 30 21 5 0
+470;14;587;CloseMessageKP
+470;14;589;ApplyMovement 12 @1788
+mv;470;1788;35,1 
+470;14;597;WaitMovement
+470;14;599;Message 0 4 31 12 1 0
+470;14;611;CloseMessageKP
+470;14;613;ApplyMovement 12 @1780
+mv;470;1780;32,1 
+470;14;621;WaitMovement
+470;14;623;Message 0 4 32 12 1 0
+470;14;635;CloseMessageKP
+470;14;637;ApplyMovement 12 @1816
+mv;470;1816;15,8 
+470;14;645;ApplyMovement 21 @1804
+mv;470;1804;63,2 15,4 
+470;14;653;ApplyMovement 13 @1824
+mv;470;1824;63,2 12,1 15,10 
+470;14;661;ApplyMovement 14 @1824
+470;14;669;ApplyMovement 15 @1824
+470;14;677;ApplyMovement 16 @1824
+470;14;685;WaitMovement
+470;14;687;RemoveNPC 12
+470;14;691;RemoveNPC 13
+470;14;695;RemoveNPC 14
+470;14;699;RemoveNPC 15
+470;14;703;RemoveNPC 16
+470;14;707;RemoveNPC 21
+470;14;711;PlaySound 1757
+470;14;715;WaitSound
+470;14;717;SetFlag 795
+470;14;721;StoreValueInVar 16529 5
+470;14;727;WaitMoment
+470;14;729;ReleaseAll
+470;14;731;End
 472;0;45;LockAll
 472;0;47;StoreValueInVar 32800 0
 472;0;53;PlaySound 1351
@@ -50006,10 +50644,33 @@ mv;780;1992;15,2 32,1
 780;3;1651;ReturnAfterDelay 16
 780;3;1655;ShowMessageAt 39 24 10 2
 780;3;1665;ReturnAfterDelay 32
-780;3;1669;CloseShowMessageAt
-780;3;1671;Nop2
-780;3;1673;CloseShowMessageAt
-780;3;1675;End
+780;3;1669;CloseShowMessageAt 1
+780;3;1673;CloseShowMessageAt 2
+780;3;1677;Message 0 4 40 0 5 0
+780;3;1689;CloseMessageKP2
+780;3;1691;ApplyMovement 251 @628
+780;3;1699;WaitMovement
+780;3;1701;SetVarHero 0
+780;3;1704;Message 0 4 41 251 0 0
+780;3;1716;CloseMessageKP2
+780;3;1718;ApplyMovement 251 @2024
+mv;780;2024;13,4 
+780;3;1726;ReturnAfterDelay 8
+780;3;1730;ApplyMovement 255 @620
+780;3;1738;WaitMovement
+780;3;1740;PlaySound 1369
+780;3;1744;RemoveNPC 251
+780;3;1748;WaitSound
+780;3;1750;FadeToDefaultMusic
+780;3;1752;StoreValueInVar 16517 3
+780;3;1758;SetFlag 736
+780;3;1762;StoreValueInVar 16399 333
+780;3;1768;StoreValueInVar 16512 4
+780;3;1774;ClearFlag 513
+780;3;1778;ClearFlag 514
+780;3;1782;WaitMoment
+780;3;1784;ReleaseAll
+780;3;1786;End
 780;4;22;SetStackDerefVar 16517
 780;4;26;SetStackVar 0
 780;4;30;Condition 1
@@ -51329,11 +51990,274 @@ mv;794;580;32,1
 794;9;1874;CloseAngryMessage
 794;9;1876;CloseMessageKP2
 794;9;1878;ReturnAfterDelay 5
-794;9;1882;CloseShowMessageAt
-794;9;1884;Nop2
+794;9;1882;CloseShowMessageAt 1
 794;9;1886;ReturnAfterDelay 5
-794;9;1890;CloseShowMessageAt
-794;9;1892;End
+794;9;1890;CloseShowMessageAt 2
+794;9;1894;ApplyMovement 27 @604
+794;9;1902;ApplyMovement 26 @604
+794;9;1910;ApplyMovement 20 @604
+794;9;1918;ApplyMovement 21 @604
+794;9;1926;ApplyMovement 23 @604
+794;9;1934;ApplyMovement 22 @604
+794;9;1942;ApplyMovement 25 @604
+794;9;1950;ApplyMovement 24 @604
+794;9;1958;WaitMovement
+794;9;1960;MoveCamera 9688 0 53248 14 32768 782 15 1 32768 654 30
+794;9;1984;ApplyMovement 8 @3692
+mv;794;3692;8,2 35,1 
+794;9;1992;WaitMovement
+794;9;1994;EndCameraEvent
+794;9;1996;Message 0 4 12 8 5 0
+794;9;2008;CloseMessageKP2
+794;9;2010;MoveCamera 9688 0 53248 14 32768 782 15 1 32768 656 30
+794;9;2034;ApplyMovement 8 @3704
+mv;794;3704;9,2 35,1 
+794;9;2042;WaitMovement
+794;9;2044;EndCameraEvent
+794;9;2046;Message 0 4 13 8 5 0
+794;9;2058;ApplyMovement 26 @588
+794;9;2066;ApplyMovement 20 @580
+794;9;2074;ApplyMovement 24 @588
+794;9;2082;ApplyMovement 22 @580
+794;9;2090;ApplyMovement 21 @596
+794;9;2098;ApplyMovement 23 @604
+794;9;2106;ApplyMovement 27 @604
+794;9;2114;ApplyMovement 25 @604
+794;9;2122;WaitMovement
+794;9;2124;ReturnAfterDelay 10
+794;9;2128;ShowMessageAt 14 18 11 3
+794;9;2138;ReturnAfterDelay 10
+794;9;2142;ShowMessageAt 16 22 16 4
+794;9;2152;ReturnAfterDelay 10
+794;9;2156;ShowMessageAt 15 24 7 5
+794;9;2166;CloseAngryMessage
+794;9;2168;CloseMessageKP2
+794;9;2170;ReturnAfterDelay 5
+794;9;2174;CloseShowMessageAt 3
+794;9;2178;ReturnAfterDelay 5
+794;9;2182;CloseShowMessageAt 4
+794;9;2186;ReturnAfterDelay 5
+794;9;2190;CloseShowMessageAt 5
+794;9;2194;ApplyMovement 27 @604
+794;9;2202;ApplyMovement 26 @604
+794;9;2210;ApplyMovement 20 @604
+794;9;2218;ApplyMovement 21 @604
+794;9;2226;ApplyMovement 23 @604
+794;9;2234;ApplyMovement 22 @604
+794;9;2242;ApplyMovement 25 @604
+794;9;2250;ApplyMovement 24 @604
+794;9;2258;WaitMovement
+794;9;2260;MoveCamera 9688 0 53248 14 32768 782 15 1 32768 658 30
+794;9;2284;ApplyMovement 8 @3716
+mv;794;3716;9,2 35,1 
+794;9;2292;WaitMovement
+794;9;2294;EndCameraEvent
+794;9;2296;Message 0 4 17 8 5 0
+794;9;2308;ApplyMovement 26 @588
+794;9;2316;ApplyMovement 20 @580
+794;9;2324;ApplyMovement 24 @588
+794;9;2332;ApplyMovement 22 @580
+794;9;2340;ApplyMovement 21 @596
+794;9;2348;ApplyMovement 23 @604
+794;9;2356;ApplyMovement 27 @604
+794;9;2364;ApplyMovement 25 @604
+794;9;2372;WaitMovement
+794;9;2374;ReturnAfterDelay 10
+794;9;2378;ShowMessageAt 18 20 10 6
+794;9;2388;ReturnAfterDelay 10
+794;9;2392;ShowMessageAt 19 23 15 7
+794;9;2402;CloseAngryMessage
+794;9;2404;CloseMessageKP
+794;9;2406;ReturnAfterDelay 5
+794;9;2410;CloseShowMessageAt 6
+794;9;2414;ReturnAfterDelay 5
+794;9;2418;CloseShowMessageAt 7
+794;9;2422;ApplyMovement 27 @604
+794;9;2430;ApplyMovement 26 @604
+794;9;2438;ApplyMovement 20 @604
+794;9;2446;ApplyMovement 21 @604
+794;9;2454;ApplyMovement 23 @604
+794;9;2462;ApplyMovement 22 @604
+794;9;2470;ApplyMovement 25 @604
+794;9;2478;ApplyMovement 24 @604
+794;9;2486;WaitMovement
+794;9;2488;MoveCamera 9688 0 53248 14 32768 782 15 1 32768 656 30
+794;9;2512;ApplyMovement 8 @3728
+mv;794;3728;8,2 35,1 
+794;9;2520;WaitMovement
+794;9;2522;EndCameraEvent
+794;9;2524;Message 0 4 20 8 5 0
+794;9;2536;CloseMessageKP
+794;9;2538;ReturnAfterDelay 16
+794;9;2542;ApplyMovement 14 @3740
+mv;794;3740;15,1 32,1 
+794;9;2550;ApplyMovement 15 @3780
+mv;794;3780;15,1 33,1 
+794;9;2558;WaitMovement
+794;9;2560;RemoveNPC 31
+794;9;2564;RemoveNPC 32
+794;9;2568;ApplyMovement 14 @3752
+mv;794;3752;14,1 63,1 32,1 71,1 14,1 72,1 
+794;9;2576;ApplyMovement 15 @3792
+mv;794;3792;14,1 63,1 32,1 71,1 15,1 72,1 
+794;9;2584;ReturnAfterDelay 16
+794;9;2588;ApplyMovement 17 @3872
+mv;794;3872;32,1 71,1 14,1 72,1 
+794;9;2596;ApplyMovement 16 @3892
+mv;794;3892;32,1 71,1 14,1 72,1 
+794;9;2604;ApplyMovement 13 @3912
+mv;794;3912;32,1 63,1 12,2 
+794;9;2612;ApplyMovement 18 @3928
+mv;794;3928;32,1 71,1 15,1 72,1 
+794;9;2620;ApplyMovement 19 @3948
+mv;794;3948;32,1 71,1 15,1 72,1 
+794;9;2628;WaitMovement
+794;9;2630;ApplyMovement 8 @3820
+mv;794;3820;14,2 32,1 
+794;9;2638;WaitMovement
+794;9;2640;ApplyMovement 14 @3988
+mv;794;3988;13,2 32,1 
+794;9;2648;ApplyMovement 17 @4000
+mv;794;4000;13,2 32,1 
+794;9;2656;ApplyMovement 16 @4012
+mv;794;4012;13,2 32,1 
+794;9;2664;ApplyMovement 13 @4024
+mv;794;4024;32,1 
+794;9;2672;ApplyMovement 18 @4032
+mv;794;4032;12,2 32,1 
+794;9;2680;ApplyMovement 19 @4044
+mv;794;4044;12,2 32,1 
+794;9;2688;ApplyMovement 15 @4056
+mv;794;4056;12,2 32,1 
+794;9;2696;WaitMovement
+794;9;2698;ApplyMovement 8 @3832
+mv;794;3832;12,8 34,1 63,1 14,12 
+794;9;2706;ApplyMovement 14 @4068
+mv;794;4068;12,8 34,1 14,12 
+794;9;2714;ApplyMovement 17 @4084
+mv;794;4084;12,8 34,1 14,12 
+794;9;2722;ApplyMovement 16 @4100
+mv;794;4100;12,8 34,1 14,12 
+794;9;2730;ApplyMovement 13 @4116
+mv;794;4116;12,7 34,1 63,1 14,12 
+794;9;2738;ApplyMovement 18 @4136
+mv;794;4136;12,8 34,1 63,2 14,12 
+794;9;2746;ApplyMovement 19 @4156
+mv;794;4156;12,8 34,1 63,2 14,12 
+794;9;2754;ApplyMovement 15 @4176
+mv;794;4176;12,8 34,1 63,2 14,12 
+794;9;2762;WaitMovement
+794;9;2764;RemoveNPC 8
+794;9;2768;RemoveNPC 5
+794;9;2772;RemoveNPC 14
+794;9;2776;RemoveNPC 15
+794;9;2780;RemoveNPC 4
+794;9;2784;RemoveNPC 17
+794;9;2788;RemoveNPC 16
+794;9;2792;RemoveNPC 13
+794;9;2796;RemoveNPC 18
+794;9;2800;RemoveNPC 19
+794;9;2804;ApplyMovement 26 @588
+794;9;2812;ApplyMovement 20 @580
+794;9;2820;ApplyMovement 24 @588
+794;9;2828;ApplyMovement 22 @580
+794;9;2836;ApplyMovement 21 @596
+794;9;2844;ApplyMovement 23 @604
+794;9;2852;ApplyMovement 27 @604
+794;9;2860;ApplyMovement 25 @604
+794;9;2868;WaitMovement
+794;9;2870;MoveCamera 9688 0 53248 14 32768 786 0 0 32768 655 15
+794;9;2894;EndCameraEvent
+794;9;2896;ApplyMovement 24 @4196
+mv;794;4196;3,1 62,1 2,1 62,1 1,1 62,1 
+794;9;2904;ApplyMovement 11 @596
+794;9;2912;ApplyMovement 255 @580
+794;9;2920;ApplyMovement 10 @580
+794;9;2928;WaitMovement
+794;9;2930;Message 0 4 21 24 0 0
+794;9;2942;WaitMovement
+794;9;2944;CloseMessageKP
+794;9;2946;ApplyMovement 26 @4224
+mv;794;4224;3,1 62,1 2,1 62,1 0,1 62,1 
+794;9;2954;Message 0 4 22 26 2 0
+794;9;2966;WaitMovement
+794;9;2968;CloseMessageKP
+794;9;2970;ApplyMovement 27 @4252
+mv;794;4252;15,6 12,8 
+794;9;2978;ApplyMovement 26 @4264
+mv;794;4264;15,4 12,8 
+794;9;2986;ApplyMovement 20 @4284
+mv;794;4284;14,8 
+794;9;2994;ApplyMovement 21 @4284
+794;9;3002;ApplyMovement 23 @4252
+794;9;3010;ApplyMovement 22 @4264
+794;9;3018;ApplyMovement 25 @4276
+mv;794;4276;12,8 
+794;9;3026;ApplyMovement 24 @4284
+794;9;3034;ReturnAfterDelay 10
+794;9;3038;FadeScreen 3 0 16 2
+794;9;3048;ResetScreen
+794;9;3050;FadeToDefaultMusic
+794;9;3052;CMD_144 1
+794;9;3056;EndCameraEvent
+794;9;3058;ReleaseCamera
+794;9;3060;StopCameraEvent
+794;9;3062;WaitMovement
+794;9;3064;RemoveNPC 27
+794;9;3068;RemoveNPC 26
+794;9;3072;RemoveNPC 20
+794;9;3076;RemoveNPC 21
+794;9;3080;RemoveNPC 23
+794;9;3084;RemoveNPC 22
+794;9;3088;RemoveNPC 25
+794;9;3092;RemoveNPC 24
+794;9;3096;ApplyMovement 11 @3620
+mv;794;3620;1,1 
+794;9;3104;ApplyMovement 255 @3628
+mv;794;3628;2,1 
+794;9;3112;ApplyMovement 10 @3612
+mv;794;3612;3,1 
+794;9;3120;WaitMovement
+794;9;3122;ReturnAfterDelay 30
+794;9;3126;FadeScreen 3 16 0 2
+794;9;3136;ResetScreen
+794;9;3138;ApplyMovement 11 @4292
+mv;794;4292;15,1 13,2 33,1 
+794;9;3146;WaitMovement
+794;9;3148;ChangeMusic 1092
+794;9;3152;StartCameraEvent
+794;9;3154;LockCamera
+794;9;3156;MoveCamera 9688 0 53248 14 32768 786 0 0 32768 656 20
+794;9;3180;EndCameraEvent
+794;9;3182;Message 0 4 23 11 0 0
+794;9;3194;CloseMessageKP
+794;9;3196;ApplyMovement 255 @580
+794;9;3204;ApplyMovement 10 @580
+794;9;3212;WaitMovement
+794;9;3214;Message 0 4 24 10 0 0
+794;9;3226;CloseMessageKP
+794;9;3228;Message 0 4 25 11 0 0
+794;9;3240;CloseMessageKP
+794;9;3242;SetVarHero 0
+794;9;3245;Message 0 4 26 10 0 0
+794;9;3257;CloseMessageKP
+794;9;3259;SetVarHero 0
+794;9;3262;Message 0 4 27 11 0 0
+794;9;3274;CloseMessageKP
+794;9;3276;ApplyMovement 11 @4308
+mv;794;4308;13,1 
+794;9;3284;WaitMovement
+794;9;3286;Message 0 4 28 11 0 0
+794;9;3298;CloseMessageKP
+794;9;3300;SingleTrainerBattle 64 0 0
+794;9;3308;StoreBattleResult 32784
+794;9;3312;SetStackDerefVar 32784
+794;9;3316;SetStackVar 1
+794;9;3320;Condition 1
+794;9;3324;When 255 @3341
+794;9;3331;StopCameraEvent
+794;9;3333;DisableTrainer
+794;9;3335;Jump @3343
 794;9;1243;SetStackDerefVar 32803
 794;9;1247;SetStackVar 790
 794;9;1251;Condition 1
@@ -51342,6 +52266,33 @@ mv;794;580;32,1
 mv;794;3544;75,1 14,4 13,1 2,1 
 794;9;1270;WaitMovement
 794;9;1272;Jump @1331
+794;9;3341;EndBattle
+794;9;3343;Message 0 4 29 11 0 0
+794;9;3355;CloseMessageKP
+794;9;3357;ApplyMovement 11 @4332
+mv;794;4332;12,10 
+794;9;3365;WaitMovement
+794;9;3367;ApplyMovement 10 @596
+794;9;3375;ApplyMovement 255 @604
+794;9;3383;WaitMovement
+794;9;3385;Message 0 4 30 10 0 0
+794;9;3397;CloseMessageKP
+794;9;3399;ApplyMovement 10 @4340
+mv;794;4340;12,10 
+794;9;3407;ApplyMovement 255 @580
+794;9;3415;WaitMovement
+794;9;3417;RemoveNPC 10
+794;9;3421;RemoveNPC 11
+794;9;3425;FadeToDefaultMusic
+794;9;3427;StoreValueInVar 16506 3
+794;9;3433;SetFlag 524
+794;9;3437;SetFlag 528
+794;9;3441;SetFlag 518
+794;9;3445;SetFlag 525
+794;9;3449;SetFlag 522
+794;9;3453;SetFlag 523
+794;9;3457;ClearFlag 638
+794;9;3461;EndRoutine
 794;9;1278;SetStackDerefVar 32803
 794;9;1282;SetStackVar 791
 794;9;1286;Condition 1
@@ -51862,10 +52813,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;515;ReturnAfterDelay 15
 808;2;519;ShowMessageAt 13 32804 32805 1
 808;2;529;ReturnAfterDelay 30
-808;2;533;CloseShowMessageAt
-808;2;535;Nop
-808;2;537;CloseShowMessageAt
-808;2;539;Nop2
+808;2;533;CloseShowMessageAt 0
+808;2;537;CloseShowMessageAt 1
 808;2;541;Message 0 4 6 2 2 0
 808;2;553;WaitButton
 808;2;555;CloseMessageKP
@@ -51886,10 +52835,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;573;ReturnAfterDelay 15
 808;2;577;ShowMessageAt 14 32804 32805 1
 808;2;587;ReturnAfterDelay 30
-808;2;591;CloseShowMessageAt
-808;2;593;Nop
-808;2;595;CloseShowMessageAt
-808;2;597;Nop2
+808;2;591;CloseShowMessageAt 0
+808;2;595;CloseShowMessageAt 1
 808;2;599;Message 0 4 7 2 2 0
 808;2;611;WaitButton
 808;2;613;CloseMessageKP
@@ -51902,10 +52849,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;669;ReturnAfterDelay 15
 808;2;673;ShowMessageAt 14 32804 32805 1
 808;2;683;ReturnAfterDelay 30
-808;2;687;CloseShowMessageAt
-808;2;689;Nop
-808;2;691;CloseShowMessageAt
-808;2;693;Nop2
+808;2;687;CloseShowMessageAt 0
+808;2;691;CloseShowMessageAt 1
 808;2;695;Message 0 4 10 2 2 0
 808;2;707;WaitButton
 808;2;709;CloseMessageKP
@@ -51918,10 +52863,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;727;ReturnAfterDelay 15
 808;2;731;ShowMessageAt 12 32804 32805 1
 808;2;741;ReturnAfterDelay 30
-808;2;745;CloseShowMessageAt
-808;2;747;Nop
-808;2;749;CloseShowMessageAt
-808;2;751;Nop2
+808;2;745;CloseShowMessageAt 0
+808;2;749;CloseShowMessageAt 1
 808;2;753;Message 0 4 11 2 2 0
 808;2;765;WaitButton
 808;2;767;CloseMessageKP
@@ -51934,10 +52877,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;823;ReturnAfterDelay 15
 808;2;827;ShowMessageAt 12 32804 32805 1
 808;2;837;ReturnAfterDelay 30
-808;2;841;CloseShowMessageAt
-808;2;843;Nop
-808;2;845;CloseShowMessageAt
-808;2;847;Nop2
+808;2;841;CloseShowMessageAt 0
+808;2;845;CloseShowMessageAt 1
 808;2;849;Message 0 4 8 2 2 0
 808;2;861;WaitButton
 808;2;863;CloseMessageKP
@@ -51946,10 +52887,8 @@ mv;796;380;71,1 8,1 72,1
 808;2;881;ReturnAfterDelay 15
 808;2;885;ShowMessageAt 13 32804 32805 1
 808;2;895;ReturnAfterDelay 30
-808;2;899;CloseShowMessageAt
-808;2;901;Nop
-808;2;903;CloseShowMessageAt
-808;2;905;Nop2
+808;2;899;CloseShowMessageAt 0
+808;2;903;CloseShowMessageAt 1
 808;2;907;Message 0 4 9 2 2 0
 808;2;919;WaitButton
 808;2;921;CloseMessageKP

@@ -48,4 +48,39 @@ class UnovaScriptDecodeAuditTest :
                 .keys
         suspects shouldBe emptySet()
       }
+
+      test("no command is one argument SHORT (its argument read as the next opcode)") {
+        // The mirror of the test above, and the one that cost Accumula its Team Plasma speech:
+        // CloseShowMessageAt was sized with no arguments though it takes the window id, so the id
+        // was decoded as an opcode - 1 and 2 became Nop2 and End, and the phantom End cut the
+        // scene off after the crowd's two bubbles, losing 939 script steps across the game
+        // (2026-09-21). A leftover argument is a SMALL number, so it decodes as one of the
+        // low no-argument opcodes; those never appear mid-scene for real.
+        val neverMidScene = setOf("Nop2", "GetDerefVar06", "GetDerefVar07")
+        val suspects = mutableMapOf<String, Pair<Int, Int>>()
+        val byEntry = corpus.readLines().filterNot { it.startsWith("mv;") }.map { it.split(';') }
+        var previous: Pair<String, String>? = null
+        val total = mutableMapOf<String, Int>()
+        val followed = mutableMapOf<String, Int>()
+        for (row in byEntry) {
+          val key = "${row.getOrNull(0)};${row.getOrNull(1)}"
+          val name = row.getOrNull(3)?.trim()?.substringBefore(' ') ?: continue
+          previous?.let { (prevKey, prevName) ->
+            if (prevKey == key) {
+              total[prevName] = (total[prevName] ?: 0) + 1
+              if (name in neverMidScene || name.startsWith("Unknown_"))
+                  followed[prevName] = (followed[prevName] ?: 0) + 1
+            }
+          }
+          previous = key to name
+        }
+        total.forEach { (name, uses) ->
+          val hits = followed[name] ?: 0
+          if (uses >= 5 && hits * 2 >= uses) suspects[name] = hits to uses
+        }
+        println("ONE-SHORT suspects: $suspects")
+        // The six that remain are unnamed engine calls, each one a scene still losing its tail.
+        // Shrink this set; never grow it.
+        suspects.keys shouldBe setOf("CMD_0DA", "CMD_107", "CMD_12B", "CMD_146", "CMD_154", "CMD_20F")
+      }
     })

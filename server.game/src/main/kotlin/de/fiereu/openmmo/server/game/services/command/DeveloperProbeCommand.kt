@@ -161,6 +161,58 @@ constructor(
             ))
         ctx.reply("Ride applied instantly: bike type=$type")
       }
+      // s2c 0xBA, MapTileObjectSlotSet: "put an object in slot <slot> of block <x,y,z>", or clear
+      // it. The best candidate for the Pokemon Center heal - the nurse's ROM routine is
+      // GetPartySize then CMD_12F <count> (place that many balls), and CMD_23A right after
+      // HealPokemon (clear them) - and this is the only decoded packet shaped like a per-slot
+      // placement. Never sent by the server, so nothing here can regress; it is here to be watched.
+      // "/probe slot <blockX> <blockY> <blockZ> <slot> <present 0|1> [objX] [objY] [objZ] [relative]"
+      "slot" -> {
+        val bx = ctx.args.getOrNull(1)?.toIntOrNull()
+        val by = ctx.args.getOrNull(2)?.toIntOrNull()
+        val bz = ctx.args.getOrNull(3)?.toIntOrNull()
+        val slot = ctx.args.getOrNull(4)?.toIntOrNull()
+        val present = (ctx.args.getOrNull(5)?.toIntOrNull() ?: 1) != 0
+        if (bx == null || by == null || bz == null || slot == null) {
+          ctx.reply("/probe slot <blockX> <blockY> <blockZ> <slot> <present 0|1> [objX] [objY] [objZ] [relative]")
+          return
+        }
+        val ox = ctx.args.getOrNull(6)?.toIntOrNull() ?: 0
+        val oy = ctx.args.getOrNull(7)?.toIntOrNull() ?: 0
+        val oz = ctx.args.getOrNull(8)?.toIntOrNull() ?: 0
+        val rel = (ctx.args.getOrNull(9)?.toIntOrNull() ?: 1) != 0
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.MapTileObjectSlotSetPacket(
+                bx.toByte(), by.toByte(), bz.toByte(), slot.toByte(), present,
+                if (present) ox.toShort() else null,
+                if (present) oy.toShort() else null,
+                if (present) oz.toByte() else null,
+                if (present) rel else null))
+        ctx.reply("Sent slot block=($bx,$by,$bz) slot=$slot present=$present obj=($ox,$oy,$oz) rel=$rel")
+      }
+      // s2c 0xBE, WorldOverlayObjectSet: an overlay object by id with an action byte, a type id and
+      // a tile. The other candidate for the heal balls; action 0 clears it.
+      // "/probe overlay <objectId> <action> [byteA] [byteB] [typeId] [flag] [x] [y]"
+      "overlay" -> {
+        val id = ctx.args.getOrNull(1)?.toIntOrNull()
+        val action = ctx.args.getOrNull(2)?.toIntOrNull()
+        if (id == null || action == null) {
+          ctx.reply("/probe overlay <objectId> <action> [byteA] [byteB] [typeId] [flag] [x] [y]")
+          return
+        }
+        val on = action != 0
+        fun arg(i: Int, d: Int) = ctx.args.getOrNull(i)?.toIntOrNull() ?: d
+        ctx.session.send(
+            de.fiereu.openmmo.net.game.packets.WorldOverlayObjectSetPacket(
+                id.toByte(), action.toByte(),
+                if (on) arg(3, 0).toByte() else null,
+                if (on) arg(4, 0).toByte() else null,
+                if (on) arg(5, 0).toShort() else null,
+                if (on) arg(6, 0).toByte() else null,
+                if (on) arg(7, ctx.state.x.toInt()).toShort() else null,
+                if (on) arg(8, ctx.state.y.toInt()).toShort() else null))
+        ctx.reply("Sent overlay id=$id action=$action")
+      }
       // s2c 0xB6 (client f/Ty0), the world-action packet: action byte (cases 0-10, 12-15, 32-35),
       // subject byte, then shorts. The field-move summon animation (ball throw, stand-in popup)
       // must be one of its cases; this fires one so a player can watch what each does.

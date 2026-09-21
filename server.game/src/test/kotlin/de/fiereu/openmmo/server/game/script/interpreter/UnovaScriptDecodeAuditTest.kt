@@ -83,4 +83,30 @@ class UnovaScriptDecodeAuditTest :
         // Shrink this set; never grow it.
         suspects.keys shouldBe setOf("CMD_0DA", "CMD_107", "CMD_12B", "CMD_146", "CMD_154", "CMD_20F")
       }
+
+      test("every entry ends on a terminator - one that does not runs into its neighbour") {
+        // The strongest signal of the lot, and the one that would have caught all three of
+        // 2026-09-21's mis-sized commands at once. A command sized one argument too long eats its
+        // entry's `End`, and the script then runs straight on into whatever byte follows - for the
+        // Striaton gym that was the map-enter script falling into the gym guide's own script, so
+        // his line fired the moment the owner walked in, before the npcs had even loaded.
+        val lastOf = LinkedHashMap<String, String>()
+        val lastAt = HashMap<String, Int>()
+        corpus.readLines().filterNot { it.startsWith("mv;") }.forEach { line ->
+          val p = line.split(';')
+          val file = p.getOrNull(0)?.toIntOrNull() ?: return@forEach
+          val entry = p.getOrNull(1)?.toIntOrNull() ?: return@forEach
+          val at = p.getOrNull(2)?.toIntOrNull() ?: return@forEach
+          val key = "$file;$entry"
+          if (at >= (lastAt[key] ?: -1)) {
+            lastAt[key] = at
+            lastOf[key] = p.getOrNull(3)?.trim().orEmpty()
+          }
+        }
+        val terminators = setOf("End", "EndRoutine", "Jump", "Return", "ReturnStd", "DecodeStopped")
+        val open = lastOf.filterValues { it.substringBefore(' ') !in terminators }
+        open.forEach { (key, cmd) -> println("OPEN-ENDED $key ends on $cmd") }
+        // Was 6 before CMD_186 was sized right. Each one left is a scene that runs into the next.
+        open.size shouldBeLessThanOrEqual 5
+      }
     })

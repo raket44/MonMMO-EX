@@ -446,9 +446,20 @@ constructor(
   fun localIdForEntity(state: PlayerState, entityId: Long): Int? {
     val charId = state.characterId ?: return null
     val info = characterStore.getCharacter(charId)?.info ?: return null
+    // A DS map has no MapDef at all - its npcs come from the ROM's own event table - so looking the
+    // entity up in one always failed there, and VAR_LAST_TALKED could never resolve. The Pokemon
+    // Center nurse moves HERSELF with it, so her script threw at the counter: she gave her lines,
+    // died before healing, and left the tour var unset, which read as her repeating herself
+    // (owner, 2026-09-21).
     val map =
         mapManager.getMap(info.positionRegionId, info.positionBankId, info.positionMapId)
-            ?: return null
+            ?: return npcService
+                .ndsNpcForEntity(
+                    info.positionRegionId.toInt(),
+                    info.positionBankId.toInt() and 0xFF,
+                    info.positionMapId.toInt(),
+                    entityId)
+                ?.index
     return map.npcs
         .firstOrNull { npc ->
           npcService.entityIdFor(

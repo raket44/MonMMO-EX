@@ -1531,6 +1531,12 @@ class NdsScriptCorpusGenerator {
       // collector's lines (Mom's Xtransceiver, 2026-09-19).
       out.putIfAbsent(862, 283)
       out.putIfAbsent(864, 283)
+      // The Pokemon Center nurse, file 855, speaks from bank 346 - the bank the hardcoded stand-in
+      // already used and the owner already play-tested (0 greeting, 6 "I will take your Pokemon",
+      // 7 restored, 8 the send-off), and the script asks for entry 6 at the counter. Left at bank 0
+      // she came out as the GOURMET MAID, sniffing and asking for an ingredient - the same failure
+      // as the item gifts above, one file later (owner, 2026-09-21).
+      out.putIfAbsent(855, 346)
       out
     }
 

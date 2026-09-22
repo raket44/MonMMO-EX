@@ -2224,8 +2224,10 @@ class NdsScriptCorpusGenerator {
             "BufferTMHMMoveName", "BufferTrainerClassName", "BufferPoketchAppName", "TouchscreenMenuHide",
             "TouchscreenMenuShow", "ToggleFollowingPokemonMovement", "WaitFollowingPokemonMovement",
             "FollowingPokemonMovement", "ReturnToField", "RestoreOverworld", "Noop", "Dummy", "SetObjectFlagIsPersistent",
-            // Gen 5 (disassembly names): sound, camera, waits with no server counterpart.
-            "WaitMoment", "Nop", "Nop2", "Cry", "FadeToDefaultMusic",
+            // Gen 5 (disassembly names): sound, camera, waits with no server counterpart. SetStatusCG
+            // is the C-Gear activation (Fennel, after the Dream Mist) - a DS wireless feature an MMO
+            // has no use for; the recovered branch it sits on rejected her whole script (2026-09-22).
+            "WaitMoment", "Nop", "Nop2", "Cry", "FadeToDefaultMusic", "SetStatusCG",
             "StartCameraEvent", "StopCameraEvent", "LockCamera", "ReleaseCamera", "MoveCamera", "EndCameraEvent", "ResetCamera",
             "CallStart", "CallEnd", "EndBattle", "DisableTrainer", "ChangeMusicVolume", "SetTextScriptMessage", "CloseMulti",
             // HeartGold opens most npc scripts with this argument-less command; nothing observable follows it.

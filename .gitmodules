@@ -22,3 +22,6 @@
 [submodule "decomp/pokeyellow"]
 	path = decomp/pokeyellow
 	url = https://github.com/pret/pokeyellow
+[submodule "decomp/pokeemerald-expansion"]
+	path = decomp/pokeemerald-expansion
+	url = https://github.com/rh-hideout/pokeemerald-expansion

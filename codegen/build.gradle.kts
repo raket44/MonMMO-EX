@@ -31,7 +31,7 @@ val regionSources =
 val sourceDecompDir = rootProject.layout.projectDirectory.dir("decomp/pokeemerald")
 
 // Kept separate from retail Emerald. This sibling is the user's configured Expansion source tree.
-val expansionDecompDir = rootProject.layout.projectDirectory.dir("../pokeemerald-expansion")
+val expansionDecompDir = rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion")
 
 // The Gen 5 table the live client speaks, not the GBA decomps, which number the same items
 // differently. Committed rather than a submodule because openmmo-org/pokeblack is private, taken

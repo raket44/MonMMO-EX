@@ -47,7 +47,7 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
       File(output, "data/data.pak").path,
       "$client/data/strings/strings_en.xml",
       File(output, "data/strings/strings_en.xml").path,
-      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
       rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
   )
 }
@@ -78,7 +78,7 @@ tasks.register<JavaExec>("fetchShowdownSprites") {
   classpath(sourceSets.main.get().runtimeClasspath)
   args(
       rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
-      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
   )
 }
 
@@ -109,7 +109,7 @@ tasks.register<JavaExec>("stageTutorLearnsets") {
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   args(
-      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
       rootProject.layout.projectDirectory
           .file("server.game/src/main/resources/monmmo/tutor-learnsets-expansion.csv")
           .asFile
@@ -128,7 +128,7 @@ tasks.register<JavaExec>("patchClientTypes") {
       (project.findProperty("expansion.clientRoot") as String?) ?: "$local/MonMMO-EX/Client-31914"
   args(
       "$install/PokeMMO.exe",
-      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
       "$install/patch-classes.jar",
   )
 }
@@ -307,7 +307,7 @@ tasks.register<JavaExec>("mergeMonstersJson") {
           .file("reference/monsters-retail.json")
           .asFile
           .absolutePath,
-      rootProject.layout.projectDirectory.dir("../pokeemerald-expansion").asFile.absolutePath,
+      rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
       rootProject.layout.projectDirectory.file("data/pokemmo/monsters.json").asFile.absolutePath,
   )
 }

@@ -17,15 +17,17 @@ import de.fiereu.openmmo.story.generated.kanto.KantoFlags
  *   the HMs are Gen 5 420..425.
  * - Sinnoh (band 8000) and Johto (band 9000): the Gen 4 item index - HMs 420..427, key items from
  *   428 (Explorer Kit). 9481 is HGSS's Machine Part, which is how the two bands were told apart.
- * - Kanto and Hoenn share one Gen 3 index. Ids only FireRed or only Emerald defines (the registry's
+ * - Kanto and Hoenn share one Gen 3 index, at raw ids (the 1000 band is PokeMMO's own items -
+ *   1259 is Super Carbos, not a Hoenn table). Ids only FireRed or only Emerald defines (the registry's
  *   per-region key-item tables) tag that region outright. Ids BOTH define - the eight HMs, the
  *   rods, the Coin Case, the Itemfinder, the S.S. Ticket - are one stored item that either region
  *   can hand out, so they become ONE STACK PER REGION whose receipt flag is set (the trick the
  *   dyeable garments already use: the region rides in the stack id's low byte, and the use path
  *   reads the item id from the action, not the stack id). No flag set at all: -1, visible, rather
  *   than lose a real item.
- * - The client's own Bicycle (360) stays -1: the client gates it by its own flag, and the regional
- *   bikes bring it along (StoryPlayerService).
+ * - The client's own Bicycle (360) is FireRed's Bicycle, so it is Kanto's page: riding does not need it
+ *   in the bag (the hotkeyed bike mounts regardless - one client bike, owner's design), and the
+ *   other regions have their own bike items.
  */
 internal object BagRegions {
   private const val EVERYWHERE: Byte = -1
@@ -56,7 +58,6 @@ internal object BagRegions {
       in 6000..6999 -> unova(itemId - 6000)
       in 8000..8999 -> gen4(itemId - 8000, Region.SINNOH)
       in 9000..9999 -> gen4(itemId - 9000, Region.JOHTO)
-      in 1000..1999 -> gen3(itemId - 1000)
       else -> gen3(itemId)
     }
   }
@@ -77,7 +78,7 @@ internal object BagRegions {
 
   /** FireRed's key items Emerald has no use for (ItemRegistry.registerGbaKeyItems, region 0). */
   private val KANTO_ONLY =
-      setOf(349, 350, 351, 352, 353, 355, 356, 359, 363, 366, 367, 368, 369, 372, 373, 374)
+      setOf(349, 350, 351, 352, 353, 355, 356, 359, 360, 363, 366, 367, 368, 369, 372, 373, 374)
 
   /** Emerald's key items FireRed has no use for (ItemRegistry.registerGbaKeyItems, region 1). */
   private val HOENN_ONLY =

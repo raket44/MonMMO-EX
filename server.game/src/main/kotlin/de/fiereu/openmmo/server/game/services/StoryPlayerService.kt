@@ -228,7 +228,8 @@ constructor(
     return items.idsOf(item).sumOf { bag[it] ?: 0 }
   }
 
-  fun itemByScriptConstant(token: String): ItemDef? = items.byScriptConstant(token)
+  /** [regionId] picks between namesakes across bands - a Kanto script gets Kanto's Super Rod. */
+  fun itemByScriptConstant(token: String, regionId: Int? = null): ItemDef? = items.byScriptConstant(token, regionId)
 
   fun itemByWireId(id: Int): ItemDef? = items.get(id)
 
@@ -339,11 +340,24 @@ const val CLIENT_BICYCLE_ITEM = 360
 /** The Gen 5-numbered duplicate "Bicycle" the registry used to hand out; reclaimed on sight. */
 const val DUPLICATE_BICYCLE_ITEM = 5450
 
-/** Hoenn's Mach Bike (1259) and Acro Bike (1272). */
-val HOENN_BIKE_ITEMS = listOf(1259, 1272)
+/**
+ * Hoenn's Mach and Acro Bike at their Gen 3 ids - the ones the client names and Rydel hands out.
+ * They were 1259/1272 for a while (the registry's imagined "Hoenn table"), which on the client are
+ * Super Carbos and Multi-Vitamin Pack: the login reclaim ate those from every character without a
+ * bike flag (2026-09-22).
+ */
+val HOENN_BIKE_ITEMS = listOf(259, 272)
 
 /** The DS games' Bicycle, region * 1000 + 433. */
 val DS_BICYCLE_ITEMS = setOf(2433, 3433, 4433)
 
 /** Every regional bike item; any of them brings the client's Bicycle along. */
 val REGIONAL_BIKE_ITEMS = HOENN_BIKE_ITEMS.toSet() + DS_BICYCLE_ITEMS
+
+/**
+ * Kanto key items that resolved to the catalogue's Gen 5-numbered namesakes (same display name,
+ * the name index picked the 5000-band entry) -> their Gen 3 ids. Black/White hands out none of
+ * these five, so a held one is Kanto's. Fixed at login; the resolver no longer produces them.
+ */
+val CATALOGUE_KEY_ITEMS_TO_GBA =
+    mapOf(5456 to 265, 5467 to 351, 5444 to 260, 5445 to 262, 5446 to 263)

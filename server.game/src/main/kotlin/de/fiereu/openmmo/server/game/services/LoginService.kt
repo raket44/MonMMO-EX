@@ -319,10 +319,22 @@ constructor(
       val held = stored.items[itemId] ?: continue
       if (held > 0 && characterStore.addItem(charId, itemId, -held)) reclaimed++
     }
-    // An HM is one item: a replayed story scene hands it out again (the owner's restarts left him
-    // two Unova Cuts), so any stack above one loses the extras here.
-    for ((itemId, held) in stored.items) {
-      if (held > 1 && BagRegions.isHm(itemId) && characterStore.addItem(charId, itemId, 1 - held)) reclaimed++
+    // Kanto's S.S. Ticket, Secret Key, Coin Case, Old Rod and Good Rod used to resolve to the
+    // catalogue's Gen 5-numbered entries (5456, 5467, 5444, 5445, 5446), which today's bag pages
+    // file under Unova. Black/White hands out none of the five, so a held one is Kanto's and
+    // moves to its Gen 3 id. (The Super Rod and Town Map stay: Unova gives both.)
+    for ((catalogue, gba) in CATALOGUE_KEY_ITEMS_TO_GBA) {
+      val held = stored.items[catalogue] ?: continue
+      if (held > 0 && characterStore.addItem(charId, catalogue, -held)) {
+        if (gba !in stored.items) characterStore.addItem(charId, gba, 1)
+        reclaimed++
+      }
+    }
+    // A key item or HM is one item: a replayed story scene hands it out again (the owner's
+    // restarts left him two Unova Cuts and twenty Town Maps), so any stack above one loses the
+    // extras here. Region-paged = the singletons; consumables are never paged.
+    for ((itemId, held) in characterStore.getCharacter(charId)?.items.orEmpty()) {
+      if (held > 1 && BagRegions.single(itemId) in 0..4 && characterStore.addItem(charId, itemId, 1 - held)) reclaimed++
     }
     if (reclaimed > 0) {
       characterStore.flushCharacterAsync(charId)

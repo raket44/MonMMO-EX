@@ -690,7 +690,7 @@ internal constructor(
   }
 
   /** A ROM script item constant ("ITEM_TM39") resolved the way the interpreter resolves it. */
-  fun itemByScriptConstant(token: String): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(token)
+  fun itemByScriptConstant(token: String): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(token, state.regionId)
 
   /** Grant by raw client item id, for items the registry lists under several ids. */
   suspend fun giveItemById(itemId: Int, quantity: Int = 1): Boolean =
@@ -700,7 +700,7 @@ internal constructor(
   suspend fun takeItem(item: ItemDef, quantity: Int = 1): Boolean = giveItem(item, -quantity)
 
   fun resolveItem(constant: String): ItemDef? =
-      checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(constant)
+      checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByScriptConstant(constant, state.regionId)
 
   /** An item by client wire id (region * 1000 + the game's own index), for DS var-valued items. */
   fun resolveItemWire(id: Int): ItemDef? = checkNotNull(player) { STORY_PLAYER_UNAVAILABLE }.itemByWireId(id)

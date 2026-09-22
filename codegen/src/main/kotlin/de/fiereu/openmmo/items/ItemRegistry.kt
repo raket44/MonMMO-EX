@@ -64,14 +64,21 @@ class ItemRegistry @Inject constructor() {
       id in 339..346 || id in 5420..5425 || id in 8420..8427 || id in 1297..1298 || id in 9420..9427
 
   /**
-   * GBA story key items the modern catalogue dropped. Their wire id addresses the client's
-   * per-region item table (regionId * 1000 + the game's own item index), so the client shows the
-   * real FireRed/Emerald name and description - Oak's Parcel is Oak's, not Gen 4's Twinleaf one.
+   * The GBA story key items, pinned to their Gen 3 ids so a script constant resolves to the entry
+   * the client names - not a Gen 4/5 namesake in the 5000 band (Oak's Parcel is Oak's, not Gen 4's
+   * Twinleaf one). The DS bicycles are the one thing still minted at region * 1000 + index.
    */
   private fun registerGbaKeyItems() {
     fun add(regionId: Int, constant: String, gbaId: Int, name: String) {
-      val wireId = regionId * GBA_REGION_TABLE + gbaId
-      if (byId.containsKey(wireId)) return
+      // Kanto and Hoenn share the Gen 3 index at RAW ids - the 1000 band the "Hoenn table" once
+      // used is PokeMMO's own items (1259 Super Carbos). The DS bicycles keep region * 1000.
+      val wireId = if (regionId <= 1) gbaId else regionId * GBA_REGION_TABLE + gbaId
+      // The catalogue already lists most of these at that very id: the constant must still
+      // point there, or the name index picks a Gen 5-numbered namesake (Secret Key 5467).
+      byId[wireId]?.let { existing ->
+        byGbaConstant.putIfAbsent(constant, existing)
+        return
+      }
       val item = ItemDef(name, 0)
       register(item, wireId)
       byGbaConstant[constant] = item
@@ -87,6 +94,14 @@ class ItemRegistry @Inject constructor() {
     // catalogue's Gen 5-numbered "HM05" (5424) is Waterfall - which is what Oak's aide handed
     // out until byScriptConstant learned to route machine constants here (2026-09-08).
     GEN3_HM_MOVES.forEachIndexed { index, move -> add(0, "HM%02d".format(index + 1), 339 + index, "HM $move") }
+    // Gen 3 key items both games hand out, at the ids both games use.
+    add(0, "COIN_CASE", 260, "Coin Case")
+    add(0, "ITEMFINDER", 261, "Itemfinder")
+    add(0, "OLD_ROD", 262, "Old Rod")
+    add(0, "GOOD_ROD", 263, "Good Rod")
+    add(0, "SUPER_ROD", 264, "Super Rod")
+    add(0, "SS_TICKET", 265, "S.S. Ticket")
+    add(0, "TOWN_MAP", 358, "Town Map")
     // FireRed (region 0 table).
     add(0, "OAKS_PARCEL", 349, "Oak's Parcel")
     add(0, "POKE_FLUTE", 350, "Poké Flute")
@@ -188,9 +203,16 @@ class ItemRegistry @Inject constructor() {
    * display names the same way the generator does, plus aliases for the gen-3 spellings the scripts
    * use that the modern catalogue renamed.
    */
-  fun byScriptConstant(token: String): ItemDef? {
+  /**
+   * [regionId] picks between namesakes: the catalogue lists "Super Rod" at 264 (Gen 3) and 5447
+   * (Gen 5), and a Kanto script and a Unova script both spell it ITEM_SUPER_ROD. Kanto and Hoenn
+   * take the Gen 3 entry, Unova the 5000 band, Sinnoh 8000, Johto 9000. Without a region the last
+   * registered namesake wins, as it always did (the support analyzer only asks "does it exist").
+   */
+  fun byScriptConstant(token: String, regionId: Int? = null): ItemDef? {
     if (!token.startsWith("ITEM_")) return null
     val constant = token.removePrefix("ITEM_")
+    fun named(name: String): ItemDef? = preferBand(allByConstantName.value[name].orEmpty(), regionId)
     // Machines by the Gen 3 move, never by number: TMnn is the imported "TM <move>" item, HMnn
     // the GBA-band HM registered above.
     MACHINE.matchEntire(constant)?.let { m ->
@@ -210,10 +232,29 @@ class ItemRegistry @Inject constructor() {
     // catalogue names, while pret's Emerald uses modern constants (ITEM_PARALYZE_HEAL) against
     // catalogue entries that kept the gen-3 spelling. One direction stranded whole mart shelves.
     val alias = GEN3_ALIASES[constant] ?: GEN3_REVERSE[constant]
-    return byConstantName.value[constant]
-        ?: alias?.let { byConstantName.value[it] }
+    // A GBA region's own key item first: the registry knows exactly which entry Oak's Parcel or
+    // the S.S. Ticket is, and the name index would hand a Gen 5 namesake to a Kanto script.
+    if (regionId != null && regionId <= 1) {
+      (byGbaConstant[constant] ?: alias?.let { byGbaConstant[it] })?.let { return it }
+    }
+    return named(constant)
+        ?: alias?.let { named(it) }
         ?: byGbaConstant[constant]
         ?: alias?.let { byGbaConstant[it] }
+  }
+
+  /** Of several catalogue namesakes, the one whose id sits in [regionId]'s band; else the last. */
+  private fun preferBand(candidates: List<ItemDef>, regionId: Int?): ItemDef? {
+    if (candidates.isEmpty()) return null
+    val band =
+        when (regionId) {
+          0, 1 -> 0..999
+          2 -> 5000..5999
+          3 -> 8000..8999
+          4 -> 9000..9999
+          else -> return candidates.last()
+        }
+    return candidates.firstOrNull { item -> idsByItem[item].orEmpty().any { it in band } } ?: candidates.last()
   }
 
   /**
@@ -237,6 +278,8 @@ class ItemRegistry @Inject constructor() {
   // The same mangling ItemDataParser.identifierOf applies, so the script constant for a retail
   // item is exactly ITEM_ plus this.
   private val byConstantName = lazy { idsByItem.keys.associateBy { item -> mangle(item.name) } }
+  /** Every namesake under a mangled name - the same display name sits in several bands. */
+  private val allByConstantName = lazy { idsByItem.keys.groupBy { item -> mangle(item.name) } }
 
   private fun mangle(name: String): String =
       java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)

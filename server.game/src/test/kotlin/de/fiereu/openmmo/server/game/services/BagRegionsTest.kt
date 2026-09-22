@@ -29,11 +29,12 @@ class BagRegionsTest :
       test("Hoenn's key items are on Hoenn's page only") {
         BagRegions.single(272) shouldBe hoenn // Acro Bike
         BagRegions.single(259) shouldBe hoenn // Mach Bike
-        BagRegions.single(1272) shouldBe hoenn // the registry's Hoenn-table spelling
+        BagRegions.single(1272) shouldBe everywhere // Multi-Vitamin Pack: the 1000 band is PokeMMO's own
+        BagRegions.single(1259) shouldBe everywhere // Super Carbos
       }
 
-      test("the client's own Bicycle is on every page - the client gates it itself") {
-        BagRegions.single(360) shouldBe everywhere
+      test("the client's own Bicycle is FireRed's: Kanto's page (riding never needed it in the bag)") {
+        BagRegions.single(360) shouldBe kanto
       }
 
       test("Unova: HMs and pocket-4 items are Unova's; balls and medicine are shared") {

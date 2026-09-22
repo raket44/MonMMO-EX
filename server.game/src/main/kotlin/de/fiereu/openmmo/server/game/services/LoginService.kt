@@ -333,17 +333,13 @@ constructor(
     }
     // One TM or HM item per MOVE (owner, 2026-09-22): a stack held under a numbered band id (the
     // owner's Unova Cut sat at 5420 next to Kanto's 339) folds onto the move's canonical id, so
-    // the bag shows one HM Cut and a second Thunder stacks. A DS-band HM also records that
-    // region's receipt (FieldMoves.receiptFlag), which is the HM's bag page from now on.
+    // the bag shows one HM Cut and a second Thunder stacks. The fold sets NO receipt: a region's
+    // receipt comes only from its story handing the HM over (a stale band id after a story reset
+    // must not put Cut back on Unova's page - the owner's case).
     for ((itemId, held) in characterStore.getCharacter(charId)?.items.orEmpty()) {
       val item = itemRegistry.get(itemId) ?: continue
       val canonical = itemRegistry.idOf(item)
       if (canonical == itemId || de.fiereu.openmmo.items.ClientTools.itemToMove[itemId] == null || held <= 0) continue
-      val region = de.fiereu.openmmo.common.enums.Region.byId(BagRegions.single(itemId).toInt())
-      val moveId = de.fiereu.openmmo.items.ClientTools.itemToMove[itemId]
-      if (BagRegions.isHm(itemId) && region != null && moveId != null && region != de.fiereu.openmmo.common.enums.Region.KANTO && region != de.fiereu.openmmo.common.enums.Region.HOENN) {
-        FieldMoves.receiptFlag(region, moveId)?.let { characterStore.setStoryFlag(charId, it) }
-      }
       if (characterStore.addItem(charId, itemId, -held)) {
         characterStore.addItem(charId, canonical, held)
         reclaimed++

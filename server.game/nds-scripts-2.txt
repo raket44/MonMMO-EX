@@ -1779,7 +1779,226 @@ mv;20;184;75,1
 20;1;1156;ReleaseAll
 20;1;1158;End
 20;1;1089;StoreValueInVar 32801 0
-20;1;1095;DecodeStopped
+20;1;1095;CMD_23B 119 32801
+20;1;1101;SetStackDerefVar 32801
+20;1;1105;SetStackVar 0
+20;1;1109;Condition 1
+20;1;1113;When 255 @1140
+20;1;1120;Message2 0 4 21 0 0
+20;1;1130;WaitButton
+20;1;1132;CloseMessageKP2
+20;1;1134;Jump @1154
+20;1;287;ApplyMovement 0 @1512
+mv;20;1512;49,2 
+20;1;295;WaitMovement
+20;1;297;Jump @408
+20;1;303;Compare 32800 1
+20;1;309;When 1 @322
+20;1;316;Jump @338
+20;1;1140;Message2 0 4 22 0 0
+20;1;1150;WaitButton
+20;1;1152;CloseMessageKP2
+20;1;408;Message2 0 4 8 0 0
+20;1;418;CloseMessageKP2
+20;1;420;Compare 32800 0
+20;1;426;When 1 @439
+20;1;433;Jump @455
+20;1;322;ApplyMovement 0 @1520
+mv;20;1520;48,2 
+20;1;330;WaitMovement
+20;1;332;Jump @408
+20;1;338;Compare 32800 2
+20;1;344;When 1 @357
+20;1;351;Jump @373
+20;1;439;ApplyMovement 0 @1536
+mv;20;1536;29,1 14,4 12,1 28,1 63,1 32,1 13,1 15,4 29,1 
+20;1;447;WaitMovement
+20;1;449;Jump @560
+20;1;455;Compare 32800 1
+20;1;461;When 1 @474
+20;1;468;Jump @490
+20;1;357;ApplyMovement 0 @1528
+mv;20;1528;51,2 
+20;1;365;WaitMovement
+20;1;367;Jump @408
+20;1;373;Compare 32800 3
+20;1;379;When 1 @392
+20;1;386;Jump @408
+20;1;560;CallRoutine @1160
+20;1;566;Message2 0 4 17 0 0
+20;1;576;YesNoBox 32784
+20;1;580;SetStackDerefVar 32784
+20;1;584;SetStackVar 1
+20;1;588;Condition 1
+20;1;592;When 255 @609
+20;1;599;Message2 0 4 18 0 0
+20;1;609;Message2 0 4 19 0 0
+20;1;619;CloseMessageKP2
+20;1;621;Compare 32800 0
+20;1;627;When 1 @640
+20;1;634;Jump @656
+20;1;474;ApplyMovement 0 @1576
+mv;20;1576;28,1 14,4 12,1 28,1 63,1 32,1 13,1 15,4 28,1 
+20;1;482;WaitMovement
+20;1;484;Jump @560
+20;1;490;Compare 32800 2
+20;1;496;When 1 @509
+20;1;503;Jump @525
+20;1;392;ApplyMovement 0 @1504
+mv;20;1504;50,2 
+20;1;400;WaitMovement
+20;1;402;Jump @408
+20;1;1160;PlayFanfare 1303
+20;1;1164;SetVarHero 0
+20;1;1167;EventGreyMessage 9 2
+20;1;1173;WaitFanfare
+20;1;1175;CloseAngryMessage
+20;1;1177;CMD_19E 1
+20;1;1181;StoreValueInVar 32802 0
+20;1;1187;SetStackDerefVar 32802
+20;1;1191;SetStackVar 555
+20;1;1195;Condition 5
+20;1;1199;When 255 @1431
+20;1;1206;EventGreyMessage 10 2
+20;1;1212;Multi 31 13 0 0 1 32784
+20;1;1221;SetTextScriptMessage 11 65535 0
+20;1;1229;SetTextScriptMessage 12 65535 1
+20;1;1237;CloseMulti
+20;1;1239;SetStackDerefVar 32784
+20;1;1243;SetStackVar 0
+20;1;1247;Condition 1
+20;1;1251;When 255 @1347
+20;1;1258;CMD_19E 0
+20;1;1262;CMD_13B 32776
+20;1;1266;SetStackDerefVar 32776
+20;1;1270;SetStackVar 1
+20;1;1274;Condition 1
+20;1;1278;When 255 @1313
+20;1;1285;CloseMessageKP2
+20;1;1287;PlaySound 1358
+20;1;1291;SetStatusCG 1
+20;1;1295;WaitSound
+20;1;1297;Message2 0 4 15 0 0
+20;1;1307;Jump @1335
+20;1;640;ApplyMovement 0 @1512
+20;1;648;WaitMovement
+20;1;650;Jump @761
+20;1;656;Compare 32800 1
+20;1;662;When 1 @675
+20;1;669;Jump @691
+20;1;509;ApplyMovement 0 @1576
+20;1;517;WaitMovement
+20;1;519;Jump @560
+20;1;525;Compare 32800 3
+20;1;531;When 1 @544
+20;1;538;Jump @560
+20;1;1431;StoreValueInVar 32802 0
+20;1;1437;EndRoutine
+20;1;1347;EventGreyMessage 13 2
+20;1;1353;Multi 31 13 0 0 1 32784
+20;1;1362;SetTextScriptMessage 11 65535 0
+20;1;1370;SetTextScriptMessage 12 65535 1
+20;1;1378;CloseMulti
+20;1;1380;SetStackDerefVar 32784
+20;1;1384;SetStackVar 0
+20;1;1388;Condition 1
+20;1;1392;When 255 @1425
+20;1;1399;CloseMessageKP2
+20;1;1401;CMD_19E 0
+20;1;1405;SetStatusCG 0
+20;1;1409;Message2 0 4 16 0 0
+20;1;1419;StoreValueInVar 32802 555
+20;1;1425;Jump @1187
+20;1;1313;EventGreyMessage 14 2
+20;1;1319;CloseMessageKP2
+20;1;1321;SetStatusCG 0
+20;1;1325;Message2 0 4 16 0 0
+20;1;1335;StoreValueInVar 32802 555
+20;1;1341;Jump @1425
+20;1;761;Message2 0 4 20 0 0
+20;1;771;CloseMessageKP2
+20;1;773;Compare 32800 0
+20;1;779;When 1 @792
+20;1;786;Jump @808
+20;1;675;ApplyMovement 0 @1520
+20;1;683;WaitMovement
+20;1;685;Jump @761
+20;1;691;Compare 32800 2
+20;1;697;When 1 @710
+20;1;704;Jump @726
+20;1;544;ApplyMovement 0 @1616
+mv;20;1616;30,1 12,1 14,4 28,1 63,1 32,1 15,4 13,1 30,1 
+20;1;552;WaitMovement
+20;1;554;Jump @560
+20;1;792;ApplyMovement 1 @1656
+mv;20;1656;75,1 13,2 15,6 35,1 
+20;1;800;WaitMovement
+20;1;802;Jump @878
+20;1;808;Compare 32800 1
+20;1;814;When 1 @827
+20;1;821;Jump @843
+20;1;710;ApplyMovement 0 @1528
+20;1;718;WaitMovement
+20;1;720;Jump @761
+20;1;726;Compare 32800 3
+20;1;732;When 1 @745
+20;1;739;Jump @761
+20;1;878;ApplyMovement 255 @1772
+mv;20;1772;2,1 
+20;1;886;WaitMovement
+20;1;888;Message 0 4 29 1 2 0
+20;1;900;CloseMessageKP2
+20;1;902;SetStackDerefVar 32768
+20;1;906;SetStackDerefVar 32769
+20;1;910;StoreDerefVarInVar 32768 437
+20;1;916;StoreDerefVarInVar 32769 1
+20;1;922;CallStd 2805
+20;1;926;GetStackVar 32769
+20;1;930;GetStackVar 32768
+20;1;934;Message 0 4 30 1 2 0
+20;1;946;CloseMessageKP2
+20;1;948;Compare 32800 0
+20;1;954;When 1 @967
+20;1;961;Jump @983
+20;1;827;ApplyMovement 1 @1676
+mv;20;1676;75,1 13,1 15,6 12,1 35,1 
+20;1;835;WaitMovement
+20;1;837;Jump @878
+20;1;843;Compare 32800 3
+20;1;849;When 1 @862
+20;1;856;Jump @878
+20;1;745;ApplyMovement 0 @1504
+20;1;753;WaitMovement
+20;1;755;Jump @761
+20;1;967;ApplyMovement 1 @1720
+mv;20;1720;14,6 12,2 1,1 
+20;1;975;WaitMovement
+20;1;977;Jump @1053
+20;1;983;Compare 32800 1
+20;1;989;When 1 @1002
+20;1;996;Jump @1018
+20;1;862;ApplyMovement 1 @1700
+mv;20;1700;75,1 13,1 15,5 35,1 
+20;1;870;WaitMovement
+20;1;872;Jump @878
+20;1;1053;StoreValueInVar 16532 5
+20;1;1059;StoreValueInVar 16518 2
+20;1;1065;StoreValueInVar 16520 3
+20;1;1071;SetFlag 115
+20;1;1075;ActivateRelocator 1
+20;1;1079;ActivateRelocator 2
+20;1;1083;Jump @1154
+20;1;1002;ApplyMovement 1 @1736
+mv;20;1736;13,1 14,6 12,1 1,1 
+20;1;1010;WaitMovement
+20;1;1012;Jump @1053
+20;1;1018;Compare 32800 3
+20;1;1024;When 1 @1037
+20;1;1031;Jump @1053
+20;1;1037;ApplyMovement 1 @1756
+mv;20;1756;14,5 12,1 1,1 
+20;1;1045;WaitMovement
+20;1;1047;Jump @1053
 20;2;1780;LockAll
 20;2;1782;PlaySound 1351
 20;2;1786;FacePlayer
@@ -5719,9 +5938,6 @@ mv;58;2444;0,1
 58;7;894;WaitMoment
 58;7;896;ReleaseAll
 58;7;898;End
-58;7;1512;CallRoutine @1540
-58;7;1518;PlaySound 1735
-58;7;1522;DecodeStopped
 58;8;900;LockAll
 58;8;902;StoreValueInVar 32800 2
 58;8;908;CallRoutine @1500
@@ -9942,12 +10158,6 @@ mv;94;2200;13,1 14,1 32,1
 94;2;390;Compare 32803 0
 94;2;396;When 1 @409
 94;2;403;Jump @423
-94;2;706;StoreValueInVar 32804 0
-94;2;712;StoreValueInVar 32805 0
-94;2;718;StoreValueInVar 32806 0
-94;2;724;StoreValueInVar 32807 0
-94;2;730;CMD_103 32804
-94;2;734;EndRoutine
 94;2;409;ApplyMovement 255 @2160
 mv;94;2160;13,1 32,1 
 94;2;417;Jump @456
@@ -57033,6 +57243,7 @@ mv;855;2344;69,1
 856;0;315;Condition 0
 856;0;319;When 255 @371
 856;0;326;DecodeStopped
+856;0;393;DecodeStopped
 856;1;665;LockAll
 856;1;667;StoreValueInVar 32813 0
 856;1;673;CallRoutine @76
@@ -62821,6 +63032,7 @@ mv;867;68;162,1
 868;0;1371;CMD_1AE
 868;0;1373;CMD_1B1
 868;0;1375;DecodeStopped
+868;0;1629;DecodeStopped
 869;0;18;LockAll
 869;0;20;PlaySound 1351
 869;0;24;FacePlayer
@@ -66440,35 +66652,6 @@ mv;882;8536;15,6 13,2 15,3
 882;5;5964;CallRoutine @7831
 882;5;5970;CallRoutine @10473
 882;5;5976;ReturnStd
-882;5;10473;CMD_15A 0 0 0 32800
-882;5;10483;StoreValueInVar 32776 45
-882;5;10489;CallRoutine @12557
-882;5;10495;CloseMessageKP2
-882;5;10497;CMD_15A 7 0 0 32784
-882;5;10507;SetStackDerefVar 32800
-882;5;10511;SetStackVar 4
-882;5;10515;Condition 1
-882;5;10519;When 255 @10629
-882;5;10526;CMD_15A 109 0 0 32802
-882;5;10536;SetStackDerefVar 32802
-882;5;10540;SetStackVar 1
-882;5;10544;Condition 1
-882;5;10548;When 255 @10617
-882;5;10555;CMD_15A 29 0 0 32802
-882;5;10565;SetStackDerefVar 32802
-882;5;10569;SetStackVar 1
-882;5;10573;Condition 1
-882;5;10577;When 255 @10617
-882;5;10584;CMD_15A 27 0 0 32802
-882;5;10594;SetVarStoreValue5C 0 32802 2
-882;5;10601;StoreValueInVar 32776 87
-882;5;10607;CallRoutine @12557
-882;5;10613;CMD_031
-882;5;10615;CloseMessageKP2
-882;5;10617;CallRoutine @7831
-882;5;10623;CallRoutine @11511
-882;5;10629;CallRoutine @10336
-882;5;10635;EndRoutine
 882;6;5980;CallRoutine @9868
 882;6;5986;CallRoutine @7831
 882;6;5992;CMD_15A 21 0 0 32800

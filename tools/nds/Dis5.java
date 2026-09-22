@@ -23,6 +23,9 @@ public class Dis5{
    byte[] f=Arrays.copyOfRange(rom,idx[fi][0],idx[fi][1]);if(f.length<4)continue;files++;
    List<Integer> entries=new ArrayList<>();int p=0;
    while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length){break;}entries.add(tgt);p+=4;if(entries.size()>2048)break;}
+   // One unknown opcode used to end the WHOLE entry: every jump target still queued was dropped,
+   // so a branch decoded fine elsewhere vanished (Fennel's @287, 2026-09-22). Now only that
+   // linear run stops; the entry still counts as bad and the queue drains.
    Set<Integer> seen=new HashSet<>();
    for(int e=0;e<entries.size();e++){
     Deque<Integer> work=new ArrayDeque<>();work.add(entries.get(e));boolean bad=false;
@@ -38,7 +41,7 @@ public class Dis5{
        if(op==0x64){int tgt=(int)(pc+8+u32(f,pc+4));if(tgt>=0&&tgt+4<=f.length&&!seen.contains(-tgt-1)){seen.add(-tgt-1);StringBuilder mv=new StringBuilder();int m=tgt;while(m+4<=f.length){int t=u16(f,m),n=u16(f,m+2);if(t==0xFE)break;mv.append(t).append(',').append(n).append(' ');m+=4;if(mv.length()>2000)break;}out.append("mv;").append(fi).append(';').append(tgt).append(';').append(mv).append('\n');}}}
       if(TERMINAL.contains(op)||op==0x1E)break;
       pc=q;}
-     if(bad)break;}
+     }
     if(bad)badEntries++;else okEntries++;}
   }
   System.out.println("files="+files+" entriesOk="+okEntries+" entriesBad="+badEntries);

@@ -684,6 +684,8 @@ class NdsScriptCorpusGenerator {
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
         "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
+        // White DoubleTrainerBattle partner, enemy1, enemy2 (every Ds* name needs its own case).
+        "DsDoubleTrainerBattle" -> out += "ds_doubletrainerbattle ${a[0]}, ${a[1]}, ${a[2]}"
         // Every Ds* intermediate name needs its own case here: the fallback writes
         // ds_<name.lowercase()>, which for DsMapGimmick was `ds_dsmapgimmick` - an unknown
         // command, so every Striaton button script failed to resolve and the buttons did
@@ -1787,7 +1789,9 @@ class NdsScriptCorpusGenerator {
             "StoreActiveTrainerID" -> b.lines += listOf("CheckTrainerFlag", tv(0), v(1))
             "TeleportWarpNPC" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             // DoubleTrainerBattle ally, opponent, opponent, ?: no doubles engine yet, the first opponent fights.
-            "DoubleTrainerBattle" -> b.lines += listOf("TrainerBattle", tv(1), "0", "0", "0")
+            // partner, enemy1, enemy2: the player faces BOTH enemies at once (Wellspring Cave with
+            // Cheren: 56 = Cheren, 62 and 63 = the grunts). It used to take tv(1) alone as a single.
+            "DoubleTrainerBattle" -> b.lines += listOf("DsDoubleTrainerBattle", tv(0), tv(1), tv(2))
             "StoreVar_CD", "StoreVar_CE", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" ->
                 b.lines += listOf("SetVar", v(0), "0")
             // The nurse compares the date against the player's birthday. Both used to stub to 0, which

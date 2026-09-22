@@ -300,6 +300,7 @@ class ScriptSupportAnalyzer(
           "ds_itempocket" -> args.size == 2
           "ds_speaker" -> args.size == 1
           "ds_door" -> args.size == 3
+          "ds_doubletrainerbattle" -> args.size == 3
           "ds_makenpc" -> args.size == 5
           "ds_xtransceiver" -> args.size == 1
           // opcode plus that opcode's own arguments
@@ -663,6 +664,7 @@ class ScriptSupportAnalyzer(
             "ds_itempocket",
             "ds_speaker",
             "ds_door",
+            "ds_doubletrainerbattle",
             "ds_makenpc",
             "ds_xtransceiver",
             "ds_mapgimmick",

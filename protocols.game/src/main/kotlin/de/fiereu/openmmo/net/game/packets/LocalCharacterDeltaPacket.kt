@@ -12,6 +12,19 @@ private const val VALUE_64 = 0x40
 
 /** f/ig7.TE1, the "no lure" enum: its wire byte is -1. Kinds 0, 1, 2 are lure, premium, legendary. */
 const val LURE_KIND_NONE = -1
+
+/**
+ * The same f/ig7 byte the character record carries, by lure item id - the ONE place the wire
+ * mapping lives, so the record and the delta cannot disagree. 1041-1043 are the plain lures,
+ * 1044-1046 the premium ones, 1475 the legendary; anything else is "none".
+ */
+fun lureKindForItem(itemId: Int): Int =
+    when (itemId) {
+      1041, 1042, 1043 -> 0
+      1044, 1045, 1046 -> 1
+      1475 -> 2
+      else -> LURE_KIND_NONE
+    }
 private const val STATUS_CONDITIONS = 0x80
 private const val VALUE_256 = 0x100
 

@@ -67,8 +67,16 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
     val repelLeft = field(S16LE, CharacterInfo::repelLeft)
     val repelItemId = field(S16LE, CharacterInfo::repelItemId)
     field(S8) { 0 }
-    val lureItemId = field(S16LE, CharacterInfo::lureItemId)
-    val lureLeft = field(S16LE, CharacterInfo::lureLeft)
+    // NOT the lure item id and step count, whatever the 32710 capture this codec was built from
+    // suggests: the r32645 client reads this area as BYTES (f/ih6: get, get -> Wi, lR0) and types
+    // lR0 as an f/ig7, the -1/0/1/2 enum. A Premium Max Lure (1046 = 0x0416) put 0x16 = 22 in it,
+    // so the CHARACTER LIST threw "Undefined ig7 22" and the player could not get past the loading
+    // screen at all - his lure had been running when he logged out (Argeno, 2026-09-21). With no
+    // lure the byte is 0, a legal value, which is why this hid until someone ran one.
+    // The width is kept exactly so every other field stays aligned; the lure's counter reaches the
+    // client through the local delta's 0x40 group, which is where the HUD line comes from.
+    field(S16LE) { 0 }
+    field(S16LE) { 0 }
     field(TrailingBytes) { ByteArray(0) }
     return CharacterInfo(
         id = id,
@@ -94,8 +102,8 @@ class CharacterInfoCodec(private val withExtraLong: Boolean) : PacketCodec<Chara
         positionY = positionY,
         repelLeft = repelLeft,
         repelItemId = repelItemId,
-        lureLeft = lureLeft,
-        lureItemId = lureItemId,
+        lureLeft = 0,
+        lureItemId = 0,
     )
   }
 }

@@ -54,6 +54,10 @@ internal object BagRegions {
     return listOf(single(itemId) to quantity)
   }
 
+  /** The item has a stack on [regionId]'s bag page (or on every page), so it can be used there. */
+  fun visibleIn(itemId: Int, regionId: Int, storyFlags: Collection<String>): Boolean =
+      stacks(itemId, 1, storyFlags).any { (page, _) -> page == EVERYWHERE || page.toInt() == regionId }
+
   /** An HM in any region's band (the client's own HM blocks, ItemRegistry.isHmId). */
   fun isHm(itemId: Int): Boolean =
       itemId in 339..346 || itemId in 5420..5425 || itemId in 6420..6425 || itemId in 8420..8427 || itemId in 9420..9427

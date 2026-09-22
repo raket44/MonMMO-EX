@@ -78,7 +78,7 @@ constructor(
     val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
     scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
     // A Cut tree or Strength boulder: the FireRed field script, against this entity.
-    DS_FIELD_OBJECT_SCRIPTS[npc.sprite]?.let { label ->
+    DS_FIELD_OBJECT_SCRIPTS[npc.sprite]?.takeIf { npc.script == DS_CUT_TREE_SCRIPT }?.let { label ->
       runFieldScript(session, state, label, npcEntityId, source = FIELD_SCRIPT_SOURCE)
       return
     }
@@ -312,7 +312,7 @@ constructor(
     val sprite =
         when (moveId) {
           FieldMoves.CUT -> DS_CUT_TREE_SPRITE
-          FieldMoves.STRENGTH -> DS_STRENGTH_BOULDER_SPRITE
+          FieldMoves.STRENGTH -> return // boulders: sprite unverified, see DS_FIELD_OBJECT_SCRIPTS
           else -> return
         }
     val region = stored.info.positionRegionId.toInt()
@@ -320,7 +320,7 @@ constructor(
     val mapId = stored.info.positionMapId.toInt()
     val fx = stored.info.positionX.toInt() + state.facingDirection.dx
     val fy = stored.info.positionY.toInt() + state.facingDirection.dy
-    val target = npcService.ndsNpcsOn(region, bank, mapId).firstOrNull { it.sprite == sprite && it.x == fx && it.y == fy }
+    val target = npcService.ndsNpcsOn(region, bank, mapId).firstOrNull { it.sprite == sprite && it.script == DS_CUT_TREE_SCRIPT && it.x == fx && it.y == fy }
     if (target == null) {
       session.send(notice("There is nothing here to use that on."))
       return
@@ -500,17 +500,18 @@ private const val HOENN_BOOTED_PC = 271001178
 private const val HOENN_WHICH_PC = 271001199
 
 /**
- * Gen 5's field objects: overworld npcs on the engine's std handler 10000, told apart by sprite.
- * 8195 is a Cut tree - every one sits on an outdoor route, and the Dreamyard's entrance tree is
- * 152:0 (20, 35) - and 8197 a Strength boulder, every one in a cave. The handler is unbound in
- * our lowering, so a click went nowhere. The FireRed field scripts do what the cartridge does
- * (the prompt, the party check, the summoned mon, removeobject), so they run against the DS
- * entity; the object has no hide flag, so a felled tree is back with the map, as on the
- * cartridge (owner, 2026-09-22).
+ * Gen 5's Cut trees: overworld npcs with sprite 108 on std script 10004 - VERIFIED by the owner's
+ * click on the Dreamyard's tree (152:0 (23, 26), 2026-09-22: "DS npc idx=8 script=10004"). Six in
+ * the game (Dreamyard, Pinwheel Forest x3, 63:1, 127:1). The std handler is unbound in our
+ * lowering, so a click went nowhere. FireRed's field script does what the cartridge does (the
+ * prompt, the party check, the summoned mon, removeobject), so it runs against the DS entity; the
+ * object has no hide flag, so a felled tree is back with the map, as on the cartridge.
+ *
+ * Strength boulders are NOT wired: their sprite is unverified (8195/8197 on script 10000 were
+ * a guess from placement, and were wrong for the tree). Wire them from a click log, not a guess.
  */
-internal const val DS_CUT_TREE_SPRITE = 8195
-internal const val DS_STRENGTH_BOULDER_SPRITE = 8197
-internal val DS_FIELD_OBJECT_SCRIPTS =
-    mapOf(DS_CUT_TREE_SPRITE to "EventScript_CutTree", DS_STRENGTH_BOULDER_SPRITE to "EventScript_StrengthBoulder")
+internal const val DS_CUT_TREE_SPRITE = 108
+internal const val DS_CUT_TREE_SCRIPT = 10004
+internal val DS_FIELD_OBJECT_SCRIPTS = mapOf(DS_CUT_TREE_SPRITE to "EventScript_CutTree")
 /** The game whose field scripts the DS regions borrow: FireRed's are the ones fully interpreted. */
 internal const val FIELD_SCRIPT_SOURCE = "firered"

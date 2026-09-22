@@ -108,9 +108,11 @@ constructor(
     // Cosmetic addon items (client-generated ids 2000..4883) are worn via the customization
     // dialog, never used from the bag - and the +2048 guess must not resolve to one: with bike
     // skins granted, the Bicycle's code 360 once resolved to cosmetic 2408 and the bike died.
+    // An item off the current region's bag page is as good as not there (owner, 2026-09-22): the
+    // hotkeyed Kanto Bicycle must not mount in Unova, the client's "cannot be found" is right.
     val itemId =
         listOf(itemCode + ITEM_CODE_OFFSET, itemCode).firstOrNull {
-          it in stored.items && it !in COSMETIC_ITEM_BAND
+          it in stored.items && it !in COSMETIC_ITEM_BAND && BagRegions.visibleIn(it, state.regionId, stored.storyFlags)
         }
     log.info {
       "[UseItem] char=$charId code=$itemCode resolved=$itemId monster=$monsterId qty=$quantity"
@@ -265,7 +267,7 @@ constructor(
     }
     val itemId =
         listOf(code, code + ITEM_CODE_OFFSET).firstOrNull {
-          it in stored.items && it !in COSMETIC_ITEM_BAND
+          it in stored.items && it !in COSMETIC_ITEM_BAND && BagRegions.visibleIn(it, state.regionId, stored.storyFlags)
         }
     if (itemId == null) {
       ctx.reply("That item could not be matched to anything in the bag (code $code).")

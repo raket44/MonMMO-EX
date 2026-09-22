@@ -92,6 +92,14 @@ class BagRegionsTest :
             listOf(kanto to 1, hoenn to 1)
       }
 
+      test("an item off the current page cannot be used there: the Kanto Bicycle in Unova") {
+        BagRegions.visibleIn(360, 0, none) shouldBe true
+        BagRegions.visibleIn(360, 2, none) shouldBe false
+        BagRegions.visibleIn(1132, 2, none) shouldBe true // Rare Candy, every page
+        BagRegions.visibleIn(339, 0, setOf(KantoFlags.FLAG_GOT_HM01)) shouldBe true
+        BagRegions.visibleIn(339, 2, setOf(KantoFlags.FLAG_GOT_HM01)) shouldBe false
+      }
+
       test("region-tagged items keep their quantity; the wardrobe's stock is on no page") {
         BagRegions.stacks(5420, 2, none) shouldBe listOf(unova to 2)
         BagRegions.stacks(1132, 100, none) shouldBe listOf(everywhere to 100) // Rare Candy

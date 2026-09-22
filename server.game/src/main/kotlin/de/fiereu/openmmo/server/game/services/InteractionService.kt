@@ -77,6 +77,11 @@ constructor(
     val mapId = state.mapId
     val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
     scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
+    // A Cut tree or Strength boulder: the FireRed field script, against this entity.
+    DS_FIELD_OBJECT_SCRIPTS[npc.sprite]?.let { label ->
+      runFieldScript(session, state, label, npcEntityId, source = FIELD_SCRIPT_SOURCE)
+      return
+    }
     // Ids from 2000 up are shared script chunks (common scripts, signposts, trainers...).
     val label =
         if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"
@@ -298,11 +303,46 @@ constructor(
         override val textId = id
       }
 
-  /** A shared ROM field script for this region's game; unresolvable ones log and do nothing. */
-  fun runFieldScript(session: SessionContext, state: PlayerState, label: String, entityId: Long) {
+  /**
+   * A field move on a DS map, which has no MapDef: the trees and boulders are ROM npcs
+   * (DS_FIELD_OBJECT_SCRIPTS), so the one on the facing tile gets the FireRed script that Kanto
+   * runs - the prompt, the summoned mon, removeobject. Other moves are not wired on DS maps yet.
+   */
+  private fun useDsFieldMove(session: SessionContext, state: PlayerState, stored: StoredCharacter, moveId: Int) {
+    val sprite =
+        when (moveId) {
+          FieldMoves.CUT -> DS_CUT_TREE_SPRITE
+          FieldMoves.STRENGTH -> DS_STRENGTH_BOULDER_SPRITE
+          else -> return
+        }
+    val region = stored.info.positionRegionId.toInt()
+    val bank = stored.info.positionBankId.toInt() and 0xFF
+    val mapId = stored.info.positionMapId.toInt()
+    val fx = stored.info.positionX.toInt() + state.facingDirection.dx
+    val fy = stored.info.positionY.toInt() + state.facingDirection.dy
+    val target = npcService.ndsNpcsOn(region, bank, mapId).firstOrNull { it.sprite == sprite && it.x == fx && it.y == fy }
+    if (target == null) {
+      session.send(notice("There is nothing here to use that on."))
+      return
+    }
+    val entityId = npcService.entityIdFor(region, bank, mapId, target.index)
+    runFieldScript(session, state, DS_FIELD_OBJECT_SCRIPTS.getValue(sprite), entityId, source = FIELD_SCRIPT_SOURCE)
+  }
+
+  /**
+   * A shared ROM field script - this region's game's by default, or [source]'s (the DS regions
+   * borrow FireRed's tree and boulder scripts); unresolvable ones log and do nothing.
+   */
+  fun runFieldScript(
+      session: SessionContext,
+      state: PlayerState,
+      label: String,
+      entityId: Long,
+      source: String? = gbaScriptSource(state.regionId),
+  ) {
     val script =
         try {
-          scriptRegistry.forLabel(label, gbaScriptSource(state.regionId))
+          scriptRegistry.forLabel(label, source)
         } catch (e: ScriptResolutionException) {
           log.info { "Field script $label unavailable: ${e.message}" }
           null
@@ -337,7 +377,7 @@ constructor(
   fun waterfallPrompt(session: SessionContext, state: PlayerState, stored: StoredCharacter) {
     val hoenn = Region.byId(state.regionId) == Region.HOENN
     val label =
-        if (FieldMoves.badgeHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
+        if (FieldMoves.gateHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
           if (hoenn) "EventScript_UseWaterfall" else "EventScript_Waterfall"
         } else if (hoenn) "EventScript_CannotUseWaterfall" else "EventScript_CantUseWaterfall"
     runFieldScript(session, state, label, entityId = -1)
@@ -352,7 +392,7 @@ constructor(
     val stored = currentCharacter(state) ?: return
     val map =
         mapManager.getMap(stored.info.positionRegionId, stored.info.positionBankId, stored.info.positionMapId)
-            ?: return
+            ?: return useDsFieldMove(session, state, stored, moveId)
     val region = stored.info.positionRegionId.toInt()
     val bank = (stored.info.positionBankId.toInt() and 0xFF)
     val mapId = stored.info.positionMapId.toInt()
@@ -458,3 +498,19 @@ private const val KANTO_BOOTED_PC = 1724533
 private const val KANTO_WHICH_PC = 1724554
 private const val HOENN_BOOTED_PC = 271001178
 private const val HOENN_WHICH_PC = 271001199
+
+/**
+ * Gen 5's field objects: overworld npcs on the engine's std handler 10000, told apart by sprite.
+ * 8195 is a Cut tree - every one sits on an outdoor route, and the Dreamyard's entrance tree is
+ * 152:0 (20, 35) - and 8197 a Strength boulder, every one in a cave. The handler is unbound in
+ * our lowering, so a click went nowhere. The FireRed field scripts do what the cartridge does
+ * (the prompt, the party check, the summoned mon, removeobject), so they run against the DS
+ * entity; the object has no hide flag, so a felled tree is back with the map, as on the
+ * cartridge (owner, 2026-09-22).
+ */
+internal const val DS_CUT_TREE_SPRITE = 8195
+internal const val DS_STRENGTH_BOULDER_SPRITE = 8197
+internal val DS_FIELD_OBJECT_SCRIPTS =
+    mapOf(DS_CUT_TREE_SPRITE to "EventScript_CutTree", DS_STRENGTH_BOULDER_SPRITE to "EventScript_StrengthBoulder")
+/** The game whose field scripts the DS regions borrow: FireRed's are the ones fully interpreted. */
+internal const val FIELD_SCRIPT_SOURCE = "firered"

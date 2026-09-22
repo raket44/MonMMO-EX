@@ -991,9 +991,12 @@ internal constructor(
     return banners?.send(session, stored, state.regionId, moveId) ?: false
   }
 
+  /** The stored character behind this script, for the field-move gate (FieldMoves). */
+  internal fun storedCharacter(): de.fiereu.openmmo.server.game.storage.StoredCharacter? = characterId?.let { characters?.getCharacter(it) }
+
   fun partyIndexWithMove(moveId: Int): Int {
     val stored = characterId?.let { characters?.getCharacter(it) } ?: return de.fiereu.openmmo.common.MAX_PARTY_SIZE
-    if (!de.fiereu.openmmo.server.game.services.FieldMoves.badgeHeld(stored, state.regionId, moveId)) return de.fiereu.openmmo.common.MAX_PARTY_SIZE
+    if (!de.fiereu.openmmo.server.game.services.FieldMoves.gateHeld(stored, state.regionId, moveId)) return de.fiereu.openmmo.common.MAX_PARTY_SIZE
     val index = stored.pokemon.indexOfFirst { mon -> mon.moves.any { it.id.toInt() == moveId } }
     if (index >= 0) return index
     return if (de.fiereu.openmmo.server.game.services.FieldMoves.ocarinaOwned(stored, moveId)) 0 else de.fiereu.openmmo.common.MAX_PARTY_SIZE

@@ -73,7 +73,7 @@ class WorldStateService @Inject constructor(
 
     // The real server sends the bag stacks interleaved with the containers, so the client has the
     // items before entering the world.
-    storyItemStacksPackets(stored.items, stored.storyFlags).forEach { p -> ctx.send(p) }
+    storyItemStacksPackets(stored).forEach { p -> ctx.send(p) }
   }
 
   /**

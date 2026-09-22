@@ -1,6 +1,7 @@
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.openmmo.common.enums.Region
+import de.fiereu.openmmo.items.ClientTools
 import de.fiereu.openmmo.story.generated.hoenn.HoennFlags
 import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 
@@ -32,8 +33,17 @@ import de.fiereu.openmmo.story.generated.kanto.KantoFlags
 internal object BagRegions {
   private const val EVERYWHERE: Byte = -1
 
-  /** The (region byte, quantity) stacks one stored bag entry becomes. */
+  /**
+   * The (region byte, quantity) stacks one stored bag entry becomes. An HM is one item for the
+   * whole game (ItemRegistry folds every band's copy onto it), so it becomes one stack per region
+   * that handed it over (FieldMoves.receiptFlag) - on that region's page and no other. The Gen 3
+   * key items both GBA games hand out work the same way from their own receipt flags.
+   */
   fun stacks(itemId: Int, quantity: Int, storyFlags: Collection<String>): List<Pair<Byte, Int>> {
+    ClientTools.itemToMove[itemId]?.takeIf { isHm(itemId) }?.let { moveId ->
+      val earnedIn = FieldMoves.receivedIn(storyFlags, moveId)
+      if (earnedIn.isNotEmpty()) return earnedIn.map { it.wireValue to 1 }
+    }
     shared[itemId]?.let { (kanto, hoenn) ->
       val earnedIn = buildList {
         if (kanto != null && kanto in storyFlags) add(Region.KANTO)
@@ -85,23 +95,9 @@ internal object BagRegions {
       setOf(259, 266, 268, 269, 270, 271, 272, 273, 274, 275, 278, 279, 280, 281, 282, 283, 284,
           285, 288, 375, 376)
 
-  /** Gen 3 ids both games hand out: (Kanto receipt flag, Hoenn receipt flag). */
+  /** Gen 3 key items both GBA games hand out (the HMs are FieldMoves.receiptFlag's): (Kanto, Hoenn) receipt flag. */
   private val shared: Map<Int, Pair<String?, String?>> =
       buildMap {
-        // HM01..HM08 = 339..346, the same eight moves in both games. FireRed has no HM08 and its
-        // HM07 is Icefall Cave's item ball, so that one gates on the ball's pickup flag.
-        val kantoHms =
-            listOf(
-                KantoFlags.FLAG_GOT_HM01, KantoFlags.FLAG_GOT_HM02, KantoFlags.FLAG_GOT_HM03,
-                KantoFlags.FLAG_GOT_HM04, KantoFlags.FLAG_GOT_HM05, KantoFlags.FLAG_GOT_HM06,
-                KantoFlags.FLAG_HIDE_FOUR_ISLAND_ICEFALL_CAVE_1F_HM07, null)
-        val hoennHms =
-            listOf(
-                HoennFlags.FLAG_RECEIVED_HM_CUT, HoennFlags.FLAG_RECEIVED_HM_FLY,
-                HoennFlags.FLAG_RECEIVED_HM_SURF, HoennFlags.FLAG_RECEIVED_HM_STRENGTH,
-                HoennFlags.FLAG_RECEIVED_HM_FLASH, HoennFlags.FLAG_RECEIVED_HM_ROCK_SMASH,
-                HoennFlags.FLAG_RECEIVED_HM_WATERFALL, HoennFlags.FLAG_RECEIVED_HM_DIVE)
-        for (i in 0 until 8) put(339 + i, kantoHms[i] to hoennHms[i])
         put(260, KantoFlags.FLAG_GOT_COIN_CASE to HoennFlags.FLAG_RECEIVED_COIN_CASE)
         // Emerald's Itemfinder has no receipt flag of its own in the decomp.
         put(261, KantoFlags.FLAG_GOT_ITEMFINDER to null)

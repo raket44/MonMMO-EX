@@ -62,6 +62,80 @@ object FieldMoves {
 
   fun byOcarina(itemId: Int): FieldMove? = byOcarina[itemId]
 
+  /** The badge (1-8) [region] asks for before [move], 0 when it gates on something else. */
+  fun badgeNumber(region: Region, move: FieldMove): Int =
+      when (region) {
+        Region.KANTO -> move.kantoBadge
+        Region.HOENN -> move.hoennBadge
+        else -> 0
+      }
+
+  /** The move whose gate in [region] is badge [badge], if any (a script's FLAG_BADGE0N_GET). */
+  fun moveGatedBy(region: Region, badge: Int): FieldMove? =
+      ALL.firstOrNull { badge != 0 && badgeNumber(region, it) == badge }
+
+  /**
+   * The flag that says [region] handed the player the HM for [moveId] - the RECEIPT. There is one
+   * HM item per move for the whole game (ItemRegistry folds every band's copy onto it), so the
+   * item cannot say where it came from; this can. Kanto and Hoenn: the ROM's own flags, which the
+   * scripts set (FireRed has no Dive and its Waterfall is an item ball). The DS regions: a server
+   * flag the grant path sets, since Black/White tracks its HMs by other means. Null: never.
+   */
+  fun receiptFlag(region: Region, moveId: Int): String? {
+    val move = byMove[moveId] ?: return null
+    return when (region) {
+      Region.KANTO -> KANTO_RECEIPTS[moveId]
+      Region.HOENN -> HOENN_RECEIPTS[moveId]
+      else -> "${region.name.lowercase()}/HM_RECEIVED_${move.moveId}"
+    }
+  }
+
+  private val KANTO_RECEIPTS =
+      mapOf(
+          CUT to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM01,
+          FLY to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM02,
+          SURF to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM03,
+          STRENGTH to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM04,
+          FLASH to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM05,
+          ROCK_SMASH to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_HM06,
+          WATERFALL to de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_HIDE_FOUR_ISLAND_ICEFALL_CAVE_1F_HM07,
+      )
+
+  private val HOENN_RECEIPTS =
+      mapOf(
+          CUT to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_CUT,
+          FLY to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_FLY,
+          SURF to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_SURF,
+          STRENGTH to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_STRENGTH,
+          FLASH to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_FLASH,
+          ROCK_SMASH to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_ROCK_SMASH,
+          WATERFALL to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_WATERFALL,
+          DIVE to de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_HM_DIVE,
+      )
+
+  /** [region] handed over the HM for [moveId]. */
+  fun received(storyFlags: Collection<String>, region: Region, moveId: Int): Boolean =
+      receiptFlag(region, moveId)?.let { it in storyFlags } == true
+
+  /** Every region that handed over the HM for [moveId]. */
+  fun receivedIn(storyFlags: Collection<String>, moveId: Int): List<Region> =
+      Region.entries.filter { received(storyFlags, it, moveId) }
+
+  /**
+   * The region's gate for [moveId]. Kanto and Hoenn: the badge, the cartridge rule. The DS
+   * regions: the receipt - owner's call (2026-09-22), Black/White has no badge rule for HMs
+   * ("badges are not required to use any of the HMs outside of battle" - Bulbapedia), and rather
+   * than invent one, being handed the region's HM is the grant; the story hands it out where a
+   * badge would have gated it anyway.
+   */
+  fun gateHeld(stored: StoredCharacter, regionId: Int, moveId: Int): Boolean {
+    val region = Region.byId(regionId) ?: return badgeHeld(stored, regionId, moveId)
+    return when (region) {
+      Region.KANTO, Region.HOENN -> badgeHeld(stored, regionId, moveId)
+      else -> received(stored.storyFlags, region, moveId)
+    }
+  }
+
   /** The story flag guarding [moveId] in [regionId], or null where the move is not gated or unknown. */
   fun badgeFlag(regionId: Int, moveId: Int): String? {
     val move = byMove[moveId] ?: return null
@@ -89,7 +163,7 @@ object FieldMoves {
   fun partyKnows(stored: StoredCharacter, moveId: Int): Boolean =
       stored.pokemon.any { mon -> mon.moves.any { it.id.toInt() == moveId } }
 
-  /** The engine's gate: the region's badge, and a party member with the move or its ocarina. */
+  /** The engine's gate: the region's gate (badge or HM item), and a party member with the move or its ocarina. */
   fun canUse(stored: StoredCharacter, regionId: Int, moveId: Int): Boolean =
-      badgeHeld(stored, regionId, moveId) && (partyKnows(stored, moveId) || ocarinaOwned(stored, moveId))
+      gateHeld(stored, regionId, moveId) && (partyKnows(stored, moveId) || ocarinaOwned(stored, moveId))
 }

@@ -540,7 +540,7 @@ constructor(
       sendPositionReset(ctx, charId, currentMap, fromX, fromY, msg.direction)
       val hoenn = Region.byId(state.regionId) == Region.HOENN
       val label =
-          if (FieldMoves.badgeHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
+          if (FieldMoves.gateHeld(stored, state.regionId, FieldMoves.WATERFALL)) {
             if (hoenn) "EventScript_UseWaterfall" else "EventScript_Waterfall"
           } else if (hoenn) "EventScript_CannotUseWaterfall" else "EventScript_CantUseWaterfall"
       runFieldScript(ctx, state, label)

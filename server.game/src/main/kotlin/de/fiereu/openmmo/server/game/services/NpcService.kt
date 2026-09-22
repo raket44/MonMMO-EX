@@ -283,6 +283,9 @@ constructor(
   }
 
   /** Allocate (or return) the stable entity id for a map npc by its decomp local id. */
+  /** Every ROM npc placed on a DS map (trees and boulders included), by its event index. */
+  fun ndsNpcsOn(regionId: Int, bankId: Int, mapId: Int): List<NdsNpcs.Npc> = ndsNpcs.of(regionId, bankId, mapId)
+
   /** The ROM npc behind a DS-map entity id, for interaction. */
   fun ndsNpcForEntity(regionId: Int, bankId: Int, mapId: Int, entityId: Long): NdsNpcs.Npc? =
       ndsNpcs.of(regionId, bankId, mapId).firstOrNull { entityIdFor(regionId, bankId, mapId, it.index) == entityId }

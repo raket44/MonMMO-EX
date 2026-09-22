@@ -69,6 +69,12 @@ class BagRegionsTest :
         BagRegions.stacks(346, 1, setOf(HoennFlags.FLAG_RECEIVED_HM_DIVE)) shouldBe listOf(hoenn to 1)
       }
 
+      test("one HM Cut item: a Unova receipt puts it on Unova's page, and only there") {
+        BagRegions.stacks(339, 1, setOf("unova/HM_RECEIVED_15")) shouldBe listOf(unova to 1)
+        BagRegions.stacks(339, 2, setOf(KantoFlags.FLAG_GOT_HM01, "unova/HM_RECEIVED_15")) shouldBe
+            listOf(kanto to 1, unova to 1)
+      }
+
       test("earned in both: one stack per region, each on its own page") {
         BagRegions.stacks(339, 2, setOf(KantoFlags.FLAG_GOT_HM01, HoennFlags.FLAG_RECEIVED_HM_CUT)) shouldBe
             listOf(kanto to 1, hoenn to 1)

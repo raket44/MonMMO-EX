@@ -32,16 +32,29 @@ class ItemRegistry @Inject constructor() {
    */
   private fun registerClientTools() {
     val moveNames by lazy { de.fiereu.openmmo.moves.MoveRegistry().all().associate { it.id to it.name } }
+    // ONE item per MOVE, never per number (owner, 2026-09-22): TM27 is Return in one game and
+    // something else in another, so the catalogue's numbered entries ("HM01" at 5420, "TM70" at
+    // 5397, "TM25") all fold onto the move's item, whatever band they came from. A grant stores
+    // the lowest id, so a second Thunder from another region stacks on the first, and Unova's Cut
+    // is the same HM Cut as Kanto's. Any HM id among them makes the item an HM everywhere - Flash
+    // is HM Flash, not "TM Flash", TM70 included.
     ClientTools.itemToMove.entries
-        .filter { (itemId, _) -> !byId.containsKey(itemId) }
         .groupBy({ it.value }, { it.key })
         .forEach { (moveId, itemIds) ->
           val name = moveNames[moveId] ?: return@forEach
-          val canonical = ClientTools.toolFor(moveId)
-          val existing = canonical?.let(byId::get)
-          val item = existing ?: ItemDef("${if (itemIds.any(::isHmId)) "HM" else "TM"} $name", 0)
-          register(item, *itemIds.sorted().toIntArray())
+          val item = ItemDef("${if (itemIds.any(::isHmId)) "HM" else "TM"} $name", 0)
+          for (id in itemIds.sorted()) fold(id, item)
         }
+  }
+
+  /** Move [id] onto [item], off whatever item held it; an item left with no ids is forgotten. */
+  private fun fold(id: Int, item: ItemDef) {
+    val previous = byId.put(id, item)
+    if (previous != null && previous !== item) {
+      val left = idsByItem[previous].orEmpty() - id
+      if (left.isEmpty()) idsByItem.remove(previous) else idsByItem[previous] = left
+    }
+    idsByItem.merge(item, listOf(id)) { old, new -> (old + new).distinct().sorted() }
   }
 
   /**
@@ -89,11 +102,10 @@ class ItemRegistry @Inject constructor() {
     add(2, "BICYCLE_UNOVA", 433, "Bicycle")
     add(3, "BICYCLE_SINNOH", 433, "Bicycle")
     add(4, "BICYCLE_JOHTO", 433, "Bicycle")
-    // The GBA HMs (339-346 in both FireRed and Emerald, the same eight moves): the client's
-    // own tools table lists these ids with the Gen 3 moves, so HM05 here IS Flash. The
-    // catalogue's Gen 5-numbered "HM05" (5424) is Waterfall - which is what Oak's aide handed
-    // out until byScriptConstant learned to route machine constants here (2026-09-08).
-    GEN3_HM_MOVES.forEachIndexed { index, move -> add(0, "HM%02d".format(index + 1), 339 + index, "HM $move") }
+    // The GBA HMs (339-346) are folded onto the per-move items by registerClientTools, like
+    // every other band's; ITEM_HMnn resolves by the Gen 3 move (byScriptConstant), so HM05 IS
+    // Flash - the catalogue's Gen 5-numbered "HM05" (5424) is Waterfall, which is what Oak's
+    // aide handed out until 2026-09-08.
     // Gen 3 key items both games hand out, at the ids both games use.
     add(0, "COIN_CASE", 260, "Coin Case")
     add(0, "ITEMFINDER", 261, "Itemfinder")
@@ -217,7 +229,8 @@ class ItemRegistry @Inject constructor() {
     // the GBA-band HM registered above.
     MACHINE.matchEntire(constant)?.let { m ->
       val index = m.groupValues[2].toInt() - 1
-      if (m.groupValues[1] == "HM") return byGbaConstant[constant]
+      // HMnn by the Gen 3 move: the per-move item every band folded onto (registerClientTools).
+      if (m.groupValues[1] == "HM") return GEN3_HM_MOVES.getOrNull(index)?.let(::clientTool) ?: byGbaConstant[constant]
       val move = GEN3_TM_MOVES.getOrNull(index) ?: return null
       return byConstantName.value["TM_" + mangle(move)] ?: clientTool(move) ?: byGbaConstant[constant]
     }

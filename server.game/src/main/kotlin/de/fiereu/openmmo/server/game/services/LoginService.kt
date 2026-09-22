@@ -117,6 +117,7 @@ constructor(
     private val appearance: AppearanceService,
     private val linkService: LinkService,
     private val encounterTracker: EncounterTrackerService,
+    private val itemRegistry: de.fiereu.openmmo.items.ItemRegistry,
 ) {
 
   suspend fun onJoinGame(event: PacketEvent<JoinPacket>) {
@@ -330,11 +331,29 @@ constructor(
         reclaimed++
       }
     }
+    // One TM or HM item per MOVE (owner, 2026-09-22): a stack held under a numbered band id (the
+    // owner's Unova Cut sat at 5420 next to Kanto's 339) folds onto the move's canonical id, so
+    // the bag shows one HM Cut and a second Thunder stacks. A DS-band HM also records that
+    // region's receipt (FieldMoves.receiptFlag), which is the HM's bag page from now on.
+    for ((itemId, held) in characterStore.getCharacter(charId)?.items.orEmpty()) {
+      val item = itemRegistry.get(itemId) ?: continue
+      val canonical = itemRegistry.idOf(item)
+      if (canonical == itemId || de.fiereu.openmmo.items.ClientTools.itemToMove[itemId] == null || held <= 0) continue
+      val region = de.fiereu.openmmo.common.enums.Region.byId(BagRegions.single(itemId).toInt())
+      val moveId = de.fiereu.openmmo.items.ClientTools.itemToMove[itemId]
+      if (BagRegions.isHm(itemId) && region != null && moveId != null && region != de.fiereu.openmmo.common.enums.Region.KANTO && region != de.fiereu.openmmo.common.enums.Region.HOENN) {
+        FieldMoves.receiptFlag(region, moveId)?.let { characterStore.setStoryFlag(charId, it) }
+      }
+      if (characterStore.addItem(charId, itemId, -held)) {
+        characterStore.addItem(charId, canonical, held)
+        reclaimed++
+      }
+    }
     // A key item or HM is one item: a replayed story scene hands it out again (the owner's
     // restarts left him two Unova Cuts and twenty Town Maps), so any stack above one loses the
     // extras here. Region-paged = the singletons; consumables are never paged.
     for ((itemId, held) in characterStore.getCharacter(charId)?.items.orEmpty()) {
-      if (held > 1 && BagRegions.single(itemId) in 0..4 && characterStore.addItem(charId, itemId, 1 - held)) reclaimed++
+      if (held > 1 && (BagRegions.single(itemId) in 0..4 || BagRegions.isHm(itemId)) && characterStore.addItem(charId, itemId, 1 - held)) reclaimed++
     }
     if (reclaimed > 0) {
       characterStore.flushCharacterAsync(charId)

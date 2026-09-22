@@ -1700,6 +1700,23 @@ class InterpretedScript(
     jumpTo(state, instruction, labelArg(instruction, labelIndex))
   }
 
+  /**
+   * A GBA field script borrowed by another region (FireRed's Cut tree and Strength boulder run
+   * for the DS trees and boulders): its `FLAG_BADGE0N_GET` line is the ROM engine's HM gate for
+   * ITS region, so it reads as the player's region's gate for the same move - FieldMoves, the one
+   * table: Hoenn's badge, or the DS region's HM item. Null when the script is the player's own
+   * region's, or the flag is not an HM gate, and the flag reads as written.
+   */
+  private fun borrowedFieldGate(ctx: ScriptContext, token: String): Boolean? {
+    val badge = BADGE_FLAG.matchEntire(token)?.groupValues?.get(1)?.toIntOrNull() ?: return null
+    val playerRegion = de.fiereu.openmmo.common.enums.Region.byId(ctx.state.regionId) ?: return null
+    if (playerRegion.name.lowercase() == program.storyNamespace) return null
+    val scriptRegion = de.fiereu.openmmo.common.enums.Region.entries.firstOrNull { r -> r.name.lowercase() == program.storyNamespace } ?: return null
+    val move = de.fiereu.openmmo.server.game.services.FieldMoves.moveGatedBy(scriptRegion, badge) ?: return null
+    val stored = ctx.storedCharacter() ?: return null
+    return de.fiereu.openmmo.server.game.services.FieldMoves.gateHeld(stored, ctx.state.regionId, move.moveId)
+  }
+
   private fun runFlagConditional(
       ctx: ScriptContext,
       state: RuntimeState,
@@ -1707,7 +1724,8 @@ class InterpretedScript(
       expectSet: Boolean,
       call: Boolean,
   ) {
-    val isSet = ctx.isFlagSet(namespaced(flagArg(instruction, 0).token))
+    val token = flagArg(instruction, 0).token
+    val isSet = borrowedFieldGate(ctx, token) ?: ctx.isFlagSet(namespaced(token))
     state.comparisonResult = if (isSet) ComparisonResult.EQUAL else ComparisonResult.LESS
     if (isSet != expectSet) {
       state.pc++
@@ -2526,6 +2544,8 @@ class InterpretedScript(
      * the player held while the Striaton curtain it just opened finishes moving.
      */
     const val SOUND_WAIT_MILLIS = 40 * 17L
+    /** A GBA script's badge check, FLAG_BADGE01_GET..FLAG_BADGE08_GET. */
+    val BADGE_FLAG = Regex("FLAG_BADGE0([1-8])_GET")
     const val LOCALID_NONE = 0
     const val LOCALID_PLAYER = 255
     const val PRET_LOCAL_ID_OFFSET = 1

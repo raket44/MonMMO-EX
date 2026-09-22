@@ -22,6 +22,7 @@ import de.fiereu.openmmo.server.game.battle.WildMonFactory
 import de.fiereu.openmmo.server.game.battle.acquiredMonsterDelta
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
+import de.fiereu.openmmo.server.game.storage.StoredCharacter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -208,6 +209,16 @@ constructor(
     // as bogus standalone cosmetics (and login would reclaim them anyway).
     if (itemId in CosmeticsRegistry.variantAltItems) return false
     if (!characters.addItem(characterId, itemId, quantity)) return false
+    // An HM is one item for the whole game, so the item cannot say which region handed it over;
+    // the receipt flag does (FieldMoves.receiptFlag): it is the HM's bag page and the DS regions'
+    // field-move gate. Kanto's and Hoenn's are the ROM's own flags, which their scripts set.
+    if (quantity > 0 && BagRegions.isHm(itemId)) {
+      val region = de.fiereu.openmmo.common.enums.Region.byId(state.regionId)
+      val moveId = de.fiereu.openmmo.items.ClientTools.itemToMove[itemId]
+      if (region != null && moveId != null && region != de.fiereu.openmmo.common.enums.Region.KANTO && region != de.fiereu.openmmo.common.enums.Region.HOENN) {
+        FieldMoves.receiptFlag(region, moveId)?.let { characters.setStoryFlag(characterId, it) }
+      }
+    }
     // The bike quests: Hoenn's Mach/Acro Bike and the DS Bicycles are regional key items the
     // scripts check for, but riding is tied to the client's own Bicycle (360), so that comes
     // along with the first of them. There is no unconditional grant any more.
@@ -216,7 +227,7 @@ constructor(
       if (CLIENT_BICYCLE_ITEM !in bag) characters.addItem(characterId, CLIENT_BICYCLE_ITEM, 1)
     }
     val stored = characters.getCharacter(characterId) ?: return false
-    storyItemStacksPackets(stored.items, stored.storyFlags).forEach { p -> session.send(p) }
+    storyItemStacksPackets(stored).forEach { p -> session.send(p) }
     worldState.refreshUnlocks(session, stored)
     return true
   }
@@ -254,12 +265,12 @@ object RespawnPoint {
 
 /** Builds a stable full bag snapshot. */
 /**
- * The whole bag as stacks. [storyFlags] decide which region's page a Gen 3 item both Kanto and
- * Hoenn hand out is filed under (BagRegions).
+ * The whole bag as stacks; the character's receipt flags decide which region's page an HM or a
+ * shared Gen 3 key item is filed under (BagRegions).
  */
-fun storyItemStacksPackets(items: Map<Int, Int>, storyFlags: Collection<String>): List<de.fiereu.openmmo.net.game.packets.battle.BattleSidePartyPacket> =
+fun storyItemStacksPackets(stored: StoredCharacter): List<de.fiereu.openmmo.net.game.packets.battle.BattleSidePartyPacket> =
     itemStacksPackets(
-        items.entries
+        stored.items.entries
             .sortedBy { it.key }
             .flatMap { (itemId, quantity) ->
               if (itemId in dyeableGarments) {
@@ -279,7 +290,7 @@ fun storyItemStacksPackets(items: Map<Int, Int>, storyFlags: Collection<String>)
               } else {
                 // A key item both GBA regions hand out is one stack per region that did; the
                 // region byte doubles as the stack id's low byte so the two stacks stay distinct.
-                val stacks = BagRegions.stacks(itemId, quantity, storyFlags)
+                val stacks = BagRegions.stacks(itemId, quantity, stored.storyFlags)
                 stacks.map { (region, count) ->
                   val low = if (stacks.size > 1) region.toLong() else 0L
                   ItemStack(

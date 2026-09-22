@@ -216,7 +216,7 @@ constructor(
       if (CLIENT_BICYCLE_ITEM !in bag) characters.addItem(characterId, CLIENT_BICYCLE_ITEM, 1)
     }
     val stored = characters.getCharacter(characterId) ?: return false
-    storyItemStacksPackets(stored.items).forEach { p -> session.send(p) }
+    storyItemStacksPackets(stored.items, stored.storyFlags).forEach { p -> session.send(p) }
     worldState.refreshUnlocks(session, stored)
     return true
   }
@@ -252,7 +252,11 @@ object RespawnPoint {
 }
 
 /** Builds a stable full bag snapshot. */
-fun storyItemStacksPackets(items: Map<Int, Int>): List<de.fiereu.openmmo.net.game.packets.battle.BattleSidePartyPacket> =
+/**
+ * The whole bag as stacks. [storyFlags] decide which region's page a Gen 3 item both Kanto and
+ * Hoenn hand out is filed under (BagRegions).
+ */
+fun storyItemStacksPackets(items: Map<Int, Int>, storyFlags: Collection<String>): List<de.fiereu.openmmo.net.game.packets.battle.BattleSidePartyPacket> =
     itemStacksPackets(
         items.entries
             .sortedBy { it.key }
@@ -267,18 +271,23 @@ fun storyItemStacksPackets(items: Map<Int, Int>): List<de.fiereu.openmmo.net.gam
                       objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG or color.toLong(),
                       itemId = itemId.toShort(),
                       quantity = 1,
-                      region = bagRegion(itemId),
+                      region = BagRegions.single(itemId),
                       color = color.toByte(),
                   )
                 }
               } else {
-                listOf(
-                    ItemStack(
-                        objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG,
-                        itemId = itemId.toShort(),
-                        quantity = quantity.toShort(),
-                        region = bagRegion(itemId),
-                    ))
+                // A key item both GBA regions hand out is one stack per region that did; the
+                // region byte doubles as the stack id's low byte so the two stacks stay distinct.
+                val stacks = BagRegions.stacks(itemId, quantity, storyFlags)
+                stacks.map { (region, count) ->
+                  val low = if (stacks.size > 1) region.toLong() else 0L
+                  ItemStack(
+                      objectId = (itemId.toLong() shl 16) or ITEM_ENTITY_TAG or low,
+                      itemId = itemId.toShort(),
+                      quantity = count.toShort(),
+                      region = region,
+                  )
+                }
               }
             })
 
@@ -294,16 +303,18 @@ const val GARMENT_COLORS = 64
  * as this single stack rather than as a whole new bag.
  */
 /**
- * The region tag a bag stack is filed under. The wardrobe's own stock - the bike colors and the
- * starting garments - is granted as bag items because the dialog lists from the bag, but retail
- * never shows them in the bag: a tag no region has keeps them off every page (2026-09-08).
+ * A region id the player is never in, so a stack tagged with it is on no bag page. The wardrobe's
+ * own stock - the bike colors and the starting garments - is granted as bag items because the
+ * dialog lists from the bag, but retail never shows them in the bag (2026-09-08). Every other
+ * stack's page is BagRegions' call.
  */
-fun bagRegion(itemId: Int): Byte =
-    if (itemId in de.fiereu.openmmo.server.game.services.CosmeticsRegistry.wardrobeStock) HIDDEN_BAG_REGION else -1
-
-/** A region id the player is never in, so a stack tagged with it is on no bag page. */
 const val HIDDEN_BAG_REGION: Byte = 100
 
+/**
+ * One stack's new count. Items with a page of their own (a region's key items and HMs) keep it;
+ * the Gen 3 ids both GBA regions hand out are never updated one at a time (nothing consumes or
+ * sells an HM), so a single stack tagged for every page is the safe answer for them here.
+ */
 fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
     BattleSideAddPokemonPacket(
         side = 1,
@@ -314,7 +325,7 @@ fun itemStackUpdatePacket(itemId: Int, quantity: Int) =
                 backSpriteId = quantity.toShort(),
                 side = 1,
                 slot = 0,
-                partyIndex = bagRegion(itemId),
+                partyIndex = BagRegions.single(itemId),
                 statusEffect = null,
             ),
     )

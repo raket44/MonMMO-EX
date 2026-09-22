@@ -301,20 +301,32 @@ constructor(
     // Earned = the quest flag (Kanto's voucher exchange, Rydel's gift) or a DS Bicycle, which only
     // a script hands out. A Hoenn Mach/Acro Bike without Rydel's flag is the old mistaken grant
     // under its new wire id, so it goes back with the Bicycle.
+    // A Hoenn bike is Rydel's gift and nothing else: Kanto's voucher does not earn one, so a
+    // Mach/Acro Bike without Hoenn's flag is the old grant whoever else earned a bicycle (the
+    // owner's Acro Bike outlived the cleanup that way, 2026-09-22).
+    val earnedHoennBike =
+        stored.storyFlags.contains(de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_BIKE)
     val earnedBike =
         stored.storyFlags.contains(de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_BICYCLE) ||
-            stored.storyFlags.contains(de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_BIKE) ||
+            earnedHoennBike ||
             stored.items.keys.any { it in DS_BICYCLE_ITEMS }
     val toReclaim =
-        listOf(DUPLICATE_BICYCLE_ITEM) + if (earnedBike) emptyList() else listOf(CLIENT_BICYCLE_ITEM) + HOENN_BIKE_ITEMS
+        listOf(DUPLICATE_BICYCLE_ITEM) +
+            (if (earnedBike) emptyList() else listOf(CLIENT_BICYCLE_ITEM)) +
+            (if (earnedHoennBike) emptyList() else HOENN_BIKE_ITEMS)
     var reclaimed = 0
     for (itemId in toReclaim) {
       val held = stored.items[itemId] ?: continue
       if (held > 0 && characterStore.addItem(charId, itemId, -held)) reclaimed++
     }
+    // An HM is one item: a replayed story scene hands it out again (the owner's restarts left him
+    // two Unova Cuts), so any stack above one loses the extras here.
+    for ((itemId, held) in stored.items) {
+      if (held > 1 && BagRegions.isHm(itemId) && characterStore.addItem(charId, itemId, 1 - held)) reclaimed++
+    }
     if (reclaimed > 0) {
       characterStore.flushCharacterAsync(charId)
-      log.info { "Reclaimed $reclaimed granted or duplicate bike item(s) from character $charId" }
+      log.info { "Reclaimed $reclaimed granted, duplicate or over-stacked item(s) from character $charId" }
     }
     // The twelve bicycle colors, as cosmetic-category items. PROVEN by two live sessions: the
     // customization dialog's option lists are built from the bag (when the 793-cosmetic grant

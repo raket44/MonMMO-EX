@@ -117,7 +117,7 @@ constructor(
     val refreshed = characterStore.getCharacter(charId) ?: return
     worldStateService.send(ctx.session, refreshed, fullVars = true)
     // The bag as it now is, then a zero stack for each bike so an open bag drops it at once.
-    storyItemStacksPackets(refreshed.items).forEach { p -> ctx.session.send(p) }
+    storyItemStacksPackets(refreshed.items, refreshed.storyFlags).forEach { p -> ctx.session.send(p) }
     for (itemId in takenBikes) ctx.session.send(itemStackUpdatePacket(itemId, 0))
     if (mapManager.getMap(region.wireValue.toInt(), start.bankId.toInt() and 0xFF, start.mapId.toInt() and 0xFF) == null) {
       // A DS bedroom is ROM-rendered (no MapDef): the same raw warp the ferry uses to start the

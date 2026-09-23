@@ -305,11 +305,14 @@ constructor(
             WarpRules.Fire.CONTACT -> !onArrivalBox
             WarpRules.Fire.STEP -> false
           }
+      // A Gen 5 warp's direction is the facing it LANDS the player with (tools/nds/Warps: "exit
+      // direction", the client's own arrival facing), not a press it waits for. Reading it as a
+      // press gate only ever worked where the two coincide - up into a building, down onto its
+      // mat - and refused the Nacrene leader's door, entered pressing up but landing facing right,
+      // while the client had already faded on contact: a black screen (owner, 2026-09-23). A
+      // step onto the tile fires under the same guard a direction-less warp gets.
       val door =
-          stepped?.takeIf {
-            it.srcLine < 0 &&
-                ((it.direction < 0 && steppedFires(ruleAt(toX, toY))) || it.direction == facing)
-          }
+          stepped?.takeIf { it.srcLine < 0 && steppedFires(ruleAt(toX, toY)) }
               ?: standing?.takeIf {
                 it.direction == facing || (it.direction < 0 && standingFires(ruleAt(msg.x, msg.y)))
               }

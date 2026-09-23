@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.services
 
+import de.fiereu.openmmo.net.game.packets.battle.BattleFormat
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.net.game.packets.LocalCharacterDeltaPacket
 import de.fiereu.openmmo.net.game.packets.LURE_KIND_NONE
@@ -135,7 +136,7 @@ constructor(
       }
       // A lure may bring one or two more foes, each its own draw of the table. There is no dark
       // grass outside Unova, so the double never comes from the terrain here.
-      val foes = foeCount(darkGrass = false, tier = tier)
+      val (foes, _) = foeCount(darkGrass = false, tier = tier)
       if (foes > 1) {
         val extra =
             (2..foes).mapNotNull {
@@ -328,7 +329,7 @@ constructor(
     // Dark grass turns half of its non-horde encounters into a 2v2, and a lure may bring one or two
     // more foes; each extra is its own draw of the same table, so they can differ and duplicates
     // are fine. A horde row drawn as an extra contributes a single of that species.
-    val foes = foeCount(darkGrass, tier)
+    val (foes, darkDouble) = foeCount(darkGrass, tier)
     if (foes > 1) {
       val extra =
           (2..foes).mapNotNull {
@@ -336,8 +337,12 @@ constructor(
           }
       if (extra.isNotEmpty()) {
         val specs = (listOf(slot) + extra).map { hordeSpec(it, lead, tier) }
-        log.info { "Wild ${specs.size}-foe encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}" }
-        battleService.startHordeBattle(session, specs, EncounterContext(cave = cave), secretBonusPercent = tier?.secretBonusPercent ?: 0)
+        // Gen 5's dark-grass pair is a real double battle - the player fields two as well - where a
+        // lure's extra foes are a horde against one (owner, 2026-09-23: the first dark-grass pair
+        // came out 1v2).
+        val format = if (darkDouble && specs.size == 2) BattleFormat.DOUBLES else null
+        log.info { "Wild ${specs.size}-foe encounter for char=$charId on DS map '$name' at ($x, $y) [${types.first()}, $season/$time]${lureTag(tier)}: ${specs.joinToString { s -> s.dexId.toString() }}${if (format != null) " (2v2)" else ""}" }
+        battleService.startHordeBattle(session, specs, EncounterContext(cave = cave), secretBonusPercent = tier?.secretBonusPercent ?: 0, format = format)
         return
       }
     }
@@ -385,10 +390,11 @@ constructor(
    * LARGER wins rather than the two adding up (owner, 2026-09-21), so dark grass under a lure is
    * two or three, never one - which leaves about one in six of those still a single.
    */
-  private fun foeCount(darkGrass: Boolean, tier: Lures.Tier?): Int {
+  private fun foeCount(darkGrass: Boolean, tier: Lures.Tier?): Pair<Int, Boolean> {
     val fromLure = if (tier != null) 1 + random.nextInt(3) else 1
-    val fromGrass = if (darkGrass && random.nextInt(100) < DARK_GRASS_DOUBLE_PERCENT) 2 else 1
-    return maxOf(fromLure, fromGrass)
+    val darkDouble = darkGrass && random.nextInt(100) < DARK_GRASS_DOUBLE_PERCENT
+    val fromGrass = if (darkDouble) 2 else 1
+    return maxOf(fromLure, fromGrass) to darkDouble
   }
 
   /** A lured foe is a few levels stronger, never past the species' own cap for the slot. */

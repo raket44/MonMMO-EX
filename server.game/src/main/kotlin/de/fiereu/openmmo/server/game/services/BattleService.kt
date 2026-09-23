@@ -485,6 +485,8 @@ constructor(
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
       sweetScent: Boolean = false,
       secretBonusPercent: Int = 0,
+      /** DOUBLES for Gen 5's dark-grass pair (the player fields two); null = a horde against one. */
+      format: BattleFormat? = null,
   ): BattleInstance? {
     val battle =
         createBattle(
@@ -495,6 +497,7 @@ constructor(
             encounter = encounter,
             secretAllowed = !sweetScent,
             secretBonusPercent = secretBonusPercent,
+            formatOverride = format,
         )
     val charId = session.attributes[PLAYER_STATE]?.characterId
     if (battle != null && charId != null) {

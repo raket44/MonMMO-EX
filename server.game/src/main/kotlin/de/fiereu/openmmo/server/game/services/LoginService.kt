@@ -90,8 +90,8 @@ private const val GBA_STEP_DELAY_MS = 300L
 /** How long after LoadEntity the client is still loading and drops scene packets (PlayerState.sceneHoldUntil). */
 private const val ARRIVAL_SCENE_HOLD_MS = 900L
 
-/** Rail walks wait this long for the client to finish attaching the spawn to the rail (Castelia loads slowly). */
-private const val RAIL_STEP_DELAY_MS = 400L
+/** Rail walks wait this long for the client to finish attaching the spawn to the rail. */
+private const val RAIL_STEP_DELAY_MS = 250L
 
 /** How long the one-tile walk itself takes; input unlocks after it. */
 private const val EMERGENCE_STEP_WALK_MS = 400L
@@ -598,16 +598,7 @@ constructor(
     // GBA arrivals fade in slower than the instant NDS renders: an immediate step finishes
     // during the black screen and reads as "spawned one tile down, no animation". Delay the
     // walk past the fade-in there; NDS keeps the same-flush send that beats buffered input.
-    // A rail arrival waits for the client to attach the spawn to its rail before the walk
-    // arrives; sent in the same flush, the step animated in place and the player never left the
-    // landing box (the Skyarrow gate into Castelia, owner, 2026-09-23). The constant existed
-    // for this and was never wired in.
-    val stepDelay =
-        when {
-          onRail -> RAIL_STEP_DELAY_MS
-          regionId in 2..4 -> 0L
-          else -> GBA_STEP_DELAY_MS
-        }
+    val stepDelay = if (regionId in 2..4) 0L else GBA_STEP_DELAY_MS
     // Movement stays refused server-side for the whole choreography window - the lock packet
     // races in-flight moves on the wire, and a stale move used to fire a fresh warp.
     state.moveIgnoreUntil = System.currentTimeMillis() + stepDelay + EMERGENCE_STEP_WALK_MS + 100

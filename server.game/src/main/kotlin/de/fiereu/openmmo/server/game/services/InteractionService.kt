@@ -119,9 +119,16 @@ constructor(
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId
-    val bg = npcService.ndsBgEventsOn(regionId, bankId, mapId).firstOrNull { it.x == facingX && it.y == facingY }
+    // The record sits on the object's own tile; a two-deep model (the gym's shelves, y 18 with the
+    // player held at y 19) puts that one tile beyond the facing tile, so both are tried.
+    val beyondX = facingX + (facingX - state.x)
+    val beyondY = facingY + (facingY - state.y)
+    val events = npcService.ndsBgEventsOn(regionId, bankId, mapId)
+    val bg =
+        events.firstOrNull { it.x == facingX && it.y == facingY }
+            ?: events.firstOrNull { it.x == beyondX && it.y == beyondY }
     if (bg == null) {
-      log.debug { "DS tile interaction at ($facingX, $facingY) has no bg event" }
+      log.info { "DS tile interaction at ($facingX, $facingY) on $regionId:$bankId:$mapId: no bg event (${events.size} on the map)" }
       return
     }
     val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"

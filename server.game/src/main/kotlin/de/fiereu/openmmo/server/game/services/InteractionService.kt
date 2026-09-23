@@ -125,14 +125,10 @@ constructor(
     val dy = if (state.facingDirection == Direction.DOWN) 1 else if (state.facingDirection == Direction.UP) -1 else 0
     val facingX = state.x + dx
     val facingY = state.y + dy
-    // The record sits on the object's own tile; a two-deep model (the gym's shelves, y 18 with the
-    // player held at y 19) puts that one tile beyond the facing tile, so both are tried.
-    val beyondX = facingX + dx
-    val beyondY = facingY + dy
+    // The facing tile only: reaching one tile further let the gym's shelves be read from a tile
+    // away (owner, 2026-09-23); the record sits on the tile the player stands against.
     val events = npcService.ndsBgEventsOn(regionId, bankId, mapId)
-    val bg =
-        events.firstOrNull { it.x == facingX && it.y == facingY }
-            ?: events.firstOrNull { it.x == beyondX && it.y == beyondY }
+    val bg = events.firstOrNull { it.x == facingX && it.y == facingY }
     if (bg == null) {
       log.info { "DS tile interaction at ($facingX, $facingY) on $regionId:$bankId:$mapId: no bg event (${events.size} on the map)" }
       return

@@ -27,25 +27,49 @@ import javax.inject.Singleton
 class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private val npcService: NpcService) {
 
   fun sync(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
-    if (state.regionId != UNOVA || state.bankId != GYM_BANK || state.mapId != GYM_MAP) return
+    if (state.regionId != UNOVA) return
+    when {
+      state.bankId == GYM_BANK && state.mapId == GYM_MAP -> syncStriaton(session, storyFlags)
+      state.bankId == NACRENE_BANK && state.mapId == NACRENE_MAP -> syncNacrene(session, storyFlags)
+    }
+  }
+
+  private fun syncStriaton(session: SessionContext, storyFlags: Map<String, Int>) {
     val open = MASK_BY_STATE.getOrElse(storyFlags[PUZZLE_VAR] ?: 0) { ALL_OPEN }
     CURTAIN_ROWS.forEachIndexed { curtain, y ->
       val closed = (open shr curtain) and 1 == 0
       for ((i, x) in WALL_COLUMNS.withIndex()) {
-        val id = FIRST_WALL_ID + curtain * WALL_COLUMNS.size + i
-        if (closed) {
-          if (!ndsNpcs.isMade(UNOVA, GYM_BANK, GYM_MAP, id)) {
-            ndsNpcs.define(
-                UNOVA, GYM_BANK, GYM_MAP,
-                NdsNpcs.Npc(
-                    index = id, id = id, sprite = WALL_SPRITE, movement = 0, flag = 0, script = 0,
-                    facing = 1, xRange = 0, yRange = 0, x = x, y = y))
-          }
-          npcService.spawnNpc(session, UNOVA, GYM_BANK, GYM_MAP, id)
-        } else {
-          npcService.despawnNpc(session, UNOVA, GYM_BANK, GYM_MAP, id)
-        }
+        wall(session, GYM_BANK, GYM_MAP, FIRST_WALL_ID + curtain * WALL_COLUMNS.size + i, x, y, closed)
       }
+    }
+  }
+
+  /**
+   * Nacrene Gym: the sliding bookshelf at the back, the same shape as a curtain. The ROM's own
+   * invisible object (npc 3, sprite 185) holds its left end at (11,10); the rest of the shelf,
+   * x 12..14, is an animation on the building model and walkable, so the player walked through
+   * it before the last book was read (owner, 2026-09-23). Solid until the quiz var says the
+   * shelf slid (7, the value the map-load restore CMD_182 keys on).
+   */
+  private fun syncNacrene(session: SessionContext, storyFlags: Map<String, Int>) {
+    val closed = (storyFlags[NACRENE_VAR] ?: 0) < NACRENE_OPEN
+    for ((i, x) in NACRENE_COLUMNS.withIndex()) {
+      wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, NACRENE_ROW, closed)
+    }
+  }
+
+  private fun wall(session: SessionContext, bank: Int, map: Int, id: Int, x: Int, y: Int, closed: Boolean) {
+    if (closed) {
+      if (!ndsNpcs.isMade(UNOVA, bank, map, id)) {
+        ndsNpcs.define(
+            UNOVA, bank, map,
+            NdsNpcs.Npc(
+                index = id, id = id, sprite = WALL_SPRITE, movement = 0, flag = 0, script = 0,
+                facing = 1, xRange = 0, yRange = 0, x = x, y = y))
+      }
+      npcService.spawnNpc(session, UNOVA, bank, map, id)
+    } else {
+      npcService.despawnNpc(session, UNOVA, bank, map, id)
     }
   }
 
@@ -76,5 +100,14 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
      * 0 and 1 none, 2 the first, 3 the first two, 4 and 5 (and anything past) all three.
      */
     val MASK_BY_STATE = listOf(0, 0, 1, 3, 7, 7)
+
+    /** Nacrene Gym (header 18): the sliding shelf's row and the tiles the model leaves walkable. */
+    const val NACRENE_BANK = 18
+    const val NACRENE_MAP = 0
+    const val NACRENE_ROW = 10
+    val NACRENE_COLUMNS = (12..14).toList()
+    /** VAR 16522 (0x408A), the book quiz's progress; 7 = the last book read, the shelf slid. */
+    const val NACRENE_VAR = "unova/VAR_0x408A"
+    const val NACRENE_OPEN = 7
   }
 }

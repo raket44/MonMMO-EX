@@ -5622,8 +5622,7 @@ mv;38;844;33,1 63,1 18,1 17,7
 54;2;330;Condition 6
 54;2;334;When 255 @363
 54;2;341;Message 0 4 5 1 2 0
-54;2;353;CMD_1DB
-54;2;355;Nop
+54;2;353;CMD_1DB 0
 54;2;357;Jump @585
 54;2;269;SetStackDerefVar 32784
 54;2;273;SetStackVar 3
@@ -5639,8 +5638,7 @@ mv;38;844;33,1 63,1 18,1 17,7
 54;2;387;Condition 7
 54;2;391;When 255 @420
 54;2;398;Message 0 4 6 1 2 0
-54;2;410;CMD_1DB
-54;2;412;Nop2
+54;2;410;CMD_1DB 1
 54;2;414;Jump @585
 54;2;585;WaitButton
 54;2;587;CloseMessageKP2
@@ -5656,8 +5654,8 @@ mv;38;844;33,1 63,1 18,1 17,7
 54;2;444;Condition 7
 54;2;448;When 255 @477
 54;2;455;Message 0 4 7 1 2 0
-54;2;467;CMD_1DB
-54;2;469;End
+54;2;467;CMD_1DB 2
+54;2;471;Jump @585
 54;2;477;SetStackDerefVar 32776
 54;2;481;SetStackVar 2
 54;2;485;Condition 1
@@ -5667,9 +5665,8 @@ mv;38;844;33,1 63,1 18,1 17,7
 54;2;501;Condition 7
 54;2;505;When 255 @534
 54;2;512;Message 0 4 8 1 2 0
-54;2;524;CMD_1DB
-54;2;526;CallRoutine @3342898
-54;2;532;Nop
+54;2;524;CMD_1DB 4
+54;2;528;Jump @585
 54;2;534;SetStackDerefVar 32776
 54;2;538;SetStackVar 2
 54;2;542;Condition 1
@@ -5679,8 +5676,7 @@ mv;38;844;33,1 63,1 18,1 17,7
 54;2;558;Condition 7
 54;2;562;When 255 @585
 54;2;569;Message 0 4 9 1 2 0
-54;2;581;CMD_1DB
-54;2;583;ReturnAfterDelay 50
+54;2;581;CMD_1DB 3
 54;3;651;LockAll
 54;3;653;CMD_17E
 54;3;655;ClearFlag 48

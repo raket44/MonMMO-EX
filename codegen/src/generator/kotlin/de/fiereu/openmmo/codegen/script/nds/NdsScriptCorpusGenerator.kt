@@ -2019,6 +2019,12 @@ class NdsScriptCorpusGenerator {
             "SetOWPosition" ->
                 if (t(0) == "255") b.lines += listOf("SetObjectEventPos", "LOCALID_PLAYER", t(1), t(3), t(4))
                 else if (t(0).toInt() < 252) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(1), t(3))
+            // Opcode 0x1EC (sized 2026-09-23): the same placement with the facing SECOND - obj,
+            // facing, x, z, y. Map-load scripts use it to stand actors where the story var says
+            // they walked to (Route 3: Bianca and the little girl by the Wellspring var).
+            "SetOWPositionFacing" ->
+                if (t(0) == "255") b.lines += listOf("SetObjectEventPos", "LOCALID_PLAYER", t(2), t(4), t(1))
+                else if (t(0).toInt() < 252) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), t(2), t(4))
             "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}

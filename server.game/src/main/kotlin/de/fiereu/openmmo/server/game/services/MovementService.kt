@@ -357,6 +357,12 @@ constructor(
               landingBehaviorType == 0x6A -> msg.direction.opposite()
               landingTypeRule?.press != null -> landingTypeRule.press.opposite()
               maskDir != null -> maskDir
+              // The fired warp's own direction IS the ROM's arrival facing (the "exit direction"
+              // the client applies on landing). Now that a Gen 5 warp fires on contact from any
+              // side, the press that entered it can be sideways, and the returning mirror below
+              // would have walked the player out the wrong way (owner, 2026-09-23); the ROM's
+              // answer comes first, the mirror keeps the direction-less doors it was made for.
+              door.direction in 0..3 -> Direction.entries[door.direction]
               returning -> state.lastWarpEntryDir!!.opposite()
               landing != null && landing.direction in 0..3 ->
                   Direction.entries[landing.direction].opposite()

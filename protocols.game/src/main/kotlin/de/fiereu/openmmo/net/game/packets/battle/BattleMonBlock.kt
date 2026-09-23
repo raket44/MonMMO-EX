@@ -33,6 +33,11 @@ data class BattleMonBlock(
     val shiny: Boolean = false,
     val alpha: Boolean = false,
     val secret: Boolean = false,
+    /**
+     * Owner key on the player's side: 0 the player, 1 an NPC ally fighting beside them (the record
+     * head byte, f/at0.ci). [slot] is then the slot within that owner's team.
+     */
+    val owner: Int = 0,
 ) {
   init {
     require(moveIds.size == MOVE_SLOTS) { "A battle mon block carries exactly $MOVE_SLOTS moves" }

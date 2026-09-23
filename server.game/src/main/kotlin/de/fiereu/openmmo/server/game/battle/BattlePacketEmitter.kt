@@ -109,8 +109,15 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // client expect an extra field and die on the monster's entity id - wild battles outside
             // Kanto never showed. It must be zero there.
             trainerRegion = if (battle.trainer == null) 0 else battle.trainerRegion.toByte(),
-            playerParty = battle.party.mapIndexed { slot, mon -> mon.toBlock(slot, true) },
+            // With an NPC ally (tag battle) the player's side is the client's two-entry composite:
+            // the ally's records file under owner 1 with their slot within the ally's team.
+            playerParty =
+                battle.party.mapIndexed { index, mon ->
+                  mon.toBlock(battle.localPartySlot(index), true).copy(owner = battle.ownerOfParty(index))
+                },
             playerActive = battle.playerPositions.map { it.takeIf { slot -> slot >= 0 } },
+            allyTrainerId = battle.ally?.id?.toShort(),
+            allyRegion = if (battle.ally == null) 0 else battle.trainerRegion.toByte(),
             opponentParty =
                 battle.opponent.mapIndexed { slot, mon ->
                   if (slot in battle.opponentSeen) mon.toOpponentBlock(localSlot(battle, slot)).copy(owner = ownerOf(battle, slot))
@@ -154,7 +161,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
       when (event) {
         is BattleEvent.MoveUsed -> {
           flush()
-          if (battle.isPlayerSide(event.attackerId)) {
+          // The pp packet addresses one of the player's OWN monsters; an ally's has no entity of
+          // the player's to update.
+          if (battle.ownParty().any { it.entityId == event.attackerId }) {
             battle.session.send(
                 EntityMovePpPacket(
                     event.attackerId, event.moveSlot.toByte(), event.ppLeft.toByte()))
@@ -336,9 +345,11 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
             // party slot rides inside the monster block instead.
             newSlot = position,
             oldSlot = oldSlot,
-            mon = battle.party[slot].toBlock(slot = slot, movesPresent = true),
+            mon = battle.party[slot].toBlock(slot = battle.localPartySlot(slot), movesPresent = true),
             fullBlock = fullBlock,
             kind = kind,
+            // The ally's monsters enter under owner key 1 (the composite player side).
+            owner = if (battle.ally != null) battle.ownerOfParty(slot) else null,
         ),
     )
   }

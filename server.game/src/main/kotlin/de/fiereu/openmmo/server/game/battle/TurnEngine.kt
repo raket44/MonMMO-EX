@@ -256,8 +256,7 @@ constructor(
         null -> null
       }
 
-  private fun team(battle: BattleInstance, mon: BattleMonState): List<BattleMonState> =
-      if (battle.isPlayerSide(mon.entityId)) battle.party else battle.opponent
+  private fun team(battle: BattleInstance, mon: BattleMonState): List<BattleMonState> = battle.teamOf(mon)
 
   /** Teatime: [mon] eats its berry now, getting what the berry gives. */
   private fun eatBerry(mon: BattleMonState, events: MutableList<BattleEvent>) {
@@ -471,26 +470,19 @@ constructor(
     switchIn(battle, incoming, events)
   }
 
-  /** The party indexes of [playerSide]'s side that could come in: standing and not on the field. */
-  private fun bench(battle: BattleInstance, playerSide: Boolean): List<Int> {
-    val positions = if (playerSide) battle.playerPositions else battle.opponentPositions
-    val team = if (playerSide) battle.party else battle.opponent
-    return team.indices.filter { !team[it].fainted && it !in positions }
-  }
-
   /**
    * U-turn, Volt Switch, Flip Turn, Parting Shot, Baton Pass, Chilly Reception: [mon] leaves for a
    * benched partner. The player picks it (the turn pauses on [BattleInstance.pendingSelfSwitch]);
-   * the opponent sends its next. False when nobody can come in.
+   * the opponent, and an NPC ally, send their next. False when nobody can come in.
    */
   private fun selfSwitch(battle: BattleInstance, mon: BattleMonState, batonPass: Boolean, events: MutableList<BattleEvent>): Boolean {
     if (mon.fainted || battle.opponent.all { it.fainted } || battle.party.all { it.fainted }) return false
     val playerSide = battle.isPlayerSide(mon.entityId)
     val position = battle.positionOf(mon)
-    val bench = bench(battle, playerSide)
+    val bench = battle.benchOf(mon)
     if (position < 0 || bench.isEmpty()) return false
-    if (playerSide) battle.pendingSelfSwitch = SelfSwitch(position, batonPass)
-    else swapIn(battle, false, position, bench.first(), RECALLED, batonPass, events)
+    if (playerSide && !battle.isAllyMon(mon)) battle.pendingSelfSwitch = SelfSwitch(position, batonPass)
+    else swapIn(battle, playerSide, position, bench.first(), RECALLED, batonPass, events)
     return true
   }
 
@@ -509,7 +501,7 @@ constructor(
     }
     val playerSide = battle.isPlayerSide(target.entityId)
     val position = battle.positionOf(target)
-    val bench = bench(battle, playerSide)
+    val bench = battle.benchOf(target)
     if (position < 0 || bench.isEmpty()) return false
     swapIn(battle, playerSide, position, bench[battle.rng.pick(bench.size)], DRAGGED_IN, false, events)
     return true
@@ -682,14 +674,16 @@ constructor(
           }
       actions += targetsFor(battle, mon, move, chosen)
     }
-    for (enemy in battle.opponentActives()) {
+    // The engine's own monsters: every opponent, and an NPC ally's beside the player (a tag
+    // battle) - it picks like a trainer and aims at the opposing side.
+    for (npc in battle.npcActives()) {
       // One that already acted this turn (Pursuit on a switch) has nothing left to do.
-      if (enemy.fainted || enemy.movedThisTurn) continue
-      val move = chooseMove(battle, enemy, pickEnemyMove(battle, enemy))
+      if (npc.fainted || npc.movedThisTurn) continue
+      val move = chooseMove(battle, npc, pickEnemyMove(battle, npc))
       // A foe out of reach (the far corner of a triple battle) is not a target.
-      val victims = battle.foesOf(enemy).filter { battle.reaches(enemy, it) }.ifEmpty { battle.foesOf(enemy) }
+      val victims = battle.foesOf(npc).filter { battle.reaches(npc, it) }.ifEmpty { battle.foesOf(npc) }
       val target = if (victims.isEmpty()) null else victims[battle.rng.pick(victims.size)]
-      actions += targetsFor(battle, enemy, move, target)
+      actions += targetsFor(battle, npc, move, target)
     }
 
     val ordered = order(battle, actions)
@@ -905,7 +899,7 @@ constructor(
   fun prepareIllusion(battle: BattleInstance, mon: BattleMonState) {
     mon.illusionOf = null
     if (mon.ability != Ability.ILLUSION) return
-    val team = if (battle.isPlayerSide(mon.entityId)) battle.party else battle.opponent
+    val team = battle.teamOf(mon)
     val last = team.lastOrNull { !it.fainted && it !== mon } ?: return
     if (last.species.id == mon.species.id) return
     mon.illusionOf = last
@@ -2735,7 +2729,7 @@ constructor(
         defender.moves[slot].pp = (defender.moves[slot].pp - 4).coerceAtLeast(0).toByte()
       }
       MoveEffect.HEALING_WISH, MoveEffect.LUNAR_DANCE -> {
-        val team = if (battle.isPlayerSide(attacker.entityId)) battle.party else battle.opponent
+        val team = battle.teamOf(attacker)
         if (team.none { !it.fainted && it !in battle.actives() }) return fail()
         battle.sideOf(attacker).healingWish = if (move.effect == MoveEffect.LUNAR_DANCE) 2 else 1
         explode(attacker, events)

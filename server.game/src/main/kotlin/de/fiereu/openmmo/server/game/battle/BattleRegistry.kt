@@ -21,6 +21,8 @@ class BattleRegistry @Inject constructor() {
       rng: BattleRng,
       rules: BattleRules = BattleRules(),
       format: de.fiereu.openmmo.net.game.packets.battle.BattleFormat = de.fiereu.openmmo.net.game.packets.battle.BattleFormat.SINGLES,
+      /** Where the ally's monsters begin in [party] (BattleInstance.allyStart). */
+      allyStart: Int = party.size,
   ): BattleInstance {
     val battle =
         BattleInstance(
@@ -39,6 +41,8 @@ class BattleRegistry @Inject constructor() {
             format,
             partner = rules.partner,
             partnerDefeatTextId = rules.partnerDefeatTextId,
+            ally = rules.ally,
+            allyStart = allyStart,
         )
     byChar[charId] = battle
     return battle

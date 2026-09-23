@@ -409,11 +409,12 @@ class InterpretedScript(
           ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
           state.pc++
         }
-        // StartTagBattle partner, enemy1, enemy2: both enemy trainers at once. There is no ally
-        // trainer on this server's battles; the player fights the pair the way a double sighting does.
+        // StartTagBattle partner, enemy1, enemy2: the partner trainer fights BESIDE the player
+        // against both enemies at once (a 2v2 with the ally on the player's side).
         "ds_starttagbattle" -> {
           val first = ctx.resolveTrainerById(value(ctx, instruction.arg(1)))
           val second = ctx.resolveTrainerById(value(ctx, instruction.arg(2)))
+          ctx.state.pendingAllyTrainer = ctx.resolveTrainerById(value(ctx, instruction.arg(0)))
           ctx.state.pendingPartnerTrainer = second
           ctx.state.pendingPartnerDefeatTextId = trainerMessage(second, 1)
           val result = tracedWait(ctx, "ds_starttagbattle ${first.id}") { ctx.trainerBattle(first, trainerMessage(first, 1)) }
@@ -425,16 +426,17 @@ class InterpretedScript(
           ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
           state.pc++
         }
-        // White DoubleTrainerBattle partner, enemy1, enemy2: the player faces both enemies at once
-        // (Wellspring Cave: 56 = Cheren, 62 and 63 = the grunts); like ds_starttagbattle, there is no
-        // ally trainer on this server's battles, so the partner is not fielded. The RESULT is the
-        // other way round from a single: every White double is followed by `compare 1 -> goto
-        // continue` with `CMD_103 var; End` as the fall-through (files 648 and 658), so 1 is the
-        // LOSS and the scene goes on for anything else. Returning 1 for a win ended the cave scene
-        // and its trigger looped it (owner, 2026-09-22).
+        // White DoubleTrainerBattle partner, enemy1, enemy2: the partner (Wellspring Cave: 56 =
+        // Cheren) fights beside the player against both enemies (62 and 63 = the grunts) - the
+        // partner's team joins the player's side, the engine plays it. The RESULT is the other way
+        // round from a single: every White double is followed by `compare 1 -> goto continue` with
+        // `CMD_103 var; End` as the fall-through (files 648 and 658), so 1 is the LOSS and the scene
+        // goes on for anything else. Returning 1 for a win ended the cave scene and its trigger
+        // looped it (owner, 2026-09-22).
         "ds_doubletrainerbattle" -> {
           val first = ctx.resolveTrainerById(value(ctx, instruction.arg(1)))
           val second = ctx.resolveTrainerById(value(ctx, instruction.arg(2)))
+          ctx.state.pendingAllyTrainer = ctx.resolveTrainerById(value(ctx, instruction.arg(0)))
           ctx.state.pendingPartnerTrainer = second
           ctx.state.pendingPartnerDefeatTextId = trainerMessage(second, 1)
           val result = tracedWait(ctx, "ds_doubletrainerbattle ${first.id}+${second.id}") { ctx.trainerBattle(first, trainerMessage(first, 1)) }

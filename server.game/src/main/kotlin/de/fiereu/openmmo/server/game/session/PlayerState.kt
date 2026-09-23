@@ -71,6 +71,11 @@ data class PlayerState(
      */
     @field:Volatile var pendingPartnerTrainer: de.fiereu.openmmo.trainer.TrainerDef? = null,
     @field:Volatile var pendingPartnerDefeatTextId: Int? = null,
+    /**
+     * An NPC trainer who fights BESIDE the player in the next trainer battle (a DS tag battle:
+     * Cheren at Wellspring Cave, Steven at Mossdeep). Its team joins the player's side.
+     */
+    @field:Volatile var pendingAllyTrainer: de.fiereu.openmmo.trainer.TrainerDef? = null,
     /** A wild encounter froze the player (input removed, snapped to the tile); lifted when back in the overworld. */
     @field:Volatile var encounterHold: Boolean = false,
     /** A spin-tile slide is driving the player; steps that arrive meanwhile are the client's echo. */

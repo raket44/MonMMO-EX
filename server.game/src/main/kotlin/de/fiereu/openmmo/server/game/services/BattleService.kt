@@ -212,7 +212,8 @@ constructor(
     for (switch in actions.filter { it.kind == ChosenAction.Kind.SWITCH }) {
       val target = switch.partyIndex
       val mon = battle.party.getOrNull(target)
-      if (mon == null || mon.fainted || target in battle.playerPositions) continue
+      // The ally's monsters are not the player's to send in.
+      if (mon == null || mon.fainted || target in battle.playerPositions || battle.isAllyIndex(target)) continue
       // A foe with Pursuit catches the monster on its way out; a knocked-out one never leaves.
       val leaving = battle.party[battle.playerPositions[switch.position]]
       emitter.sendEvents(battle, engine.pursuit(battle, leaving))
@@ -245,6 +246,8 @@ constructor(
       if (slot < 0) continue
       val mon = battle.party[slot]
       if (mon.fainted) continue
+      // The ally's position is the engine's to play; the client is never asked for it.
+      if (battle.isAllyIndex(slot)) continue
       val locked =
           when {
             mon.chargingMoveId != 0 -> mon.chargingMoveId
@@ -447,6 +450,8 @@ constructor(
       whiteoutOnDefeat: Boolean = true,
       partner: TrainerDef? = null,
       partnerDefeatTextId: Int? = null,
+      /** An NPC trainer fighting beside the player (a tag battle); its team joins the player's side. */
+      ally: TrainerDef? = null,
   ): BattleResult {
     // A double sighting: the partner's team lines up behind the first trainer's and the two
     // field one monster each, the way Emerald and FireRed run a simultaneous spot.
@@ -462,6 +467,7 @@ constructor(
             whiteoutOnDefeat = whiteoutOnDefeat,
             partner = partner,
             partnerDefeatTextId = partnerDefeatTextId,
+            ally = ally,
         ) ?: return BattleResult.FAILED
     return battle.completion.await()
   }
@@ -578,6 +584,8 @@ constructor(
       whiteoutOnDefeat: Boolean = true,
       partner: TrainerDef? = null,
       partnerDefeatTextId: Int? = null,
+      /** An NPC trainer fighting beside the player: its team is built like a foe's and appended to the party. */
+      ally: TrainerDef? = null,
       safari: de.fiereu.openmmo.server.game.battle.SafariBattleState? = null,
       encounter: de.fiereu.openmmo.server.game.battle.EncounterContext = de.fiereu.openmmo.server.game.battle.EncounterContext(),
       formatOverride: BattleFormat? = null,
@@ -622,7 +630,8 @@ constructor(
     val enemies = mutableListOf<BattleMonState>()
     // Only the wild roll for shiny; a trainer's monsters never do.
     val shinyDenominator = if (trainer == null) wildShinyDenominator else 0
-    for (spec in opponents) {
+    // One monster the engine plays, built from its spec: a foe's, or an NPC ally's.
+    fun build(spec: OpponentSpec): BattleMonState? {
       var rolled =
           wildMons.create(spec.dexId, spec.level, rng, shinyDenominator, spec.hints, secretAllowed, secretBonusPercent)
       if (rolled == null) {
@@ -670,18 +679,27 @@ constructor(
       log.info {
         "Wild ${def.name} seed=${rolled.seed} slots=${def.ability1}/${def.ability2} -> ${enemy.ability} (char=$charId)"
       }
-      enemies += enemy
+      return enemy
     }
+    for (spec in opponents) enemies += build(spec) ?: return null
+    // A tag battle: the ally's team is built the way a trainer's is (fixed IVs, ROM moves, no
+    // shiny roll) and lines up after the player's own, so the whole side shares one party list.
+    val allyStart = party.size
+    val allyMons = mutableListOf<BattleMonState>()
+    for (mon in ally?.party.orEmpty()) allyMons += build(OpponentSpec(mon.dexId, mon.level, mon.moveIds, mon.iv)) ?: return null
+    party += allyMons
     log.info {
       "Starting battle for char=$charId (${stored.info.name}) against " +
-          enemies.joinToString { "${it.species.name} level ${it.level}" }
+          enemies.joinToString { "${it.species.name} level ${it.level}" } +
+          (ally?.let { " with ${it.name} (${allyMons.joinToString { m -> "${m.species.name} level ${m.level}" }})" } ?: "")
     }
     // A trainer flagged for doubles fields two when the player can match it; several wild monsters
-    // are a horde (up to five cells, the rest empty).
-    val alive = party.indices.filter { !party[it].fainted }
+    // are a horde (up to five cells, the rest empty). An ally makes it a 2v2 whatever the foes.
+    val alive = party.indices.filter { it < allyStart && !party[it].fainted }
     val format =
         when {
           formatOverride != null -> formatOverride
+          allyMons.isNotEmpty() -> BattleFormat.DOUBLES
           (trainer?.doubleBattle == true || partner != null) && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
           trainer == null && enemies.size >= 2 -> BattleFormat.HORDE
           else -> BattleFormat.SINGLES
@@ -693,9 +711,16 @@ constructor(
             party,
             enemies,
             rng,
-            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0, partner, partnerDefeatTextId),
-            format)
-    for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
+            BattleRules(catchable, escapable, trainer, defeatTextId, whiteoutOnDefeat, session.attributes[PLAYER_STATE]?.regionId ?: 0, partner, partnerDefeatTextId, ally = ally),
+            format,
+            allyStart = allyStart)
+    if (allyMons.isNotEmpty()) {
+      // The player's lead on the left, the ally's on the right.
+      battle.playerPositions[0] = alive.first()
+      battle.playerPositions[1] = allyStart + allyMons.indexOfFirst { !it.fainted }
+    } else {
+      for (position in 0 until format.playerSlots) battle.playerPositions[position] = alive.getOrElse(position) { -1 }
+    }
     for (position in 0 until format.opponentSlots) battle.opponentPositions[position] = if (position < enemies.size) position else -1
     if (raid && format.opponentSlots == 3 && enemies.size >= 3) {
       // The boss stands in the middle, a summoned Onix on either side.
@@ -741,7 +766,9 @@ constructor(
       battle.opponent.all { it.fainted } -> endVictory(battle)
       // The raid is won on the boss alone, whatever it summoned is still standing.
       raid != null && battle.opponent.first { raid.isBoss(it) }.fainted -> endVictory(battle)
-      battle.party.all { it.fainted } -> endDefeat(battle)
+      // A tag battle is lost on the player's OWN team (Emerald NoAliveMonsForPlayer checks the
+      // player's slots alone); the ally standing on does not keep the fight going.
+      battle.ownParty().all { it.fainted } -> endDefeat(battle)
       else -> {
         // A trainer refills an emptied position from the bench, and the raid boss calls another
         // Onix; a wild horde just thins out.
@@ -768,10 +795,20 @@ constructor(
           }
           if (battle.trainer != null || raid != null) sendOutNextOpponent(battle, position) else battle.opponentPositions[position] = -1
         }
+        // The ally's fallen monster is replaced from the ally's own bench on the spot, the way a
+        // trainer's is; its position empties when the bench is spent.
+        for ((position, index) in battle.playerPositions.withIndex()) {
+          if (index < 0 || !battle.isAllyIndex(index) || !battle.party[index].fainted) continue
+          sendOutNextAlly(battle, position)
+        }
         // Fainted positions owe a replacement while the bench has one; the switch screen opens
         // for each instead of the action prompt, and the replacements arrive as SWITCH actions.
-        val owed = battle.playerPositions.indices.filter { battle.playerPositions[it] >= 0 && battle.party[battle.playerPositions[it]].fainted }
-        val benched = battle.party.indices.count { it !in battle.playerPositions && !battle.party[it].fainted }
+        val owed =
+            battle.playerPositions.indices.filter {
+              val index = battle.playerPositions[it]
+              index >= 0 && !battle.isAllyIndex(index) && battle.party[index].fainted
+            }
+        val benched = battle.ownParty().indices.count { it !in battle.playerPositions && !battle.party[it].fainted }
         battle.forcedSwitchPositions.clear()
         for ((i, position) in owed.withIndex()) {
           if (i < benched) battle.forcedSwitchPositions += position else battle.playerPositions[position] = -1
@@ -811,7 +848,7 @@ constructor(
   /** The replacement for a fainted position. Replacing does not spend a turn. */
   private suspend fun forcedSwitch(battle: BattleInstance, position: Int, target: Int) {
     val mon = battle.party.getOrNull(target)
-    if (mon == null || mon.fainted || target in battle.playerPositions) {
+    if (mon == null || mon.fainted || target in battle.playerPositions || battle.isAllyIndex(target)) {
       // Reopen the switch screen on an invalid choice.
       emitter.sendSwitchPrompt(battle, position)
       return
@@ -858,6 +895,20 @@ constructor(
     val entering = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
     engine.switchIn(battle, battle.opponent[next], entering)
     emitter.sendEvents(battle, entering)
+  }
+
+  /** The NPC ally's next standing monster takes over [position]; an empty bench leaves the cell empty. */
+  private fun sendOutNextAlly(battle: BattleInstance, position: Int) {
+    val fallen = battle.party[battle.playerPositions[position]]
+    val next = battle.benchOf(fallen).firstOrNull()
+    if (next == null) {
+      engine.switchOut(battle, fallen)
+      fallen.resetVolatile()
+      battle.playerPositions[position] = -1
+      return
+    }
+    log.info { "Ally ${battle.ally?.name} sends out party index $next on position $position for char=${battle.charId}" }
+    performSwitch(battle, position, next)
   }
 
   private fun performSwitch(battle: BattleInstance, position: Int, target: Int) {
@@ -1170,7 +1221,7 @@ constructor(
     // The raid pays its purse like a prize, so the Amulet Coin below doubles it too.
     if (battle.raid != null) prize += de.fiereu.openmmo.server.game.battle.CrystalOnixRaid.PRIZE_MONEY
     // An Amulet Coin anywhere in the party doubles the prize money.
-    if (prize > 0 && battle.party.any { items.get(it.heldItem) == de.fiereu.openmmo.items.generated.Items.AMULET_COIN })
+    if (prize > 0 && battle.ownParty().any { items.get(it.heldItem) == de.fiereu.openmmo.items.generated.Items.AMULET_COIN })
         prize *= 2
     val paid = prize > 0 && characterStore.addMoney(battle.charId, prize)
     if (prize > 0 && !paid) {
@@ -1192,13 +1243,13 @@ constructor(
    * time, as each faints, which is when the captures show the delta going out.
    */
   private fun awardXp(battle: BattleInstance, defeated: BattleMonState) {
-    // Everyone standing on the player's side took part; a field with nobody standing (a
-    // mutual knockout) still pays the lead.
-    val winners = battle.playerActives().filter { !it.fainted }.ifEmpty { listOf(battle.activeMon()) }
+    // Everyone of the player's OWN standing on the field took part (an NPC ally earns nothing); a
+    // field with nobody standing (a mutual knockout) still pays the lead.
+    val winners = battle.ownActives().filter { !it.fainted }.ifEmpty { listOf(battle.activeMon()) }.filter { !battle.isAllyMon(it) }
     for (winner in winners) awardXpTo(battle, winner, defeated)
     // An Exp. Share on a monster that sat out pays it half the experience (Gen 3); a fainted
     // holder gets nothing.
-    for (holder in battle.party) {
+    for (holder in battle.ownParty()) {
       if (holder in winners || holder.fainted) continue
       if (items.get(holder.heldItem) != Items.EXP_SHARE) continue
       awardXpTo(battle, holder, defeated, viaExpShare = true)
@@ -1286,7 +1337,7 @@ constructor(
    */
   private fun evolveEligible(battle: BattleInstance) {
     val playerState = battle.session.attributes[PLAYER_STATE] ?: return
-    for (state in battle.party) {
+    for (state in battle.ownParty()) {
       if (!state.leveledThisBattle) continue
       if (state.source.id in playerState.pendingEvolutions) continue
       val mon = state.source
@@ -1307,7 +1358,7 @@ constructor(
                   friendship = mon.friendship,
                   daytime = WorldClock.isDaytime(),
                   moves = mon.moves.map { it.id.toInt() }.toSet(),
-                  partyWires = battle.party.map { clientSpeciesId(it.source.dexId) }.toSet(),
+                  partyWires = battle.ownParty().map { clientSpeciesId(it.source.dexId) }.toSet(),
               ),
           ) ?: continue
       val evolvedDef = speciesRegistry.get(target) ?: continue
@@ -1325,7 +1376,7 @@ constructor(
   private fun pickup(battle: BattleInstance) {
     if (battle.trainer != null) return
     val rng = battle.rng
-    for (state in battle.party) {
+    for (state in battle.ownParty()) {
       if (state.fainted || state.ability != de.fiereu.openmmo.common.enums.Ability.PICKUP || state.heldItem != 0) continue
       if (rng.pick(10) != 0) continue
       val band = ((state.level - 1) / 10).coerceIn(0, 9)
@@ -1367,7 +1418,8 @@ constructor(
   }
 
   private fun persistParty(battle: BattleInstance, skip: Set<Long> = emptySet()) {
-    for (state in battle.party) {
+    // The ally's monsters are nobody's stored monsters: they must never be written to the player.
+    for (state in battle.ownParty()) {
       if (state.entityId in skip) continue
       val updated =
           state.source.copy(

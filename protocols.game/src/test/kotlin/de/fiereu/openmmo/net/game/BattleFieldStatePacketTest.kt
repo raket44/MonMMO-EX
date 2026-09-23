@@ -150,6 +150,48 @@ class BattleFieldStatePacketTest :
                 BattleFieldStatePacketCodec.encodeToBytes(packet))
         decoded shouldBe packet
       }
+
+      test("an NPC ally seats the player's side as the human-list composite and round-trips") {
+        fun mon(slot: Int, species: Short, owner: Int) =
+            BattleMonBlock(slot, 0x1000L + owner * 16 + slot, species, 12, 0, 0, 30, 30, true, listOf(33, 0, 0, 0), owner = owner)
+        fun foe(slot: Int, species: Short, owner: Int) =
+            BattleOpponentBlock(slot, true, 0x2000L + owner * 16 + slot, species, 11, 0, 20, 20, owner = owner)
+        // Cheren (Unova trainer 56) beside the player against the two Plasma grunts.
+        val packet =
+            BattleFieldStatePacket(
+                playerName = "Test",
+                playerId = 0x19000L,
+                gender = 0,
+                appearance = CAPTURED_APPEARANCE,
+                background = 0,
+                opposing = OpposingSide.TRAINER,
+                trainerId = 62,
+                trainerRegion = 2,
+                playerParty = listOf(mon(0, 495, 0), mon(1, 504, 0), mon(0, 501, 1), mon(1, 506, 1)),
+                playerActive = listOf(0, 2),
+                opponentParty = listOf(foe(0, 509, 0), foe(0, 506, 1)),
+                opponentActive = listOf(0, 1),
+                format = BattleFormat.DOUBLES,
+                partnerTrainerId = 63,
+                allyTrainerId = 56,
+                allyRegion = 2,
+            )
+        val bytes = BattleFieldStatePacketCodec.encodeToBytes(packet)
+        val hex = bytes.toHex()
+        // After the opposing byte and the two fixed bytes: kind 4, sub 6, two entries, entry 0 =
+        // (key 0, position 0, discard) + the player's kind 0 / sub 6 descriptor.
+        hex shouldContain "040602000000" + "0006"
+        // Entry 1 = (key 1, position 1, discard) + the NPC trainer's kind 2 / sub 6 descriptor:
+        // region 2, trainer id 56, one zero byte; then the side's five tail bytes and the record
+        // group (count 1, four records).
+        hex shouldContain "010100" + "0206" + "02" + "3800" + "00" + "0000000000" + "01" + "04"
+        // The ally's records open with owner key 1 and its own slot 0.
+        hex shouldContain "01" + "00" + "01" + "1010000000000000"
+        val decoded = BattleFieldStatePacketCodec.decodeBytes(bytes)
+        decoded shouldBe packet
+        // The ally's monster on position 1 resolves back to its index in the party list.
+        decoded.playerActive shouldBe listOf(0, 2)
+      }
     })
 
 /**

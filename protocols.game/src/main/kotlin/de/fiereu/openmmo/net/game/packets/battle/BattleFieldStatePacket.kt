@@ -74,6 +74,15 @@ data class BattleFieldStatePacket(
     val partnerTrainerId: Short? = null,
     /** The client's mode byte (f/my): 0 a normal battle, 1 the Safari Game (Ball / Bait / Rock panel). */
     val mode: Byte = 0,
+    /**
+     * An NPC trainer fighting BESIDE the player (Cheren in Unova, Steven at Mossdeep): the player's
+     * side goes out as the client's human-list composite (f/bo4 wire 4, class f/s34) with two
+     * entries, the player at key 0 and the ally at key 1. The ally's records in [playerParty]
+     * carry owner 1 and their slot within the ally's team. Null: the plain single-player side.
+     */
+    val allyTrainerId: Short? = null,
+    /** The ROM region the ally's trainer id indexes (same numbering as [trainerRegion]). */
+    val allyRegion: Byte = 0,
 ) {
   init {
     require(playerActive.size == format.playerSlots) {
@@ -97,7 +106,15 @@ data class BattleFieldStatePacket(
 // enum byte (0).
 private val HEAD_SIDES = "020000".hexToBytes()
 private val AFTER_BACKGROUND = "00000000000000ff000000000016000000".hexToBytes()
-private val AFTER_OPPOSING = "00200006".hexToBytes()
+private val AFTER_OPPOSING = "0020".hexToBytes()
+
+// Client f/f8.TL1 (r32645): a side opens with its kind byte (f/bo4 wire value) and, for every kind
+// but 100, a sub byte the client sizes the side's record array with (6 party slots).
+private const val KIND_PLAYER = 0
+private const val KIND_TRAINER = 2
+/** The composite list of human entries (f/bo4 ordinal 4: S01 "human" set, marks every entry dj). */
+private const val KIND_HUMAN_LIST = 4
+private const val PARTY_SLOTS = 6
 
 object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
   override fun CodecScope<BattleFieldStatePacket>.body(): BattleFieldStatePacket {
@@ -114,6 +131,25 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         OpposingSide.byWireValue(opposingByte)
             ?: throw MalformedPacketException("Unknown opposing side $opposingByte")
     constant(AFTER_OPPOSING)
+    // The player's side. Alone it is the plain player descriptor (kind 0). With an NPC ally it is
+    // the client's human-list composite (kind 4, f/s34): an entry count, then per entry the owner
+    // key, the field position the entry's monster stands on (f/db1.xX0: the client resolves an
+    // action's position to its owner with it, f/s34.tq) and one byte the reader discards, followed
+    // by the entry's own descriptor with its own kind and sub byte. The header's third byte (the
+    // local key, f/ua5.kp1) is 0, so the player must be entry 0. Reader-verified layout
+    // (f/f8.TL1 pswitch_33, 2026-09-22).
+    val playerKind = field(S8) { (if (it.allyTrainerId != null) KIND_HUMAN_LIST else KIND_PLAYER).toByte() }.toInt()
+    constant(PARTY_SLOTS)
+    val allyTrainerId: Short?
+    val allyRegion: Byte
+    if (playerKind == KIND_HUMAN_LIST) {
+      constant(2)
+      constant(0)
+      constant(0)
+      constant(0)
+      constant(KIND_PLAYER)
+      constant(PARTY_SLOTS)
+    }
     val playerName = field(Utf16LeNullTerminated) { it.playerName }
     val gender = field(S8) { it.gender }
     val playerId = field(S64LE) { it.playerId }
@@ -122,6 +158,22 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     // byte) before the skin set; nothing sent yet.
     constant(0)
     val appearance = field(DefaultSkinSetCodec) { it.appearance }
+    if (playerKind == KIND_HUMAN_LIST) {
+      // Entry 1: the ally, an NPC trainer descriptor (kind 2, f/rb4: region, trainer id, one byte).
+      constant(1)
+      constant(1)
+      constant(0)
+      constant(KIND_TRAINER)
+      constant(PARTY_SLOTS)
+      allyRegion = field(S8) { it.allyRegion }
+      allyTrainerId = field(S16LE) { it.allyTrainerId!! }
+      constant(0)
+    } else {
+      allyRegion = 0
+      allyTrainerId = null
+    }
+    // The side's tail (f/f8.Rl0 after TL1): a zero marker for the optional block, then a zero int
+    // of side flags.
     padding(5)
 
     // One group of monster records, then the field positions.
@@ -129,19 +181,26 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     val partyCount = field(U8) { it.playerParty.size }
     val party =
         List(partyCount) { i ->
-          // Each record opens with a zero byte before the party slot.
-          constant(0)
-          field(BattleFullBlockCodec) { it.playerParty[i] }
+          // Each record opens with its owner key (f/at0.ci: side.Na1(key).jm1()[slot]): zero for
+          // the player, 1 for the ally's monsters.
+          val owner = field(S8) { it.playerParty[i].owner.toByte() }.toInt()
+          field(BattleFullBlockCodec) { it.playerParty[i] }.copy(owner = owner)
         }
     val playerActive =
         List(format.playerSlots) { position ->
           val kind = field(S8) { if (it.playerActive[position] != null) 1.toByte() else 0.toByte() }
           if (kind.toInt() == 1) {
-            field(BattleActiveDetailCodec) {
-                  val slot = it.playerActive[position]!!
-                  BattleActiveDetail.of(position, slot, it.playerParty[slot])
+            val detail =
+                field(BattleActiveDetailCodec) {
+                  val index = it.playerActive[position]!!
+                  val mon = it.playerParty[index]
+                  // With an ally the client reads (owner key, slot within owner); alone it reads
+                  // the position, which its single-entry side ignores (f/ni5.Na1 returns itself).
+                  BattleActiveDetail.of(position, mon.slot, mon, owner = if (it.allyTrainerId != null) mon.owner else null)
                 }
-                .slot
+            // Back to the index into the party list: the ally's records sit after the player's.
+            val owner = if (allyTrainerId != null) detail.position else 0
+            party.indexOfFirst { it.owner == owner && it.slot == detail.slot }.takeIf { it >= 0 } ?: detail.slot
           } else null
         }
 
@@ -193,19 +252,21 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
     val opponents =
         List(opponentCount) { i ->
           // Record head: the owner key (kw0.ns0: side.qg1(key).VZ()[slot]); zero for one trainer.
-          field(S8) { it.opponentParty[i].owner.toByte() }
-          field(BattleOpponentBlockCodec) { it.opponentParty[i] }
+          val owner = field(S8) { it.opponentParty[i].owner.toByte() }.toInt()
+          field(BattleOpponentBlockCodec) { it.opponentParty[i] }.copy(owner = owner)
         }
     val opponentActive =
         List(format.opponentSlots) { position ->
           val kind = field(S8) { if (it.opponentActive[position] != null) 1.toByte() else 0.toByte() }
           if (kind.toInt() == 1) {
-            field(BattleActiveDetailCodec) {
+            val detail =
+                field(BattleActiveDetailCodec) {
                   val index = it.opponentActive[position]!!
                   val mon = it.opponentParty[index]
                   BattleActiveDetail.of(position, mon, owner = if (it.partnerTrainerId != null) mon.owner else null)
                 }
-                .slot
+            val owner = if (partnerTrainerId != null) detail.position else 0
+            opponents.indexOfFirst { it.owner == owner && it.slot == detail.slot }.takeIf { it >= 0 } ?: detail.slot
           } else null
         }
     padding(4)
@@ -226,6 +287,8 @@ object BattleFieldStatePacketCodec : PacketCodec<BattleFieldStatePacket>() {
         format,
         partnerTrainerId = partnerTrainerId,
         mode = mode,
+        allyTrainerId = allyTrainerId,
+        allyRegion = allyRegion,
     )
   }
 }

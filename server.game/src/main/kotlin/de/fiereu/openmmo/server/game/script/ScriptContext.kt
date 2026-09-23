@@ -1184,13 +1184,16 @@ internal constructor(
       defeatTextId: Int? = null,
       whiteoutOnDefeat: Boolean = true,
   ): BattleResult {
-    // A double sighting queued a second trainer: both fight at once, then the flag clears.
+    // A double sighting queued a second trainer: both fight at once, then the flag clears. A tag
+    // battle queued an ally, who fights beside the player.
     val partner = state.pendingPartnerTrainer
     val partnerDefeat = state.pendingPartnerDefeatTextId
+    val ally = state.pendingAllyTrainer
     state.pendingPartnerTrainer = null
     state.pendingPartnerDefeatTextId = null
+    state.pendingAllyTrainer = null
     return checkNotNull(battles) { "Battle service is unavailable" }
-        .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat, partner, partnerDefeat)
+        .startTrainerBattle(session, trainer, defeatTextId, whiteoutOnDefeat, partner, partnerDefeat, ally)
   }
 
   /**

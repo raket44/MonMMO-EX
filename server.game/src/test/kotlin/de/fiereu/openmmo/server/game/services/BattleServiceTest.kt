@@ -315,6 +315,70 @@ class BattleServiceTest :
         }
       }
 
+      test("an NPC ally fights beside the player: seated as owner 1, played by the engine, never the player's") {
+        runTest {
+          val fx = Fixture(backgroundScope)
+          val (session, charId) = fx.playerWithParty()
+          fun trainer(id: Int, name: String, level: Int) =
+              TrainerDef(
+                  id = id,
+                  name = name,
+                  trainerClass = 0,
+                  doubleBattle = false,
+                  prizeRate = 5,
+                  party =
+                      listOf(
+                          TrainerMon(RATTATA, level, 0, 0, listOf(TACKLE.toInt())),
+                          TrainerMon(RATTATA, level, 0, 0, listOf(TACKLE.toInt())),
+                      ),
+              )
+          // Wellspring Cave: Cheren beside the player against a Plasma grunt's pair.
+          backgroundScope.launch { fx.service.startTrainerBattle(session, trainer(62, "GRUNT", 2), ally = trainer(56, "CHEREN", 5)) }
+          runCurrent()
+
+          val battle = fx.registry.byChar(charId).shouldNotBeNull()
+          battle.format shouldBe de.fiereu.openmmo.net.game.packets.battle.BattleFormat.DOUBLES
+          battle.allyStart shouldBe 1
+          battle.party.size shouldBe 3
+          battle.playerPositions.toList() shouldBe listOf(0, 1)
+
+          val field = session.sent.filterIsInstance<BattleFieldStatePacket>().single()
+          field.allyTrainerId shouldBe 56.toShort()
+          field.playerParty.map { it.owner } shouldBe listOf(0, 1, 1)
+          field.playerParty.map { it.slot } shouldBe listOf(0, 0, 1)
+          field.playerActive shouldBe listOf(0, 1)
+          // Only the player's own position is asked for an action.
+          session.sent.filterIsInstance<BattleQueuedEventPacket>().size shouldBe 1
+
+          // The engine plays the ally: its lead spends pp on the turn the player acts.
+          val allyLead = battle.party[1]
+          val ppBefore = allyLead.moves[0].pp
+          session.act(fx.service, BattleAction.MOVE, TACKLE)
+          allyLead.moves[0].pp shouldBe (ppBefore - 1).toByte()
+          // The ally's pp is not the player's to see in the overworld.
+          session.sent.filterIsInstance<EntityMovePpPacket>().none { it.entityId == allyLead.entityId }.shouldBeTrue()
+
+          // The ally's monsters are not the player's to send in.
+          if (battle.pendingResult == null && battle.forcedSwitchPositions.isEmpty()) {
+            session.act(fx.service, BattleAction.SWITCH, 2)
+            battle.playerPositions[0] shouldBe 0
+          }
+
+          var rounds = 0
+          while (battle.pendingResult == null && rounds < 12) {
+            session.act(fx.service, BattleAction.MOVE, TACKLE)
+            rounds += 1
+          }
+          battle.pendingResult shouldBe de.fiereu.openmmo.server.game.battle.BattleResult.VICTORY
+          session.finishBattleTransition(fx.service)
+          advanceUntilIdle()
+          // Only the player's own monster is written back; Cheren's never touch the store.
+          val saved = fx.repo.saved[charId].shouldNotBeNull()
+          saved.pokemon.size shouldBe 1
+          saved.pokemon.single().dexId shouldBe 1
+        }
+      }
+
       test("the ball throw names the thrown ball by the id the client knows") {
         runTest {
           val fx = Fixture(this)

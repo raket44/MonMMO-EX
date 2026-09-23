@@ -30,6 +30,8 @@ data class BattleRules(
     val partner: TrainerDef? = null,
     /** The partner's in-battle defeat speech, played after [defeatTextId]. */
     val partnerDefeatTextId: Int? = null,
+    /** An NPC trainer fighting BESIDE the player (Cheren, Steven): its team joins the player's side. */
+    val ally: TrainerDef? = null,
 )
 
 /**
@@ -86,6 +88,16 @@ class BattleInstance(
     /** The second trainer of a double sighting, paid and flagged beaten with the first. */
     val partner: TrainerDef? = null,
     val partnerDefeatTextId: Int? = null,
+    /**
+     * An NPC trainer fighting beside the player (a tag battle: Cheren in Unova, Steven at Mossdeep).
+     * Its monsters sit at the END of [party], from [allyStart] on, so every "player side" rule
+     * (targets, allies, side conditions) covers them; they are never the player's own: the engine
+     * picks their moves, their replacements come on their own, and they earn, learn and persist
+     * nothing. The client seats them as owner key 1 of the player's side.
+     */
+    val ally: TrainerDef? = null,
+    /** Index in [party] where the ally's monsters begin; [party].size when there is no ally. */
+    val allyStart: Int = party.size,
 ) {
   val key: BattleInterestKey = BattleInterestKey(battleId)
   var turn: Int = 1
@@ -221,6 +233,51 @@ class BattleInstance(
   /** [mon]'s partners on the field, itself excluded. */
   fun alliesOf(mon: BattleMonState): List<BattleMonState> =
       (if (isPlayerSide(mon.entityId)) playerActives() else opponentActives()).filter { it !== mon && !it.fainted }
+
+  /** The player's OWN monsters: [party] without the ally's. */
+  fun ownParty(): List<BattleMonState> = party.subList(0, allyStart)
+
+  /** The ally trainer's monsters (empty without an ally). */
+  fun allyParty(): List<BattleMonState> = party.subList(allyStart, party.size)
+
+  /** True for a party index that belongs to the ally. */
+  fun isAllyIndex(index: Int): Boolean = index >= allyStart
+
+  /** True when [mon] is one of the ally's monsters (identity, not species). */
+  fun isAllyMon(mon: BattleMonState): Boolean = allyParty().any { it === mon }
+
+  /** Owner key the client files a player-side party index under: 0 the player, 1 the ally. */
+  fun ownerOfParty(index: Int): Int = if (isAllyIndex(index)) 1 else 0
+
+  /** The slot within its owner's team for a player-side party index. */
+  fun localPartySlot(index: Int): Int = if (isAllyIndex(index)) index - allyStart else index
+
+  /** The player's own monsters on the field. */
+  fun ownActives(): List<BattleMonState> = playerActives().filter { !isAllyMon(it) }
+
+  /** The ally's monsters on the field. */
+  fun allyActives(): List<BattleMonState> = playerActives().filter { isAllyMon(it) }
+
+  /** Every monster on the field the ENGINE plays: the opponents and the ally's. */
+  fun npcActives(): List<BattleMonState> = opponentActives() + allyActives()
+
+  /** The list [mon]'s owner draws replacements from: the player's own, the ally's, or the opponents. */
+  fun teamOf(mon: BattleMonState): List<BattleMonState> =
+      when {
+        !isPlayerSide(mon.entityId) -> opponent
+        isAllyMon(mon) -> allyParty()
+        else -> ownParty()
+      }
+
+  /**
+   * The party / opponent indexes [mon]'s OWNER could send in: standing and not on the field. An
+   * ally's bench is the ally's team alone, so a dragged-out player monster never brings in Cheren's.
+   */
+  fun benchOf(mon: BattleMonState): List<Int> {
+    if (!isPlayerSide(mon.entityId)) return opponent.indices.filter { !opponent[it].fainted && it !in opponentPositions }
+    val range = if (isAllyMon(mon)) allyStart until party.size else 0 until allyStart
+    return range.filter { !party[it].fainted && it !in playerPositions }
+  }
 
   /**
    * The foe in front of [mon]: the one on the facing position while it stands, else the first foe

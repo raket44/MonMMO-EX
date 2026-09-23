@@ -1883,6 +1883,11 @@ class NdsScriptCorpusGenerator {
             // to the opcode everywhere: its only other use is in the opening chunk, which would
             // hand the shoes over before she ever speaks (owner, 2026-09-21).
             "CMD_E3" -> if (file == 638) b.lines += listOf("SetFlag", "FLAG_DS_RUNNING_SHOES")
+            // Nacrene Gym (header 18, client handler f/bs4): 0x185 slides the bookshelf open
+            // (building 0's animation), 0x182 shows it already open - the map-load restore once the
+            // quiz var reads 7. The client reads only the opcode; the arguments ride along.
+            "CMD_182" -> b.lines += listOf("DsMapGimmick", "386") + a.indices.map { tv(it) }
+            "CMD_185" -> b.lines += listOf("DsMapGimmick", "389") + a.indices.map { tv(it) }
             "CMD_186" -> b.lines += listOf("DsMapGimmick", "390", tv(0))
             "CMD_187" -> b.lines += listOf("DsMapGimmick", "391", tv(0))
             "CMD_188" -> b.lines += listOf("DsMapGimmick", "392", tv(0))

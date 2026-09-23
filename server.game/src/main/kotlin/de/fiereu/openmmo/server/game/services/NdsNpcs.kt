@@ -39,6 +39,12 @@ class NdsNpcs @Inject constructor() {
        * over the sea (owner, 2026-09-23).
        */
       val z: Int = 0,
+      /**
+       * The record's own rail flag (raw short 12, like the warp and trigger records): 1 = the
+       * position is (line, x, y), 0 = a tile. A hybrid map (the Castelia plaza) has both kinds -
+       * placing them all as rail lost Burgh (owner, 2026-09-23). -1 = column absent.
+       */
+      val rail: Int = -1,
   )
 
   /**
@@ -150,6 +156,7 @@ class NdsNpcs @Inject constructor() {
                   type = p[8].toInt(),
                   sight = p.getOrNull(17)?.toIntOrNull() ?: 0,
                   z = p[16].toIntOrNull() ?: 0,
+                  rail = p.getOrNull(18)?.toIntOrNull() ?: -1,
               )
           count++
         }

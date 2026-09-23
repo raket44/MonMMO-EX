@@ -561,7 +561,9 @@ constructor(
     // bit 3 of the FACING byte is set (KS1), with the byte before it (RW1) as the rail line -
     // the same shape LoadEntity and the rail move packet use. Placed as tiles, Castelia's npcs
     // hung in a group over the sea (owner, 2026-09-23).
-    val rail = ndsRails.isRailMap(regionId, bankId, mapId)
+    // The record's own rail flag decides; a hybrid map (the Castelia plaza) mixes tile npcs with
+    // rail ones. The map test only stands in for rows extracted before the flag column existed.
+    val rail = npc.rail == 1 || (npc.rail < 0 && ndsRails.isRailMap(regionId, bankId, mapId))
     return NpcSpawnPacket(
         entityId = entityIdFor(regionId, bankId, mapId, npc.index),
         spriteRegionId = regionId,

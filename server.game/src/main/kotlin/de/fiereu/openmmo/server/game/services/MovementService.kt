@@ -123,10 +123,16 @@ constructor(
    * (where a scene moved it), or a wall the server stood. Both are what the client's own
    * collision stops the player with.
    */
-  private fun ndsBonk(state: PlayerState, stored: StoredCharacter, toX: Int, toY: Int): Boolean {
+  private fun ndsBonk(state: PlayerState, stored: StoredCharacter, toX: Int, toY: Int, railLine: Int): Boolean {
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId
+    // A warp tile is never a bonk, whatever the land says of it: doors sit on blocked tiles
+    // (the Nacrene gym's leader door at (12,9)), the client has already begun its door
+    // animation and fade, and a step swallowed here left it black (owner, 2026-09-23).
+    if (ndsWarps.warpAt(regionId, bankId, mapId, toX, toY, railLine) != null ||
+        ndsWarps.warpAtMatrix(regionId, bankId, mapId, toX, toY, railLine) != null ||
+        ndsWarps.isDynamicExit(regionId, bankId, mapId, toX, toY)) return false
     if (ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
     val poses = state.scriptedNpcPoses
     return npcService.ndsNpcsOn(regionId, bankId, mapId).any { npc ->
@@ -200,7 +206,7 @@ constructor(
       // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
       // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -
       // the ROM's own or a wall NdsCurtainWalls stands - only turns the player.
-      if (ndsBonk(state, stored, toX, toY)) {
+      if (ndsBonk(state, stored, toX, toY, (msg.stateRaw shr 2) and 0x0F)) {
         characterStore.updatePosition(charId, msg.x.toShort(), msg.y.toShort(), facing = msg.direction)
         state.x = msg.x.toShort()
         state.y = msg.y.toShort()

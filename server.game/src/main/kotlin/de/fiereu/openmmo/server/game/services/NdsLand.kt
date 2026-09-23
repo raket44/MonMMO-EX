@@ -61,6 +61,13 @@ class NdsLand @Inject constructor() {
     return (tiles.coll[i].toInt() and BLOCKED) != 0
   }
 
+  /** True only for a tile the map HAS and marks blocked: a tile past the edge (a seam) is not. */
+  fun blockedInside(region: Int, bank: Int, map: Int, x: Int, y: Int): Boolean {
+    val tiles = maps[Triple(region, bank, map)] ?: return false
+    val i = tiles.index(x, y) ?: return false
+    return tiles.present[i] && (tiles.coll[i].toInt() and BLOCKED) != 0
+  }
+
   fun isGrass(type: Int): Boolean = type == TALL_GRASS || type == VERY_TALL_GRASS
 
   /**

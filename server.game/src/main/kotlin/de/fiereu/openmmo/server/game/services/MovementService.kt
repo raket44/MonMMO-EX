@@ -117,6 +117,27 @@ constructor(
     private val ndsLand: NdsLand = NdsLand(),
 ) {
 
+  /**
+   * Whether a DS step onto ([toX], [toY]) is one the client refused: the ROM land marks the tile
+   * blocked, or a solid object stands there - one of the map's own actors that is not hidden
+   * (where a scene moved it), or a wall the server stood. Both are what the client's own
+   * collision stops the player with.
+   */
+  private fun ndsBonk(state: PlayerState, stored: StoredCharacter, toX: Int, toY: Int): Boolean {
+    val regionId = state.regionId
+    val bankId = state.bankId
+    val mapId = state.mapId
+    if (ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
+    val poses = state.scriptedNpcPoses
+    return npcService.ndsNpcsOn(regionId, bankId, mapId).any { npc ->
+      if (NdsStoryFlags.isHidden(regionId, npc.flag, stored.storyFlags)) return@any false
+      val pose = poses[de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)]
+      val x = pose?.x ?: npc.x
+      val y = pose?.y ?: npc.y
+      x == toX && y == toY
+    }
+  }
+
   /** One step. The client sends the tile it left and the direction, the server derives the rest. */
   fun onMovement(event: PacketEvent<MovementPacket>) {
     val ctx = event.session
@@ -174,6 +195,17 @@ constructor(
       log.info {
         "NDS move: char=$charId ${state.bankId}:${state.mapId} (${msg.x}, ${msg.y}) " +
             "dir=${msg.direction} state=0x%02x".format(msg.stateRaw)
+      }
+      // A bonk: the client sends the attempt and stays put, and committing it stood the server's
+      // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
+      // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -
+      // the ROM's own or a wall NdsCurtainWalls stands - only turns the player.
+      if (ndsBonk(state, stored, toX, toY)) {
+        characterStore.updatePosition(charId, msg.x.toShort(), msg.y.toShort(), facing = msg.direction)
+        state.x = msg.x.toShort()
+        state.y = msg.y.toShort()
+        state.facingDirection = msg.direction
+        return
       }
       characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
       state.x = toX.toShort()

@@ -1670,6 +1670,10 @@ class NdsScriptCorpusGenerator {
         var current: Block? = null
         val stack = ArrayDeque<String>()
         var lastOp = 1
+        /** Comparisons pushed by Condition 0..5 and not yet consumed by a When/If (see "Condition"). */
+        val pending = mutableListOf<Pair<List<List<String>>, Int>>()
+        /** 6 (OR) or 7 (AND) joining the pending comparisons, null for a lone one. */
+        var combine: Int? = null
         // Multi x, y, ?, ?, cancel, var opens a choice list; each SetTextScriptMessage text, 0xFFFF,
         // value is one row; CloseMulti shows it. Emitted as one ds_menu, like HeartGold's MenuExec.
         var menuVar: String? = null
@@ -1694,6 +1698,8 @@ class NdsScriptCorpusGenerator {
             }
             current = Block(lab(c.offset), false, mutableListOf()).also { blocks += it }
             stack.clear()
+            pending.clear()
+            combine = null
           }
           val b = current
           val a = c.args
@@ -1723,28 +1729,42 @@ class NdsScriptCorpusGenerator {
             "SetStackVar" -> stack.addLast(t(0))
             "SetStackDerefVar" -> stack.addLast(v(0))
             "StoreFlag" -> stack.addLast(fl(0))
+            // Gen 5's stack conditions: 0..5 pop two operands and push a comparison (<, ==, >, <=,
+            // >=, !=); 6 ORs and 7 ANDs the two results on the stack (read off the Nacrene gate
+            // quiz - "either answer was 3" grades 0, the (1,1) (1,2) (2,1) (2,2) pairs each grade -
+            // and the Nacrene gym's librarian, `var == k AND !flag 129` per book, 2026-09-23).
+            // Until then 7 was taken as NOT and 6 dropped, so every AND read false and the
+            // librarian skipped to her last line. The comparisons wait here until the When/If that
+            // consumes them, which is where a two-legged jump can be laid out.
             "Condition" -> {
-              lastOp = t(0).toInt()
-              val rhs = stack.removeLastOrNull() ?: "0"
-              val lhs = stack.removeLastOrNull() ?: "0"
-              when {
-                lhs.startsWith("FLAG_") -> {
-                  b.lines += listOf("CheckFlagVar", lhs, "VAR_RESULT")
-                  b.lines += listOf("Compare", "VAR_RESULT", rhs)
+              val code = t(0).toInt()
+              if (code == 6 || code == 7) {
+                combine = code
+              } else if (code > 7) {
+                b.lines += listOf("Ds5Condition", t(0))
+              } else {
+                var op = code
+                val rhs = stack.removeLastOrNull() ?: "0"
+                val lhs = stack.removeLastOrNull() ?: "0"
+                val lines = mutableListOf<List<String>>()
+                when {
+                  lhs.startsWith("FLAG_") -> {
+                    lines += listOf("CheckFlagVar", lhs, "VAR_RESULT")
+                    lines += listOf("Compare", "VAR_RESULT", rhs)
+                  }
+                  lhs.startsWith("VAR_") -> lines += listOf("Compare", lhs, rhs)
+                  rhs.startsWith("VAR_") -> {
+                    lines += listOf("Compare", rhs, lhs)
+                    op = listOf(2, 1, 0, 4, 3, 5).getOrElse(op) { op }
+                  }
+                  else -> {
+                    lines += listOf("SetVar", "VAR_RESULT", lhs)
+                    lines += listOf("Compare", "VAR_RESULT", rhs)
+                  }
                 }
-                lhs.startsWith("VAR_") -> b.lines += listOf("Compare", lhs, rhs)
-                rhs.startsWith("VAR_") -> {
-                  b.lines += listOf("Compare", rhs, lhs)
-                  lastOp = listOf(2, 1, 0, 4, 3, 5).getOrElse(lastOp) { lastOp }
-                }
-                else -> {
-                  b.lines += listOf("SetVar", "VAR_RESULT", lhs)
-                  b.lines += listOf("Compare", "VAR_RESULT", rhs)
-                }
+                pending += lines to op
+                lastOp = op
               }
-              // 7 negates the condition just computed; 6 combines with the previous one (kept as is).
-              if (t(0).toInt() == 7) lastOp = listOf(4, 5, 3, 2, 0, 1).getOrElse(lastOp) { lastOp }
-              else if (t(0).toInt() > 7) b.lines += listOf("Ds5Condition", t(0))
             }
             "Compare" -> {
               b.lines += listOf("Compare", v(0), tv(1))
@@ -1753,8 +1773,32 @@ class NdsScriptCorpusGenerator {
             "When", "If" -> {
               val verb = if (c.name == "When") "GoToIf" else "CallIf"
               val k = t(0).toInt()
-              val name = if (lastOp >= 0) cond(lastOp, negate = k == 255) else cond(k, negate = false)
-              b.lines += listOf(verb + name, jump(1))
+              val target = jump(1)
+              // 255 = go when the condition is FALSE, else when it is true.
+              val onFalse = k == 255
+              if (pending.size <= 1 || combine == null) {
+                pending.forEach { b.lines += it.first }
+                val name = if (lastOp >= 0) cond(lastOp, negate = onFalse) else cond(k, negate = false)
+                b.lines += listOf(verb + name, target)
+              } else {
+                val and = combine == 7
+                // Every leg but the last decides on its own; a leg that cannot settle the jump
+                // steps over the rest to a continuation block of its own.
+                val direct = and == onFalse
+                val skip = "U${file}_${c.offset}s"
+                for ((i, leg) in pending.withIndex()) {
+                  b.lines += leg.first
+                  val last = i == pending.lastIndex
+                  if (direct || last) b.lines += listOf(verb + cond(leg.second, negate = onFalse), target)
+                  else b.lines += listOf("GoToIf" + cond(leg.second, negate = !onFalse), skip)
+                }
+                if (!direct) {
+                  b.lines += listOf("GoTo", skip)
+                  current = Block(skip, false, mutableListOf()).also { blocks += it }
+                }
+              }
+              pending.clear()
+              combine = null
             }
             "GetStackVar" -> b.lines += listOf("SetVar", v(0), stack.removeLastOrNull() ?: "0")
             "PopStack", "AddStackVar" -> {}

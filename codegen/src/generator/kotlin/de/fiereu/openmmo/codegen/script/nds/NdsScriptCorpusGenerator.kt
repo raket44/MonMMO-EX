@@ -371,9 +371,12 @@ class NdsScriptCorpusGenerator {
     return file.readLines().filter { it.startsWith("coord;") }.mapNotNull { line ->
       val p = line.split(';')
       if (p.size < 13) return@mapNotNull null
-      // p: kind, region, bank, map, idx, script, x, y, w, h, height, value, var
+      // p: kind, region, bank, map, idx, script, x, y, w, h, height, value, var [, rail line]
       val n = p.subList(5, 13).map { it.toIntOrNull() ?: return@mapNotNull null }
-      "${p[2]};${p[3]};${n[1]};${n[2]};${n[3]};${n[4]};${varName(n[7])};${n[6]};${n[0]}"
+      // A Gen 5 rail trigger (Castelia's streets) is in a rail line's own frame; the line comes
+      // through as a tenth field so the server matches it against the line the player rides.
+      val line = p.getOrNull(13)?.toIntOrNull()?.let { ";$it" } ?: ""
+      "${p[2]};${p[3]};${n[1]};${n[2]};${n[3]};${n[4]};${varName(n[7])};${n[6]};${n[0]}$line"
     }
   }
 

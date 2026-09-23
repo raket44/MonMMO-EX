@@ -97,6 +97,8 @@ constructor(
       val varKey: String,
       val value: Int,
       val scriptId: Int,
+      /** A Gen 5 rail trigger's line (its x/y are in that line's frame); -1 for a tile trigger. */
+      val line: Int = -1,
   )
 
   /** Every DS step trigger by (region, bank, map), from the corpus (NdsScriptCorpusGenerator.coordTriggerRows). */
@@ -106,32 +108,40 @@ constructor(
           val region = when (source.source) { "platinum" -> 3; "heartgold" -> 4; "white" -> 2; else -> return@flatMap emptyList() }
           source.coordTriggers.mapNotNull { row ->
             val p = row.split(';')
-            if (p.size != 9) return@mapNotNull null
+            // bank;map;x;y;w;h;VAR;value;script[;rail line]
+            if (p.size != 9 && p.size != 10) return@mapNotNull null
             val n = listOf(p[0], p[1], p[2], p[3], p[4], p[5], p[7], p[8]).map { it.toIntOrNull() ?: return@mapNotNull null }
+            val line = p.getOrNull(9)?.toIntOrNull() ?: -1
             // The scripts write the var under their story namespace ("sinnoh/VAR_...").
-            Triple(region, n[0], n[1]) to NdsCoordTrigger(n[2], n[3], n[4], n[5], "${source.storyNamespace}/${p[6]}", n[6], n[7])
+            Triple(region, n[0], n[1]) to NdsCoordTrigger(n[2], n[3], n[4], n[5], "${source.storyNamespace}/${p[6]}", n[6], n[7], line)
           }
         }
         .groupBy({ it.first }, { it.second })
   }
 
-  private fun ndsTriggersAt(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): List<NdsCoordTrigger> =
+  /**
+   * The triggers under a step. A rail trigger's box is in its line's frame, so it only matches
+   * a player the server knows to be riding that line ([railLine], PlayerState.railLine):
+   * Castelia main's one trigger (Burgh after the pier) sits on line 4 at x 24, y -5..2.
+   */
+  private fun ndsTriggersAt(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, railLine: Int): List<NdsCoordTrigger> =
       ndsCoordTriggers[Triple(regionId, bankId, mapId)].orEmpty().filter {
-        x in it.x until it.x + it.width.coerceAtLeast(1) && y in it.y until it.y + it.height.coerceAtLeast(1)
+        (if (it.line >= 0) it.line == railLine else railLine < 0) &&
+            x in it.x until it.x + it.width.coerceAtLeast(1) && y in it.y until it.y + it.height.coerceAtLeast(1)
       }
 
   /** True when a DS tile has a step trigger at all, whatever its var currently says. */
-  fun hasNdsCoordinate(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Boolean =
-      ndsTriggersAt(regionId, bankId, mapId, x, y).isNotEmpty()
+  fun hasNdsCoordinate(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, railLine: Int = -1): Boolean =
+      ndsTriggersAt(regionId, bankId, mapId, x, y, railLine).isNotEmpty()
 
   /**
    * The DS step trigger on a tile whose var holds its value, resolved the way a DS npc's script id is
    * (InteractionService.onNdsEntityInteract): ids from 2000 up are shared chunks, the rest index the
    * map header's own script file.
    */
-  fun atNdsCoordinate(charId: Long, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Script? {
+  fun atNdsCoordinate(charId: Long, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, railLine: Int = -1): Script? {
     val trigger =
-        ndsTriggersAt(regionId, bankId, mapId, x, y).firstOrNull { storyService.getVar(charId, it.varKey) == it.value }
+        ndsTriggersAt(regionId, bankId, mapId, x, y, railLine).firstOrNull { storyService.getVar(charId, it.varKey) == it.value }
             ?: return null
     val label =
         if (trigger.scriptId >= 2000) "NDS_CHUNK_${trigger.scriptId}"

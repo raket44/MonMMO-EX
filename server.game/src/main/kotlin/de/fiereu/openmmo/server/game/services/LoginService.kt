@@ -118,6 +118,7 @@ constructor(
     private val linkService: LinkService,
     private val encounterTracker: EncounterTrackerService,
     private val itemRegistry: de.fiereu.openmmo.items.ItemRegistry,
+    private val ndsRails: NdsRails = NdsRails(),
 ) {
 
   suspend fun onJoinGame(event: PacketEvent<JoinPacket>) {
@@ -576,8 +577,20 @@ constructor(
     // facing deltas - the one constant rule that replaces the deleted approach recorder.
     // Verified: Pokecenter mat (8,3) facing down -> (8,2); lower city (2,-5) facing up -> (2,-4).
     val onRail = state.pendingRailLine >= 0
-    val sdx = if (onRail) -stepDir.dx else stepDir.dx
-    val sdy = if (onRail) -stepDir.dy else stepDir.dy
+    // A rail step moves along the line's own axes, and which axis a screen direction is depends
+    // on the line's mode (NdsRails.delta, the client's own cell linking): the old "negate both
+    // deltas" was mode 4 only - Castelia's streets - and sent Skyarrow's walks sideways.
+    val arrivalLine =
+        if (onRail)
+            ndsRails.areaOf(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
+                ?.let { ndsRails.line(it, state.pendingRailLine) }
+        else null
+    val (sdx, sdy) =
+        when {
+          arrivalLine != null -> ndsRails.delta(arrivalLine, stepDir)
+          onRail -> -stepDir.dx to -stepDir.dy
+          else -> stepDir.dx to stepDir.dy
+        }
     val tx = if (state.pendingStepX >= 0) state.pendingStepX else info.positionX + sdx
     val ty = if (state.pendingStepX >= 0) state.pendingStepY else info.positionY + sdy
     state.pendingStepX = -1

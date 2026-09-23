@@ -55,7 +55,7 @@ public class Rail5 {
     }
     int areas = c / 2;
     StringBuilder out = new StringBuilder();
-    out.append("# area;areaIdx;header | point;area;id;x;y;z | line;area;id;fromPoint;toPoint;length;width | cell;area;line;x;y;plane0;plane1 (blocked cells only)\n");
+    out.append("# area;areaIdx;header | point;area;id;x;y;z | line;area;id;fromPoint;toPoint;mode;length;width | cell;area;line;x;y;plane0;plane1 (blocked cells only)\n");
     for (int area = 0; area < areas; area++) {
       for (int h : AREA_HEADERS[area]) out.append("area;").append(area).append(';').append(h).append('\n');
       byte[] f = Arrays.copyOfRange(rom, img + st[area], img + en[area]);
@@ -73,7 +73,7 @@ public class Rail5 {
       for (int i = 0; i < nl; i++) {
         int lo = lOff + i * 72;
         int w = s16(g, o), len = s16(g, o + 2); o += 4;
-        out.append("line;").append(area).append(';').append(i).append(';').append(u32(f, lo)).append(';').append(u32(f, lo + 4))
+        out.append("line;").append(area).append(';').append(i).append(';').append(u32(f, lo)).append(';').append(u32(f, lo + 4)).append(';').append(u32(f, lo + 8))
             .append(';').append(len).append(';').append(w).append('\n');
         for (int x = 0; x < len; x++) for (int y = 0; y < w; y++) {
           int p0 = u16(g, o), p1 = u16(g, o + 2); o += 4;

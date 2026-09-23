@@ -201,14 +201,17 @@ constructor(
       // the client asking for its player, moves still describe the OLD map - processing them
       // against the new map's warp table was the phantom "new warp info" during desync.
       if (state.justWarped) return
-      val toX = msg.x + msg.direction.dx
-      val toY = msg.y + msg.direction.dy
       // On a rail the client reports line-local coordinates and never the line. The line is
       // known from the arrival; when the client changes lines its coordinates jump (a step
       // moves them by one), and the ROM's rail graph says which line it stepped onto: the one
       // sharing the point at the end just left, entered at that point (NdsRails.transition).
       // When no line fits, the line is unknown until the next warp.
       val railArea = ndsRails.areaOf(state.regionId, state.bankId, state.mapId)
+      // The tile the step is toward. On a rail a screen direction moves along the line's own
+      // axes by its mode (NdsRails.delta); the plain dx/dy was the wrong axis on most lines.
+      val railStep = railArea?.let { a -> ndsRails.line(a, state.railLine)?.let { ndsRails.delta(it, msg.direction) } }
+      val toX = msg.x + (railStep?.first ?: msg.direction.dx)
+      val toY = msg.y + (railStep?.second ?: msg.direction.dy)
       if (railArea != null && state.railLine >= 0 &&
           (kotlin.math.abs(msg.x - state.x) > RAIL_JUMP || kotlin.math.abs(msg.y - state.y) > RAIL_JUMP)) {
         val next = ndsRails.transition(railArea, state.railLine, state.x.toInt(), msg.x)
@@ -348,10 +351,16 @@ constructor(
       // mat - and refused the Nacrene leader's door, entered pressing up but landing facing right,
       // while the client had already faded on contact: a black screen (owner, 2026-09-23). A
       // step onto the tile fires under the same guard a direction-less warp gets.
+      // A RAIL box fires on position alone: the client's own hit test (f.UN.y81) checks the
+      // box's line, x range and y range and nothing else - no facing. Gating it on the row's
+      // direction byte re-fired the Skyarrow gate whenever the player pressed that way while
+      // still standing in the landing box (owner, 2026-09-23); the arrival guard is what keeps
+      // a landing from bouncing straight back, and it clears once the player has left the box.
       val door =
           stepped?.takeIf { it.srcLine < 0 && steppedFires(ruleAt(toX, toY)) }
               ?: standing?.takeIf {
-                it.direction == facing || (it.direction < 0 && standingFires(ruleAt(msg.x, msg.y)))
+                if (it.srcLine >= 0) !onArrivalBox
+                else it.direction == facing || (it.direction < 0 && standingFires(ruleAt(msg.x, msg.y)))
               }
       if (door != null) {
         // Arrivals that land NEXT TO other warp tiles (bridge ends, boundary boxes, Castelia's
@@ -385,6 +394,20 @@ constructor(
               0b0111 -> Direction.RIGHT
               else -> null
             }
+        // A DS door mat's open sides, from the ROM land. Castelia's side-street doors say DOWN
+        // in their exit record while the only open tile beside the mat is WEST of it; walking
+        // DOWN into the wall left the player on the mat, re-entering the door on the next press
+        // (owner, 2026-09-23). Exactly one open, warp-free side is the walk-off, whatever the
+        // record says. Tile destinations only; rail landings are not cartesian.
+        val landOpenDir =
+            if (door.destLine < 0 && ndsLand.has(state.regionId, door.bank, door.map))
+                Direction.entries
+                    .filter { d ->
+                      ndsLand.blocked(state.regionId, door.bank, door.map, ax + d.dx, ay + d.dy) == false &&
+                          ndsWarps.rowsAt(state.regionId, door.bank, door.map, ax + d.dx, ay + d.dy).isEmpty()
+                    }
+                    .singleOrNull()
+            else null
         val arriveDir =
             when {
               // ESCALATOR_FLIP_FACE (0x6A): the decomp's own name IS the mechanic - the ride
@@ -394,6 +417,7 @@ constructor(
               landingBehaviorType == 0x6A -> msg.direction.opposite()
               landingTypeRule?.press != null -> landingTypeRule.press.opposite()
               maskDir != null -> maskDir
+              landOpenDir != null -> landOpenDir
               // The fired warp's own direction IS the ROM's arrival facing (the "exit direction"
               // the client applies on landing). Now that a Gen 5 warp fires on contact from any
               // side, the press that entered it can be sideways, and the returning mirror below

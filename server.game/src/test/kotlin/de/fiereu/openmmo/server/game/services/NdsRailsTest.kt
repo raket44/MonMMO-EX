@@ -1,5 +1,6 @@
 package de.fiereu.openmmo.server.game.services
 
+import de.fiereu.openmmo.common.enums.Direction
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -34,6 +35,21 @@ class NdsRailsTest :
 
       test("a jump that fits no neighbouring line is refused rather than guessed") {
         rails.transition(skyarrow, 13, lastX = 7, newX = 20).shouldBeNull()
+      }
+
+      // Live moves: Skyarrow's line 13 walked UP as x 0->3 and LEFT as y 0->-3; Castelia's
+      // streets walked LEFT as x 6->27 and UP as y 0->6. The Pokecenter exit on Castelia's line 3
+      // lands facing DOWN and its one-step walk-off goes y-1, (8,3) -> (8,2).
+      test("a screen direction moves along the axis the line's mode says") {
+        val bridgeEnd = rails.line(skyarrow, 13)!!
+        bridgeEnd.mode shouldBe 1
+        rails.delta(bridgeEnd, Direction.UP) shouldBe (1 to 0)
+        rails.delta(bridgeEnd, Direction.LEFT) shouldBe (0 to -1)
+        val street = rails.line(rails.areaOf(2, 28, 0)!!, 3)!!
+        street.mode shouldBe 4
+        rails.delta(street, Direction.LEFT) shouldBe (1 to 0)
+        rails.delta(street, Direction.UP) shouldBe (0 to 1)
+        rails.delta(street, Direction.DOWN) shouldBe (0 to -1)
       }
 
       test("Castelia's streets chain through their shared points") {

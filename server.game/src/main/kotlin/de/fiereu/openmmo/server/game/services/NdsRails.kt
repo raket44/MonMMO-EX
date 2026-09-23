@@ -23,7 +23,12 @@ private val log = KotlinLogging.logger {}
  */
 @Singleton
 class NdsRails @Inject constructor() {
-  data class Line(val id: Int, val from: Int, val to: Int, val length: Int, val width: Int)
+  /**
+   * [mode] is the line's AM1 word: which rail axis each screen direction moves along, read off
+   * the client's cell linking (f.k90, the four Lh1 blocks) and verified live - Skyarrow (mode 1)
+   * walks UP as x+1 and LEFT as y-1, Castelia's streets (mode 4) walk UP as y+1 and LEFT as x+1.
+   */
+  data class Line(val id: Int, val from: Int, val to: Int, val length: Int, val width: Int, val mode: Int = 2)
 
   class Area(val index: Int) {
     val lines = ArrayList<Line>()
@@ -74,6 +79,24 @@ class NdsRails @Inject constructor() {
   /** Where a line is entered at [point]: 0 at its from-point, length-1 at its to-point. */
   fun entryX(line: Line, point: Int): Int = if (line.from == point) 0 else line.length - 1
 
+  /**
+   * One step in screen direction [dir] on [line], as a (dx, dy) in the line's frame. The client
+   * links each rail cell to its four screen-direction neighbours by the line's mode (f.k90):
+   *  mode 1: DOWN x-1, UP x+1, LEFT y-1, RIGHT y+1
+   *  mode 2: DOWN y+1, UP y-1, LEFT x-1, RIGHT x+1
+   *  mode 3: DOWN x+1, UP x-1, LEFT y+1, RIGHT y-1
+   *  mode 4: DOWN y-1, UP y+1, LEFT x+1, RIGHT x-1
+   */
+  fun delta(line: Line, dir: de.fiereu.openmmo.common.enums.Direction): Pair<Int, Int> {
+    val d = de.fiereu.openmmo.common.enums.Direction.entries.indexOf(dir) // DOWN 0, UP 1, LEFT 2, RIGHT 3
+    return when (line.mode) {
+      1 -> when (d) { 0 -> -1 to 0; 1 -> 1 to 0; 2 -> 0 to -1; else -> 0 to 1 }
+      3 -> when (d) { 0 -> 1 to 0; 1 -> -1 to 0; 2 -> 0 to 1; else -> 0 to -1 }
+      4 -> when (d) { 0 -> 0 to -1; 1 -> 0 to 1; 2 -> 1 to 0; else -> -1 to 0 }
+      else -> when (d) { 0 -> 0 to 1; 1 -> 0 to -1; 2 -> -1 to 0; else -> 1 to 0 }
+    }
+  }
+
   private fun load(): Map<Int, Area> {
     val file = dataFile() ?: return emptyMap()
     val out = HashMap<Int, Area>()
@@ -82,7 +105,8 @@ class NdsRails @Inject constructor() {
         if (!l.startsWith("line;")) continue
         val p = l.split(';')
         val area = out.getOrPut(p[1].toInt()) { Area(p[1].toInt()) }
-        val line = Line(p[2].toInt(), p[3].toInt(), p[4].toInt(), p[5].toInt(), p[6].toInt())
+        // line;area;id;fromPoint;toPoint;mode;length;width
+        val line = Line(p[2].toInt(), p[3].toInt(), p[4].toInt(), p[6].toInt(), p[7].toInt(), mode = p[5].toInt())
         while (area.lines.size <= line.id) area.lines.add(Line(area.lines.size, -1, -1, 0, 0))
         area.lines[line.id] = line
         area.byPoint.getOrPut(line.from) { mutableListOf() } += line

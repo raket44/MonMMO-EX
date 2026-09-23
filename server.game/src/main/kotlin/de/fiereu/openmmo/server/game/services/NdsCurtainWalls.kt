@@ -57,7 +57,7 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
   private fun syncNacrene(session: SessionContext, storyFlags: Map<String, Int>) {
     val slid = (storyFlags[NACRENE_VAR] ?: 0) >= NACRENE_OPEN
     NACRENE_CLOSED.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, y, !slid) }
-    NACRENE_SLID.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + 10 + i, x, y, slid) }
+    NACRENE_SLID.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + 20 + i, x, y, slid) }
   }
 
   private fun wall(session: SessionContext, bank: Int, map: Int, id: Int, x: Int, y: Int, closed: Boolean) {
@@ -106,10 +106,14 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
     /** Nacrene Gym (header 18): the sliding shelf's footprint, the ROM's own object's tile left out. */
     const val NACRENE_BANK = 18
     const val NACRENE_MAP = 0
-    /** Shelf at x 11..14, rows 9 and 10; the ROM object holds (11,10). */
-    val NACRENE_CLOSED: List<Pair<Int, Int>> = (11..14).map { it to 9 } + (12..14).map { it to 10 }
+    /**
+     * Shelf at x 11..14, rows 7..10 - four rows tall, like its neighbour at x 4..7 whose footprint
+     * the ROM land marks blocked on y 7..10 (the record sits on the bottom row). The ROM object
+     * holds (11,10).
+     */
+    val NACRENE_CLOSED: List<Pair<Int, Int>> = (7..10).flatMap { y -> (11..14).map { it to y } } - (11 to 10)
     /** Slid three tiles east: x 14..17, the ROM object now on (14,10). */
-    val NACRENE_SLID: List<Pair<Int, Int>> = (14..17).map { it to 9 } + (15..17).map { it to 10 }
+    val NACRENE_SLID: List<Pair<Int, Int>> = (7..10).flatMap { y -> (14..17).map { it to y } } - (14 to 10)
     /** VAR 16522 (0x408A), the book quiz's progress; 7 = the last book read, the shelf slid. */
     const val NACRENE_VAR = "unova/VAR_0x408A"
     const val NACRENE_OPEN = 7

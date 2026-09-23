@@ -8,9 +8,6 @@ import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.NpcDef
 import de.fiereu.openmmo.net.game.packets.EntityLeavePacket
 import de.fiereu.openmmo.net.game.packets.NpcSpawnPacket
-
-/** Local id of the developer sprite probe (NpcService.spawnProbe): past any map's own actors. */
-private const val PROBE_LOCAL_ID = 9990
 import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -19,6 +16,9 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.launch
+
+/** Local id of the developer sprite probe (NpcService.spawnProbe): past any map's own actors. */
+private const val PROBE_LOCAL_ID = 9990
 
 private val log = KotlinLogging.logger {}
 

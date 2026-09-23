@@ -294,6 +294,9 @@ constructor(
   /** Every ROM npc placed on a DS map (trees and boulders included), by its event index. */
   fun ndsNpcsOn(regionId: Int, bankId: Int, mapId: Int): List<NdsNpcs.Npc> = ndsNpcs.of(regionId, bankId, mapId)
 
+  /** A DS map's background events (bookshelves, signs, hidden items), for the tile interaction. */
+  fun ndsBgEventsOn(regionId: Int, bankId: Int, mapId: Int): List<NdsNpcs.BgEvent> = ndsNpcs.bgOf(regionId, bankId, mapId)
+
   /** The ROM npc behind a DS-map entity id, for interaction. */
   fun ndsNpcForEntity(regionId: Int, bankId: Int, mapId: Int, entityId: Long): NdsNpcs.Npc? =
       ndsNpcs.of(regionId, bankId, mapId).firstOrNull { entityIdFor(regionId, bankId, mapId, it.index) == entityId }

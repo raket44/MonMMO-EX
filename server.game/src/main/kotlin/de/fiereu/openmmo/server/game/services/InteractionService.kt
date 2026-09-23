@@ -110,6 +110,32 @@ constructor(
     log.info { "DS npc idx=${npc.index} script=${npc.script} ($label) has no wired dialog" }
   }
 
+  /**
+   * The action button on a DS map's TILE: the ROM's background events (tools/nds/Bg5 - the Nacrene
+   * gym's bookshelves, signs, hidden items), resolved the way a DS npc's script is. Until 2026-09-23
+   * a DS tile answered nothing, so the gym's quiz could not be read.
+   */
+  private fun onNdsTileInteract(session: SessionContext, state: PlayerState, facingX: Int, facingY: Int) {
+    val regionId = state.regionId
+    val bankId = state.bankId
+    val mapId = state.mapId
+    val bg = npcService.ndsBgEventsOn(regionId, bankId, mapId).firstOrNull { it.x == facingX && it.y == facingY }
+    if (bg == null) {
+      log.debug { "DS tile interaction at ($facingX, $facingY) has no bg event" }
+      return
+    }
+    val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"
+    val script =
+        try {
+          scriptRegistry.forLabel(label, gbaScriptSource(regionId))
+        } catch (e: ScriptResolutionException) {
+          log.info { "DS bg event idx=${bg.index} type=${bg.type} $label: ${e.message}" }
+          null
+        }
+    if (script != null) runScript(session, state, script, entityId = -1)
+    else log.info { "DS bg event idx=${bg.index} type=${bg.type} script=${bg.script} ($label) has no wired dialog" }
+  }
+
   /** The player pressed the action button on a specific entity, that is an npc. */
   fun onEntityInteract(event: PacketEvent<EntityInteractPacket>) {
     val session = event.session
@@ -192,13 +218,6 @@ constructor(
     if (state.blocksNewScript) return
     val stored = currentCharacter(state) ?: return
 
-    val currentMap =
-        mapManager.getMap(
-            stored.info.positionRegionId,
-            stored.info.positionBankId,
-            stored.info.positionMapId,
-        ) ?: return
-
     val facingX =
         when (state.facingDirection) {
           Direction.RIGHT -> stored.info.positionX.toInt() + 1
@@ -211,6 +230,16 @@ constructor(
           Direction.DOWN -> stored.info.positionY.toInt() + 1
           else -> stored.info.positionY.toInt()
         }
+    val currentMap =
+        mapManager.getMap(
+            stored.info.positionRegionId,
+            stored.info.positionBankId,
+            stored.info.positionMapId,
+        )
+    if (currentMap == null) {
+      if (state.regionId in 2..4) onNdsTileInteract(session, state, facingX, facingY)
+      return
+    }
     val bgEvent =
         currentMap.bgEvents.find {
           it.x == facingX && it.y == facingY && facingDirOk(it.facingDir, state.facingDirection)

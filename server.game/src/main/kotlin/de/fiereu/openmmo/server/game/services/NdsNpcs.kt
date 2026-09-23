@@ -34,7 +34,48 @@ class NdsNpcs @Inject constructor() {
       val sight: Int = 0,
   )
 
+  /**
+   * A background event: what the action button hits on a TILE - a bookshelf, a sign, a hidden
+   * item (tools/nds/Bg5, the `bg;` rows). [script] resolves the way an npc's does: 2000+ a shared
+   * chunk, else the map's own script file entry.
+   */
+  data class BgEvent(
+      val index: Int,
+      val script: Int,
+      /** 0 bookshelf/plain, 1 sign, 2 hidden item. */
+      val type: Int,
+      /** 0, 4 or 6 in the ROM; meaning not settled, not enforced. */
+      val facing: Int,
+      val x: Int,
+      val y: Int,
+      val z: Int,
+  )
+
   private val byMap: Map<Triple<Int, Int, Int>, List<Npc>> by lazy { load() }
+  private val bgByMap: Map<Triple<Int, Int, Int>, List<BgEvent>> by lazy { loadBg() }
+
+  /** The background events of a DS map (empty where none were extracted). */
+  fun bgOf(region: Int, bank: Int, map: Int): List<BgEvent> = bgByMap[Triple(region, bank, map)].orEmpty()
+
+  private fun loadBg(): Map<Triple<Int, Int, Int>, List<BgEvent>> {
+    val out = HashMap<Triple<Int, Int, Int>, MutableList<BgEvent>>()
+    for (region in listOf(2, 3, 4)) {
+      val file =
+          listOf(File("nds-npcs-$region.txt"), File("server.game/nds-npcs-$region.txt")).firstOrNull { it.isFile }
+              ?: continue
+      file.bufferedReader().useLines { lines ->
+        for (line in lines) {
+          if (!line.startsWith("bg;")) continue
+          val p = line.split(';')
+          if (p.size < 11) continue
+          val key = Triple(p[1].toInt(), p[2].toInt(), p[3].toInt())
+          out.getOrPut(key) { mutableListOf() } +=
+              BgEvent(p[4].toInt(), p[5].toInt(), p[6].toInt(), p[7].toInt(), p[8].toInt(), p[9].toInt(), p[10].toInt())
+        }
+      }
+    }
+    return out
+  }
 
   /**
    * Actors a script makes (Gen 5 MakeNPC x, y, dir, id, sprite: ids 224-227, 240, 250, 251 - Cheren

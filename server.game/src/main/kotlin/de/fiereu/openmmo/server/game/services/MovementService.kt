@@ -212,15 +212,29 @@ constructor(
       val railStep = railArea?.let { a -> ndsRails.line(a, state.railLine)?.let { ndsRails.delta(it, msg.direction) } }
       val toX = msg.x + (railStep?.first ?: msg.direction.dx)
       val toY = msg.y + (railStep?.second ?: msg.direction.dy)
-      if (railArea != null && state.railLine >= 0 &&
-          (kotlin.math.abs(msg.x - state.x) > RAIL_JUMP || kotlin.math.abs(msg.y - state.y) > RAIL_JUMP)) {
-        val next = ndsRails.transition(railArea, state.railLine, state.x.toInt(), msg.x)
+      val railJump =
+          railArea != null &&
+              (kotlin.math.abs(msg.x - state.x) > RAIL_JUMP || kotlin.math.abs(msg.y - state.y) > RAIL_JUMP)
+      if (railJump && state.railLine >= 0) {
+        val next = ndsRails.transition(railArea!!, state.railLine, state.x.toInt(), msg.x, state.y.toInt(), msg.y)
         log.info {
           "NDS rail: char=$charId ${state.bankId}:${state.mapId} left line ${state.railLine} at " +
               "(${state.x}, ${state.y}) for (${msg.x}, ${msg.y}): " +
-              (next?.let { "line ${it.id} (${it.from}->${it.to}, ${it.length} long)" } ?: "no line fits, unknown")
+              (next?.let { "line ${it.id} (${it.from}->${it.to}, ${it.length} long)" } ?: "no line fits - on the tiles")
         }
-        state.railLine = next?.id ?: RAIL_LINE_UNKNOWN
+        // No line fits: the client walked off the rails onto the map's plain tiles (the plaza's
+        // open square). -1, so the next jump is read as a step from tiles onto a rail.
+        state.railLine = next?.id ?: -1
+      } else if (railJump && state.railLine < 0) {
+        // From the tiles onto a rail (or a teleport landing, which knows no line): the line
+        // whose cell this is lies next to the tile just stood on.
+        val entered = ndsRails.enterFromTiles(railArea!!, state.x.toInt(), state.y.toInt(), msg.x, msg.y)
+        log.info {
+          "NDS rail: char=$charId ${state.bankId}:${state.mapId} off the tiles at (${state.x}, ${state.y}) " +
+              "onto (${msg.x}, ${msg.y}): " +
+              (entered?.let { "line ${it.first.id} (${"%.1f".format(it.second)} units away)" } ?: "no line within reach")
+        }
+        if (entered != null) state.railLine = entered.first.id
       }
       // Calibration logging for the Gen 5 rail maps (Castelia's main city, Skyarrow, the League
       // lobby): every unhosted move, with the raw state byte. Temporary but cheap on a dev server.

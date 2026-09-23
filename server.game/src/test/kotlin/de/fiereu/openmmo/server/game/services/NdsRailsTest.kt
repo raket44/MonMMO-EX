@@ -4,6 +4,7 @@ import de.fiereu.openmmo.common.enums.Direction
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 
 /**
@@ -68,6 +69,22 @@ class NdsRailsTest :
         openSides(36, 1, 0, 1) shouldBe listOf(Direction.DOWN) // mode 3: x+1 -> (1,1)
         openSides(249, 12, 4, 0) shouldBe listOf(Direction.DOWN) // mode 1: x-1 -> (3,0)
         openSides(28, 2, 2, -6) shouldBe listOf(Direction.UP) // mode 4: y+1 -> (2,-5)
+      }
+
+      // The Castelia plaza is a hybrid: rail spokes around a square of plain tiles. Two logged
+      // walks off line 0 onto the tiles (cell (0,-2) then tile x 6; cell (1,-5) then tile x 9)
+      // fix the lateral sign; a report of (6,18) fits no plaza line (none is wider than 11), so
+      // it is the tiles; and a step from a tile back onto a spoke's cell finds that spoke.
+      test("the plaza's cells sit where the logged walk-offs say, and tiles are told from rails") {
+        val plaza = rails.areaOf(2, 30, 0).shouldNotBeNull()
+        val (ax, _) = rails.world(plaza, 0, 0, -2)!!
+        val (bx, _) = rails.world(plaza, 0, 1, -5)!!
+        kotlin.math.round(ax).toInt() shouldBe 6
+        kotlin.math.round(bx).toInt() shouldBe 9
+        rails.transition(plaza, 0, lastX = 0, newX = 6, lastY = -2, newY = 18).shouldBeNull()
+        // Line 0 runs from point 12 (4.5, 20.5) and the stub line 11 ends there: a tile just
+        // north-east of that point steps onto the west spoke - whichever of the two the cell fits.
+        rails.enterFromTiles(plaza, tileX = 6, tileY = 19, x = 0, y = -2)!!.first.id shouldBeIn listOf(0, 11)
       }
 
       test("Castelia's streets chain through their shared points") {

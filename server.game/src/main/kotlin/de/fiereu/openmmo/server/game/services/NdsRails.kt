@@ -35,6 +35,54 @@ class NdsRails @Inject constructor() {
     val byPoint = HashMap<Int, MutableList<Line>>()
     /** Blocked cells of the grid (plane 1 bit 0), keyed (line shl 20) or ((x and 0x3FF) shl 10) or (y and 0x3FF). */
     val blocked = HashSet<Int>()
+    /** Point world positions (x, z), the ROM's own units - one per tile. */
+    val pointX = HashMap<Int, Double>()
+    val pointZ = HashMap<Int, Double>()
+  }
+
+  /**
+   * A rail cell's position in the map's world units: the line's from-point, plus x along the
+   * unit vector toward its to-point, plus y along the lateral (-uz, ux). The lateral sign is the
+   * one the client uses, read off two logged exits from the Castelia plaza's line 0 onto its
+   * tiles: cell (0,-2) then tile x 6, cell (1,-5) then tile x 9 - only this sign puts both
+   * cells at those x (2026-09-23). Null when the line has no points.
+   */
+  fun world(area: Area, lineId: Int, x: Int, y: Int): Pair<Double, Double>? {
+    val line = line(area, lineId) ?: return null
+    val fx = area.pointX[line.from] ?: return null
+    val fz = area.pointZ[line.from] ?: return null
+    val tx = area.pointX[line.to] ?: return null
+    val tz = area.pointZ[line.to] ?: return null
+    val dx = tx - fx
+    val dz = tz - fz
+    val n = kotlin.math.sqrt(dx * dx + dz * dz)
+    if (n == 0.0) return fx to fz
+    val ux = dx / n
+    val uz = dz / n
+    return (fx + ux * x + (-uz) * y) to (fz + uz * x + ux * y)
+  }
+
+  /** Whether (x, y) is a cell of the line at all (in range; blocked or not). */
+  fun inRange(area: Area, lineId: Int, x: Int, y: Int): Boolean {
+    val line = line(area, lineId) ?: return false
+    return x in 0 until line.length && y >= -(line.width / 2) && y <= line.width - 1 - line.width / 2
+  }
+
+  /**
+   * The line on which cell ([x], [y]) lies closest to world ([wx], [wz]), within [maxDist], or
+   * null. How a client that walked off the tiles onto a rail, or across from one rail's side
+   * onto another, is placed: it reports the new line's cell but never the line.
+   */
+  fun nearestLineAt(area: Area, x: Int, y: Int, wx: Double, wz: Double, maxDist: Double, except: Int = -1): Pair<Line, Double>? {
+    var best: Line? = null
+    var bestD = maxDist
+    for (line in area.lines) {
+      if (line.id == except || !inRange(area, line.id, x, y)) continue
+      val (cx, cz) = world(area, line.id, x, y) ?: continue
+      val d = kotlin.math.sqrt((cx - wx) * (cx - wx) + (cz - wz) * (cz - wz))
+      if (d < bestD) { bestD = d; best = line }
+    }
+    return best?.let { it to bestD }
   }
 
   private fun cellKey(line: Int, x: Int, y: Int) = (line shl 20) or ((x and 0x3FF) shl 10) or (y and 0x3FF)
@@ -67,7 +115,26 @@ class NdsRails @Inject constructor() {
    * player was near, entered at that point. Null when nothing fits, which means the guess would
    * be wrong and the caller should stop trusting the line.
    */
-  fun transition(area: Area, fromLine: Int, lastX: Int, newX: Int): Line? {
+  fun transition(area: Area, fromLine: Int, lastX: Int, newX: Int, lastY: Int = 0, newY: Int = 0): Line? {
+    val byEnd = transitionAtEnd(area, fromLine, lastX, newX)
+    if (byEnd != null) return byEnd
+    // Not off an end: lines in an open square (the Castelia plaza) hand the client across from
+    // one line's side onto another's. The new cell must sit next to the old one in the world.
+    val (wx, wz) = world(area, fromLine, lastX, lastY) ?: return null
+    return nearestLineAt(area, newX, newY, wx, wz, SIDE_STEP, except = fromLine)?.first
+  }
+
+  /**
+   * Off the tiles onto a rail (the plaza's open square is plain tiles between its rail spokes):
+   * the line whose cell ([x], [y]) lies nearest the tile the client stood on. Tile coordinates
+   * and rail world units share the map's origin only roughly (the plaza's logged exits put a
+   * rail cell about 3 units south of the tile reported next), so the reach is generous; the
+   * spokes are far enough apart for it.
+   */
+  fun enterFromTiles(area: Area, tileX: Int, tileY: Int, x: Int, y: Int): Pair<Line, Double>? =
+      nearestLineAt(area, x, y, tileX + 0.5, tileY + 0.5, TILE_REACH)
+
+  private fun transitionAtEnd(area: Area, fromLine: Int, lastX: Int, newX: Int): Line? {
     val from = line(area, fromLine) ?: return null
     // The end we left by: the client walks off a line only past its first or last cell.
     val nearFrom = lastX <= EDGE
@@ -114,6 +181,14 @@ class NdsRails @Inject constructor() {
     val out = HashMap<Int, Area>()
     file.bufferedReader().useLines { lines ->
       for (l in lines) {
+        if (l.startsWith("point;")) {
+          // point;area;id;x;y;z - the ROM's world units; x and z are the ground plane
+          val p = l.split(';')
+          val area = out.getOrPut(p[1].toInt()) { Area(p[1].toInt()) }
+          area.pointX[p[2].toInt()] = p[3].toDouble()
+          area.pointZ[p[2].toInt()] = p[5].toDouble()
+          continue
+        }
         if (l.startsWith("cell;")) {
           // cell;area;line;x;y;plane0;plane1 - only blocked cells are listed
           val p = l.split(';')
@@ -155,5 +230,9 @@ class NdsRails @Inject constructor() {
     const val UNOVA = 2
     /** How far from a line's end the client may still report before it walks off it. */
     private const val EDGE = 1
+    /** A side crossing lands on the neighbouring line's adjacent cell: one step, with slack. */
+    private const val SIDE_STEP = 2.5
+    /** Tile-to-rail reach (see [enterFromTiles]): the plaza's spokes are 8+ units apart. */
+    private const val TILE_REACH = 5.0
   }
 }

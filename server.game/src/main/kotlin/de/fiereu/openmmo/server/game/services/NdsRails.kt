@@ -77,7 +77,8 @@ class NdsRails @Inject constructor() {
     var best: Line? = null
     var bestD = maxDist
     for (line in area.lines) {
-      if (line.id == except || !inRange(area, line.id, x, y)) continue
+      // The client never stands on a blocked cell, so one cannot be where it just stepped.
+      if (line.id == except || blocked(area, line.id, x, y)) continue
       val (cx, cz) = world(area, line.id, x, y) ?: continue
       val d = kotlin.math.sqrt((cx - wx) * (cx - wx) + (cz - wz) * (cz - wz))
       if (d < bestD) { bestD = d; best = line }
@@ -121,7 +122,28 @@ class NdsRails @Inject constructor() {
     // Not off an end: lines in an open square (the Castelia plaza) hand the client across from
     // one line's side onto another's. The new cell must sit next to the old one in the world.
     val (wx, wz) = world(area, fromLine, lastX, lastY) ?: return null
-    return nearestLineAt(area, newX, newY, wx, wz, SIDE_STEP, except = fromLine)?.first
+    nearestLineAt(area, newX, newY, wx, wz, SIDE_STEP, except = fromLine)?.let { return it.first }
+    // Nothing else fits and the cell is still on this line: a step the server did not see
+    // (two moves coalesced), not a line change.
+    return if (inRange(area, fromLine, newX, newY)) line(area, fromLine) else null
+  }
+
+  /**
+   * The client resets x to 0 when it crosses onto the next segment of a spoke, and on a two- or
+   * three-cell segment that reset looks like an ordinary step back (1 -> 0), so it goes unseen.
+   * The tell comes a step later: a reported x past the segment's one-past cell can only be the
+   * next segment's. Returns that segment (entered at the to-point) - or, for x below -1, the one
+   * before (entered at the from-point) - else null.
+   */
+  fun repair(area: Area, lineId: Int, x: Int): Line? {
+    val line = line(area, lineId) ?: return null
+    val point = when {
+      x > line.length -> line.to
+      x < -1 -> line.from
+      else -> return null
+    }
+    val next = area.byPoint[point]?.filter { it.id != lineId } ?: return null
+    return next.singleOrNull()
   }
 
   /**

@@ -37,8 +37,12 @@ private val log = KotlinLogging.logger {}
 /** How far a client claim may run ahead of the server and still be walked, not reset. */
 private const val CATCH_UP_TILES = 6
 
-/** Rail coordinates move by one per step; a bigger change is the client switching rail lines. */
-private const val RAIL_JUMP = 2
+/**
+ * Rail coordinates move by one per step; a bigger change is the client switching rail lines. It
+ * was 2, which read the reset off a three-cell segment (x 2 -> 0) as a step back and left the
+ * server one segment behind all the way down the Castelia plaza's west spoke (owner, 2026-09-23).
+ */
+private const val RAIL_JUMP = 1
 
 /** Committed tiles remembered per map for phantom-step rewinds. */
 private const val RECENT_TILES = 8
@@ -235,6 +239,13 @@ constructor(
               (entered?.let { "line ${it.first.id} (${"%.1f".format(it.second)} units away)" } ?: "no line within reach")
         }
         if (entered != null) state.railLine = entered.first.id
+      } else if (railArea != null && state.railLine >= 0) {
+        // A reset the server could not see (1 -> 0 on a two-cell stub reads as a step back):
+        // an x past this segment's one-past cell is the next segment's.
+        ndsRails.repair(railArea, state.railLine, msg.x)?.let { next ->
+          log.info { "NDS rail: char=$charId ${state.bankId}:${state.mapId} x ${msg.x} is past line ${state.railLine}: on line ${next.id} (missed reset)" }
+          state.railLine = next.id
+        }
       }
       // Calibration logging for the Gen 5 rail maps (Castelia's main city, Skyarrow, the League
       // lobby): every unhosted move, with the raw state byte. Temporary but cheap on a dev server.

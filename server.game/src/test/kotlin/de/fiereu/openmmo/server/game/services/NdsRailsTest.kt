@@ -87,6 +87,19 @@ class NdsRailsTest :
         rails.enterFromTiles(plaza, tileX = 6, tileY = 19, x = 0, y = -2)!!.first.id shouldBeIn listOf(0, 11)
       }
 
+      // The west spoke as the client walked it (12:14, 2026-09-23): line 0 x 0,1,2 then a reset
+      // to 0 - line 13 - then 0..3 and a reset - line 1, where the gym-street box sits at x 4..6.
+      // The second spoke's stub (line 2) is two cells: its reset 1 -> 0 is invisible, but the
+      // next reports x 2, 3... which line 2 cannot hold, so x 3 puts the player on line 14.
+      test("the plaza's spokes are followed segment by segment, resets seen or repaired") {
+        val plaza = rails.areaOf(2, 30, 0).shouldNotBeNull()
+        rails.transition(plaza, 0, lastX = 2, newX = 0, lastY = 0, newY = 0)!!.id shouldBe 13
+        rails.transition(plaza, 13, lastX = 3, newX = 0, lastY = 0, newY = 0)!!.id shouldBe 1
+        rails.repair(plaza, 2, x = 2).shouldBeNull() // one past the end: still line 2
+        rails.repair(plaza, 2, x = 3)!!.id shouldBe 14
+        rails.repair(plaza, 14, x = 7)!!.id shouldBe 3
+      }
+
       test("Castelia's streets chain through their shared points") {
         val castelia = rails.areaOf(2, 28, 0).shouldNotBeNull()
         castelia.lines.size shouldBe 6

@@ -47,12 +47,12 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
   }
 
   /**
-   * The Castelia Gym's door, held shut until Burgh's scene on the gym street has played. The
-   * ROM blocks the door with the three Plasma grunts and the scene's trigger tiles, but the
-   * trigger box has a gap on the west side: a player walking down past the grunts reached the
-   * door and warped into the gym before Burgh and Cheren had even walked out (owner,
-   * 2026-09-23). The door's three tiles carry a wall while the street's var is below 3, the
-   * value the grunt scene (file 62 entry 7) leaves it at.
+   * The Castelia Gym's door (31:0 (25,48) -> 29:0), held shut until the walk-out scene has
+   * played: the trigger tile at (24,48) starts it (file 62 entry 3: Cheren, then Burgh, step
+   * out of this very door), and a step buffered into the door beside it carried the player
+   * into the gym while the scene was starting, so it played to an empty street (owner,
+   * 2026-09-23, from the log). The door carries a wall while the street's var is 0; the
+   * scene leaves it at 1.
    */
   private fun syncCasteliaGym(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
     val closed = (storyFlags[CASTELIA_GYM_VAR] ?: 0) < CASTELIA_GYM_OPEN
@@ -100,13 +100,13 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
     const val GYM_BANK = 7
     const val GYM_MAP = 0
 
-    /** Castelia's gym street (header 31) and its gym door's three warp tiles, x 6, y 32..34. */
+    /** Castelia's gym street (header 31) and the gym's door tile (its warp into 29:0). */
     const val CASTELIA_STREET_BANK = 31
     const val CASTELIA_STREET_MAP = 0
-    val CASTELIA_GYM_DOOR: List<Pair<Int, Int>> = listOf(6 to 32, 6 to 33, 6 to 34)
-    /** VAR 16559 (0x40AF), the gym street's story var; 3 = the Plasma grunt scene has played. */
+    val CASTELIA_GYM_DOOR: List<Pair<Int, Int>> = listOf(25 to 48)
+    /** VAR 16559 (0x40AF), the gym street's story var; 1 = the walk-out scene has played. */
     const val CASTELIA_GYM_VAR = "unova/VAR_0x40AF"
-    const val CASTELIA_GYM_OPEN = 3
+    const val CASTELIA_GYM_OPEN = 1
 
     /** VAR 16514 (0x4082), the gym's puzzle state. */
     const val PUZZLE_VAR = "unova/VAR_0x4082"

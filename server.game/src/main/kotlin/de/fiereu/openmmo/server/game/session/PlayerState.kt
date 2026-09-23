@@ -6,6 +6,11 @@ import java.util.concurrent.ConcurrentHashMap
 /** [PlayerState.railLine] after the client changed rail lines without saying which. */
 const val RAIL_LINE_UNKNOWN = -2
 
+/** Key of a DS tile for [PlayerState.ndsWalls]: bank, map and the (possibly matrix-wide) x and y. */
+fun ndsWallKey(bank: Int, map: Int, x: Int, y: Int): Long =
+    ((bank.toLong() and 0xFF) shl 48) or ((map.toLong() and 0xFF) shl 40) or
+        ((x.toLong() and 0xFFFF) shl 16) or (y.toLong() and 0xFFFF)
+
 enum class ScriptLockScope {
   NONE,
   LOCAL,
@@ -275,6 +280,13 @@ data class PlayerState(
      * [spawnedNpcMaps], since the client keeps the npc until then.
      */
     val scriptedNpcPoses: MutableMap<Long, ScriptedNpcPose> = ConcurrentHashMap(),
+    /**
+     * Tiles where an invisible wall (NdsCurtainWalls) currently stands for THIS session, keyed by
+     * [ndsWallKey]. The wall npcs stay defined once made, so the map's npc list cannot say whether
+     * a curtain is open or shut; this can. Checked before a warp tile's exemption from the bonk
+     * check, so a wall on a door tile (the Castelia gym before Burgh's scene) really holds.
+     */
+    val ndsWalls: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /** Script-made DS actors alive for this player on the current map (scriptedNpcKey); cleared with the poses. */
     val madeNdsNpcs: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /**

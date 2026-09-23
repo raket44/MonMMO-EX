@@ -19,6 +19,7 @@ import de.fiereu.openmmo.net.game.packets.MovementPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.session.RAIL_LINE_UNKNOWN
+import de.fiereu.openmmo.server.game.session.ndsWallKey
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import de.fiereu.openmmo.common.enums.Region
@@ -138,6 +139,9 @@ constructor(
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId
+    // A wall the server stood for this session holds even on a door tile: the client never
+    // steps into it, and the Castelia gym's door is walled until Burgh's scene has played.
+    if (ndsWallKey(bankId, mapId, toX, toY) in state.ndsWalls) return true
     // A warp tile is never a bonk, whatever the land says of it: doors sit on blocked tiles
     // (the Nacrene gym's leader door at (12,9)), the client has already begun its door
     // animation and fade, and a step swallowed here left it black (owner, 2026-09-23).
@@ -147,6 +151,9 @@ constructor(
     if (ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
     val poses = state.scriptedNpcPoses
     return npcService.ndsNpcsOn(regionId, bankId, mapId).any { npc ->
+      // Server-made walls are judged by state.ndsWalls above: their definitions outlive an
+      // opened curtain, and read here they held the player at every curtain ever opened.
+      if (npc.index >= NdsCurtainWalls.FIRST_WALL_ID) return@any false
       if (NdsStoryFlags.isHidden(regionId, npc.flag, stored.storyFlags)) return@any false
       val pose = poses[de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)]
       val x = pose?.x ?: npc.x

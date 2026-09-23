@@ -2,6 +2,7 @@ package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
 import de.fiereu.openmmo.server.game.session.PlayerState
+import de.fiereu.openmmo.server.game.session.ndsWallKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,18 +30,34 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
   fun sync(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
     if (state.regionId != UNOVA) return
     when {
-      state.bankId == GYM_BANK && state.mapId == GYM_MAP -> syncStriaton(session, storyFlags)
-      state.bankId == NACRENE_BANK && state.mapId == NACRENE_MAP -> syncNacrene(session, storyFlags)
+      state.bankId == GYM_BANK && state.mapId == GYM_MAP -> syncStriaton(session, state, storyFlags)
+      state.bankId == NACRENE_BANK && state.mapId == NACRENE_MAP -> syncNacrene(session, state, storyFlags)
+      state.bankId == CASTELIA_STREET_BANK && state.mapId == CASTELIA_STREET_MAP -> syncCasteliaGym(session, state, storyFlags)
     }
   }
 
-  private fun syncStriaton(session: SessionContext, storyFlags: Map<String, Int>) {
+  private fun syncStriaton(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
     val open = MASK_BY_STATE.getOrElse(storyFlags[PUZZLE_VAR] ?: 0) { ALL_OPEN }
     CURTAIN_ROWS.forEachIndexed { curtain, y ->
       val closed = (open shr curtain) and 1 == 0
       for ((i, x) in WALL_COLUMNS.withIndex()) {
-        wall(session, GYM_BANK, GYM_MAP, FIRST_WALL_ID + curtain * WALL_COLUMNS.size + i, x, y, closed)
+        wall(session, state, GYM_BANK, GYM_MAP, FIRST_WALL_ID + curtain * WALL_COLUMNS.size + i, x, y, closed)
       }
+    }
+  }
+
+  /**
+   * The Castelia Gym's door, held shut until Burgh's scene on the gym street has played. The
+   * ROM blocks the door with the three Plasma grunts and the scene's trigger tiles, but the
+   * trigger box has a gap on the west side: a player walking down past the grunts reached the
+   * door and warped into the gym before Burgh and Cheren had even walked out (owner,
+   * 2026-09-23). The door's three tiles carry a wall while the street's var is below 3, the
+   * value the grunt scene (file 62 entry 7) leaves it at.
+   */
+  private fun syncCasteliaGym(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
+    val closed = (storyFlags[CASTELIA_GYM_VAR] ?: 0) < CASTELIA_GYM_OPEN
+    CASTELIA_GYM_DOOR.forEachIndexed { i, (x, y) ->
+      wall(session, state, CASTELIA_STREET_BANK, CASTELIA_STREET_MAP, FIRST_WALL_ID + 40 + i, x, y, closed)
     }
   }
 
@@ -54,13 +71,14 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
    * it before the last book (owner, 2026-09-23). The rest of its footprint is made solid here,
    * closed or slid, keyed on the quiz var (7 = slid, what the map-load restore CMD_182 keys on).
    */
-  private fun syncNacrene(session: SessionContext, storyFlags: Map<String, Int>) {
+  private fun syncNacrene(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
     val slid = (storyFlags[NACRENE_VAR] ?: 0) >= NACRENE_OPEN
-    NACRENE_CLOSED.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, y, !slid) }
-    NACRENE_SLID.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + 20 + i, x, y, slid) }
+    NACRENE_CLOSED.forEachIndexed { i, (x, y) -> wall(session, state, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, y, !slid) }
+    NACRENE_SLID.forEachIndexed { i, (x, y) -> wall(session, state, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + 20 + i, x, y, slid) }
   }
 
-  private fun wall(session: SessionContext, bank: Int, map: Int, id: Int, x: Int, y: Int, closed: Boolean) {
+  private fun wall(session: SessionContext, state: PlayerState, bank: Int, map: Int, id: Int, x: Int, y: Int, closed: Boolean) {
+    val key = ndsWallKey(bank, map, x, y)
     if (closed) {
       if (!ndsNpcs.isMade(UNOVA, bank, map, id)) {
         ndsNpcs.define(
@@ -69,16 +87,26 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
                 index = id, id = id, sprite = WALL_SPRITE, movement = 0, flag = 0, script = 0,
                 facing = 1, xRange = 0, yRange = 0, x = x, y = y))
       }
+      state.ndsWalls += key
       npcService.spawnNpc(session, UNOVA, bank, map, id)
     } else {
+      state.ndsWalls -= key
       npcService.despawnNpc(session, UNOVA, bank, map, id)
     }
   }
 
-  private companion object {
+  companion object {
     const val UNOVA = 2
     const val GYM_BANK = 7
     const val GYM_MAP = 0
+
+    /** Castelia's gym street (header 31) and its gym door's three warp tiles, x 6, y 32..34. */
+    const val CASTELIA_STREET_BANK = 31
+    const val CASTELIA_STREET_MAP = 0
+    val CASTELIA_GYM_DOOR: List<Pair<Int, Int>> = listOf(6 to 32, 6 to 33, 6 to 34)
+    /** VAR 16559 (0x40AF), the gym street's story var; 3 = the Plasma grunt scene has played. */
+    const val CASTELIA_GYM_VAR = "unova/VAR_0x40AF"
+    const val CASTELIA_GYM_OPEN = 3
 
     /** VAR 16514 (0x4082), the gym's puzzle state. */
     const val PUZZLE_VAR = "unova/VAR_0x4082"

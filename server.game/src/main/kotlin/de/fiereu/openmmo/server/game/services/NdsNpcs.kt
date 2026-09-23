@@ -32,6 +32,13 @@ class NdsNpcs @Inject constructor() {
       val type: Int = 0,
       /** param0: a trainer's sight range in tiles. */
       val sight: Int = 0,
+      /**
+       * The record's third coordinate. On a Gen 5 RAIL map (NdsRails) the record is in rail
+       * space instead: [x] is the rail LINE, [y] the position along it, and this the lateral
+       * offset - Castelia's npcs read (4, 4, -2), (3, 17, -2)... and placed as tiles they hung
+       * over the sea (owner, 2026-09-23).
+       */
+      val z: Int = 0,
   )
 
   /**
@@ -142,6 +149,7 @@ class NdsNpcs @Inject constructor() {
                   y = p[15].toInt(),
                   type = p[8].toInt(),
                   sight = p.getOrNull(17)?.toIntOrNull() ?: 0,
+                  z = p[16].toIntOrNull() ?: 0,
               )
           count++
         }

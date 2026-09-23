@@ -20,6 +20,9 @@ import kotlinx.coroutines.launch
 /** Local id of the developer sprite probe (NpcService.spawnProbe): past any map's own actors. */
 private const val PROBE_LOCAL_ID = 9990
 
+/** Bit 3 of a spawn's facing byte: the position is (rail line, x along, y across) - client f/Wi1.KS1. */
+private const val RAIL_POSITION_BIT = 0x08
+
 private const val UNOVA_REGION = 2
 /** White's "sprite from var" object sprite id (nds-npcs-2.txt) and the var it reads. */
 private const val VAR_SPRITE = 162
@@ -37,6 +40,7 @@ constructor(
     private val raid: CrystalOnixRaidPlacement = CrystalOnixRaidPlacement(mapManager),
     private val scope: kotlinx.coroutines.CoroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
+    private val ndsRails: NdsRails = NdsRails(),
 ) {
 
   private val npcEntityIdCounter = AtomicLong(0x1A69000000000000L)
@@ -552,6 +556,12 @@ constructor(
           2 -> Direction.LEFT.ordinal
           else -> Direction.RIGHT.ordinal
         }
+    // A Gen 5 rail map (NdsRails): the record is (line, x along, y across), and the client's
+    // spawn parser (f/p01 -> f/Wi1(B,B,B,Z,S,S,B,B)) takes the position as a rail position when
+    // bit 3 of the FACING byte is set (KS1), with the byte before it (RW1) as the rail line -
+    // the same shape LoadEntity and the rail move packet use. Placed as tiles, Castelia's npcs
+    // hung in a group over the sea (owner, 2026-09-23).
+    val rail = ndsRails.isRailMap(regionId, bankId, mapId)
     return NpcSpawnPacket(
         entityId = entityIdFor(regionId, bankId, mapId, npc.index),
         spriteRegionId = regionId,
@@ -561,13 +571,13 @@ constructor(
         regionId = regionId,
         bankId = bankId,
         mapId = mapId,
-        x = npc.x,
-        y = npc.y,
-        facing = facing,
+        x = if (rail) npc.y else npc.x,
+        y = if (rail) npc.z else npc.y,
+        facing = if (rail) facing or RAIL_POSITION_BIT else facing,
         // The client reads this byte as the terrain layer (low two bits, f/p01: `& 3` into
         // Wi1.RW1) plus a flag bit 8. Layer 2 is the GBA default; DS ground is layer 0,
-        // and anything else sinks the sprite into the terrain.
-        unk5 = 0,
+        // and anything else sinks the sprite into the terrain. On a rail it is the rail line.
+        unk5 = if (rail) npc.x and 0xFF else 0,
         unk6 = 8,
     )
   }

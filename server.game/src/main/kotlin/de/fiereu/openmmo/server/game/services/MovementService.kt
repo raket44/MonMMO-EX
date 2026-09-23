@@ -10,8 +10,10 @@ import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.WarpTile
 import de.fiereu.openmmo.net.game.packets.EntityFaceTurnPacket
+import de.fiereu.openmmo.net.game.packets.EntityMovePacket
 import de.fiereu.openmmo.net.game.packets.FaceDirectionPacket
 import de.fiereu.openmmo.net.game.packets.GbaEntityMovePacket
+import de.fiereu.openmmo.net.game.packets.RailEntityMovePacket
 import de.fiereu.openmmo.net.game.packets.MapData
 import de.fiereu.openmmo.net.game.packets.MovementPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
@@ -119,6 +121,7 @@ constructor(
     private val scriptRunner: Provider<ScriptRunner>? = null,
     private val safariService: SafariService? = null,
     private val ndsLand: NdsLand = NdsLand(),
+    private val ndsRails: NdsRails = NdsRails(),
 ) {
 
   /**
@@ -202,14 +205,19 @@ constructor(
       val toY = msg.y + msg.direction.dy
       // On a rail the client reports line-local coordinates and never the line. The line is
       // known from the arrival; when the client changes lines its coordinates jump (a step
-      // moves them by one), and from then on the line is unknown until the next warp.
-      if (state.railLine >= 0 &&
+      // moves them by one), and the ROM's rail graph says which line it stepped onto: the one
+      // sharing the point at the end just left, entered at that point (NdsRails.transition).
+      // When no line fits, the line is unknown until the next warp.
+      val railArea = ndsRails.areaOf(state.regionId, state.bankId, state.mapId)
+      if (railArea != null && state.railLine >= 0 &&
           (kotlin.math.abs(msg.x - state.x) > RAIL_JUMP || kotlin.math.abs(msg.y - state.y) > RAIL_JUMP)) {
+        val next = ndsRails.transition(railArea, state.railLine, state.x.toInt(), msg.x)
         log.info {
-          "NDS rail: char=$charId ${state.bankId}:${state.mapId} left line ${state.railLine} - " +
-              "coordinates jumped (${state.x}, ${state.y}) -> (${msg.x}, ${msg.y})"
+          "NDS rail: char=$charId ${state.bankId}:${state.mapId} left line ${state.railLine} at " +
+              "(${state.x}, ${state.y}) for (${msg.x}, ${msg.y}): " +
+              (next?.let { "line ${it.id} (${it.from}->${it.to}, ${it.length} long)" } ?: "no line fits, unknown")
         }
-        state.railLine = RAIL_LINE_UNKNOWN
+        state.railLine = next?.id ?: RAIL_LINE_UNKNOWN
       }
       // Calibration logging for the Gen 5 rail maps (Castelia's main city, Skyarrow, the League
       // lobby): every unhosted move, with the raw state byte. Temporary but cheap on a dev server.
@@ -236,6 +244,17 @@ constructor(
       state.y = toY.toShort()
       state.facingDirection = msg.direction
       encounterService.onAnyStep(ctx, charId)
+      // The observers' copy of the step. DS steps were never relayed, so on every DS map other
+      // players stood frozen where they spawned (owner, 2026-09-23). A rail map needs the rail
+      // step (0xEC: line + rail coordinates, the client discards a tile step there); the client
+      // reports its own position on a rail, so that is what observers get, not the extrapolated
+      // tile. Ordinary DS maps take the short-coordinate tile step (0xE4).
+      if (railArea == null) {
+        presenceService.broadcastToObservers(ctx, EntityMovePacket(entityId = charId, x = toX, y = toY, direction = msg.direction))
+      } else if (state.railLine >= 0) {
+        presenceService.broadcastToObservers(
+            ctx, RailEntityMovePacket(entityId = charId, railLine = state.railLine, x = msg.x, y = msg.y, direction = msg.direction))
+      }
       if (executeCustomWarp(ctx, charId, state.regionId, state.bankId, state.mapId, toX, toY)) {
         return
       }

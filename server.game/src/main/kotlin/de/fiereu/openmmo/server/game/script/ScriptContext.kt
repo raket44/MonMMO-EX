@@ -537,6 +537,7 @@ internal constructor(
   fun setFlag(flag: String) {
     characterId?.let { charId ->
       story.setFlag(charId, flag)
+      LINKED_FLAGS[flag]?.forEach { linked -> if (linked != flag) setFlag(linked) }
       // A flag that selects a map variant swaps the client's block grid right away.
       layoutVariants?.onFlagSet(session, state, flag)
       val update = StoryClientState.flagUpdate(state.regionId.toByte(), flag, enabled = true)
@@ -1378,6 +1379,16 @@ internal constructor(
   }
 
   private companion object {
+    /**
+     * A flag a scene sets that takes another flag with it (owner's decision, 2026-09-23). White's
+     * Wellspring Cave scene hides its own Cheren (and the grunts) with 574 at its end, but the
+     * ROM's post-battle block - opcode 0x24 on 635 right after each battle, the loss-retry
+     * restore that puts the outside Cheren back at the cave mouth - runs on the branch this
+     * server's double-battle win takes, so after the cave he stood outside asking "ready to go?"
+     * again. Hiding him (635, Route 3 npc 22) with the cave one is the owner's rule.
+     */
+    val LINKED_FLAGS: Map<String, List<String>> = mapOf("unova/FLAG_574" to listOf("unova/FLAG_635"))
+
     /**
      * Sound sequences by their SDAT symbol name, read out of the White ROM: the DS SSEQ engine
      * loads them by region, and region 2's table is the one every region can reach.

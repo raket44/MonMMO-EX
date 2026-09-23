@@ -758,11 +758,14 @@ constructor(
           info.positionRegionId.toInt() and 0xFF,
       )
     }
-    if (info.positionRegionId.toInt() in 2..4) {
-      // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter).
+    val isDsMap = info.positionRegionId.toInt() in 2..4
+    if (isDsMap) {
+      // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter),
+      // and the fade-in waits for both so the gym models are already posed when the screen shows.
       mapScriptService.onNdsEnter(
           ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF,
-          spawnNpcs = spawnNpcs)
+          spawnNpcs = spawnNpcs,
+          afterLoad = { ctx.send(RenderScreenPacket(true)) })
     } else {
       spawnNpcs()
     }
@@ -780,7 +783,7 @@ constructor(
     // The client dropped its entities with the map cache, so always re-exchange snapshots.
     presenceService.enter(ctx)
 
-    ctx.send(RenderScreenPacket(true))
+    if (!isDsMap) ctx.send(RenderScreenPacket(true))
 
     // The encounter counter (HallOfFame): the login-time copy of flag 770 lands before the HUD
     // exists and creates nothing, so it goes out again here, where the HUD is up and its refresh

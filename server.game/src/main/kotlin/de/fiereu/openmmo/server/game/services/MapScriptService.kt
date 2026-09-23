@@ -143,12 +143,22 @@ constructor(
       bankId: Int,
       mapId: Int,
       spawnNpcs: (() -> Unit)? = null,
+      afterLoad: (() -> Unit)? = null,
   ) {
     val spawned = java.util.concurrent.atomic.AtomicBoolean(false)
+    // The cartridge runs the map-load script under the black screen and fades in afterwards. The
+    // load script is what poses the gym models (the Striaton curtain mask, Nacrene's CMD_182), so
+    // a fade-in sent before it ran showed the model in its default closed pose for a frame or two
+    // (owner, 2026-09-23). [afterLoad] is the login's fade-in, sent once the placements, spawns
+    // and walls are all out - exactly once, however the load script ends.
     fun spawnOnce() {
       if (!spawned.compareAndSet(false, true)) return
-      spawnNpcs?.invoke()
-      syncCurtainWalls(session, state)
+      try {
+        spawnNpcs?.invoke()
+        syncCurtainWalls(session, state)
+      } finally {
+        afterLoad?.invoke()
+      }
     }
     if (state.scriptOwnsMapEntry || state.blocksNewScript) return spawnOnce()
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)

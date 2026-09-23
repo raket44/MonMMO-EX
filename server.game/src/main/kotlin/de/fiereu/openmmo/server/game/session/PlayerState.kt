@@ -3,6 +3,9 @@ package de.fiereu.openmmo.server.game.session
 import de.fiereu.openmmo.common.enums.Direction
 import java.util.concurrent.ConcurrentHashMap
 
+/** [PlayerState.railLine] after the client changed rail lines without saying which. */
+const val RAIL_LINE_UNKNOWN = -2
+
 enum class ScriptLockScope {
   NONE,
   LOCAL,
@@ -98,6 +101,14 @@ data class PlayerState(
      * rail maps are a blue void with a frozen player.
      */
     @field:Volatile var pendingRailLine: Int = -1,
+    /**
+     * The Gen 5 rail line the server believes the player is riding: the last arrival's line, -1 off
+     * rails, [RAIL_LINE_UNKNOWN] once the reported rail coordinates jumped (the client changes
+     * lines silently, and a jump in its line-local coordinates is the one sign of it). The retail
+     * client never sends its line, and warp rows on different lines share coordinates: Skyarrow's
+     * far-end box (line 12, x 3..5) fired three steps onto the bridge from the near end (line 13).
+     */
+    @field:Volatile var railLine: Int = -1,
     /**
      * Developer probe: transportation byte for the player's own LoadEntity (0 = the normal walk
      * state). Set by /probe transport; applied on every arrival until changed, because the client

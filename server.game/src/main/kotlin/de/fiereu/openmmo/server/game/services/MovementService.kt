@@ -16,6 +16,7 @@ import de.fiereu.openmmo.net.game.packets.MapData
 import de.fiereu.openmmo.net.game.packets.MovementPacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.session.PlayerState
+import de.fiereu.openmmo.server.game.session.RAIL_LINE_UNKNOWN
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import de.fiereu.openmmo.common.enums.Region
@@ -33,6 +34,9 @@ private val log = KotlinLogging.logger {}
 /** Resolve a cardinal Gen-3 ledge hop to its tile two spaces away. */
 /** How far a client claim may run ahead of the server and still be walked, not reset. */
 private const val CATCH_UP_TILES = 6
+
+/** Rail coordinates move by one per step; a bigger change is the client switching rail lines. */
+private const val RAIL_JUMP = 2
 
 /** Committed tiles remembered per map for phantom-step rewinds. */
 private const val RECENT_TILES = 8
@@ -196,17 +200,31 @@ constructor(
       if (state.justWarped) return
       val toX = msg.x + msg.direction.dx
       val toY = msg.y + msg.direction.dy
+      // On a rail the client reports line-local coordinates and never the line. The line is
+      // known from the arrival; when the client changes lines its coordinates jump (a step
+      // moves them by one), and from then on the line is unknown until the next warp.
+      if (state.railLine >= 0 &&
+          (kotlin.math.abs(msg.x - state.x) > RAIL_JUMP || kotlin.math.abs(msg.y - state.y) > RAIL_JUMP)) {
+        log.info {
+          "NDS rail: char=$charId ${state.bankId}:${state.mapId} left line ${state.railLine} - " +
+              "coordinates jumped (${state.x}, ${state.y}) -> (${msg.x}, ${msg.y})"
+        }
+        state.railLine = RAIL_LINE_UNKNOWN
+      }
       // Calibration logging for the Gen 5 rail maps (Castelia's main city, Skyarrow, the League
       // lobby): every unhosted move, with the raw state byte. Temporary but cheap on a dev server.
       log.info {
         "NDS move: char=$charId ${state.bankId}:${state.mapId} (${msg.x}, ${msg.y}) " +
-            "dir=${msg.direction} state=0x%02x".format(msg.stateRaw)
+            "dir=${msg.direction} state=0x%02x line=${state.railLine}".format(msg.stateRaw)
       }
+      // The line warp rows are judged against: the client's own report when it sends one (a
+      // patched client, bits 2-5), else the line tracked from the arrival; 0 when unknown.
+      val railLine = ((msg.stateRaw shr 2) and 0x0F).takeIf { it != 0 } ?: state.railLine.coerceAtLeast(0)
       // A bonk: the client sends the attempt and stays put, and committing it stood the server's
       // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
       // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -
       // the ROM's own or a wall NdsCurtainWalls stands - only turns the player.
-      if (ndsBonk(state, stored, toX, toY, (msg.stateRaw shr 2) and 0x0F)) {
+      if (ndsBonk(state, stored, toX, toY, railLine)) {
         characterStore.updatePosition(charId, msg.x.toShort(), msg.y.toShort(), facing = msg.direction)
         state.x = msg.x.toShort()
         state.y = msg.y.toShort()
@@ -231,10 +249,9 @@ constructor(
       // stitched on the same ROM matrix, so the fallback index is keyed by the TRACKED map's
       // matrix plus coordinates - seams never leave a matrix, so the matrix stays correct even
       // when bank/map is stale, and maps on other matrices can never collide.
-      // The patched client transmits its Gen 5 rail line in movement state bits 2-5 (0 when not
-      // on a rail or unpatched); rail warp rows are picked by it, so Castelia's overlapping
-      // street mouths route to the street the player is actually riding toward.
-      val railLine = (msg.stateRaw shr 2) and 0x0F
+      // Rail warp rows are picked by [railLine] (the client's own bits, else the tracked line),
+      // so Castelia's overlapping street mouths route to the street the player is riding toward,
+      // and Skyarrow's far-end box does not fire from the near end.
       // An elevator's door (a MAP_DYNAMIC exit) leads to the player's own dynamic warp: the door
       // they came in by, or the floor the elevator script set (the cartridge's SetDynamicWarp).
       fun dynamicDoorAt(x: Int, y: Int): NdsWarps.Destination? {

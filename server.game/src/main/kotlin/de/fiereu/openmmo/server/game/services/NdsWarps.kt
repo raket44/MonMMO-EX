@@ -83,11 +83,17 @@ class NdsWarps @Inject constructor() {
     return pick(warps[tileKey(region, bank, map, x, y)], railLine)
   }
 
+  /**
+   * [railLine] > 0 is the line the player is known to ride (the client's own bits, or the line
+   * the server tracked from the arrival): only that line's rows fire, never another line's that
+   * happens to share the coordinates - Skyarrow's boxes for both gates sit at x 3..5 / -1..1 on
+   * lines 12 / 13, and the far one fired three steps onto the bridge. 0 = unknown, any row.
+   */
   private fun pick(rows: List<Destination>?, railLine: Int): Destination? {
     if (rows.isNullOrEmpty()) return null
     return rows.firstOrNull { it.srcLine >= 0 && it.srcLine == railLine }
         ?: rows.firstOrNull { it.srcLine < 0 }
-        ?: if (railLine == 0) rows.first() else null
+        ?: if (railLine <= 0) rows.first() else null
   }
 
   /**

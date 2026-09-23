@@ -506,6 +506,7 @@ constructor(
       val rows =
           ndsWarps.rowsAt(regionId, bankId, mapId, info.positionX.toInt(), info.positionY.toInt())
       state.pendingRailLine = rows.firstOrNull { it.srcLine >= 0 }?.srcLine ?: -1
+      state.railLine = state.pendingRailLine
       // Logging out on a door mat is the norm now (interior arrivals rest there); hold
       // direction-less warps until the player has stood on a warp-free tile once.
       state.ndsWarpGuard = rows.isNotEmpty()

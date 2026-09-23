@@ -319,6 +319,8 @@ constructor(
     // Consumed by the next LoadEntity: rail maps need the player attached to a rail line or the
     // client shows a blue void.
     state?.pendingRailLine = railLine
+    // The line the warp picks are judged against from here on (see PlayerState.railLine).
+    state?.railLine = railLine
     presenceService.leave(ctx)
     characterStore.updateCharacter(
         stored.info.copy(

@@ -69,6 +69,8 @@ interface ChatCommandModule {
   @Binds @IntoSet fun developerGiveItemCommand(command: DeveloperGiveItemCommand): ChatCommand
 
   @Binds @IntoSet fun developerHealCommand(command: DeveloperHealCommand): ChatCommand
+
+  @Binds @IntoSet fun developerSpriteCommand(command: de.fiereu.openmmo.server.game.services.command.DeveloperSpriteCommand): ChatCommand
   @Binds @IntoSet fun developerRarityCommand(command: DeveloperRarityCommand): ChatCommand
 
 

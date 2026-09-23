@@ -8,6 +8,9 @@ import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.NpcDef
 import de.fiereu.openmmo.net.game.packets.EntityLeavePacket
 import de.fiereu.openmmo.net.game.packets.NpcSpawnPacket
+
+/** Local id of the developer sprite probe (NpcService.spawnProbe): past any map's own actors. */
+private const val PROBE_LOCAL_ID = 9990
 import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
 import de.fiereu.openmmo.server.game.storage.CharacterStore
@@ -294,6 +297,35 @@ constructor(
       npcEntityIds.getOrPut(key(regionId, bankId, mapId, entityIdx)) {
         npcEntityIdCounter.incrementAndGet()
       }
+
+  /**
+   * A developer's sprite probe: one throwaway npc drawn with [graphicsId] from [spriteRegionId]'s
+   * sprite set (a map's ROM set, or 10 for the client's own) at the player's own tile, replacing the
+   * previous probe. Exists so a "what does the client draw for this id" question is answered by the
+   * client itself instead of by reading its loaders (the museum stone, 2026-09-23).
+   */
+  fun spawnProbe(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, spriteRegionId: Int, graphicsId: Int) {
+    val entityId = entityIdFor(regionId, bankId, mapId, PROBE_LOCAL_ID)
+    ctx.send(EntityLeavePacket(entityId))
+    ctx.send(
+        NpcSpawnPacket(
+            entityId = entityId,
+            spriteRegionId = spriteRegionId,
+            graphicsId = graphicsId,
+            unk3 = 0x02,
+            unk4 = 0,
+            regionId = regionId,
+            bankId = bankId,
+            mapId = mapId,
+            x = x,
+            y = y,
+            facing = Direction.DOWN.ordinal,
+            unk5 = 0,
+            unk6 = 8,
+            spriteSize = if (spriteRegionId == 10) (-1).toByte() to (-1).toByte() else null,
+        ))
+    log.info { "Sprite probe for ${ctx.attributes[PLAYER_STATE]?.characterId}: set $spriteRegionId gfx $graphicsId at $regionId:$bankId:$mapId ($x, $y)" }
+  }
 
   /** Spawn a single npc (including a normally hidden one) for one player, for cutscenes. */
   fun spawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {

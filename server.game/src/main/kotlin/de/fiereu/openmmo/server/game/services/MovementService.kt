@@ -351,11 +351,11 @@ constructor(
       // mat - and refused the Nacrene leader's door, entered pressing up but landing facing right,
       // while the client had already faded on contact: a black screen (owner, 2026-09-23). A
       // step onto the tile fires under the same guard a direction-less warp gets.
-      // A RAIL box fires on position alone: the client's own hit test (f.UN.y81) checks the
-      // box's line, x range and y range and nothing else - no facing. Gating it on the row's
-      // direction byte re-fired the Skyarrow gate whenever the player pressed that way while
-      // still standing in the landing box (owner, 2026-09-23); the arrival guard is what keeps
-      // a landing from bouncing straight back, and it clears once the player has left the box.
+      // A RAIL box fires on position alone, like the client's own hit test (f.UN.y81: line, x
+      // range, y range, no facing). Gated on the row's direction byte it re-fired the moment the
+      // player turned around on the landing box - turning on the spot at the Skyarrow gate sent
+      // them straight back through it (owner, 2026-09-23). With the arrival guard, the box only
+      // fires again once the player has stepped off it and back on.
       val door =
           stepped?.takeIf { it.srcLine < 0 && steppedFires(ruleAt(toX, toY)) }
               ?: standing?.takeIf {

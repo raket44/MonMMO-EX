@@ -1654,6 +1654,39 @@ class NdsScriptCorpusGenerator {
         val parts = p[3].trim().split(' ')
         cmdsByFile.getOrPut(file) { TreeMap() }[off] = Cmd(entry, off, parts[0], parts.drop(1))
       }
+      // The DS camera is 16x12 tiles and our client shows well past that. Scene actors the ROM
+      // parks exactly one DS screen away stood in plain view on ours: Nacrene's museum-exit
+      // scene (file 32 entry 6, VAR 16530 == 3) waits Cheren and Bianca 8 tiles east of the door
+      // and walks them in 7, Burgh leaves 8 tiles west and stands there until the scene ends,
+      // Lenora runs 7 tiles east and stays (owner, 2026-09-23). The owner's call: park and
+      // dismiss them 7 tiles further, the walks lengthened to match, arrival tiles unchanged.
+      // Each patch names the bytes it expects, so a regenerated dump that moves them fails here
+      // instead of quietly playing the ROM's distances again.
+      class ArgPatch(val file: Int, val off: Int, val index: Int, val from: String, val to: String)
+      class MovePatch(val file: Int, val off: Int, val from: String, val to: String)
+      val viewportArgPatches =
+          listOf(
+              // Map-load placements (entry 16): Cheren and Bianca wait at x 659, not 652.
+              ArgPatch(32, 176, 2, "652", "659"),
+              ArgPatch(32, 188, 2, "652", "659"))
+      val viewportMovePatches =
+          listOf(
+              MovePatch(32, 2004, "14,7", "14,14"), // Cheren/Bianca walk in: west 14
+              MovePatch(32, 1972, "14,7", "14,14"),
+              MovePatch(32, 1964, "14,8", "14,15"), // Burgh leaves: west 15
+              MovePatch(32, 1948, "19,7", "19,14")) // Lenora runs off: east 14
+      for (p in viewportArgPatches) {
+        val c = cmdsByFile[p.file]?.get(p.off)
+        check(c != null && c.args.getOrNull(p.index) == p.from) {
+          "viewport patch: file ${p.file} @${p.off} arg ${p.index} expected ${p.from}, found ${c?.name} ${c?.args}"
+        }
+        cmdsByFile[p.file]!![p.off] = Cmd(c.entry, c.offset, c.name, c.args.toMutableList().also { it[p.index] = p.to })
+      }
+      for (p in viewportMovePatches) {
+        val steps = movesByFile[p.file]?.get(p.off)
+        check(steps == listOf(p.from)) { "viewport patch: file ${p.file} mv @${p.off} expected ${p.from}, found $steps" }
+        movesByFile[p.file]!![p.off] = listOf(p.to)
+      }
       // Entry offsets: the lowest offset seen per entry index (entries decode from their start).
       for ((file, cmds) in cmdsByFile) for (c in cmds.values) {
         val e = entriesByFile.getOrPut(file) { HashMap() }

@@ -289,6 +289,11 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
   ): CompletableDeferred<Unit> {
     val advance = CompletableDeferred<Unit>()
     session.attributes[PENDING_DIALOG] = advance
+    // A box left open across lines keeps the anchor it opened on: White scenes chain Messages
+    // with no close in between, and Burgh's line stayed hung on Lenora in Nacrene's museum-exit
+    // scene (owner, 2026-09-23). Close the open box first whenever the speaker changes, so the
+    // client re-anchors the next one.
+    if (state.dialogVisible && state.dialogNpcEntityId != entityId) sendCloseOpenDialog(session, state)
     val seq = state.dialogSeqId
     state.dialogSeqId = seq + 1
     state.dialogVisible = true
@@ -344,28 +349,34 @@ class DialogService @Inject constructor(private val socialRequests: SocialReques
           )
           .unk
 
+  /**
+   * A box the client keeps after its answer (the text-button list: KO re-renders a kL0 kind
+   * instead of closing it) only goes away on an explicit close: dialog action wire 100
+   * (f/qM1.qD0) makes the client close the dialog currently open (f/iq1.X91 ->
+   * f/A11.fn0().gq1()), sends nothing back, and does nothing with none open - the boxes the
+   * player already dismissed with A are gone by then.
+   */
+  private fun sendCloseOpenDialog(session: SessionContext, state: PlayerState) {
+    val seq = state.dialogSeqId
+    state.dialogSeqId = seq + 1
+    session.send(
+        DialogActionPacket(
+            flags = seq.toByte(),
+            actionType = CLOSE_OPEN_DIALOG,
+            textId = 0,
+            entityId = NO_ENTITY,
+            contextValue = 0,
+            messageArgs = emptyList(),
+            detail = byteArrayOf(0),
+        ))
+  }
+
   /** Closes the dialog once a script has shown its last box. */
   fun close(session: SessionContext, state: PlayerState) {
     session.attributes.remove(PENDING_DIALOG)
     session.attributes.remove(PENDING_DIALOG_RESPONSE)
     if (state.dialogVisible) {
-      // A box the client keeps after its answer (the text-button list: KO re-renders a kL0 kind
-      // instead of closing it) only goes away on an explicit close: dialog action wire 100
-      // (f/qM1.qD0) makes the client close the dialog currently open (f/iq1.X91 ->
-      // f/A11.fn0().gq1()), sends nothing back, and does nothing with none open - the boxes
-      // the player already dismissed with A are gone by then.
-      val seq = state.dialogSeqId
-      state.dialogSeqId = seq + 1
-      session.send(
-          DialogActionPacket(
-              flags = seq.toByte(),
-              actionType = CLOSE_OPEN_DIALOG,
-              textId = 0,
-              entityId = NO_ENTITY,
-              contextValue = 0,
-              messageArgs = emptyList(),
-              detail = byteArrayOf(0),
-          ))
+      sendCloseOpenDialog(session, state)
       // The dialog-state OFF also clears the client's scripted-input-removal flag (ln1.A70) -
       // while a script still owns the player it must NOT be sent; the runner sends the one
       // definitive OFF after the script's final walks have played out.

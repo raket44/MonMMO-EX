@@ -428,11 +428,10 @@ class InterpretedScript(
         }
         // White DoubleTrainerBattle partner, enemy1, enemy2: the partner (Wellspring Cave: 56 =
         // Cheren) fights beside the player against both enemies (62 and 63 = the grunts) - the
-        // partner's team joins the player's side, the engine plays it. The RESULT is the other way
-        // round from a single: every White double is followed by `compare 1 -> goto continue` with
-        // `CMD_103 var; End` as the fall-through (files 648 and 658), so 1 is the LOSS and the scene
-        // goes on for anything else. Returning 1 for a win ended the cave scene and its trigger
-        // looped it (owner, 2026-09-22).
+        // partner's team joins the player's side, the engine plays it. The RESULT is a single's: 1
+        // won. (2026-09-22 it was read as 1 = loss because the win branch `StorePartyCount var, 2;
+        // if none standing HealPokemon; DisableTrainer; continue` was hidden behind a one-short
+        // opcode 0x103 and looked like `CMD_103 var; End`; sized 2026-09-23.)
         "ds_doubletrainerbattle" -> {
           val first = ctx.resolveTrainerById(value(ctx, instruction.arg(1)))
           val second = ctx.resolveTrainerById(value(ctx, instruction.arg(2)))
@@ -445,7 +444,7 @@ class InterpretedScript(
             ctx.setFlag(namespaced("FLAG_DS_TRAINER_${first.id}"))
             ctx.setFlag(namespaced("FLAG_DS_TRAINER_${second.id}"))
           }
-          ctx.setVar(namespaced("VAR_RESULT"), if (won) DS_DOUBLE_WON else DS_DOUBLE_LOST)
+          ctx.setVar(namespaced("VAR_RESULT"), if (won) 1 else 0)
           state.pc++
         }
         // GetPartyMonSpecies slot, VAR: the species in the slot, SPECIES_NONE for an egg.
@@ -455,6 +454,11 @@ class InterpretedScript(
         }
         "ds_countpartynoneggs" -> {
           ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyNonEggCount())
+          state.pc++
+        }
+        // White StorePartyCount VAR, mode (opcode 0x103): the party count by mode.
+        "ds_storepartycount" -> {
+          ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyCount(value(ctx, instruction.arg(1))))
           state.pc++
         }
         // One dex for the whole game (the owner's MMO rule, the one Kanto's GetPokedexCount
@@ -2567,9 +2571,6 @@ class InterpretedScript(
      * the player held while the Striaton curtain it just opened finishes moving.
      */
     const val SOUND_WAIT_MILLIS = 40 * 17L
-    /** White StoreBattleResult after a DOUBLE: 1 is the loss, the scene continues on anything else. */
-    const val DS_DOUBLE_LOST = 1
-    const val DS_DOUBLE_WON = 2
     /** A GBA script's badge check, FLAG_BADGE01_GET..FLAG_BADGE08_GET. */
     val BADGE_FLAG = Regex("FLAG_BADGE0([1-8])_GET")
     const val LOCALID_NONE = 0

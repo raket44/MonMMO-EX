@@ -408,8 +408,15 @@
 10;15;719;Condition 1
 10;15;723;When 255 @836
 10;15;730;StoreValueInVar 32807 0
-10;15;736;CMD_103 32807
-10;15;740;End
+10;15;736;StorePartyCount 32807 2
+10;15;742;SetStackDerefVar 32807
+10;15;746;SetStackVar 3
+10;15;750;Condition 0
+10;15;754;When 255 @783
+10;15;761;Message 0 4 16 14 0 0
+10;15;773;WaitButton
+10;15;775;CloseMessageKP
+10;15;777;Jump @830
 10;15;858;PlaySound 1351
 10;15;862;FacePlayer
 10;15;864;Message2 0 4 18 0 0
@@ -423,6 +430,18 @@
 10;15;848;WaitButton
 10;15;850;CloseMessageKP
 10;15;852;Jump @878
+10;15;783;CloseMessageKP
+10;15;785;SingleTrainerBattle 615 0 0
+10;15;793;StoreBattleResult 32784
+10;15;797;SetStackDerefVar 32784
+10;15;801;SetStackVar 1
+10;15;805;Condition 1
+10;15;809;When 255 @824
+10;15;816;DisableTrainer
+10;15;818;Jump @826
+10;15;830;Jump @852
+10;15;824;EndBattle
+10;15;826;SetFlag 333
 10;16;890;LockAll
 10;16;892;PlaySound 1351
 10;16;896;FacePlayer
@@ -439,8 +458,15 @@
 10;16;947;Condition 1
 10;16;951;When 255 @1064
 10;16;958;StoreValueInVar 32808 0
-10;16;964;CMD_103 32808
-10;16;968;End
+10;16;964;StorePartyCount 32808 2
+10;16;970;SetStackDerefVar 32808
+10;16;974;SetStackVar 3
+10;16;978;Condition 0
+10;16;982;When 255 @1011
+10;16;989;Message 0 4 20 15 0 0
+10;16;1001;WaitButton
+10;16;1003;CloseMessageKP
+10;16;1005;Jump @1058
 10;16;1086;PlaySound 1351
 10;16;1090;FacePlayer
 10;16;1092;Message2 0 4 22 0 0
@@ -454,6 +480,18 @@
 10;16;1076;WaitButton
 10;16;1078;CloseMessageKP
 10;16;1080;Jump @1106
+10;16;1011;CloseMessageKP
+10;16;1013;SingleTrainerBattle 528 0 0
+10;16;1021;StoreBattleResult 32784
+10;16;1025;SetStackDerefVar 32784
+10;16;1029;SetStackVar 1
+10;16;1033;Condition 1
+10;16;1037;When 255 @1052
+10;16;1044;DisableTrainer
+10;16;1046;Jump @1054
+10;16;1058;Jump @1080
+10;16;1052;EndBattle
+10;16;1054;SetFlag 334
 12;0;82;LockAll
 12;0;84;PlaySound 1351
 12;0;88;FacePlayer
@@ -8450,8 +8488,8 @@ mv;78;544;13,1 34,1
 82;0;686;LockAll
 82;0;688;PlaySound 1351
 82;0;692;FacePlayer
-82;0;694;CMD_103 32804
-82;0;698;CallRoutine @-2145123639
+82;0;694;StorePartyCount 32804 4
+82;0;700;SetStackDerefVar 32804
 82;0;704;SetStackVar 0
 82;0;708;Condition 5
 82;0;712;When 255 @731
@@ -18828,8 +18866,15 @@ mv;192;1904;15,8
 192;20;2894;Condition 1
 192;20;2898;When 255 @3041
 192;20;2905;StoreValueInVar 32808 0
-192;20;2911;CMD_103 32808
-192;20;2915;End
+192;20;2911;StorePartyCount 32808 2
+192;20;2917;SetStackDerefVar 32808
+192;20;2921;SetStackVar 3
+192;20;2925;Condition 0
+192;20;2929;When 255 @2958
+192;20;2936;Message 0 4 50 28 0 0
+192;20;2948;WaitButton
+192;20;2950;CloseMessageKP
+192;20;2952;Jump @3035
 192;20;2622;SetStackDerefVar 16611
 192;20;2626;SetStackVar 1
 192;20;2630;Condition 1
@@ -18847,8 +18892,15 @@ mv;192;1904;15,8
 192;20;2699;Condition 1
 192;20;2703;When 255 @2846
 192;20;2710;StoreValueInVar 32807 0
-192;20;2716;CMD_103 32807
-192;20;2720;End
+192;20;2716;StorePartyCount 32807 2
+192;20;2722;SetStackDerefVar 32807
+192;20;2726;SetStackVar 3
+192;20;2730;Condition 0
+192;20;2734;When 255 @2763
+192;20;2741;Message 0 4 41 28 0 0
+192;20;2753;WaitButton
+192;20;2755;CloseMessageKP
+192;20;2757;Jump @2840
 192;20;2494;Message 0 4 53 28 0 0
 192;20;2506;WaitButton
 192;20;2508;CloseMessageKP
@@ -18858,6 +18910,17 @@ mv;192;1904;15,8
 192;20;3055;CloseMessageKP
 192;20;3057;StoreValueInVar 32808 0
 192;20;3063;EndRoutine
+192;20;2958;Message 0 4 49 28 0 0
+192;20;2970;CloseMessageKP
+192;20;2972;SingleTrainerBattle 603 0 0
+192;20;2980;StoreBattleResult 32784
+192;20;2984;SetStackDerefVar 32784
+192;20;2988;SetStackVar 1
+192;20;2992;Condition 1
+192;20;2996;When 255 @3011
+192;20;3003;DisableTrainer
+192;20;3005;Jump @3013
+192;20;3035;Jump @3057
 192;20;2653;Message 0 4 44 28 0 0
 192;20;2665;WaitButton
 192;20;2667;CloseMessageKP
@@ -18869,6 +18932,27 @@ mv;192;1904;15,8
 192;20;2860;CloseMessageKP
 192;20;2862;StoreValueInVar 32807 0
 192;20;2868;EndRoutine
+192;20;2763;Message 0 4 40 28 0 0
+192;20;2775;CloseMessageKP
+192;20;2777;SingleTrainerBattle 506 0 0
+192;20;2785;StoreBattleResult 32784
+192;20;2789;SetStackDerefVar 32784
+192;20;2793;SetStackVar 1
+192;20;2797;Condition 1
+192;20;2801;When 255 @2816
+192;20;2808;DisableTrainer
+192;20;2810;Jump @2818
+192;20;2840;Jump @2862
+192;20;3011;EndBattle
+192;20;3013;Message 0 4 52 28 0 0
+192;20;3025;WaitButton
+192;20;3027;CloseMessageKP
+192;20;3029;StoreValueInVar 16611 2
+192;20;2816;EndBattle
+192;20;2818;Message 0 4 43 28 0 0
+192;20;2830;WaitButton
+192;20;2832;CloseMessageKP
+192;20;2834;StoreValueInVar 16611 2
 194;0;112;LockAll
 194;0;114;PlaySound 1351
 194;0;118;FacePlayer
@@ -19751,8 +19835,7 @@ mv;192;1904;15,8
 210;2;210;StoreValueInVar 32802 0
 210;2;216;StoreValueInVar 32803 0
 210;2;222;StoreValueInVar 32804 0
-210;2;228;CMD_103 32801
-210;2;232;Nop
+210;2;228;StorePartyCount 32801 0
 210;2;234;SetStackDerefVar 32801
 210;2;238;SetStackDerefVar 32802
 210;2;242;Condition 2
@@ -25904,8 +25987,7 @@ mv;298;1188;13,2
 304;0;515;Condition 1
 304;0;519;When 255 @823
 304;0;526;StoreValueInVar 32801 0
-304;0;532;CMD_103 32801
-304;0;536;Nop
+304;0;532;StorePartyCount 32801 0
 304;0;538;SetStackDerefVar 32801
 304;0;542;SetStackVar 6
 304;0;546;Condition 1
@@ -26610,8 +26692,7 @@ mv;308;120;14,2 13,5 14,3
 308;2;212;StoreValueInVar 32804 0
 308;2;218;StoreValueInVar 32805 0
 308;2;224;StoreValueInVar 32802 0
-308;2;230;CMD_103 32804
-308;2;234;Nop
+308;2;230;StorePartyCount 32804 0
 308;2;236;SetStackDerefVar 32802
 308;2;240;SetStackDerefVar 32804
 308;2;244;Condition 0
@@ -38477,8 +38558,7 @@ mv;526;1548;3,1 75,1
 526;3;1726;Condition 1
 526;3;1730;When 255 @2001
 526;3;1737;StoreValueInVar 32806 0
-526;3;1743;CMD_103 32806
-526;3;1747;Nop
+526;3;1743;StorePartyCount 32806 0
 526;3;1749;StoreValueInVar 32807 0
 526;3;1755;CheckMoney 32807 500
 526;3;1761;SetStackDerefVar 32807
@@ -41670,8 +41750,7 @@ mv;634;1716;15,2 32,0
 mv;634;1792;12,4 34,0 
 634;4;1368;WaitMovement
 634;4;1370;StoreValueInVar 32802 0
-634;4;1376;CMD_103 32802
-634;4;1380;Nop
+634;4;1376;StorePartyCount 32802 0
 634;4;1382;SetStackDerefVar 32802
 634;4;1386;SetStackVar 1
 634;4;1390;Condition 3
@@ -42644,8 +42723,95 @@ mv;642;3688;63,4 15,1 32,0 12,2 15,7
 642;13;4734;End
 642;14;256;LockAll
 642;14;258;StoreValueInVar 32800 0
-642;14;264;CMD_103 32800
-642;14;268;End
+642;14;264;StorePartyCount 32800 2
+642;14;270;SetStackDerefVar 32800
+642;14;274;SetStackVar 2
+642;14;278;Condition 0
+642;14;282;When 255 @401
+642;14;289;ApplyMovement 2 @916
+mv;642;916;75,1 33,0 
+642;14;297;WaitMovement
+642;14;299;ApplyMovement 255 @928
+mv;642;928;0,1 
+642;14;307;WaitMovement
+642;14;309;StoreValueInVar 32801 0
+642;14;315;StoreValueInVar 32802 0
+642;14;321;StoreHeroPosition 32801 32802
+642;14;327;SetStackDerefVar 32802
+642;14;331;SetStackVar 565
+642;14;335;Condition 1
+642;14;339;When 255 @359
+642;14;346;BubbleMessage 1 1
+642;14;351;CloseMessageKP2
+642;14;353;Jump @373
+642;14;401;ApplyMovement 2 @944
+mv;642;944;75,1 
+642;14;409;ApplyMovement 1 @944
+642;14;417;WaitMovement
+642;14;419;PlayTrainerMusic 18
+642;14;423;StoreValueInVar 32803 0
+642;14;429;StoreValueInVar 32804 0
+642;14;435;StoreHeroPosition 32803 32804
+642;14;441;Compare 32804 563
+642;14;447;When 1 @460
+642;14;454;Jump @492
+642;14;359;Message 0 4 1 2 0 0
+642;14;371;CloseMessageKP
+642;14;373;StoreValueInVar 32802 0
+642;14;379;StoreValueInVar 32801 0
+642;14;385;ApplyMovement 255 @936
+mv;642;936;15,1 
+642;14;393;WaitMovement
+642;14;395;Jump @638
+642;14;460;ApplyMovement 2 @972
+mv;642;972;1,1 
+642;14;468;ApplyMovement 1 @972
+642;14;476;ApplyMovement 255 @928
+642;14;484;WaitMovement
+642;14;486;Jump @620
+642;14;492;Compare 32804 564
+642;14;498;When 1 @511
+642;14;505;Jump @543
+642;14;638;WaitMoment
+642;14;640;ReleaseAll
+642;14;642;End
+642;14;620;StoreValueInVar 32804 0
+642;14;626;StoreValueInVar 32803 0
+642;14;632;CallRoutine @808
+642;14;511;ApplyMovement 2 @980
+mv;642;980;13,1 
+642;14;519;ApplyMovement 1 @980
+642;14;527;ApplyMovement 255 @928
+642;14;535;WaitMovement
+642;14;537;Jump @620
+642;14;543;Compare 32804 565
+642;14;549;When 1 @562
+642;14;556;Jump @594
+642;14;808;Message 0 4 2 2 0 0
+642;14;820;CloseMessageKP
+642;14;822;Message 0 4 3 1 0 0
+642;14;834;CloseMessageKP
+642;14;836;SingleTrainerBattle 18 0 0
+642;14;844;StoreBattleResult 32784
+642;14;848;SetStackDerefVar 32784
+642;14;852;SetStackVar 1
+642;14;856;Condition 1
+642;14;860;When 255 @875
+642;14;867;DisableTrainer
+642;14;869;Jump @877
+642;14;562;ApplyMovement 2 @988
+mv;642;988;13,2 
+642;14;570;ApplyMovement 1 @988
+642;14;578;ApplyMovement 255 @928
+642;14;586;WaitMovement
+642;14;588;Jump @620
+642;14;594;ApplyMovement 2 @972
+642;14;602;ApplyMovement 1 @972
+642;14;610;ApplyMovement 255 @928
+642;14;618;WaitMovement
+642;14;875;EndBattle
+642;14;877;StoreValueInVar 16510 1
+642;14;883;EndRoutine
 642;15;2423;LockAll
 642;15;2425;PlaySound 1351
 642;15;2429;FacePlayer
@@ -42724,8 +42890,41 @@ mv;642;4472;32,1
 642;16;4460;End
 642;17;644;LockAll
 642;17;646;StoreValueInVar 32805 0
-642;17;652;CMD_103 32805
-642;17;656;End
+642;17;652;StorePartyCount 32805 2
+642;17;658;SetStackDerefVar 16510
+642;17;662;SetStackVar 1
+642;17;666;Condition 4
+642;17;670;When 255 @703
+642;17;677;PlaySound 1351
+642;17;681;FacePlayer
+642;17;683;Message2 0 4 4 0 0
+642;17;693;WaitButton
+642;17;695;CloseMessageKP
+642;17;697;Jump @802
+642;17;703;SetStackDerefVar 32805
+642;17;707;SetStackVar 2
+642;17;711;Condition 0
+642;17;715;When 255 @768
+642;17;722;PlaySound 1351
+642;17;726;FacePlayer
+642;17;728;ApplyMovement 2 @952
+mv;642;952;3,1 75,1 
+642;17;736;WaitMovement
+642;17;738;Message 0 4 1 2 0 0
+642;17;750;CloseMessageKP
+642;17;752;ApplyMovement 255 @936
+642;17;760;WaitMovement
+642;17;762;Jump @802
+642;17;802;WaitMoment
+642;17;804;ReleaseAll
+642;17;806;End
+642;17;768;PlaySound 1351
+642;17;772;FacePlayer
+642;17;774;ApplyMovement 2 @952
+642;17;782;ApplyMovement 1 @952
+642;17;790;WaitMovement
+642;17;792;PlayTrainerMusic 18
+642;17;796;CallRoutine @808
 642;18;885;LockAll
 642;18;887;PlaySound 1351
 642;18;891;FacePlayer
@@ -43013,8 +43212,14 @@ mv;648;1296;32,0
 648;0;607;SetStackVar 1
 648;0;611;Condition 1
 648;0;615;When 255 @657
-648;0;622;CMD_103 32776
-648;0;626;End
+648;0;622;StorePartyCount 32776 2
+648;0;628;SetStackDerefVar 32776
+648;0;632;SetStackVar 0
+648;0;636;Condition 1
+648;0;640;When 255 @649
+648;0;647;HealPokemon
+648;0;649;DisableTrainer
+648;0;651;Jump @669
 648;0;267;ApplyMovement 255 @1160
 mv;648;1160;14,1 
 648;0;275;ApplyMovement 0 @1272
@@ -43033,8 +43238,14 @@ mv;648;1160;14,1
 648;0;712;SetStackVar 1
 648;0;716;Condition 1
 648;0;720;When 255 @762
-648;0;727;CMD_103 32776
-648;0;731;End
+648;0;727;StorePartyCount 32776 2
+648;0;733;SetStackDerefVar 32776
+648;0;737;SetStackVar 0
+648;0;741;Condition 1
+648;0;745;When 255 @754
+648;0;752;HealPokemon
+648;0;754;DisableTrainer
+648;0;756;Jump @774
 648;0;657;ClearFlag 635
 648;0;661;StoreValueInVar 16533 2
 648;0;667;EndBattle
@@ -43045,8 +43256,14 @@ mv;648;1160;14,1
 648;0;798;SetStackVar 1
 648;0;802;Condition 1
 648;0;806;When 255 @848
-648;0;813;CMD_103 32776
-648;0;817;End
+648;0;813;StorePartyCount 32776 2
+648;0;819;SetStackDerefVar 32776
+648;0;823;SetStackVar 0
+648;0;827;Condition 1
+648;0;831;When 255 @840
+648;0;838;HealPokemon
+648;0;840;DisableTrainer
+648;0;842;Jump @860
 648;0;762;ClearFlag 635
 648;0;766;StoreValueInVar 16533 2
 648;0;772;EndBattle
@@ -43712,8 +43929,14 @@ mv;658;1684;14,7 12,2 14,6
 658;0;1209;LockCamera
 658;0;1211;MoveCamera 9688 0 53248 14 32768 358 0 0 32768 435 1
 658;0;1235;EndCameraEvent
-658;0;1237;CMD_103 32776
-658;0;1241;End
+658;0;1237;StorePartyCount 32776 2
+658;0;1243;SetStackDerefVar 32776
+658;0;1247;SetStackVar 0
+658;0;1251;Condition 1
+658;0;1255;When 255 @1264
+658;0;1262;HealPokemon
+658;0;1264;DisableTrainer
+658;0;1266;Jump @1282
 658;0;1174;DoubleTrainerBattle 92 401 402 0
 658;0;1272;SetFlag 566
 658;0;1276;SetFlag 567
@@ -48927,8 +49150,7 @@ mv;752;924;63,1 0,1 71,1 18,1 72,1
 752;1;1162;StoreValueInVar 32810 0
 752;1;1168;StoreValueInVar 32811 0
 752;1;1174;StoreVersion 32811
-752;1;1178;CMD_103 32806
-752;1;1182;Nop
+752;1;1178;StorePartyCount 32806 0
 752;1;1184;SetStackDerefVar 32806
 752;1;1188;SetStackDerefVar 32807
 752;1;1192;Condition 2
@@ -49282,8 +49504,15 @@ mv;752;1712;0,1 71,1 13,2 72,1
 760;3;104;Condition 1
 760;3;108;When 255 @221
 760;3;115;StoreValueInVar 32800 0
-760;3;121;CMD_103 32800
-760;3;125;End
+760;3;121;StorePartyCount 32800 2
+760;3;127;SetStackDerefVar 32800
+760;3;131;SetStackVar 3
+760;3;135;Condition 0
+760;3;139;When 255 @168
+760;3;146;Message 0 4 5 3 0 0
+760;3;158;WaitButton
+760;3;160;CloseMessageKP
+760;3;162;Jump @215
 760;3;269;PlaySound 1351
 760;3;273;FacePlayer
 760;3;275;StoreActiveTrainerID 609 32784
@@ -49300,8 +49529,15 @@ mv;752;1712;0,1 71,1 13,2 72,1
 760;3;330;Condition 1
 760;3;334;When 255 @447
 760;3;341;StoreValueInVar 32801 0
-760;3;347;CMD_103 32801
-760;3;351;End
+760;3;347;StorePartyCount 32801 2
+760;3;353;SetStackDerefVar 32801
+760;3;357;SetStackVar 3
+760;3;361;Condition 0
+760;3;365;When 255 @394
+760;3;372;Message 0 4 9 3 0 0
+760;3;384;WaitButton
+760;3;386;CloseMessageKP
+760;3;388;Jump @441
 760;3;243;PlaySound 1351
 760;3;247;FacePlayer
 760;3;249;Message2 0 4 7 0 0
@@ -49312,6 +49548,16 @@ mv;752;1712;0,1 71,1 13,2 72,1
 760;3;233;WaitButton
 760;3;235;CloseMessageKP
 760;3;237;Jump @263
+760;3;168;CloseMessageKP
+760;3;170;SingleTrainerBattle 608 0 0
+760;3;178;StoreBattleResult 32784
+760;3;182;SetStackDerefVar 32784
+760;3;186;SetStackVar 1
+760;3;190;Condition 1
+760;3;194;When 255 @209
+760;3;201;DisableTrainer
+760;3;203;Jump @211
+760;3;215;Jump @237
 760;3;469;PlaySound 1351
 760;3;473;FacePlayer
 760;3;475;Message2 0 4 11 0 0
@@ -49326,6 +49572,20 @@ mv;752;1712;0,1 71,1 13,2 72,1
 760;3;459;WaitButton
 760;3;461;CloseMessageKP
 760;3;463;Jump @489
+760;3;394;CloseMessageKP
+760;3;396;SingleTrainerBattle 609 0 0
+760;3;404;StoreBattleResult 32784
+760;3;408;SetStackDerefVar 32784
+760;3;412;SetStackVar 1
+760;3;416;Condition 1
+760;3;420;When 255 @435
+760;3;427;DisableTrainer
+760;3;429;Jump @437
+760;3;441;Jump @463
+760;3;209;EndBattle
+760;3;211;DeactivateTrainerID 604
+760;3;435;EndBattle
+760;3;437;DeactivateTrainerID 609
 762;0;77;End
 762;1;14;SetVarFlagStatus 149 32784
 762;1;20;SetStackDerefVar 32784
@@ -56617,8 +56877,15 @@ mv;836;2604;34,1
 852;4;679;Condition 1
 852;4;683;When 255 @796
 852;4;690;StoreValueInVar 32805 0
-852;4;696;CMD_103 32805
-852;4;700;End
+852;4;696;StorePartyCount 32805 2
+852;4;702;SetStackDerefVar 32805
+852;4;706;SetStackVar 3
+852;4;710;Condition 0
+852;4;714;When 255 @743
+852;4;721;Message 0 4 13 4 0 0
+852;4;733;WaitButton
+852;4;735;CloseMessageKP
+852;4;737;Jump @790
 852;4;818;PlaySound 1351
 852;4;822;FacePlayer
 852;4;824;Message2 0 4 15 0 0
@@ -56632,6 +56899,18 @@ mv;836;2604;34,1
 852;4;808;WaitButton
 852;4;810;CloseMessageKP
 852;4;812;Jump @838
+852;4;743;CloseMessageKP
+852;4;745;SingleTrainerBattle 529 0 0
+852;4;753;StoreBattleResult 32784
+852;4;757;SetStackDerefVar 32784
+852;4;761;SetStackVar 1
+852;4;765;Condition 1
+852;4;769;When 255 @784
+852;4;776;DisableTrainer
+852;4;778;Jump @786
+852;4;790;Jump @812
+852;4;784;EndBattle
+852;4;786;SetFlag 335
 852;5;850;LockAll
 852;5;852;PlaySound 1351
 852;5;856;FacePlayer
@@ -56648,8 +56927,15 @@ mv;836;2604;34,1
 852;5;907;Condition 1
 852;5;911;When 255 @1024
 852;5;918;StoreValueInVar 32806 0
-852;5;924;CMD_103 32806
-852;5;928;End
+852;5;924;StorePartyCount 32806 2
+852;5;930;SetStackDerefVar 32806
+852;5;934;SetStackVar 3
+852;5;938;Condition 0
+852;5;942;When 255 @971
+852;5;949;Message 0 4 17 5 0 0
+852;5;961;WaitButton
+852;5;963;CloseMessageKP
+852;5;965;Jump @1018
 852;5;1046;PlaySound 1351
 852;5;1050;FacePlayer
 852;5;1052;Message2 0 4 19 0 0
@@ -56663,6 +56949,18 @@ mv;836;2604;34,1
 852;5;1036;WaitButton
 852;5;1038;CloseMessageKP
 852;5;1040;Jump @1066
+852;5;971;CloseMessageKP
+852;5;973;SingleTrainerBattle 530 0 0
+852;5;981;StoreBattleResult 32784
+852;5;985;SetStackDerefVar 32784
+852;5;989;SetStackVar 1
+852;5;993;Condition 1
+852;5;997;When 255 @1012
+852;5;1004;DisableTrainer
+852;5;1006;Jump @1014
+852;5;1018;Jump @1040
+852;5;1012;EndBattle
+852;5;1014;SetFlag 336
 854;0;30;LockAll
 854;0;32;WaitMoment
 854;0;34;ReleaseAll
@@ -56715,8 +57013,7 @@ mv;854;312;100,1 62,1
 854;1;330;ApplyMovement 32785 @368
 mv;854;368;0,1 
 854;1;338;WaitMovement
-854;1;340;CMD_103 32803
-854;1;344;Nop2
+854;1;340;StorePartyCount 32803 1
 854;1;346;CMD_12F 32803
 854;1;350;ApplyMovement 32785 @376
 mv;854;376;1,1 
@@ -56897,8 +57194,7 @@ mv;855;700;104,1
 855;0;823;ApplyMovement 32785 @864
 mv;855;864;0,1 
 855;0;831;WaitMovement
-855;0;833;CMD_103 32808
-855;0;837;Nop2
+855;0;833;StorePartyCount 32808 1
 855;0;839;CMD_12F 32808
 855;0;843;ApplyMovement 32785 @872
 mv;855;872;1,1 
@@ -56951,8 +57247,8 @@ mv;855;672;100,1 62,1
 855;1;912;SetVarFlagStatus 115 32809
 855;1;918;StoreValueInVar 32810 0
 855;1;924;StoreValueInVar 32811 0
-855;1;930;CMD_103 32812
-855;1;934;CallRoutine @88540242
+855;1;930;StorePartyCount 32812 4
+855;1;936;PlaySound 1351
 855;1;940;FacePlayer
 855;1;942;SetStackDerefVar 32809
 855;1;946;SetStackVar 1
@@ -57218,10 +57514,9 @@ mv;855;2344;69,1
 856;0;108;When 255 @127
 856;0;115;StoreValueInVar 32808 2
 856;0;121;Jump @133
-856;0;135;CMD_103 32809
-856;0;139;Nop
-856;0;141;CMD_103 32810
-856;0;145;End
+856;0;135;StorePartyCount 32809 0
+856;0;141;StorePartyCount 32810 2
+856;0;147;EndRoutine
 856;0;417;SetStackDerefVar 32807
 856;0;421;SetStackVar 0
 856;0;425;Condition 1
@@ -58439,8 +58734,17 @@ mv;862;1448;154,1
 863;0;2623;StoreValueInVar 32805 0
 863;0;2629;StoreValueInVar 32806 0
 863;0;2635;CMD_8A 32800 32805
-863;0;2641;CMD_103 32806
-863;0;2645;End
+863;0;2641;StorePartyCount 32806 2
+863;0;2647;SetStackDerefVar 32805
+863;0;2651;SetStackVar 1
+863;0;2655;Condition 1
+863;0;2659;SetStackDerefVar 32806
+863;0;2663;SetStackVar 2
+863;0;2667;Condition 0
+863;0;2671;Condition 7
+863;0;2675;When 255 @2694
+863;0;2682;CallRoutine @2943
+863;0;2688;Jump @2856
 863;0;2580;SetStackDerefVar 32784
 863;0;2584;SetStackVar 2
 863;0;2588;Condition 1
@@ -58466,14 +58770,32 @@ mv;862;1448;154,1
 863;0;3164;Compare 32784 52
 863;0;3170;When 1 @3183
 863;0;3177;Jump @3195
+863;0;2694;SetStackDerefVar 32805
+863;0;2698;SetStackVar 2
+863;0;2702;Condition 1
+863;0;2706;SetStackDerefVar 32806
+863;0;2710;SetStackVar 3
+863;0;2714;Condition 0
+863;0;2718;Condition 7
+863;0;2722;When 255 @2741
+863;0;2729;CallRoutine @2969
+863;0;2735;Jump @2856
+863;0;2943;SetVar84 32784
+863;0;2947;CMD_88 32801 32802 32803
+863;0;2955;CMD_87 32800 32803 32785
+863;0;2963;WaitButton
+863;0;2965;CloseMessageKP
+863;0;2967;EndRoutine
+863;0;2856;StoreValueInVar 32806 0
+863;0;2862;StoreValueInVar 32805 0
+863;0;2868;WaitMoment
+863;0;2870;ReleaseAll
+863;0;2872;End
 863;0;2611;CallRoutine @2995
 863;0;3113;CMD_87 32800 16 32785
 863;0;3121;WaitButton
 863;0;3123;CloseMessageKP
 863;0;3125;EndRoutine
-863;0;2868;WaitMoment
-863;0;2870;ReleaseAll
-863;0;2872;End
 863;0;3259;ApplyMovement 32785 @3400
 mv;863;3400;101,1 
 863;0;3267;WaitMovement
@@ -58487,6 +58809,22 @@ mv;863;3400;101,1
 863;0;3195;Compare 32784 53
 863;0;3201;When 1 @3214
 863;0;3208;Jump @3226
+863;0;2741;SetStackDerefVar 32805
+863;0;2745;SetStackVar 3
+863;0;2749;Condition 1
+863;0;2753;SetStackDerefVar 32806
+863;0;2757;SetStackVar 3
+863;0;2761;Condition 0
+863;0;2765;Condition 7
+863;0;2769;When 255 @2788
+863;0;2776;CallRoutine @2969
+863;0;2782;Jump @2856
+863;0;2969;SetVar84 32800
+863;0;2973;CMD_88 32801 32802 32803
+863;0;2981;CMD_87 32800 32803 32785
+863;0;2989;WaitButton
+863;0;2991;CloseMessageKP
+863;0;2993;EndRoutine
 863;0;2995;CMD_88 32801 32802 32803
 863;0;3003;CMD_87 32800 32802 32785
 863;0;3011;WaitButton
@@ -58502,6 +58840,14 @@ mv;863;3400;101,1
 863;0;3226;Compare 32784 54
 863;0;3232;When 1 @3245
 863;0;3239;Jump @3257
+863;0;2788;CallRoutine @2874
+863;0;2794;DVar92 32800 32784
+863;0;2800;SetStackDerefVar 32784
+863;0;2804;SetStackVar 1
+863;0;2808;Condition 1
+863;0;2812;When 255 @2831
+863;0;2819;CallRoutine @3017
+863;0;2825;Jump @2856
 863;0;3397;EndRoutine
 863;0;3323;CMD_73 32785 14
 863;0;3329;Jump @3397
@@ -58510,11 +58856,40 @@ mv;863;3400;101,1
 863;0;3348;Jump @3366
 863;0;3245;CallRoutine @3259
 863;0;3251;Jump @3257
+863;0;2874;PlayTrainerMusic 32800
+863;0;2878;CMD_88 32801 32802 32803
+863;0;2886;CMD_87 32800 32801 32785
+863;0;2894;CloseMessageKP
+863;0;2896;SingleTrainerBattle 32800 0 0
+863;0;2904;StoreBattleResult 32784
+863;0;2908;SetStackDerefVar 32784
+863;0;2912;SetStackVar 1
+863;0;2916;Condition 1
+863;0;2920;When 255 @2935
+863;0;2927;DisableTrainer
+863;0;2929;Jump @2937
+863;0;2831;SetStackDerefVar 32784
+863;0;2835;SetStackVar 2
+863;0;2839;Condition 1
+863;0;2843;When 255 @2856
+863;0;2850;CallRoutine @3073
 863;0;3354;CMD_73 32785 17
 863;0;3360;Jump @3397
 863;0;3366;Compare 32784 3
 863;0;3372;When 1 @3385
 863;0;3379;Jump @3397
+863;0;2935;EndBattle
+863;0;2937;DeactivateTrainerID 32800
+863;0;2941;EndRoutine
+863;0;3073;CMD_87 32800 15 32785
+863;0;3081;CloseMessageKP
+863;0;3083;DVar93 32800 32768
+863;0;3089;StoreValueInVar 32769 1
+863;0;3095;CallStd 2805
+863;0;3099;CMD_87 32800 16 32785
+863;0;3107;WaitButton
+863;0;3109;CloseMessageKP
+863;0;3111;EndRoutine
 863;0;3385;CMD_73 32785 16
 863;0;3391;Jump @3397
 863;616;3408;LockAll
@@ -58624,15 +58999,6 @@ mv;863;3400;101,1
 863;616;3795;DeactivateTrainerID 32809
 863;616;3799;DeactivateTrainerID 32810
 863;616;3803;EndRoutine
-863;616;3073;CMD_87 32800 15 32785
-863;616;3081;CloseMessageKP
-863;616;3083;DVar93 32800 32768
-863;616;3089;StoreValueInVar 32769 1
-863;616;3095;CallStd 2805
-863;616;3099;CMD_87 32800 16 32785
-863;616;3107;WaitButton
-863;616;3109;CloseMessageKP
-863;616;3111;EndRoutine
 863;616;3944;EndBattle
 863;616;3946;DeactivateTrainerID 32812
 863;616;3950;DeactivateTrainerID 32813
@@ -63054,8 +63420,8 @@ mv;867;68;162,1
 869;0;120;WaitButton
 869;0;122;CloseMessageKP
 869;0;124;EndRoutine
-869;0;126;CMD_103 32802
-869;0;130;CallRoutine @-2145255279
+869;0;126;StorePartyCount 32802 4
+869;0;132;SetStackDerefVar 32802
 869;0;136;SetStackVar 0
 869;0;140;Condition 5
 869;0;144;When 255 @169
@@ -63262,8 +63628,8 @@ mv;867;68;162,1
 870;0;120;WaitButton
 870;0;122;CloseMessageKP
 870;0;124;EndRoutine
-870;0;126;CMD_103 32802
-870;0;130;CallRoutine @-2145255279
+870;0;126;StorePartyCount 32802 4
+870;0;132;SetStackDerefVar 32802
 870;0;136;SetStackVar 0
 870;0;140;Condition 5
 870;0;144;When 255 @169
@@ -64001,8 +64367,7 @@ mv;867;68;162,1
 870;0;4300;Jump @4154
 870;0;4326;StoreValueInVar 32843 0
 870;0;4332;StoreValueInVar 32844 0
-870;0;4338;CMD_103 32844
-870;0;4342;Nop2
+870;0;4338;StorePartyCount 32844 1
 870;0;4344;SetStackDerefVar 32844
 870;0;4348;SetStackVar 2
 870;0;4352;Condition 0
@@ -64486,8 +64851,7 @@ mv;867;68;162,1
 877;0;911;StoreValueInVar 32807 0
 877;0;917;SetVarPoke 0 32803
 877;0;922;Message2 0 4 6 0 0
-877;0;932;CMD_103 32807
-877;0;936;Nop
+877;0;932;StorePartyCount 32807 0
 877;0;938;SetStackDerefVar 32807
 877;0;942;SetStackVar 6
 877;0;946;Condition 1

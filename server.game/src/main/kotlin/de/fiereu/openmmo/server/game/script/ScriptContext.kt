@@ -537,7 +537,6 @@ internal constructor(
   fun setFlag(flag: String) {
     characterId?.let { charId ->
       story.setFlag(charId, flag)
-      LINKED_FLAGS[flag]?.forEach { linked -> if (linked != flag) setFlag(linked) }
       // A flag that selects a map variant swaps the client's block grid right away.
       layoutVariants?.onFlagSet(session, state, flag)
       val update = StoryClientState.flagUpdate(state.regionId.toByte(), flag, enabled = true)
@@ -810,6 +809,24 @@ internal constructor(
   /** Party members that are not eggs (Platinum CountPartyNonEggs). */
   fun partyNonEggCount(): Int =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.count { mon -> !mon.isEgg } } ?: 0
+
+  /**
+   * White StorePartyCount VAR, mode (opcode 0x103, sized from the binary's command table
+   * 2026-09-23). Read off its 31 uses: mode 0 counts every slot ("you can only have six" checks
+   * compare it with 6), mode 2 the usable ones - not an egg, still standing - (the Route 3 twins
+   * want two, Wellspring's tag battle heals the player when it reads none). Modes 1 and 4 appear
+   * only in the unbound std files; 1 is read as the non-egg count and 4 as the eggs, unverified.
+   */
+  fun partyCount(mode: Int): Int {
+    val party = characterId?.let { characters?.getCharacter(it)?.pokemon }.orEmpty()
+    return when (mode) {
+      0 -> party.size
+      1 -> party.count { !it.isEgg }
+      2 -> party.count { !it.isEgg && it.hp > 0 }
+      4 -> party.count { it.isEgg }
+      else -> party.size
+    }
+  }
 
   private fun partyMon(slot: Int) = characterId?.let { characters?.getCharacter(it)?.pokemon?.getOrNull(slot) }
 
@@ -1379,16 +1396,6 @@ internal constructor(
   }
 
   private companion object {
-    /**
-     * A flag a scene sets that takes another flag with it (owner's decision, 2026-09-23). White's
-     * Wellspring Cave scene hides its own Cheren (and the grunts) with 574 at its end, but the
-     * ROM's post-battle block - opcode 0x24 on 635 right after each battle, the loss-retry
-     * restore that puts the outside Cheren back at the cave mouth - runs on the branch this
-     * server's double-battle win takes, so after the cave he stood outside asking "ready to go?"
-     * again. Hiding him (635, Route 3 npc 22) with the cave one is the owner's rule.
-     */
-    val LINKED_FLAGS: Map<String, List<String>> = mapOf("unova/FLAG_574" to listOf("unova/FLAG_635"))
-
     /**
      * Sound sequences by their SDAT symbol name, read out of the White ROM: the DS SSEQ engine
      * loads them by region, and region 2's table is the one every region can reach.

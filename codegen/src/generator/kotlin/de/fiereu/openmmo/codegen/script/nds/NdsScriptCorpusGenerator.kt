@@ -686,6 +686,7 @@ class NdsScriptCorpusGenerator {
         "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
         // White DoubleTrainerBattle partner, enemy1, enemy2 (every Ds* name needs its own case).
         "DsDoubleTrainerBattle" -> out += "ds_doubletrainerbattle ${a[0]}, ${a[1]}, ${a[2]}"
+        "DsStorePartyCount" -> out += "ds_storepartycount ${a[0]}, ${a[1]}"
         // Every Ds* intermediate name needs its own case here: the fallback writes
         // ds_<name.lowercase()>, which for DsMapGimmick was `ds_dsmapgimmick` - an unknown
         // command, so every Striaton button script failed to resolve and the buttons did
@@ -1792,6 +1793,11 @@ class NdsScriptCorpusGenerator {
             // partner, enemy1, enemy2: the player faces BOTH enemies at once (Wellspring Cave with
             // Cheren: 56 = Cheren, 62 and 63 = the grunts). It used to take tv(1) alone as a single.
             "DoubleTrainerBattle" -> b.lines += listOf("DsDoubleTrainerBattle", tv(0), tv(1), tv(2))
+            // Opcode 0x103 (sized to two halfwords 2026-09-23 from the binary's command table and
+            // its 31 uses): VAR, mode - the party count into VAR. Mode 0 every slot, 2 the usable
+            // ones (the Route 3 twins want two, the cave heals you when none stand); 1 and 4 seen
+            // only in the unbound std files.
+            "StorePartyCount" -> b.lines += listOf("DsStorePartyCount", tv(0), t(1))
             "StoreVar_CD", "StoreVar_CE", "Unknown_0D", "Unknown_0E", "Unknown_12", "Unknown_16" ->
                 b.lines += listOf("SetVar", v(0), "0")
             // The nurse compares the date against the player's birthday. Both used to stub to 0, which

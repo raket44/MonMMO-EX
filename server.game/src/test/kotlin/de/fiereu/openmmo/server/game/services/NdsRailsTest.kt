@@ -52,6 +52,24 @@ class NdsRailsTest :
         rails.delta(street, Direction.DOWN) shouldBe (0 to -1)
       }
 
+      // The three in-place / wrong-way walk-offs the owner showed 2026-09-23, each a landing
+      // cell with exactly one open neighbour in the rail grid: the pier's (0,1) on line 1 (its
+      // whole first column blocked), Skyarrow's gate end (4,0) on line 12 (columns 4-5 blocked),
+      // and 40:0's second door at (2,-6) on Castelia's line 2 (the building on three sides).
+      test("a landing's one open neighbour in the rail grid is the walk-off") {
+        fun openSides(bank: Int, lineId: Int, x: Int, y: Int): List<Direction> {
+          val area = rails.areaOf(2, bank, 0)!!
+          val line = rails.line(area, lineId)!!
+          return Direction.entries.filter { d ->
+            val (dx, dy) = rails.delta(line, d)
+            !rails.blocked(area, lineId, x + dx, y + dy)
+          }
+        }
+        openSides(36, 1, 0, 1) shouldBe listOf(Direction.DOWN) // mode 3: x+1 -> (1,1)
+        openSides(249, 12, 4, 0) shouldBe listOf(Direction.DOWN) // mode 1: x-1 -> (3,0)
+        openSides(28, 2, 2, -6) shouldBe listOf(Direction.UP) // mode 4: y+1 -> (2,-5)
+      }
+
       test("Castelia's streets chain through their shared points") {
         val castelia = rails.areaOf(2, 28, 0).shouldNotBeNull()
         castelia.lines.size shouldBe 6

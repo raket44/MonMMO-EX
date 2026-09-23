@@ -406,6 +406,30 @@ constructor(
                     }
                     .singleOrNull()
             else null
+        // The same for a RAIL landing, from the rail grid: a door cell on a Castelia street has
+        // the building behind and beside it blocked, and the box's own cells around it; the one
+        // cell a step can reach is the walk-off. The record's byte said LEFT for 40:0's second
+        // door while the only open cell was up (owner, 2026-09-23). Blocked cells first; if more
+        // than one is open, the ones outside any warp box; one survivor decides.
+        val railOpenDir =
+            if (door.destLine >= 0) {
+              val area = ndsRails.areaOf(state.regionId, door.bank, door.map)
+              val line = area?.let { ndsRails.line(it, door.destLine) }
+              if (area != null && line != null) {
+                val open =
+                    Direction.entries.filter { d ->
+                      val (dx, dy) = ndsRails.delta(line, d)
+                      !ndsRails.blocked(area, door.destLine, ax + dx, ay + dy)
+                    }
+                open.singleOrNull()
+                    ?: open
+                        .filter { d ->
+                          val (dx, dy) = ndsRails.delta(line, d)
+                          ndsWarps.rowsAt(state.regionId, door.bank, door.map, ax + dx, ay + dy).none { it.srcLine == door.destLine }
+                        }
+                        .singleOrNull()
+              } else null
+            } else null
         val arriveDir =
             when {
               // ESCALATOR_FLIP_FACE (0x6A): the decomp's own name IS the mechanic - the ride
@@ -416,6 +440,7 @@ constructor(
               landingTypeRule?.press != null -> landingTypeRule.press.opposite()
               maskDir != null -> maskDir
               landOpenDir != null -> landOpenDir
+              railOpenDir != null -> railOpenDir
               // The fired warp's own direction IS the ROM's arrival facing (the "exit direction"
               // the client applies on landing). Now that a Gen 5 warp fires on contact from any
               // side, the press that entered it can be sideways, and the returning mirror below

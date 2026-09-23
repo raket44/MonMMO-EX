@@ -33,6 +33,18 @@ class NdsRails @Inject constructor() {
   class Area(val index: Int) {
     val lines = ArrayList<Line>()
     val byPoint = HashMap<Int, MutableList<Line>>()
+    /** Blocked cells of the grid (plane 1 bit 0), keyed (line shl 20) or ((x and 0x3FF) shl 10) or (y and 0x3FF). */
+    val blocked = HashSet<Int>()
+  }
+
+  private fun cellKey(line: Int, x: Int, y: Int) = (line shl 20) or ((x and 0x3FF) shl 10) or (y and 0x3FF)
+
+  /** True when a cell is blocked in the rail grid or lies outside the line entirely. */
+  fun blocked(area: Area, lineId: Int, x: Int, y: Int): Boolean {
+    val line = line(area, lineId) ?: return true
+    // The grid's lateral index is y + width/2, so y spans -width/2 .. width-1-width/2.
+    if (x < 0 || x >= line.length || y < -(line.width / 2) || y > line.width - 1 - line.width / 2) return true
+    return cellKey(lineId, x, y) in area.blocked
   }
 
   private val areas: Map<Int, Area> by lazy { load() }
@@ -102,6 +114,12 @@ class NdsRails @Inject constructor() {
     val out = HashMap<Int, Area>()
     file.bufferedReader().useLines { lines ->
       for (l in lines) {
+        if (l.startsWith("cell;")) {
+          // cell;area;line;x;y;plane0;plane1 - only blocked cells are listed
+          val p = l.split(';')
+          out.getOrPut(p[1].toInt()) { Area(p[1].toInt()) }.blocked += cellKey(p[2].toInt(), p[3].toInt(), p[4].toInt())
+          continue
+        }
         if (!l.startsWith("line;")) continue
         val p = l.split(';')
         val area = out.getOrPut(p[1].toInt()) { Area(p[1].toInt()) }

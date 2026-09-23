@@ -226,8 +226,9 @@ constructor(
             "dir=${msg.direction} state=0x%02x line=${state.railLine}".format(msg.stateRaw)
       }
       // The line warp rows are judged against: the client's own report when it sends one (a
-      // patched client, bits 2-5), else the line tracked from the arrival; 0 when unknown.
-      val railLine = ((msg.stateRaw shr 2) and 0x0F).takeIf { it != 0 } ?: state.railLine.coerceAtLeast(0)
+      // patched client, bits 2-5), else the line tracked from the arrival; negative = unknown.
+      // Line 0 is a real line, never "none".
+      val railLine = ((msg.stateRaw shr 2) and 0x0F).takeIf { it != 0 } ?: state.railLine
       // A bonk: the client sends the attempt and stays put, and committing it stood the server's
       // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
       // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -

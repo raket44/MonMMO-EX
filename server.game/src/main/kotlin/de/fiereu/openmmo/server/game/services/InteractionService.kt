@@ -76,6 +76,12 @@ constructor(
     val bankId = state.bankId
     val mapId = state.mapId
     val npc = npcService.ndsNpcForEntity(regionId, bankId, mapId, npcEntityId) ?: return
+    // An invisible object (sprite 185: the ROM's own blockers, and the walls NdsCurtainWalls stands)
+    // is solid but not something to talk to; what the player means is the tile under it - the
+    // Nacrene gym's sliding shelf keeps its readable records on those very tiles (2026-09-23).
+    if (npc.sprite == INVISIBLE_SPRITE) {
+      if (runNdsBgEventAt(session, state, npc.x, npc.y)) return
+    }
     scriptMovement.facePlayer(session, npcEntityId, state.facingDirection)
     // A Cut tree or Strength boulder: the FireRed field script, against this entity.
     DS_FIELD_OBJECT_SCRIPTS[npc.sprite]?.takeIf { npc.script == DS_CUT_TREE_SCRIPT }?.let { label ->
@@ -125,14 +131,20 @@ constructor(
     val dy = if (state.facingDirection == Direction.DOWN) 1 else if (state.facingDirection == Direction.UP) -1 else 0
     val facingX = state.x + dx
     val facingY = state.y + dy
-    // The facing tile only: reaching one tile further let the gym's shelves be read from a tile
-    // away (owner, 2026-09-23); the record sits on the tile the player stands against.
-    val events = npcService.ndsBgEventsOn(regionId, bankId, mapId)
-    val bg = events.firstOrNull { it.x == facingX && it.y == facingY }
-    if (bg == null) {
-      log.info { "DS tile interaction at ($facingX, $facingY) on $regionId:$bankId:$mapId: no bg event (${events.size} on the map)" }
-      return
-    }
+    // The facing tile, else the tile stood on: the gym's ladder shelves are read from their own
+    // bottom row (the ladder tile, z 8 in the record) as well as from the floor in front. Never a
+    // tile further, which let shelves be read from a tile away (owner, 2026-09-23).
+    if (runNdsBgEventAt(session, state, facingX, facingY)) return
+    if (runNdsBgEventAt(session, state, state.x.toInt(), state.y.toInt())) return
+    log.info { "DS tile interaction at ($facingX, $facingY) on $regionId:$bankId:$mapId: no bg event" }
+  }
+
+  /** Runs the background event on ([x], [y]) of the player's DS map, if there is one. */
+  private fun runNdsBgEventAt(session: SessionContext, state: PlayerState, x: Int, y: Int): Boolean {
+    val regionId = state.regionId
+    val bankId = state.bankId
+    val mapId = state.mapId
+    val bg = npcService.ndsBgEventsOn(regionId, bankId, mapId).firstOrNull { it.x == x && it.y == y } ?: return false
     val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"
     val script =
         try {
@@ -143,6 +155,7 @@ constructor(
         }
     if (script != null) runScript(session, state, script, entityId = -1)
     else log.info { "DS bg event idx=${bg.index} type=${bg.type} script=${bg.script} ($label) has no wired dialog" }
+    return true
   }
 
   /** The player pressed the action button on a specific entity, that is an npc. */
@@ -549,6 +562,7 @@ private const val HOENN_WHICH_PC = 271001199
  * a guess from placement, and were wrong for the tree). Wire them from a click log, not a guess.
  */
 internal const val DS_CUT_TREE_SPRITE = 108
+internal const val INVISIBLE_SPRITE = 185
 internal const val DS_CUT_TREE_SCRIPT = 10004
 internal val DS_FIELD_OBJECT_SCRIPTS = mapOf(DS_CUT_TREE_SPRITE to "EventScript_CutTree")
 /** The game whose field scripts the DS regions borrow: FireRed's are the ones fully interpreted. */

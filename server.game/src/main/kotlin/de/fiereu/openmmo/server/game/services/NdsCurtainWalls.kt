@@ -46,16 +46,18 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
 
   /**
    * Nacrene Gym: the sliding bookshelf at the back, the same shape as a curtain. The ROM's own
-   * invisible object (npc 3, sprite 185) holds its left end at (11,10); the rest of the shelf,
-   * x 12..14, is an animation on the building model and walkable, so the player walked through
-   * it before the last book was read (owner, 2026-09-23). Solid until the quiz var says the
-   * shelf slid (7, the value the map-load restore CMD_182 keys on).
+   * invisible object (npc 3, sprite 185) holds the shelf's left end at (11,10) and, when the last
+   * book is read, walks three tiles east with it (file 36 entry 30: movement 23 x3 on npc 3, the
+   * building animation CMD_185 beside it), so the shelf's body ends at x 14..17 and the gap opens
+   * at x 11..13. The shelf is two rows tall (y 9 and 10) and, but for that one object, an
+   * animation on the building model that the client leaves walkable - the player walked through
+   * it before the last book (owner, 2026-09-23). The rest of its footprint is made solid here,
+   * closed or slid, keyed on the quiz var (7 = slid, what the map-load restore CMD_182 keys on).
    */
   private fun syncNacrene(session: SessionContext, storyFlags: Map<String, Int>) {
-    val closed = (storyFlags[NACRENE_VAR] ?: 0) < NACRENE_OPEN
-    for ((i, x) in NACRENE_COLUMNS.withIndex()) {
-      wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, NACRENE_ROW, closed)
-    }
+    val slid = (storyFlags[NACRENE_VAR] ?: 0) >= NACRENE_OPEN
+    NACRENE_CLOSED.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + i, x, y, !slid) }
+    NACRENE_SLID.forEachIndexed { i, (x, y) -> wall(session, NACRENE_BANK, NACRENE_MAP, FIRST_WALL_ID + 10 + i, x, y, slid) }
   }
 
   private fun wall(session: SessionContext, bank: Int, map: Int, id: Int, x: Int, y: Int, closed: Boolean) {
@@ -101,11 +103,13 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
      */
     val MASK_BY_STATE = listOf(0, 0, 1, 3, 7, 7)
 
-    /** Nacrene Gym (header 18): the sliding shelf's row and the tiles the model leaves walkable. */
+    /** Nacrene Gym (header 18): the sliding shelf's footprint, the ROM's own object's tile left out. */
     const val NACRENE_BANK = 18
     const val NACRENE_MAP = 0
-    const val NACRENE_ROW = 10
-    val NACRENE_COLUMNS = (12..14).toList()
+    /** Shelf at x 11..14, rows 9 and 10; the ROM object holds (11,10). */
+    val NACRENE_CLOSED: List<Pair<Int, Int>> = (11..14).map { it to 9 } + (12..14).map { it to 10 }
+    /** Slid three tiles east: x 14..17, the ROM object now on (14,10). */
+    val NACRENE_SLID: List<Pair<Int, Int>> = (14..17).map { it to 9 } + (15..17).map { it to 10 }
     /** VAR 16522 (0x408A), the book quiz's progress; 7 = the last book read, the shelf slid. */
     const val NACRENE_VAR = "unova/VAR_0x408A"
     const val NACRENE_OPEN = 7

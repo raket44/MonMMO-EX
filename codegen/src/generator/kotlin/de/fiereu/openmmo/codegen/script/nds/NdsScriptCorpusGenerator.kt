@@ -687,6 +687,7 @@ class NdsScriptCorpusGenerator {
         // White DoubleTrainerBattle partner, enemy1, enemy2 (every Ds* name needs its own case).
         "DsDoubleTrainerBattle" -> out += "ds_doubletrainerbattle ${a[0]}, ${a[1]}, ${a[2]}"
         "DsStorePartyCount" -> out += "ds_storepartycount ${a[0]}, ${a[1]}"
+        "DsGameVersion" -> out += "ds_gameversion ${a[0]}"
         // Every Ds* intermediate name needs its own case here: the fallback writes
         // ds_<name.lowercase()>, which for DsMapGimmick was `ds_dsmapgimmick` - an unknown
         // command, so every Striaton button script failed to resolve and the buttons did
@@ -1928,7 +1929,10 @@ class NdsScriptCorpusGenerator {
             // branched on whatever 32776 still held: Striaton greeted the owner as though he had
             // already won the badge (2026-09-21).
             "StoreBadge" -> b.lines += listOf("CheckBadge", t(1), v(0))
-            "StoreVersion" -> b.lines += listOf("GetGameVersion", v(0))
+            // The game version, which White's map-load scripts branch on to pick the version's
+            // sprite for a var-drawn object (var 0x4020: the museum's stone is 144 in White, 143 in
+            // Black); answered 0, every branch took Black's side (2026-09-23).
+            "StoreVersion" -> b.lines += listOf("DsGameVersion", v(0))
             "Store_D2" -> b.lines += listOf("SetVar", v(0), "0")
             "DoubleMessage" -> b.lines += listOf("Message", text(3))
             "CloseBubbleMessage" -> b.lines += listOf("CloseMessage")
@@ -2222,7 +2226,7 @@ class NdsScriptCorpusGenerator {
         // no follower-event monsters: the checks answer no (CheckGiveCoins: room for more, yes).
         "CheckPoketchEnabled" to 0, "PartyLegalCheck" to 0, "GetTotalApricornCount" to 0, "CheckBattlePoints" to 0,
         "FollowerPokeIsEventTrigger" to 0, "CheckGiveCoins" to 1,
-        "GetGameVersion" to 0, "DressUpPhotoHasData" to 0,
+        "DressUpPhotoHasData" to 0,
         "CheckTVInterviewEligible" to 0, "ScrCmd_729" to 0, "GetItemPocket" to 0, "GetTrainerCardLevel" to 0, "CheckItemIsPlate" to 0, "GetTimeOfDay" to 1, "CheckPartyHasSpecies" to 0, "CheckPoketchAppRegistered" to 0, "GetTrCardStars" to 0, "CountAliveMonsExcept" to 1, "GetMovementType" to 0, "CheckIsTrainerDoubleBattle" to 0, "CheckHasTwoAliveMons" to 1, "PhotoAlbumIsFull" to 0, "GetPlayerState" to 0,
         "CheckPlayerOnBike" to 0, "PlayerOnBikeCheck" to 0, "CheckRegisteredPhoneNumber" to 0, "GetPhoneBookRematch" to 0,
         "GetRematchTrainerID" to 0, "IsItemTMHM" to 0, "ItemIsTMOrHM" to 0, "GetCoinsAmount" to 0, "GetCoinAmount" to 0,

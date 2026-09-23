@@ -312,7 +312,7 @@ class ScriptSupportAnalyzer(
           "ds_startfirstbattle" -> args.size == 1
           "ds_starttagbattle" -> args.size == 3
           "ds_getpartymonspecies", "ds_messagevar" -> args.size == 2
-          "ds_countpartynoneggs", "ds_dexcompleted" -> args.size == 1
+          "ds_countpartynoneggs", "ds_dexcompleted", "ds_gameversion" -> args.size == 1
           "ds_dexcount", "ds_storepartycount" -> args.size == 2
           // ds_dexrating VAR, 21 national rating text entries
           "ds_dexrating" -> args.size == 22
@@ -436,7 +436,7 @@ class ScriptSupportAnalyzer(
           "ds_startfirstbattle" -> args[0] is IntArg
           "ds_starttagbattle" -> isValue(args[1]) && isValue(args[2])
           "ds_getpartymonspecies" -> isValue(args[0]) && args[1] is VarArg
-          "ds_countpartynoneggs", "ds_dexcompleted" -> args[0] is VarArg
+          "ds_countpartynoneggs", "ds_dexcompleted", "ds_gameversion" -> args[0] is VarArg
           "ds_storepartycount" -> args[0] is VarArg && args[1] is IntArg
           "ds_messagevar" -> args[0] is VarArg && args[1] is IntArg
           "braillemessage",
@@ -678,6 +678,7 @@ class ScriptSupportAnalyzer(
             "ds_getpartymonspecies",
             "ds_countpartynoneggs",
             "ds_storepartycount",
+            "ds_gameversion",
             "ds_dexcount",
             "ds_dexcompleted",
             "ds_dexrating",

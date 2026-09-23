@@ -456,6 +456,20 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyNonEggCount())
           state.pc++
         }
+        // StoreVersion VAR: the cartridge's own version id (Gen 4/5 GAME_VERSION: HeartGold 7,
+        // Platinum 12, Black 20, White 21). White's map-load scripts compare it with 21 to pick
+        // the version's sprite for a var-drawn object (var 0x4020, NpcService's sprite 162).
+        "ds_gameversion" -> {
+          val version =
+              when (ctx.state.regionId) {
+                2 -> GAME_VERSION_WHITE
+                3 -> GAME_VERSION_PLATINUM
+                4 -> GAME_VERSION_HEARTGOLD
+                else -> 0
+              }
+          ctx.setVar(namespaced(varArg(instruction, 0).token), version)
+          state.pc++
+        }
         // White StorePartyCount VAR, mode (opcode 0x103): the party count by mode.
         "ds_storepartycount" -> {
           ctx.setVar(namespaced(varArg(instruction, 0).token), ctx.partyCount(value(ctx, instruction.arg(1))))
@@ -2571,6 +2585,10 @@ class InterpretedScript(
      * the player held while the Striaton curtain it just opened finishes moving.
      */
     const val SOUND_WAIT_MILLIS = 40 * 17L
+    /** The cartridges' GAME_VERSION ids, what StoreVersion answers per region. */
+    const val GAME_VERSION_HEARTGOLD = 7
+    const val GAME_VERSION_PLATINUM = 12
+    const val GAME_VERSION_WHITE = 21
     /** A GBA script's badge check, FLAG_BADGE01_GET..FLAG_BADGE08_GET. */
     val BADGE_FLAG = Regex("FLAG_BADGE0([1-8])_GET")
     const val LOCALID_NONE = 0

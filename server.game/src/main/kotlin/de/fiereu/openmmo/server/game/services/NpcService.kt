@@ -20,6 +20,11 @@ import kotlinx.coroutines.launch
 /** Local id of the developer sprite probe (NpcService.spawnProbe): past any map's own actors. */
 private const val PROBE_LOCAL_ID = 9990
 
+private const val UNOVA_REGION = 2
+/** White's "sprite from var" object sprite id (nds-npcs-2.txt) and the var it reads. */
+private const val VAR_SPRITE = 162
+private const val VAR_SPRITE_KEY = "unova/VAR_0x4020"
+
 private val log = KotlinLogging.logger {}
 
 @Singleton
@@ -502,13 +507,26 @@ constructor(
   private fun spawnNdsNpcs(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
     val npcs = ndsNpcs.of(regionId, bankId, mapId)
     if (npcs.isEmpty()) return
-    val storyFlags = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)?.storyFlags.orEmpty()
+    val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
+    val storyFlags = stored?.storyFlags.orEmpty()
+    val storyVars = stored?.storyVars.orEmpty()
     // An actor the map's on-load script placed (it runs before this spawn) appears where the script
     // left it, and so does one a scene moved if the map's npcs are ever spawned again this visit.
     val poses = ctx.attributes[PLAYER_STATE]?.scriptedNpcPoses
     val alive = ctx.attributes[PLAYER_STATE]?.madeNdsNpcs
-    for (npc in npcs) {
-      if (NdsStoryFlags.isHidden(regionId, npc.flag, storyFlags)) continue
+    for (rom in npcs) {
+      if (NdsStoryFlags.isHidden(regionId, rom.flag, storyFlags)) continue
+      // White's var-drawn object: ROM sprite 162 is "whatever var 0x4020 holds", which the map's
+      // own load script sets by version or starter just before this spawn (every one of the
+      // nineteen maps placing a 162 writes it). The museum's stone: 144 in White, 143 in Black;
+      // Route 3's pair 209 / 129. Sent as 162 the client drew nothing (owner, 2026-09-23). With
+      // the var unset the object is not there yet, as on the cartridge.
+      val npc =
+          if (regionId == UNOVA_REGION && rom.sprite == VAR_SPRITE) {
+            val sprite = storyVars[VAR_SPRITE_KEY] ?: 0
+            if (sprite <= 0) continue
+            rom.copy(sprite = sprite)
+          } else rom
       // A script-made actor exists only for the player whose script made it.
       if (ndsNpcs.isMade(regionId, bankId, mapId, npc.index) &&
           alive?.contains(de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)) != true) continue

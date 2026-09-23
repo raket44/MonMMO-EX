@@ -1664,17 +1664,29 @@ class NdsScriptCorpusGenerator {
       // instead of quietly playing the ROM's distances again.
       class ArgPatch(val file: Int, val off: Int, val index: Int, val from: String, val to: String)
       class MovePatch(val file: Int, val off: Int, val from: String, val to: String)
+      // A movement block of our own: an offset no ROM file reaches, so it can never shadow a real one.
+      val PINWHEEL_LENORA_EXIT = 99001
       val viewportArgPatches =
           listOf(
               // Map-load placements (entry 16): Cheren and Bianca wait at x 659, not 652.
               ArgPatch(32, 176, 2, "652", "659"),
-              ArgPatch(32, 188, 2, "652", "659"))
+              ArgPatch(32, 188, 2, "652", "659"),
+              // Pinwheel: Lenora's exit walk becomes the added block below (row 34 is trees).
+              ArgPatch(310, 3293, 1, "@3448", "@$PINWHEEL_LENORA_EXIT"))
       val viewportMovePatches =
           listOf(
               MovePatch(32, 2004, "14,7", "14,14"), // Cheren/Bianca walk in: west 14
               MovePatch(32, 1972, "14,7", "14,14"),
               MovePatch(32, 1964, "14,8", "14,15"), // Burgh leaves: west 15
-              MovePatch(32, 1948, "19,7", "19,14")) // Lenora runs off: east 14
+              MovePatch(32, 1948, "19,7", "19,14"), // Lenora runs off: east 14
+              // Pinwheel Forest's skull scene (file 310 entry 20): Burgh and Lenora leave 8 east
+              // and 4 south on one shared block and stand 8 tiles from the player, in view on our
+              // client, until the scene removes them (owner, 2026-09-23). Seven more steps east
+              // along row 35, the one open row there (row 34 is trees from x 53): Burgh, already
+              // on row 35, straight on; Lenora one row down first, on a block of her own, ending
+              // one tile behind him.
+              MovePatch(310, 3448, "15,8 13,4", "15,8 13,4 15,7"))
+      val viewportMoveAdds = listOf(MovePatch(310, PINWHEEL_LENORA_EXIT, "", "15,8 13,5 15,6"))
       for (p in viewportArgPatches) {
         val c = cmdsByFile[p.file]?.get(p.off)
         check(c != null && c.args.getOrNull(p.index) == p.from) {
@@ -1684,8 +1696,13 @@ class NdsScriptCorpusGenerator {
       }
       for (p in viewportMovePatches) {
         val steps = movesByFile[p.file]?.get(p.off)
-        check(steps == listOf(p.from)) { "viewport patch: file ${p.file} mv @${p.off} expected ${p.from}, found $steps" }
-        movesByFile[p.file]!![p.off] = listOf(p.to)
+        check(steps?.joinToString(" ") == p.from) { "viewport patch: file ${p.file} mv @${p.off} expected ${p.from}, found $steps" }
+        movesByFile[p.file]!![p.off] = p.to.split(' ')
+      }
+      for (p in viewportMoveAdds) {
+        val moves = movesByFile.getOrPut(p.file) { HashMap() }
+        check(!moves.containsKey(p.off)) { "viewport patch: file ${p.file} mv @${p.off} already exists" }
+        moves[p.off] = p.to.split(' ')
       }
       // Entry offsets: the lowest offset seen per entry index (entries decode from their start).
       for ((file, cmds) in cmdsByFile) for (c in cmds.values) {

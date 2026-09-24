@@ -282,8 +282,8 @@ class ScriptSupportAnalyzer(
           // addresses Wally on the current map); only the current map is ever meant.
           "applymovement" -> args.size in 2..3
           "waitmovement" -> args.size <= 2
-          "ds_yesno", "ds_getplayerdir", "ds_getweekday" -> args.size == 1
-          "ds_flagtovar", "ds_storedate2", "ds_storebirthday2" -> args.size == 2
+          "ds_yesno", "ds_getplayerdir", "ds_getweekday", "ds_textbank", "ds_callermessage", "ds_setflagbyvar", "ds_clearflagbyvar" -> args.size == 1
+          "ds_flagtovar", "ds_storedate2", "ds_storebirthday2", "ds_checkflagbyvar" -> args.size == 2
           "ds_warp" -> args.size == 3
           // ds_menu VAR, cursor, (textId, value)+ ; ds_setdynamicwarp header, x, y ; ds_dynamicwarpfloor VAR
           "ds_menu" -> args.size >= 4 && args.size % 2 == 0
@@ -445,6 +445,9 @@ class ScriptSupportAnalyzer(
           "ds_countpartynoneggs", "ds_dexcompleted", "ds_gameversion" -> args[0] is VarArg
           "ds_storepartycount" -> args[0] is VarArg && args[1] is IntArg
           "ds_messagevar" -> args[0] is VarArg && args[1] is IntArg
+          "ds_callermessage", "ds_setflagbyvar", "ds_clearflagbyvar" -> args[0] is VarArg
+          "ds_checkflagbyvar" -> args[0] is VarArg && args[1] is VarArg
+          "ds_textbank" -> args[0] is IntArg
           "braillemessage",
           "braillemsgbox",
           "braillemessage_wait" -> args[0] is TextArg
@@ -694,6 +697,11 @@ class ScriptSupportAnalyzer(
             "ds_dexcompleted",
             "ds_dexrating",
             "ds_messagevar",
+            "ds_textbank",
+            "ds_callermessage",
+            "ds_checkflagbyvar",
+            "ds_setflagbyvar",
+            "ds_clearflagbyvar",
             "ds_getfriendsprite",
             "ds_getpersoncoords",
             "ds_mongetfriendship",

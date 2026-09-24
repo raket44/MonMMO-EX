@@ -252,6 +252,24 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
           state.pc++
         }
+        // White: a flag whose ROM id sits in a var - the give-item routine 2800 tests and sets the
+        // "received" flag its caller passed in var 32770. Dropped / read as flag 32770 before,
+        // which made every gift npc give again on each talk (owner, 2026-09-24).
+        "ds_checkflagbyvar" -> {
+          val set = ctx.isFlagSet(namespaced("FLAG_" + ctx.getVar(namespaced(varArg(instruction, 0).token))))
+          ctx.setVar(namespaced(varArg(instruction, 1).token), if (set) 1 else 0)
+          state.pc++
+        }
+        "ds_setflagbyvar" -> {
+          ctx.setFlag(namespaced("FLAG_" + ctx.getVar(namespaced(varArg(instruction, 0).token))))
+          state.pc++
+        }
+        "ds_clearflagbyvar" -> {
+          val flag = namespaced("FLAG_" + ctx.getVar(namespaced(varArg(instruction, 0).token)))
+          ctx.clearFlag(flag)
+          ctx.respawnNpcForClearedHideFlag(flag)
+          state.pc++
+        }
         // Gen 4 trainer battles name the trainer by ROM id (a constant or, for Platinum's shared
         // battle script, VAR_0x8004). The region's trainer table resolves it; a win sets the
         // synthetic defeated flag and VAR_RESULT = 1, anything else 0.
@@ -527,6 +545,29 @@ class InterpretedScript(
             state.skipNextWaitMessage = true
           } else {
             ctx.showMessage(line)
+          }
+          state.pc++
+        }
+        // White: a map program announces its own text bank base; a shared routine it calls
+        // (the give-item routine 2800) shows lines whose entry the caller left in a var, in the
+        // caller's bank. Baked as entries of the routine's own bank they were "--" boxes around
+        // every gift (owner, 2026-09-24).
+        "ds_textbank" -> {
+          state.dsTextBase = value(ctx, instruction.arg(0))
+          state.pc++
+        }
+        "ds_callermessage" -> {
+          val entry = ctx.getVar(namespaced(varArg(instruction, 0).token)) and 0xFFFF
+          if (state.dsTextBase == 0) {
+            log.warn { "Script ${program.id.stable}: caller message entry $entry with no map text bank in effect" }
+          } else {
+            val line = TrainerLine(state.dsTextBase or entry)
+            state.currentMessage = line
+            if (nextEffectiveCommand(state) == "yesnobox" || multichoiceFollows(state)) {
+              state.skipNextWaitMessage = true
+            } else {
+              ctx.showMessage(line)
+            }
           }
           state.pc++
         }
@@ -2716,6 +2757,8 @@ class InterpretedScript(
       var wildLevel: Int = 0,
       /** The DS in-game trade loaded by ds_npctrade_init (InitNPCTrade / LoadNPCTrade), -1 for none. */
       var dsTrade: Int = -1,
+      /** The calling map's text id base (ds_textbank), read by ds_callermessage inside a shared routine. */
+      var dsTextBase: Int = 0,
   )
 
   private data class ScriptLocation(

@@ -662,6 +662,9 @@ class NdsScriptCorpusGenerator {
         "GoToIfBadgeAcquired" -> out += "goto_if_set FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
         "CheckBadge", "CheckBadgeAcquired" -> out += "ds_flagtovar FLAG_DS_BADGE_${badge(a[0], constants)}, ${a[1]}"
         "CheckFlagVar" -> out += "ds_flagtovar ${a[0]}, ${a[1]}"
+        "CheckFlagByVar" -> out += "ds_checkflagbyvar ${a[0]}, ${a[1]}"
+        "SetFlagByVar" -> out += "ds_setflagbyvar ${a[0]}"
+        "ClearFlagByVar" -> out += "ds_clearflagbyvar ${a[0]}"
         "GiveBadge" -> out += "setflag FLAG_DS_BADGE_${badge(a[0], constants)}"
         "CountBadgesAcquired" -> out += "ds_countbadges ${a[0]}"
         "HealParty" -> out += "special HealPlayerParty"
@@ -973,6 +976,8 @@ class NdsScriptCorpusGenerator {
           if (target != null) out += "setvar $target, ${STUB_QUERIES.getValue(name)}"
         }
         "GetPlayerDir", "GetPlayerFacing" -> out += "ds_getplayerdir ${a[0]}"
+        "DsTextBank" -> out += "ds_textbank ${a[0]}"
+        "DsCallerMessage" -> out += "ds_callermessage ${a[0]}"
         "GetWeekday" -> out += "ds_getweekday ${a[0]}"
         "CallCommonScript" -> out += "call NDS_CHUNK_${a[0].removePrefix("0x").toIntOrNull(if (a[0].startsWith("0x")) 16 else 10) ?: a[0]}"
         "CallStd" -> {
@@ -1732,6 +1737,14 @@ class NdsScriptCorpusGenerator {
       val out = LinkedHashMap<String, ParsedFile>()
       for ((file, cmds) in cmdsByFile) {
         val bank = bankByFile[file] ?: 0
+        // The client text id base of this file's own bank (region 2, archive bit, bank). A map's
+        // programs announce it (DsTextBank) so a shared routine they call can show a text whose
+        // entry the caller left in a var: the give-item routine 2800 reads its three lines from
+        // vars 32771-32773, entries of the CALLER's bank, and baked as entries of the routine's
+        // own bank they came out as "--" before and after every gift (owner, 2026-09-24).
+        val textBase = (2 shl 28) or (1 shl 27) or (bank shl 16)
+        val chunkFile = file >= FIRST_SHARED_FILE
+        val entryOffsets = entriesByFile[file]?.values?.toSet().orEmpty()
         fun lab(off: Int) = "U${file}_$off"
         val targets = HashSet<Int>()
         entriesByFile[file]?.values?.forEach { targets += it }
@@ -1772,6 +1785,7 @@ class NdsScriptCorpusGenerator {
               if (last !in TERMINAL) prev.lines += listOf("GoTo", lab(c.offset))
             }
             current = Block(lab(c.offset), false, mutableListOf()).also { blocks += it }
+            if (!chunkFile && c.offset in entryOffsets) current.lines += listOf("DsTextBank", textBase.toString())
             stack.clear()
             pending.clear()
             combine = null
@@ -1792,6 +1806,8 @@ class NdsScriptCorpusGenerator {
           fun item(i: Int) = if ((t(i).toIntOrNull() ?: 0) >= 0x4000) v(i) else itemConstant(t(i).toInt()) ?: t(i)
           fun jump(i: Int) = lab(t(i).drop(1).toInt())
           fun text(i: Int) = "T%04d_%05d".format(bank, t(i).toInt())
+          /** A message: a literal entry of this file's bank, or a var holding an entry of the calling map's bank. */
+          fun msg(i: Int) = if (isVarArg(t(i))) listOf("DsCallerMessage", v(i)) else listOf("Message", text(i))
           fun cond(code: Int, negate: Boolean): String {
             val names = listOf("Lt", "Eq", "Gt", "Le", "Ge", "Ne")
             val neg = listOf(4, 5, 3, 2, 0, 1)
@@ -1803,7 +1819,9 @@ class NdsScriptCorpusGenerator {
           when (c.name) {
             "SetStackVar" -> stack.addLast(t(0))
             "SetStackDerefVar" -> stack.addLast(v(0))
-            "StoreFlag" -> stack.addLast(fl(0))
+            // A flag named by a var (the give-item routine 2800 tests and sets the "received"
+            // flag its caller passed in var 32770): read at run time, not as flag 32770.
+            "StoreFlag" -> stack.addLast(if (isVarArg(t(0))) "FLAG@" + v(0) else fl(0))
             // Gen 5's stack conditions: 0..5 pop two operands and push a comparison (<, ==, >, <=,
             // >=, !=); 6 ORs and 7 ANDs the two results on the stack (read off the Nacrene gate
             // quiz - "either answer was 3" grades 0, the (1,1) (1,2) (2,1) (2,2) pairs each grade -
@@ -1823,6 +1841,10 @@ class NdsScriptCorpusGenerator {
                 val lhs = stack.removeLastOrNull() ?: "0"
                 val lines = mutableListOf<List<String>>()
                 when {
+                  lhs.startsWith("FLAG@") -> {
+                    lines += listOf("CheckFlagByVar", lhs.removePrefix("FLAG@"), "VAR_RESULT")
+                    lines += listOf("Compare", "VAR_RESULT", rhs)
+                  }
                   lhs.startsWith("FLAG_") -> {
                     lines += listOf("CheckFlagVar", lhs, "VAR_RESULT")
                     lines += listOf("Compare", "VAR_RESULT", rhs)
@@ -2049,7 +2071,7 @@ class NdsScriptCorpusGenerator {
             "ShowMessageAt" -> {
               val who = t(1).toIntOrNull() ?: 0
               b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(1) else if (who < 252) "OBJ_$who" else "none")
-              b.lines += listOf("Message", text(0))
+              b.lines += msg(0)
             }
             "SetBadge" -> b.lines += listOf("GiveBadge", t(0))
             "CMD_128" -> doors.remove(v(0))
@@ -2069,8 +2091,11 @@ class NdsScriptCorpusGenerator {
             // A flag id held in a VAR is the shared routines' way of naming the actor's own flag
             // (the item ball sets its own before removing itself). Written out as FLAG_32784 it
             // was a flag that does not exist; the removal persists the right one by itself.
-            "SetFlag" -> if (!isVarArg(t(0))) b.lines += listOf("SetFlag", fl(0))
-            "ClearFlag" -> if (!isVarArg(t(0))) b.lines += listOf("ClearFlag", fl(0))
+            // A var-named flag (see StoreFlag) used to be dropped here: the give-item routine
+            // never set its caller's "received" flag, so every gift npc gave again on each talk
+            // (owner, 2026-09-24).
+            "SetFlag" -> b.lines += if (isVarArg(t(0))) listOf("SetFlagByVar", v(0)) else listOf("SetFlag", fl(0))
+            "ClearFlag" -> b.lines += if (isVarArg(t(0))) listOf("ClearFlagByVar", v(0)) else listOf("ClearFlag", fl(0))
             "StoreValueInVar" -> b.lines += listOf("SetVar", v(0), t(1))
             // The second argument is a var OR a literal (StoreDerefVarInVar VAR_0x8000, 504 puts the
             // item index in the var); read as a var it pointed at nothing and hidden items gave item 0.
@@ -2088,10 +2113,10 @@ class NdsScriptCorpusGenerator {
             "Message" -> {
               val who = t(3).toIntOrNull() ?: 0
               b.lines += listOf("DsSpeaker", if (who >= 0x4000) v(3) else if (who < 252) "OBJ_$who" else "none")
-              b.lines += listOf("Message", text(2))
+              b.lines += msg(2)
             }
-            "Message2", "Message3" -> b.lines += listOf("Message", text(2))
-            "BubbleMessage", "EventGreyMessage", "BorderedMessage", "AngryMessage" -> b.lines += listOf("Message", text(0))
+            "Message2", "Message3" -> b.lines += msg(2)
+            "BubbleMessage", "EventGreyMessage", "BorderedMessage", "AngryMessage" -> b.lines += msg(0)
             "CloseMessageKP", "CloseMessageKP2", "CloseEventGreyMessage", "CloseBorderedMessage", "CloseAngryMessage", "CloseMusicalMessage" -> b.lines += listOf("CloseMessage")
             "YesNoBox" -> b.lines += listOf("YesNo", v(0))
             // StoreBadge VAR, badge - the var it answers into comes FIRST (every use in the game
@@ -2105,7 +2130,7 @@ class NdsScriptCorpusGenerator {
             // Black); answered 0, every branch took Black's side (2026-09-23).
             "StoreVersion" -> b.lines += listOf("DsGameVersion", v(0))
             "Store_D2" -> b.lines += listOf("SetVar", v(0), "0")
-            "DoubleMessage" -> b.lines += listOf("Message", text(3))
+            "DoubleMessage" -> b.lines += msg(3)
             "CloseBubbleMessage" -> b.lines += listOf("CloseMessage")
             // SetVarPoke slot, species (a literal or a var): the species name in a text slot.
             "SetVarPoke" -> b.lines += listOf("BufferSpeciesName", t(0), tv(1))
@@ -2302,6 +2327,8 @@ class NdsScriptCorpusGenerator {
     val MSG_TOKEN = Regex("^msg_(\\d+)(?:_\\w+?)?_(\\d{5})$")
     /** HeartGold's standard menu bank (files/msgdata/msg/msg_0191.gmm): floors, ROOF, EXIT, ... */
     const val HEARTGOLD_STD_MENU_BANK = 191
+    /** White script files from 854 up are the engine's shared routines (ranges table), not map files. */
+    const val FIRST_SHARED_FILE = 854
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
     const val HEARTGOLD_DYNAMIC_HEADER = 4095
     val BLOCK_COMMENT = Regex("/\\*.*?\\*/")

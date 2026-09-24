@@ -41,6 +41,14 @@ enum class MovementStep(
   FAST_UP(Direction.UP, true, 0x1E, fast = true),
   FAST_LEFT(Direction.LEFT, true, 0x1F, fast = true),
   FAST_RIGHT(Direction.RIGHT, true, 0x20, fast = true),
+  // The slide (GBA slide_*, 0x31-0x34): the client's rows cx0/rO1/Fa/mS0 carry these codes as
+  // moves with neither the walk nor the run animation flag (r32645 f/c67 static init,
+  // 2026-09-24) - the player glides a tile facing the way they go. Ice uses it; the fast walk
+  // played a run animation on every tile (owner).
+  SLIDE_DOWN(Direction.DOWN, true, 0x31, fast = true),
+  SLIDE_UP(Direction.UP, true, 0x32, fast = true),
+  SLIDE_LEFT(Direction.LEFT, true, 0x33, fast = true),
+  SLIDE_RIGHT(Direction.RIGHT, true, 0x34, fast = true),
   FASTER_DOWN(Direction.DOWN, true, 0x35, fast = true),
   FASTER_UP(Direction.UP, true, 0x36, fast = true),
   FASTER_LEFT(Direction.LEFT, true, 0x37, fast = true),
@@ -97,6 +105,10 @@ enum class MovementStep(
           "jump_2_left" -> JUMP_2_LEFT
           "jump_2_right" -> JUMP_2_RIGHT
           "walk_fast_down" -> FAST_DOWN
+          "slide_down" -> SLIDE_DOWN
+          "slide_up" -> SLIDE_UP
+          "slide_left" -> SLIDE_LEFT
+          "slide_right" -> SLIDE_RIGHT
           "walk_fast_up" -> FAST_UP
           "walk_fast_left" -> FAST_LEFT
           "walk_fast_right" -> FAST_RIGHT

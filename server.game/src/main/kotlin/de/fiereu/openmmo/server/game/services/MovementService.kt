@@ -1197,7 +1197,7 @@ constructor(
       val nx = cx + direction.dx
       val ny = cy + direction.dy
       if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
-      steps += spinStep(direction)
+      steps += slideStep(direction)
       cx = nx
       cy = ny
     }
@@ -1264,7 +1264,7 @@ constructor(
       val here = ndsLand.heightAt(region, bank, map, cx, cy)
       val there = ndsLand.heightAt(region, bank, map, nx, ny)
       if (here != null && there != null && here != there) break
-      steps += spinStep(direction)
+      steps += slideStep(direction)
       cx = nx
       cy = ny
     }
@@ -1328,6 +1328,16 @@ constructor(
         de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
             map.regionId, map.bankId, map.mapId, x.toShort(), y.toShort(), existing.collision.toShort(), metatileId.toShort()))
   }
+
+  /** One gliding tile, the way the player faces (MovementStep.SLIDE_*): both ice slides. */
+  private fun slideStep(direction: Direction): MovementStep =
+      when (direction) {
+        Direction.UP -> MovementStep.SLIDE_UP
+        Direction.DOWN -> MovementStep.SLIDE_DOWN
+        Direction.LEFT -> MovementStep.SLIDE_LEFT
+        Direction.RIGHT -> MovementStep.SLIDE_RIGHT
+        else -> MovementStep.SLIDE_DOWN
+      }
 
   private fun spinStep(direction: Direction): MovementStep =
       when (direction) {

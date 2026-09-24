@@ -309,6 +309,7 @@ constructor(
       // The player's own line of sight: a temp stop past the next armed trigger or trainer sight
       // tile on the ray ahead, before the client can run through it (NdsLookahead).
       ndsLookahead?.update(ctx, state)
+      if (railArea == null && startNdsIceSlide(ctx, charId, state, stored, toX, toY, msg.direction)) return
       encounterService.onAnyStep(ctx, charId)
       // The observers' copy of the step. DS steps were never relayed, so on every DS map other
       // players stood frozen where they spawned (owner, 2026-09-23). A rail map needs the rail
@@ -1222,6 +1223,65 @@ constructor(
         scriptMovement.releasePlayerHold(ctx, state)
       }
       crackIce(ctx, charId, state, map, cx, cy)
+    }
+    return true
+  }
+
+  /**
+   * The DS twin of [startIceSlide]: White's terrain 0x18 (NdsLand.ICE - Cold Storage), read off
+   * the ROM land data instead of a MapDef. The client parks itself on the ice waiting for the
+   * server's slide, exactly as on the GBA - the owner had to teleport out of Cold Storage
+   * (2026-09-24). The slide is the same scripted fast walk, held and released; its own reports
+   * from the client are dropped while it plays (ndsScriptedWalk).
+   */
+  private fun startNdsIceSlide(
+      ctx: SessionContext,
+      charId: Long,
+      state: PlayerState,
+      stored: de.fiereu.openmmo.server.game.storage.StoredCharacter,
+      x: Int,
+      y: Int,
+      direction: Direction,
+  ): Boolean {
+    val region = state.regionId
+    val bank = state.bankId
+    val map = state.mapId
+    if (ndsLand.typeAt(region, bank, map, x, y) != NdsLand.ICE) return false
+    if (state.spinning) {
+      log.info { "[Ice] char=$charId on DS ice at ($x, $y) while still sliding" }
+      return false
+    }
+    val steps = mutableListOf<MovementStep>()
+    var cx = x
+    var cy = y
+    while (steps.size < MAX_SPIN_STEPS && ndsLand.typeAt(region, bank, map, cx, cy) == NdsLand.ICE) {
+      val nx = cx + direction.dx
+      val ny = cy + direction.dy
+      if (ndsLand.blocked(region, bank, map, nx, ny) != false) break
+      if (ndsBonk(state, stored, nx, ny, -1)) break
+      steps += spinStep(direction)
+      cx = nx
+      cy = ny
+    }
+    if (steps.isEmpty()) {
+      log.info { "[Ice] char=$charId on DS ice at ($x, $y) facing $direction: blocked, releasing" }
+      scriptMovement.releasePlayerHold(ctx, state)
+      return false
+    }
+    log.info { "[Ice] char=$charId slid (DS) from ($x, $y) ${steps.size} steps to ($cx, $cy)" }
+    state.spinning = true
+    state.ndsScriptedWalk = true
+    scope.launch {
+      try {
+        scriptMovement.holdPlayer(ctx, state)
+        scriptMovement.moveSelf(ctx, state, steps)
+      } catch (e: Exception) {
+        log.warn(e) { "[Ice] char=$charId DS slide failed" }
+      } finally {
+        state.spinning = false
+        state.ndsScriptedWalk = false
+        scriptMovement.releasePlayerHold(ctx, state)
+      }
     }
     return true
   }

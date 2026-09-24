@@ -129,5 +129,7 @@ class NdsLand @Inject constructor() {
     const val WHIRLPOOL = 17
     const val WATERFALL = 19
     const val WATER_SEA = 21
+    /** Ice the player slides on (Gen 4 TILE_BEHAVIOR_ICE; White's terrain 0x18, Cold Storage). */
+    const val ICE = 32
   }
 }

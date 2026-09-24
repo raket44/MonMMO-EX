@@ -31,7 +31,10 @@ class UnovaScriptDecodeAuditTest :
         // Dis5 writes DecodeStopped where it met an opcode the table lacks; the generator ends the
         // script there. Without the marker a truncated entry fell through into the NEXT script of
         // its file - Nuvema's exit ran on into the post-game scenes (2026-09-20). 87 at first.
-        commands.count { it[0] == "DecodeStopped" } shouldBeLessThanOrEqual 81
+        // 100 since 2026-09-24: an unknown opcode used to end every branch still queued for that
+        // entry after one command (Dis5 `bad` poisoned the queue), which hid the unknowns those
+        // branches reach; the fix recovered ~5,000 lines and reaches 25 more of them.
+        commands.count { it[0] == "DecodeStopped" } shouldBeLessThanOrEqual 100
       }
 
       test("no command's last argument is really the next command's opcode") {

@@ -48,7 +48,7 @@
 50;WaitButton;
 51;MusicalMessage;H
 52;EventGreyMessage;HH
-53;CloseMusicalMessage;
+53;CloseMusicalMessage;HH
 54;CloseEventGreyMessage;
 55;CMD_037;H
 56;BubbleMessage;HB
@@ -385,7 +385,7 @@
 463;CMD_1CF;HHH
 464;CMD_1D0;
 465;CMD_1D1;H
-467;CMD_1D3;
+467;CMD_1D3;HHH
 469;CMD_1D5;HHHHH
 471;SetVarAffinityCheck;H
 472;CMD_1D8;HHHH
@@ -442,7 +442,7 @@
 591;CMD_24F;
 592;CMD_250;
 594;CMD_252;
-595;ChangeMusicVolume;H
+595;ChangeMusicVolume;HH
 607;CMD_25F;
 610;CMD_262;HH
 611;CMD_263;H
@@ -475,3 +475,5 @@
 571;CMD_23B;HH
 414;CMD_19E;H
 582;CMD_246;H
+596;CMD_254;H
+468;CMD_1D4;

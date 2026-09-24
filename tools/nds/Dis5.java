@@ -29,14 +29,17 @@ public class Dis5{
    Set<Integer> seen=new HashSet<>();
    for(int e=0;e<entries.size();e++){
     Deque<Integer> work=new ArrayDeque<>();work.add(entries.get(e));boolean bad=false;
-    while(!work.isEmpty()){int pc=work.poll();
+    // An unknown opcode used to poison the whole entry: `bad` stayed set, so every branch still queued
+    // decoded exactly one command and stopped (the Ferris wheel scene lost its four facing branches
+    // the moment its tail hit 0x254, 2026-09-24). `stop` is per linear run; `bad` only counts.
+    while(!work.isEmpty()){int pc=work.poll();boolean stop=false;
      while(pc>=0&&pc+2<=f.length&&!seen.contains(pc)){seen.add(pc);int op=u16(f,pc);String[] c=cmds.get(op);
-      if(c==null){unknown.merge(op,1,Integer::sum);if(!ctx.containsKey(op)){StringBuilder sb=new StringBuilder();for(int i=pc;i<Math.min(f.length,pc+24);i++)sb.append(String.format("%02x ",f[i]&0xFF));ctx.put(op,"file "+fi+" @"+pc+": "+sb);}if(a[0].equals("dump"))out.append(fi).append(';').append(e).append(';').append(pc).append(";DecodeStopped").append((char)10);bad=true;break;}
+      if(c==null){unknown.merge(op,1,Integer::sum);if(!ctx.containsKey(op)){StringBuilder sb=new StringBuilder();for(int i=pc;i<Math.min(f.length,pc+24);i++)sb.append(String.format("%02x ",f[i]&0xFF));ctx.put(op,"file "+fi+" @"+pc+": "+sb);}if(a[0].equals("dump"))out.append(fi).append(';').append(e).append(';').append(pc).append(";DecodeStopped").append((char)10);bad=true;stop=true;break;}
       int q=pc+2;StringBuilder args=new StringBuilder();
-      for(char s:c[1].toCharArray()){int n=s=='B'?1:s=='H'?2:4;if(q+n>f.length){bad=true;break;}long v=n==1?(f[q]&0xFF):n==2?u16(f,q):(u32(f,q)&0xFFFFFFFFL);
+      for(char s:c[1].toCharArray()){int n=s=='B'?1:s=='H'?2:4;if(q+n>f.length){bad=true;stop=true;break;}long v=n==1?(f[q]&0xFF):n==2?u16(f,q):(u32(f,q)&0xFFFFFFFFL);
        if(n==4&&(op==0x1E||op==0x1F||op==0x20||op==0x04||op==0x64)){int tgt=(int)(q+4+(int)v);args.append(" @").append(tgt);if(op!=0x64&&tgt>=0&&tgt<f.length)work.add(tgt);}
        else args.append(' ').append(v);q+=n;}
-      if(bad)break;
+      if(stop)break;
       if(a[0].equals("dump")){out.append(fi).append(';').append(e).append(';').append(pc).append(';').append(c[0]).append(args).append('\n');
        if(op==0x64){int tgt=(int)(pc+8+u32(f,pc+4));if(tgt>=0&&tgt+4<=f.length&&!seen.contains(-tgt-1)){seen.add(-tgt-1);StringBuilder mv=new StringBuilder();int m=tgt;while(m+4<=f.length){int t=u16(f,m),n=u16(f,m+2);if(t==0xFE)break;mv.append(t).append(',').append(n).append(' ');m+=4;if(mv.length()>2000)break;}out.append("mv;").append(fi).append(';').append(tgt).append(';').append(mv).append('\n');}}}
       if(TERMINAL.contains(op)||op==0x1E)break;
@@ -71,10 +74,13 @@ public class Dis5{
     while(p+4<=f.length){if(u16(f,p)==0xFD13)break;int off=u32(f,p);int tgt=p+4+off;if(tgt<0||tgt>f.length)break;entries.add(tgt);p+=4;if(entries.size()>2048)break;}
     Set<Integer> seen=new HashSet<>();
     for(int e:entries){Deque<Integer> work=new ArrayDeque<>();work.add(e);
-     while(!work.isEmpty()){int pc=work.poll();
+     // An unknown opcode used to poison the whole entry: `bad` stayed set, so every branch still queued
+    // decoded exactly one command and stopped (the Ferris wheel scene lost its four facing branches
+    // the moment its tail hit 0x254, 2026-09-24). `stop` is per linear run; `bad` only counts.
+    while(!work.isEmpty()){int pc=work.poll();boolean stop=false;
       while(pc>=0&&pc+2<=f.length&&!seen.contains(pc)){seen.add(pc);int op=u16(f,pc);String[] c=cmds.get(op);
        if(c==null){occ.computeIfAbsent(op,k->new ArrayList<>()).add(new int[]{fi,pc});break;}
-       int q=pc+2;boolean bad=false;for(char s:c[1].toCharArray()){int n=s=='B'?1:s=='H'?2:4;if(q+n>f.length){bad=true;break;}
+       int q=pc+2;boolean bad=false;for(char s:c[1].toCharArray()){int n=s=='B'?1:s=='H'?2:4;if(q+n>f.length){bad=true;stop=true;break;}
         if(n==4&&(op==0x1E||op==0x1F||op==0x20||op==0x04)){int tgt=(int)(q+4+u32(f,q));if(tgt>=0&&tgt<f.length)work.add(tgt);}q+=n;}
        if(bad||TERMINAL.contains(op)||op==0x1E)break;pc=q;}}}}
    int added=0;

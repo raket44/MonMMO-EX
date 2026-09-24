@@ -50,8 +50,11 @@ object NpcSpawnPacketCodec : PacketCodec<NpcSpawnPacket>() {
     val regionId = field(U8) { it.regionId }
     val bankId = field(U8) { it.bankId }
     val mapId = field(U8) { it.mapId }
-    val x = field(U16LE) { it.x }
-    val y = field(U16LE) { it.y }
+    // Signed: the client reads both as getShort, and a rail npc's lateral y is often negative
+    // (Castelia's crowd at y -2, Burgh at -1). As U16 the encoder threw on -1 and the spawn
+    // vanished before it was sent - Burgh was invisible (owner, 2026-09-23).
+    val x = field(S16LE) { it.x.toShort() }.toInt()
+    val y = field(S16LE) { it.y.toShort() }.toInt()
     val unk5 = field(U8) { it.unk5 }
     val facing = field(U8) { it.facing }
     val flags =

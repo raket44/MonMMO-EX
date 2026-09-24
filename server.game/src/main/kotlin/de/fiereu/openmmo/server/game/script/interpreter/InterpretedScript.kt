@@ -194,6 +194,7 @@ class InterpretedScript(
           val current = ctx.getVar(key)
           val next = if (value(ctx, instruction.arg(3)) == 0) current xor bit else current or bit
           ctx.setVar(key, next)
+          log.info { "[Gimmick] char=${ctx.state.characterId} opcode=${value(ctx, instruction.arg(0))} switch=$n mask=$current->$next" }
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
                   action = 6,

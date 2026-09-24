@@ -16,6 +16,7 @@ import de.fiereu.openmmo.server.game.services.command.DeveloperRarityCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperReleaseCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperSeasonCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperStoryCommand
+import de.fiereu.openmmo.server.game.services.command.DeveloperWorldCommand
 import de.fiereu.openmmo.server.game.services.command.DeveloperTeleportCommand
 import de.fiereu.openmmo.server.game.services.command.DonatorCommand
 import de.fiereu.openmmo.server.game.services.command.GiveMoneyCommand
@@ -47,6 +48,8 @@ interface ChatCommandModule {
   fun developerGiveExpansionCommand(command: DeveloperGiveExpansionCommand): ChatCommand
 
   @Binds @IntoSet fun developerStoryCommand(command: DeveloperStoryCommand): ChatCommand
+
+  @Binds @IntoSet fun developerWorldCommand(command: DeveloperWorldCommand): ChatCommand
 
   @Binds
   @IntoSet

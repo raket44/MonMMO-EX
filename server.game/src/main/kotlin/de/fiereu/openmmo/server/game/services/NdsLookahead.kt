@@ -50,7 +50,11 @@ constructor(
     val triggers = mapEntryScripts.ndsArmedTriggerTiles(charId, region, bank, map).toHashSet()
     val sight = trainerSight.ndsArmedSightTiles(charId, region, bank, map).toHashSet()
     val stop = stopAhead(px, py, state.facingDirection, triggers, sight) { x, y -> ndsLand.blocked(region, bank, map, x, y) == false }
-    apply(session, state, region, bank, map, stop)
+    // Standing on a stop: the wall past it stays until the script's hold clears it. Dropped here
+    // it left with the same packet that started the hold, and a step the client had already
+    // sent could pass - the very race the wall exists for (VPS log 11:29:29, 2026-09-24).
+    val onStop = (px to py) in triggers || (px to py) in sight
+    apply(session, state, region, bank, map, stop, keepStanding = onStop)
   }
 
   /** Everything down, e.g. a script took hold of the player. */
@@ -63,16 +67,16 @@ constructor(
     log.info { "[Lookahead] char=${state.characterId} walls down: $reason" }
   }
 
-  private fun apply(session: SessionContext, state: PlayerState, region: Int, bank: Int, map: Int, stop: Stop?) {
+  private fun apply(session: SessionContext, state: PlayerState, region: Int, bank: Int, map: Int, stop: Stop?, keepStanding: Boolean = false) {
     val wantedKey = stop?.let { ndsWallKey(bank, map, it.wallX, it.wallY) }
     for ((key, id) in state.lookaheadWalls.entries.toList()) {
-      if (key == wantedKey) continue
+      if (key == wantedKey || keepStanding) continue
       npcService.despawnDsWall(session, region, bank, map, id)
       state.lookaheadWalls.remove(key)
       log.info { "[Lookahead] char=${state.characterId} wall $id down: the ray moved on" }
     }
-    if (stop == null) return
-    if (wantedKey !in state.lookaheadWalls) {
+    if (stop == null && !keepStanding) return
+    if (stop != null && wantedKey !in state.lookaheadWalls) {
       val id = (FIRST_ID until FIRST_ID + MAX_WALLS).firstOrNull { it !in state.lookaheadWalls.values } ?: return
       state.lookaheadWalls[wantedKey!!] = id
       npcService.spawnDsWall(session, region, bank, map, id, stop.wallX, stop.wallY)

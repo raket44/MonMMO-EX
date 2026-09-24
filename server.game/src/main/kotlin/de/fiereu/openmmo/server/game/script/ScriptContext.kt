@@ -514,10 +514,14 @@ internal constructor(
     session.send(de.fiereu.openmmo.net.game.packets.battle.PcTogglePacket(shown = true))
   }
 
-  /** Ask a ROM-backed yes/no question from the interacted entity. */
+  /**
+   * Ask a ROM-backed yes/no question from the speaker the script named (DS Message), else the
+   * interacted entity. A trigger scene has no entity of its own, and the Castelia grunt's
+   * question came up hung on Burgh, the last box's anchor (owner, 2026-09-24).
+   */
   suspend fun askYesNo(line: DialogLine): Boolean {
     holdScriptedFacing()
-    return dialog.askYesNo(session, state, line.textId, entityId, messageArgs.values.toList())
+    return dialog.askYesNo(session, state, line.textId, speakerEntityId ?: entityId, messageArgs.values.toList())
   }
 
   /** Ask a ROM-backed yes/no question from a cutscene npc. */

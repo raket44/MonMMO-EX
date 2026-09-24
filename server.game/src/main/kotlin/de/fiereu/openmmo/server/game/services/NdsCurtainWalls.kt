@@ -33,6 +33,32 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
       state.bankId == GYM_BANK && state.mapId == GYM_MAP -> syncStriaton(session, state, storyFlags)
       state.bankId == NACRENE_BANK && state.mapId == NACRENE_MAP -> syncNacrene(session, state, storyFlags)
       state.bankId == CASTELIA_STREET_BANK && state.mapId == CASTELIA_STREET_MAP -> syncCasteliaGym(session, state, storyFlags)
+      state.bankId == HONEY_BANK && state.mapId == HONEY_MAP -> syncHoneyGates(session, state, storyFlags)
+    }
+  }
+
+  /**
+   * The Castelia Gym's six honey gates (header 29).
+   *
+   * Every way between two of the gym's hive rooms is ONE tile of honey, walkable in the ROM's
+   * land but with land-blocked tiles on both sides, and the ROM stands an object on each (sprite
+   * 0, the "no talk" script 2000 - npcs 0..6). On the cartridge the gym's field overlay (ov38
+   * 0x021F3AA8) catches the player pushing up or down into one of those seven tiles and slides
+   * them through when that honey's gate is down (ov38 0x021F3B5C), or plays a bump when it is up.
+   * The entrance honey (32,33) has no gate and is always open (ov37 sets its flag at load). The
+   * client has none of that: it only animates the models, and makes every object solid - so the
+   * entrance honey, npc 0, walled the player into the entrance hall (owner, 2026-09-24).
+   *
+   * So those seven ROM objects are never spawned ([replacesRomNpc]), and each gate's honey tile
+   * carries a wall object while the gate is up. Which gates are down follows the ROM: switch n
+   * (VAR 0x4000 + n = 1) drops the posts [SWITCH_POSTS], and a gate is down once all its posts are
+   * ([GATE_POSTS]) - ov37's own tables at 0x021F3860 / 0x021F3854, the same ones kr4 draws by.
+   */
+  private fun syncHoneyGates(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
+    val switches = HONEY_SWITCH_VARS.map { (storyFlags[it] ?: 0) != 0 }
+    val down = gatesDown(postsDown(switches))
+    HONEY_GATE_TILES.forEachIndexed { gate, (x, y) ->
+      wall(session, state, HONEY_BANK, HONEY_MAP, FIRST_WALL_ID + 60 + gate, x, y, !down[gate])
     }
   }
 
@@ -145,5 +171,56 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
     /** VAR 16522 (0x408A), the book quiz's progress; 7 = the last book read, the shelf slid. */
     const val NACRENE_VAR = "unova/VAR_0x408A"
     const val NACRENE_OPEN = 7
+
+    /** Castelia Gym (header 29, client handler f/kr4). */
+    const val HONEY_BANK = 29
+    const val HONEY_MAP = 0
+
+    /** Switch n's var, VAR 0x4000 + n: its floor panel's coord trigger (file 58 entry 6 + n) sets it to 1. */
+    val HONEY_SWITCH_VARS: List<String> = (0..7).map { "unova/VAR_0x" + (0x4000 + it).toString(16).uppercase() }
+
+    /**
+     * Switch n -> the gate posts it drops: ov37 0x021F3860 (two signed bytes per switch, -1 = none),
+     * and the trigger scripts' own CMD_18D calls agree (entries 9 and 12 drop two posts each).
+     */
+    val SWITCH_POSTS: List<List<Int>> = listOf(listOf(0), listOf(1), listOf(2), listOf(3, 4), listOf(5), listOf(6), listOf(7, 8), listOf(9))
+
+    /** Gate g -> its posts: ov37 0x021F3854 (a repeated byte = a one-post gate) = kr4.oH0. */
+    val GATE_POSTS: List<List<Int>> = listOf(listOf(0, 1), listOf(2, 3), listOf(4, 5), listOf(6), listOf(7), listOf(8, 9))
+
+    /**
+     * Gate g's honey tile: ov38's table at 0x021F46B4 (fx32 x, y, z; entry 6 is the entrance's
+     * (32,33), which has no gate) = kr4's gate models (Qq0 x 4). Each is the only walkable tile of
+     * its passage - the land blocks x-1 and x+1 - so one object closes the whole passage.
+     */
+    val HONEY_GATE_TILES: List<Pair<Int, Int>> = listOf(32 to 17, 26 to 21, 38 to 21, 20 to 25, 26 to 29, 38 to 29)
+
+    /** The ROM's own honey objects (sprite 0, script 2000): npcs 0..6 on 29:0 - 0 is the entrance's. */
+    val HONEY_ROM_NPCS: Set<Int> = (0..6).toSet()
+
+    /** True for a ROM npc this class stands in for, which the map spawn must leave out. */
+    fun replacesRomNpc(region: Int, bank: Int, map: Int, index: Int): Boolean =
+        region == UNOVA && bank == HONEY_BANK && map == HONEY_MAP && index in HONEY_ROM_NPCS
+
+    /** Which of the ten posts are down, from the eight switches' state. */
+    fun postsDown(switches: List<Boolean>): BooleanArray {
+      val down = BooleanArray(10)
+      switches.forEachIndexed { n, on -> if (on) SWITCH_POSTS.getOrNull(n)?.forEach { down[it] = true } }
+      return down
+    }
+
+    /** Which of the six gates are down: all of their posts are. */
+    fun gatesDown(posts: BooleanArray): List<Boolean> = GATE_POSTS.map { g -> g.all { posts[it] } }
+
+    /**
+     * The client's 0x18F restore (kr4.aL): [switch bitmask, post bitmask] - it lights the pressed
+     * panels, drops the posts and then the gates whose posts are all down (kr4.FZ).
+     */
+    fun honeyRestoreMasks(switches: List<Boolean>): Pair<Int, Int> {
+      val switchMask = switches.withIndex().filter { it.value }.fold(0) { m, (n, _) -> m or (1 shl n) }
+      val posts = postsDown(switches)
+      val postMask = posts.withIndex().filter { it.value }.fold(0) { m, (n, _) -> m or (1 shl n) }
+      return switchMask to postMask
+    }
   }
 }

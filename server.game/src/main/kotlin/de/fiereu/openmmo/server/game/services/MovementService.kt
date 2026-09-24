@@ -160,6 +160,8 @@ constructor(
       // Server-made walls are judged by state.ndsWalls above: their definitions outlive an
       // opened curtain, and read here they held the player at every curtain ever opened.
       if (npc.index >= NdsCurtainWalls.FIRST_WALL_ID) return@any false
+      // The Castelia Gym's honey objects are never spawned; their gates are walls (above).
+      if (NdsCurtainWalls.replacesRomNpc(regionId, bankId, mapId, npc.index)) return@any false
       if (NdsStoryFlags.isHidden(regionId, npc.flag, stored.storyFlags)) return@any false
       val pose = poses[de.fiereu.openmmo.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)]
       val x = pose?.x ?: npc.x

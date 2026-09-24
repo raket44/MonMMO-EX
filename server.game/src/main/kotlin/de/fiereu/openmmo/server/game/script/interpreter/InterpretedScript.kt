@@ -167,6 +167,18 @@ class InterpretedScript(
                   args = instruction.args.map { value(ctx, it).toShort() }))
           state.pc++
         }
+        // ds_casteliagates var x8: the Castelia Gym's map-load restore (ROM 0x18F takes the eight
+        // switch vars). The client's kr4 wants [0x18F, switch mask, gate-post mask] instead.
+        "ds_casteliagates" -> {
+          val switches = instruction.args.map { value(ctx, it) != 0 }
+          val (switchMask, postMask) = de.fiereu.openmmo.server.game.services.NdsCurtainWalls.honeyRestoreMasks(switches)
+          ctx.sendScenePacket(
+              de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+                  action = 6,
+                  subject = 0,
+                  args = listOf(CASTELIA_RESTORE_OPCODE.toShort(), switchMask.toShort(), postMask.toShort())))
+          state.pc++
+        }
         // ds_xtransceiver N: the client's own Xtransceiver call window (White OpenInterpoke).
         "ds_xtransceiver" -> {
           tracedWait(ctx, "xtransceiver call") { ctx.xtransceiverCall(value(ctx, instruction.arg(0))) }
@@ -2642,6 +2654,9 @@ class InterpretedScript(
      * the player held while the Striaton curtain it just opened finishes moving.
      */
     const val SOUND_WAIT_MILLIS = 40 * 17L
+
+    /** ROM opcode 0x18F, the Castelia Gym restore, as kr4.aL reads it. */
+    const val CASTELIA_RESTORE_OPCODE = 0x18F
     /** The cartridges' GAME_VERSION ids, what StoreVersion answers per region. */
     const val GAME_VERSION_HEARTGOLD = 7
     const val GAME_VERSION_PLATINUM = 12

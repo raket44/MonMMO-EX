@@ -310,6 +310,7 @@ class ScriptSupportAnalyzer(
           "ds_xtransceiver" -> args.size == 1
           // opcode plus that opcode's own arguments
           "ds_mapgimmick" -> args.isNotEmpty()
+          "ds_casteliagates" -> args.size == 8
           "ds_playsound", "ds_changemusic" -> args.size == 1
           "ds_waitsound" -> args.isEmpty()
           // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts [, index]
@@ -678,6 +679,7 @@ class ScriptSupportAnalyzer(
             "ds_makenpc",
             "ds_xtransceiver",
             "ds_mapgimmick",
+            "ds_casteliagates",
             "ds_playsound",
             "ds_changemusic",
             "ds_waitsound",

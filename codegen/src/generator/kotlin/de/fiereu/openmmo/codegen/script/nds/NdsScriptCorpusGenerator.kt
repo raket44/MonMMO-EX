@@ -701,6 +701,8 @@ class NdsScriptCorpusGenerator {
         // command, so every Striaton button script failed to resolve and the buttons did
         // nothing at all (owner, 2026-09-21).
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
+        // Castelia Gym map-load restore (0x18F): the eight switch vars.
+        "DsCasteliaGates" -> out += "ds_casteliagates ${a.joinToString(", ")}"
         // The ROM asks for its own sounds and the client can play them (s2c 0x00 -> the region's
         // SDAT); dropping them left the DS regions silent where the cartridge is not. Only a
         // numeric id goes out - a decomp symbol we cannot resolve stays dropped rather than
@@ -1979,6 +1981,31 @@ class NdsScriptCorpusGenerator {
             "CMD_187" -> b.lines += listOf("DsMapGimmick", "391", tv(0))
             "CMD_188" -> b.lines += listOf("DsMapGimmick", "392", tv(0))
             "CMD_189" -> b.lines += listOf("DsMapGimmick", "393", tv(0))
+            // Castelia Gym (header 29, client handler f/kr4), read off the ROM handlers (ov21
+            // 0x021B254C.., the gym's field overlay ov38) and kr4.aL: 0x18C var lights switch n
+            // (0..7, the floor panel's model), 0x18D var drops gate post n (0..9; a honey gate goes
+            // once all its posts are down - the client's own oH0 table), 0x18F takes the eight
+            // switch vars at map load. The client wants 0x18F as [switch mask, post mask], so the
+            // restore gets its own command that folds the vars into both masks (NdsCurtainWalls
+            // holds the ROM's switch -> post table).
+            "CMD_18C" -> b.lines += listOf("DsMapGimmick", "396", tv(0))
+            "CMD_18D" -> b.lines += listOf("DsMapGimmick", "397", tv(0))
+            "CMD_18F" -> b.lines += listOf("DsCasteliaGates") + a.indices.map { tv(it) }
+            // 0x18E k: a Harlequin springs out of the floor at trigger k (ov38 task 0x021F44E0).
+            // The engine itself runs two of the map's scripts from that task: 3 + k mid-animation
+            // (ClearFlag + AddNPC: the trainer appears) and 5 + k at its end (the battle). kr4 has
+            // no case for 398, so the client ignores the opcode; the two scripts run here in its
+            // place - the reveal inline, then the battle as the rest of this script (both triggers
+            // end right after the command, and a ROM entry's End would end a Call).
+            "CMD_18E" -> {
+              val k = t(0).toInt()
+              b.lines += listOf("DsMapGimmick", "398", t(0))
+              for (r in list.filter { it.entry == 2 + k }) when (r.name) {
+                "ClearFlag" -> b.lines += listOf("ClearFlag", "FLAG_" + r.args[0])
+                "AddNPC" -> b.lines += listOf("AddObject", "OBJ_" + r.args[0])
+              }
+              entriesByFile[file]?.get(4 + k)?.let { b.lines += listOf("GoTo", lab(it)) }
+            }
             "SetVarItem", "SetVarItem2" -> b.lines += listOf("BufferItemName", t(0), item(1))
             // Text slots that were no-ops - and an unfilled slot shows the PLAYER'S name on the
             // client ("What are you and raket going to do?" for the starter's name, 2026-09-20):

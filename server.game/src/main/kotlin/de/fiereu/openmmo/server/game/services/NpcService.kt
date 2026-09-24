@@ -523,6 +523,9 @@ constructor(
     val alive = ctx.attributes[PLAYER_STATE]?.madeNdsNpcs
     for (rom in npcs) {
       if (NdsStoryFlags.isHidden(regionId, rom.flag, storyFlags)) continue
+      // The Castelia Gym's honey objects: NdsCurtainWalls stands in for them (the client would
+      // make the always-open entrance honey solid).
+      if (NdsCurtainWalls.replacesRomNpc(regionId, bankId, mapId, rom.index)) continue
       // White's var-drawn object: ROM sprite 162 is "whatever var 0x4020 holds", which the map's
       // own load script sets by version or starter just before this spawn (every one of the
       // nineteen maps placing a 162 writes it). The museum's stone: 144 in White, 143 in Black;

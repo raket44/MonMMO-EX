@@ -319,8 +319,10 @@ constructor(
     // Consumed by the next LoadEntity: rail maps need the player attached to a rail line or the
     // client shows a blue void.
     state?.pendingRailLine = railLine
-    // The line the warp picks are judged against from here on (see PlayerState.railLine).
+    // The line the warp picks are judged against from here on (see PlayerState.railLine), and
+    // saved with the character so a relog on the rail re-attaches (RAIL_LINE_KEY).
     state?.railLine = railLine
+    characterStore.setStoryVar(charId, de.fiereu.openmmo.server.game.storage.RAIL_LINE_KEY, railLine)
     presenceService.leave(ctx)
     characterStore.updateCharacter(
         stored.info.copy(

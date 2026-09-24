@@ -502,11 +502,14 @@ constructor(
                       mapType = NdsMapTypes.typeOf(regionId.toInt() and 0xFF, bankId.toInt() and 0xFF, mapId.toInt() and 0xFF),
                   )),
       )
-      // The rail line is not persisted across sessions; a relog on a rail tile must re-attach or
-      // the map renders as a blue void. Best effort: recover the line from the warp table.
+      // A relog on a rail map must re-attach the player to its line or the map renders as a
+      // blue void. The line is saved with the character on every change (RAIL_LINE_KEY); the
+      // warp table only stands in for characters saved before that (a logout anywhere but on a
+      // warp row used to come back to the void, owner 2026-09-23).
+      val savedLine = characterStore.getCharacter(info.id)?.storyVars?.get(de.fiereu.openmmo.server.game.storage.RAIL_LINE_KEY)
       val rows =
           ndsWarps.rowsAt(regionId, bankId, mapId, info.positionX.toInt(), info.positionY.toInt())
-      state.pendingRailLine = rows.firstOrNull { it.srcLine >= 0 }?.srcLine ?: -1
+      state.pendingRailLine = savedLine ?: rows.firstOrNull { it.srcLine >= 0 }?.srcLine ?: -1
       state.railLine = state.pendingRailLine
       // Logging out on a door mat is the norm now (interior arrivals rest there); hold
       // direction-less warps until the player has stood on a warp-free tile once.

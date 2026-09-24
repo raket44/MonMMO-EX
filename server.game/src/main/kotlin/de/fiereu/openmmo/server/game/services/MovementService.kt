@@ -129,6 +129,12 @@ constructor(
     private val ndsRails: NdsRails = NdsRails(),
 ) {
 
+  /** The tracked rail line, saved with the character so a relog on the rail re-attaches (RAIL_LINE_KEY). */
+  private fun setRailLine(state: PlayerState, charId: Long, line: Int) {
+    state.railLine = line
+    characterStore.setStoryVar(charId, de.fiereu.openmmo.server.game.storage.RAIL_LINE_KEY, line)
+  }
+
   /**
    * Whether a DS step onto ([toX], [toY]) is one the client refused: the ROM land marks the tile
    * blocked, or a solid object stands there - one of the map's own actors that is not hidden
@@ -235,7 +241,7 @@ constructor(
         }
         // No line fits: the client walked off the rails onto the map's plain tiles (the plaza's
         // open square). -1, so the next jump is read as a step from tiles onto a rail.
-        state.railLine = next?.id ?: -1
+        setRailLine(state, charId, next?.id ?: -1)
       } else if (railJump && state.railLine < 0) {
         // From the tiles onto a rail (or a teleport landing, which knows no line): the line
         // whose cell this is lies next to the tile just stood on.
@@ -245,13 +251,13 @@ constructor(
               "onto (${msg.x}, ${msg.y}): " +
               (entered?.let { "line ${it.first.id} (${"%.1f".format(it.second)} units away)" } ?: "no line within reach")
         }
-        if (entered != null) state.railLine = entered.first.id
+        if (entered != null) setRailLine(state, charId, entered.first.id)
       } else if (railArea != null && state.railLine >= 0) {
         // A reset the server could not see (1 -> 0 on a two-cell stub reads as a step back):
         // an x past this segment's one-past cell is the next segment's.
         ndsRails.repair(railArea, state.railLine, msg.x)?.let { next ->
           log.info { "NDS rail: char=$charId ${state.bankId}:${state.mapId} x ${msg.x} is past line ${state.railLine}: on line ${next.id} (missed reset)" }
-          state.railLine = next.id
+          setRailLine(state, charId, next.id)
         }
       }
       // Calibration logging for the Gen 5 rail maps (Castelia's main city, Skyarrow, the League

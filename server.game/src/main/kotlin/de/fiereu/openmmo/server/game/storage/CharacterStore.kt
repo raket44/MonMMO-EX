@@ -37,6 +37,13 @@ private const val DEFAULT_PERMISSIONS = 8
 /** The saved var holding a character's Battle Points balance. */
 const val BATTLE_POINTS_KEY = "monmmo.battle_points"
 
+/**
+ * The Gen 5 rail line the character stands on, kept in the saved vars so a relog on a rail map
+ * (Castelia, Skyarrow) re-attaches the player: without it the client shows a blue void (owner,
+ * 2026-09-23). -1 = on tiles / not on a rail.
+ */
+const val RAIL_LINE_KEY = "monmmo.rail_line"
+
 private val FLUSH_TICK = 5.seconds
 private const val PLAY_TIME_BANK_SECONDS = 60L
 private const val NANOS_PER_SECOND = 1_000_000_000L

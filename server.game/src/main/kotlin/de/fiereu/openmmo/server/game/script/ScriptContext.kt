@@ -936,11 +936,11 @@ internal constructor(
    * f/eb5.kB(subject, 3)) sends the dialog action response (f/is2: subject, code), which is the
    * same acknowledgement the Xtransceiver call waits for.
    */
-  suspend fun ferrisWheelRide() {
+  suspend fun clientScene(scene: Int) {
     val done = dialog.expectAcknowledgement(session)
     sendScenePacket(
         de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
-            SCENE_ACTION, FERRIS_WHEEL_SCENE.toByte(), listOf(FERRIS_WHEEL_SCENE.toShort())))
+            SCENE_ACTION, scene.toByte(), listOf(scene.toShort())))
     done.await()
   }
 

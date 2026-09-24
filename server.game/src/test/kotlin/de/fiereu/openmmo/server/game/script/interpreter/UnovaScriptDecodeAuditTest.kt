@@ -84,7 +84,8 @@ class UnovaScriptDecodeAuditTest :
         println("ONE-SHORT suspects: $suspects")
         // The six that remain are unnamed engine calls, each one a scene still losing its tail.
         // Shrink this set; never grow it.
-        suspects.keys shouldBe setOf("CMD_0DA", "CMD_107", "CMD_12B", "CMD_146", "CMD_154", "CMD_20F")
+        // CMD_154 left the set 2026-09-24: it is the cutscene app call and takes the scene id (H).
+        suspects.keys shouldBe setOf("CMD_0DA", "CMD_107", "CMD_12B", "CMD_146", "CMD_20F")
       }
 
       test("every entry ends on a terminator - one that does not runs into its neighbour") {

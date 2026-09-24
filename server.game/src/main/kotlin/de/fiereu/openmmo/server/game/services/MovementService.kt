@@ -1131,9 +1131,11 @@ constructor(
       val ny = cy + direction.dy
       if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
       // The client's table has no spin rows (the GBA's 0xB2-0xB5 are absent from f/c67), so the
-      // spin is a facing turn (a 15 ms row) before each glide, cycling down, left, up, right:
+      // spin is a facing rotation (15 ms rows) before each glide, down, left, up, right:
       // the sprite turns as it slides (owner, 2026-09-24: "rocket tiles are supposed to spin").
-      steps += SPIN_FACES[tiles % SPIN_FACES.size]
+      // One turn per tile read as a random flick: the glide snaps the sprite back to the slide
+      // direction. A full four-turn rotation (about 60 ms) before each glide reads as a spin.
+      steps += SPIN_FACES
       steps += slideStep(direction)
       tiles++
       cx = nx

@@ -930,9 +930,9 @@ internal constructor(
 
   /**
    * The Nimbasa Ferris wheel ride, the ROM's own app (script 0x154) which the client plays from
-   * the ROM: 0xB6 action 9 (r32645 f/hw1 :pswitch_12d) starts a client scene by id - scene 30 is
-   * f/y01, the wheel with its gondolas and the local player, ids 0/1/5/7/8 are nothing, any
-   * other id the generic f/kk7 backdrop. When the ride ends the scene's runnable (f/bq6 ->
+   * the ROM: 0xB6 action 9 (r32645 f/hw1 :pswitch_12d) starts a client scene by id - scene 3 is
+   * the wheel (f/kk7 builds it from a/1/6/0: f_wheel_01..04, the gondolas "kago1..16"), ids
+   * 0/1/5/7/8 are nothing, 30 is Platinum's Spear Pillar (f/y01). When the ride ends the scene's runnable (f/bq6 ->
    * f/eb5.kB(subject, 3)) sends the dialog action response (f/is2: subject, code), which is the
    * same acknowledgement the Xtransceiver call waits for.
    */
@@ -1479,8 +1479,8 @@ internal constructor(
     const val XTRANSCEIVER_ACTION: Byte = 3
     /** 0xB6 action 9: start a client-side scene by id (f/hw1 :pswitch_12d). */
     const val SCENE_ACTION: Byte = 9
-    /** Scene 30 = the Ferris wheel ride (f/y01). */
-    const val FERRIS_WHEEL_SCENE = 30
+    /** Scene 3 = the Ferris wheel (f/kk7 loads a/1/6/0 entries 65/71/76/78: f_wheel_01..04). Scene 30 is Platinum's Spear Pillar (f/y01) - played by mistake 2026-09-24. */
+    const val FERRIS_WHEEL_SCENE = 3
     // Sign boxes have no speaker, npc boxes point at the entity.
     const val SIGN = 3
     const val NPC = 4

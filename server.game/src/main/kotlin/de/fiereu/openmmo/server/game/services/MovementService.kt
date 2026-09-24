@@ -237,6 +237,31 @@ constructor(
         }
         state.dropStaleMovesAfterWarp = false
       }
+      // A script owns the player (the decomp's lockall) - the same refusal the hosted branch has
+      // always had and this one lacked: a step the client had in flight when the hold landed
+      // must not commit. Committed, it carried a running player clean past coord triggers and
+      // trainer sight on every DS map (owner, 2026-09-24). No bare position snap here (on a DS
+      // map the client keeps its own player's tile); the client is walked back the one tile it
+      // slipped with the queued walk the emergence step uses - one per refused step, so a
+      // two-tile overshoot comes back two. Not while the script itself walks the player
+      // (moveSelf's selfActionsEndAt): those reports describe the script's own steps.
+      if (state.blocksPlayerInput && System.currentTimeMillis() >= state.selfActionsEndAt) {
+        val back =
+            when (msg.direction) {
+              Direction.UP -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_DOWN
+              Direction.DOWN -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_UP
+              Direction.LEFT -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_RIGHT
+              Direction.RIGHT -> de.fiereu.openmmo.server.game.script.MovementStep.WALK_LEFT
+              else -> null
+            }
+        if (back != null) {
+          ctx.send(
+              de.fiereu.openmmo.net.game.packets.DialogDataPacket(
+                  charId, unk1 = 0, type = 1, data = byteArrayOf(back.action.toByte())))
+        }
+        log.info { "NDS move refused: char=$charId (${msg.x}, ${msg.y}) dir=${msg.direction} while a script holds the player - walked back" }
+        return
+      }
       // On a rail the client reports line-local coordinates and never the line. The line is
       // known from the arrival; when the client changes lines its coordinates jump (a step
       // moves them by one), and the ROM's rail graph says which line it stepped onto: the one

@@ -167,6 +167,40 @@ class InterpretedScript(
                   args = instruction.args.map { value(ctx, it).toShort() }))
           state.pc++
         }
+        // Nimbasa Gym (see the generator's CMD_17F/180/181): a switch mask in a temp var.
+        // ds_maskbit VAR, n, value: bit n of VAR := value != 0.
+        "ds_maskbit" -> {
+          val key = namespaced(varArg(instruction, 0).token)
+          val bit = 1 shl value(ctx, instruction.arg(1))
+          val on = value(ctx, instruction.arg(2)) != 0
+          ctx.setVar(key, if (on) ctx.getVar(key) or bit else ctx.getVar(key) and bit.inv())
+          state.pc++
+        }
+        // ds_gimmickmask opcode, VAR: the map handler gets [opcode, mask] (the load restore).
+        "ds_gimmickmask" -> {
+          ctx.sendScenePacket(
+              de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+                  action = 6,
+                  subject = 0,
+                  args = listOf(value(ctx, instruction.arg(0)).toShort(), ctx.getVar(namespaced(varArg(instruction, 1).token)).toShort())))
+          state.pc++
+        }
+        // ds_gimmickbit opcode, n, VAR, mode: flips (mode 0) or sets (mode 1) bit n of VAR and
+        // tells the map handler [opcode, n, bit].
+        "ds_gimmickbit" -> {
+          val n = value(ctx, instruction.arg(1))
+          val key = namespaced(varArg(instruction, 2).token)
+          val bit = 1 shl n
+          val current = ctx.getVar(key)
+          val next = if (value(ctx, instruction.arg(3)) == 0) current xor bit else current or bit
+          ctx.setVar(key, next)
+          ctx.sendScenePacket(
+              de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+                  action = 6,
+                  subject = 0,
+                  args = listOf(value(ctx, instruction.arg(0)).toShort(), n.toShort(), (if (next and bit != 0) 1 else 0).toShort())))
+          state.pc++
+        }
         // ds_casteliagates var x8: the Castelia Gym's map-load restore (ROM 0x18F takes the eight
         // switch vars). The client's kr4 wants [0x18F, switch mask, gate-post mask] instead.
         "ds_casteliagates" -> {

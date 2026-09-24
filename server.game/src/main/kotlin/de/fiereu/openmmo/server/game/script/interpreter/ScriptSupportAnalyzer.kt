@@ -312,6 +312,9 @@ class ScriptSupportAnalyzer(
           // opcode plus that opcode's own arguments
           "ds_mapgimmick" -> args.isNotEmpty()
           "ds_casteliagates" -> args.size == 8
+          "ds_gimmickmask" -> args.size == 2 && args[1] is VarArg
+          "ds_gimmickbit" -> args.size == 4 && args[2] is VarArg
+          "ds_maskbit" -> args.size == 3 && args[0] is VarArg
           "ds_playsound", "ds_changemusic" -> args.size == 1
           "ds_waitsound" -> args.isEmpty()
           // ds_startchoosestarterscene VAR, 3 species, pick text, 3 confirm texts [, index]
@@ -685,6 +688,9 @@ class ScriptSupportAnalyzer(
             "ds_ferriswheel",
             "ds_mapgimmick",
             "ds_casteliagates",
+            "ds_gimmickmask",
+            "ds_gimmickbit",
+            "ds_maskbit",
             "ds_playsound",
             "ds_changemusic",
             "ds_waitsound",

@@ -705,6 +705,9 @@ class NdsScriptCorpusGenerator {
         // command, so every Striaton button script failed to resolve and the buttons did
         // nothing at all (owner, 2026-09-21).
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
+        "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
+        "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
+        "DsMaskBit" -> out += "ds_maskbit ${a.joinToString(", ")}"
         // Castelia Gym map-load restore (0x18F): the eight switch vars.
         "DsCasteliaGates" -> out += "ds_casteliagates ${a.joinToString(", ")}"
         // The ROM asks for its own sounds and the client can play them (s2c 0x00 -> the region's
@@ -2011,6 +2014,23 @@ class NdsScriptCorpusGenerator {
             // switch vars at map load. The client wants 0x18F as [switch mask, post mask], so the
             // restore gets its own command that folds the vars into both masks (NdsCurtainWalls
             // holds the ROM's switch -> post table).
+            // Nimbasa Gym (header 63, client handler f/r75: four track pieces VA1[4], four cars
+            // COM4[4]). The client takes [0x180, n, state] to flip track n and [0x260, mask] to
+            // restore all four at map load. The ROM: 0x17F (flag116, flag117, 2, 16, 116) at
+            // entry sets up the two switches the beaten station trainers stand on (their load
+            // script parks them on the switch tiles); 0x180 n is the floor switch the player
+            // steps on (coord triggers, one per switch); 0x181 n is the trainer's own flip after
+            // the battle. Switch states live in temp var 0x400A as a bit mask - wiped on every
+            // warp like the rest of the band, and rebuilt from the two flags by 0x17F (owner,
+            // 2026-09-24: "stepping on the switch worked but it didn't change the track").
+            "CMD_17F" -> {
+              b.lines += listOf("SetVar", NIMBASA_SWITCH_MASK, "0")
+              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, "1", tv(0))
+              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, "2", tv(1))
+              b.lines += listOf("DsGimmickMask", "608", NIMBASA_SWITCH_MASK)
+            }
+            "CMD_180" -> b.lines += listOf("DsGimmickBit", "384", tv(0), NIMBASA_SWITCH_MASK, "0")
+            "CMD_181" -> b.lines += listOf("DsGimmickBit", "384", tv(0), NIMBASA_SWITCH_MASK, "1")
             "CMD_18C" -> b.lines += listOf("DsMapGimmick", "396", tv(0))
             "CMD_18D" -> b.lines += listOf("DsMapGimmick", "397", tv(0))
             "CMD_18F" -> b.lines += listOf("DsCasteliaGates") + a.indices.map { tv(it) }
@@ -2332,6 +2352,8 @@ class NdsScriptCorpusGenerator {
     val MSG_TOKEN = Regex("^msg_(\\d+)(?:_\\w+?)?_(\\d{5})$")
     /** HeartGold's standard menu bank (files/msgdata/msg/msg_0191.gmm): floors, ROOF, EXIT, ... */
     const val HEARTGOLD_STD_MENU_BANK = 191
+    /** Nimbasa Gym's switch mask: a map-local temp var (the band the coord triggers use is 0x400B..0x400E). */
+    const val NIMBASA_SWITCH_MASK = "VAR_0x400A"
     /** White script files from 854 up are the engine's shared routines (ranges table), not map files. */
     const val FIRST_SHARED_FILE = 854
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */

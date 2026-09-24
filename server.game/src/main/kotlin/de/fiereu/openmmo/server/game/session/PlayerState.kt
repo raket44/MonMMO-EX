@@ -234,6 +234,14 @@ data class PlayerState(
      */
     @field:Volatile var scriptOwnsMapEntry: Boolean = false,
     /**
+     * A Unova elevator ride is walking the player through tiles the ROM land marks blocked (the
+     * lift door at (7,1) and the car at (7,0)); the ROM's scripted movement ignores collision. Set
+     * by `ds_elevatortable` and cleared when the ride settles or the script ends. While set, the
+     * NDS movement branch drops client move reports, so a reported step into the car can never
+     * be read as a bonk and pull the server's position back off the scripted path.
+     */
+    @field:Volatile var ndsScriptedWalk: Boolean = false,
+    /**
      * A step accepted while the previous tile's script was still finishing (a one-line
      * lockall/releaseall takes a millisecond, the runner's release a little longer, and a
      * running player's steps arrive in pairs inside that window) lands on a tile whose own

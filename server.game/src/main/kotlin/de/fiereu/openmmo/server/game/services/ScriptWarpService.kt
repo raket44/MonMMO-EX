@@ -32,10 +32,50 @@ constructor(
     private val characterStore: CharacterStore,
     private val presenceService: PresenceService,
     private val warpService: javax.inject.Provider<WarpService>,
+    val ndsElevators: NdsElevators = NdsElevators(),
 ) {
   /** A DS destination: the client loads the ROM map itself, the server only names it. */
   fun rawWarp(session: SessionContext, charId: Long, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int) {
     warpService.get().executeRawWarp(session, charId, regionId, bankId, mapId, x, y)
+  }
+
+  /**
+   * A DS raw warp the script rides through: lands on ([x], [y]) facing [facing] and suspends
+   * until the client has asked for its player on the new map, so the script's next steps (the
+   * Unova elevator's door and walk-out) play there. No arrival step is armed - executeRawWarp
+   * clears pendingStepDir and only door fires set it - so a landing on a blocked tile (the lift
+   * car) stays where the script put it. The script owns the arrival's entry scripts: with
+   * [PlayerState.scriptRunning] already held, MapScriptService.onNdsEnter would otherwise decline
+   * to run them AND skip the npc spawn and fade-in that hang off them.
+   */
+  suspend fun rawWarpAndWait(
+      session: SessionContext,
+      state: PlayerState,
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      x: Int,
+      y: Int,
+      facing: de.fiereu.openmmo.common.enums.Direction,
+  ): Boolean {
+    val charId = state.characterId ?: return false
+    val loaded = CompletableDeferred<Unit>()
+    session.attributes[PENDING_MAP_LOAD] = loaded
+    state.scriptOwnsMapEntry = true
+    try {
+      // The LoadEntity after the transition spawns the player with this facing.
+      state.facingDirection = facing
+      warpService.get().executeRawWarp(session, charId, regionId, bankId, mapId, x, y)
+      if (withTimeoutOrNull(MAP_LOAD_TIMEOUT) { loaded.await() } != null) return true
+      log.warn { "Character $charId did not load $regionId:$bankId:$mapId after a scripted raw warp" }
+      state.justWarped = false
+      session.send(RenderScreenPacket(true))
+      presenceService.enter(session)
+      return false
+    } finally {
+      state.scriptOwnsMapEntry = false
+      if (session.attributes[PENDING_MAP_LOAD] === loaded) session.attributes.remove(PENDING_MAP_LOAD)
+    }
   }
 
   /** Warps and waits until the client has loaded the destination, so the script can go on. */

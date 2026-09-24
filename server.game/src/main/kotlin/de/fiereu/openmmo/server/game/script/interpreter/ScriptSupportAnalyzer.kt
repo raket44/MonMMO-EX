@@ -288,6 +288,11 @@ class ScriptSupportAnalyzer(
           // ds_menu VAR, cursor, (textId, value)+ ; ds_setdynamicwarp header, x, y ; ds_dynamicwarpfloor VAR
           "ds_menu" -> args.size >= 4 && args.size % 2 == 0
           "ds_setdynamicwarp" -> args.size == 3
+          // Unova elevators: ds_elevatortable file, offset ; ds_elevatormenu VAR, (textId, value)* ; ds_elevatorwarp ROW ; ds_elevatorsettle
+          "ds_elevatortable" -> args.size == 2
+          "ds_elevatormenu" -> args.isNotEmpty() && args.size % 2 == 1
+          "ds_elevatorwarp" -> args.size == 1
+          "ds_elevatorsettle" -> args.isEmpty()
           "ds_dynamicwarpfloor" -> args.size == 1
           "ds_trainerbattle", "ds_settrainerflag", "ds_cleartrainerflag" -> args.size == 1
           "settrainerflag", "cleartrainerflag", "checktrainerflag" -> args.size == 1
@@ -653,6 +658,10 @@ class ScriptSupportAnalyzer(
             "ds_warp",
             "ds_menu",
             "ds_setdynamicwarp",
+            "ds_elevatortable",
+            "ds_elevatormenu",
+            "ds_elevatorwarp",
+            "ds_elevatorsettle",
             "ds_dynamicwarpfloor",
             "ds_trainerbattle",
             "ds_trainermsg",

@@ -164,6 +164,8 @@ constructor(
         }
         dialogService.close(session, state)
         state.releaseScriptLock()
+        // An elevator ride that died mid-script must not keep dropping the player's moves.
+        state.ndsScriptedWalk = false
         state.scriptRunning = false
         // A script that faded to black and never faded back (or died in between) must not leave
         // the player staring at nothing; a warp in the script owns the screen from then on.

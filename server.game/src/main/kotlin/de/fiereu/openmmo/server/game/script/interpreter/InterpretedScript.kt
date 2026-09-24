@@ -684,6 +684,30 @@ class InterpretedScript(
           tracedWait(ctx, "dialog choice") { runDsMenu(ctx, state, instruction) }
           state.pc++
         }
+        // Unova elevators (docs/gen5-elevators.md). ds_elevatortable file, offset: opcode 0x1CB,
+        // the floor table inside the panel's script file.
+        "ds_elevatortable" -> {
+          ctx.beginElevator(value(ctx, instruction.arg(0)), value(ctx, instruction.arg(1)))
+          state.pc++
+        }
+        // ds_elevatormenu VAR, (textId, value)*: opcode 0x1CC's rows (every floor but the current
+        // one, value = row index) then the script's own entries (Cancel = 255), one list.
+        "ds_elevatormenu" -> {
+          tracedWait(ctx, "elevator choice") { runDsElevatorMenu(ctx, state, instruction) }
+          state.pc++
+        }
+        // ds_elevatorwarp ROW: opcode 0x1CD, ride to that row when it exists; the script goes on
+        // on the new floor (the ROM's door + walk-out).
+        "ds_elevatorwarp" -> {
+          val row = value(ctx, instruction.arg(0))
+          tracedWait(ctx, "elevator ride") { ctx.elevatorWarp(row) }
+          state.pc++
+        }
+        // ds_elevatorsettle: the panel's routine has returned - the ride is over.
+        "ds_elevatorsettle" -> {
+          ctx.settleElevator()
+          state.pc++
+        }
         // ds_setdynamicwarp header, x, y: SetDynamicWarp / SetSpecialLocation - where the elevator lets out.
         "ds_setdynamicwarp" -> {
           val header = value(ctx, instruction.arg(0))
@@ -2018,6 +2042,35 @@ class InterpretedScript(
     ctx.setVar(target, items[pick].second)
   }
 
+  /**
+   * ds_elevatormenu VAR, (textId, value)*: the Unova elevator's list. Opcode 0x1CC adds one entry
+   * per floor-table row whose header is not the current map (label, value = row index; ov21
+   * 0x021B6B14), then the script adds its own entries (Cancel, value 255) - built here in that
+   * order and shown the way ds_menu shows any DS list. All labels are text bank 261.
+   */
+  private suspend fun runDsElevatorMenu(ctx: ScriptContext, state: RuntimeState, instruction: ScriptInstruction) {
+    val target = namespaced(instruction.arg(0).token)
+    val floors = ctx.elevatorMenuFloors().map { it.textId to it.index }
+    val own = (1 until instruction.args.size step 2).map { value(ctx, instruction.arg(it)) to value(ctx, instruction.arg(it + 1)) }
+    val items = floors + own
+    if (floors.isEmpty() || items.isEmpty()) {
+      log.warn { "Script ${program.id.stable}: no elevator table for this map, answering cancel - `${instruction.sourceLine}`" }
+      ctx.setVar(target, own.lastOrNull()?.second ?: MULTI_B_PRESSED)
+      return
+    }
+    val region = items.first().first ushr 28
+    val bank = (items.first().first shr 16) and 0xFFF
+    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0xFFF) != bank }) {
+      log.warn { "Script ${program.id.stable}: elevator entries span text banks, answering cancel - `${instruction.sourceLine}`" }
+      ctx.setVar(target, own.lastOrNull()?.second ?: MULTI_B_PRESSED)
+      return
+    }
+    val line = checkNotNull(state.currentMessage) { "Script ${program.id.stable} has no current message for `${instruction.sourceLine}`" }
+    val list = InterpreterSupport.DsTextList(region, bank, items.map { it.first and 0xFFFF })
+    val pick = ctx.dsTextListMenu(line, list, 0).coerceIn(0, items.size - 1)
+    ctx.setVar(target, items[pick].second)
+  }
+
   /** Only the yes/no menu is modeled; the analyzer admits no other multichoice. */
   private suspend fun runMultichoice(
       ctx: ScriptContext,
@@ -2077,7 +2130,7 @@ class InterpretedScript(
       when (instruction.command) {
         // A `call` here is a flag check that sets the result (the fossil scientist's list checks).
         "waitmessage", "setvar", "copyvar", "specialvar", "compare", "call" -> pc++
-        "multichoice", "multichoicedefault", "multichoicegrid", "ds_menu" -> return true
+        "multichoice", "multichoicedefault", "multichoicegrid", "ds_menu", "ds_elevatormenu" -> return true
         "special" -> return if (instruction.arg(0).token == "ListMenu" || instruction.arg(0).token == "ReturnToListMenu") true else caseTargets > 0
         "goto_if_eq", "goto_if_ne", "goto_if_lt", "goto_if_le", "goto_if_gt", "goto_if_ge" -> {
           val (targetProgram, target) = branchTarget(program, instruction.arg(0).token) ?: return false

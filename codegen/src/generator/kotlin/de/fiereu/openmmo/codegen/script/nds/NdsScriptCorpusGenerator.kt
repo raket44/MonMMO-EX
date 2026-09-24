@@ -687,6 +687,11 @@ class NdsScriptCorpusGenerator {
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
         "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
+        // White elevators (0x1CB table, 0x1CC menu rows, 0x1CD ride; docs/gen5-elevators.md).
+        "DsElevatorTable" -> out += "ds_elevatortable ${a[0]}, ${a[1]}"
+        "DsElevatorMenu" -> out += "ds_elevatormenu " + a.joinToString(", ")
+        "DsElevatorWarp" -> out += "ds_elevatorwarp ${a[0]}"
+        "DsElevatorSettle" -> out += "ds_elevatorsettle"
         // White DoubleTrainerBattle partner, enemy1, enemy2 (every Ds* name needs its own case).
         "DsDoubleTrainerBattle" -> out += "ds_doubletrainerbattle ${a[0]}, ${a[1]}, ${a[2]}"
         "DsStorePartyCount" -> out += "ds_storepartycount ${a[0]}, ${a[1]}"
@@ -1572,6 +1577,11 @@ class NdsScriptCorpusGenerator {
       // she came out as the GOURMET MAID, sniffing and asking for an ingredient - the same failure
       // as the item gifts above, one file later (owner, 2026-09-21).
       out.putIfAbsent(855, 346)
+      // The Castelia elevator panels, file 888 (engine ids 10405-10424): the ROM's own script-id
+      // range table (ov10 0x021701C8, server.game/nds-script-ranges-2.txt) gives them text bank
+      // 261 - Cancel, the floor labels 1F..55F and "Which floor would you like to go to?". The
+      // same table confirms the three banks above (862/864 -> 283, 855 -> 346).
+      out.putIfAbsent(888, 261)
       out
     }
 
@@ -1609,8 +1619,13 @@ class NdsScriptCorpusGenerator {
      * the "no talk script" placeholder 355 story actors carry (Mom outside the lab, Cheren, gym
      * props): bound to file 864 it made Mom run item ball 0 - "raket received raket" - while the
      * real item balls fell into the trainer range (2026-09-20).
+     *
+     * 10405+ is file 888, per the ROM's range table (10405-10424 -> file 888): its 14 entries are
+     * the Castelia elevators' panel (10405-10411) and lift door (10412-10418) bg events, bound
+     * here and nothing else in the engine band - 10100/10105 (the Center clerks) stay with
+     * NdsStandardScripts.
      */
-    override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864")
+    override fun chunkFiles(): Map<Int, String> = mapOf(2800 to "U862", 3000 to "UTR", 7000 to "U864", 10405 to "U888")
 
     /**
      * 10000+ is the engine's own standard-script space, NOT file 865: 865 is the hidden-item file
@@ -1731,6 +1746,11 @@ class NdsScriptCorpusGenerator {
         // value is one row; CloseMulti shows it. Emitted as one ds_menu, like HeartGold's MenuExec.
         var menuVar: String? = null
         val menuItems = mutableListOf<Pair<String, String>>()
+        // Unova elevators (docs/gen5-elevators.md): opcode 0x1CC inside a Multi adds the floor
+        // table's rows at run time, so that menu becomes a ds_elevatormenu.
+        var elevatorMenu = false
+        // After 0x1CB the panel entry calls its shared ride routine; the ride settles when it returns.
+        var elevatorSettlePending = false
         // The starter-select app's result var, from its open (0xB4 331 339 var) to its close (CMD_1AF).
         var starterVar: String? = null
         // Door objects a script made (CMD_127 handle var -> its tile), until it frees them (CMD_128).
@@ -1863,15 +1883,29 @@ class NdsScriptCorpusGenerator {
             "Multi" -> {
               menuVar = v(5)
               menuItems.clear()
+              elevatorMenu = false
             }
             "SetTextScriptMessage" -> if (menuVar != null) menuItems += (textId(text(0))?.toString() ?: "0") to t(2)
             "CloseMulti" -> {
               val target = menuVar
-              if (target != null && menuItems.isNotEmpty()) b.lines += listOf("Menu", target, "0") + menuItems.flatMap { listOf(it.first, it.second) }
+              if (target != null && elevatorMenu) b.lines += listOf("DsElevatorMenu", target) + menuItems.flatMap { listOf(it.first, it.second) }
+              else if (target != null && menuItems.isNotEmpty()) b.lines += listOf("Menu", target, "0") + menuItems.flatMap { listOf(it.first, it.second) }
               else if (target != null) b.lines += listOf("SetVar", target, "127")
               menuVar = null
               menuItems.clear()
+              elevatorMenu = false
             }
+            // Unova elevators, sizes and behaviour read off the ov21 handlers (docs/gen5-elevators.md).
+            // 0x1CB <s32>: the floor table is at the end of the command plus the offset, inside
+            // this same script file - the (file, offset) key of nds-elevators-2.txt.
+            "CMD_1CB" -> {
+              b.lines += listOf("DsElevatorTable", file.toString(), (c.offset + 6 + t(0).toLong()).toString())
+              elevatorSettlePending = true
+            }
+            // 0x1CC: one menu row per floor but the current one, added at run time.
+            "CMD_1CC" -> if (menuVar != null) elevatorMenu = true
+            // 0x1CD var: ride to that row.
+            "CMD_1CD" -> b.lines += listOf("DsElevatorWarp", v(0))
             // The trainer is marked fought so the sight line no longer triggers (same flag the
             // battle sets on a win).
             "DeactivateTrainerID" -> b.lines += listOf("SetTrainerFlag", tv(0))
@@ -1994,7 +2028,15 @@ class NdsScriptCorpusGenerator {
             "CMD_128" -> doors.remove(v(0))
             "CMD_11E", "CMD_107", "Xtransciever4", "Xtransciever5", "Xtransciever7" -> {}
             "SetVarStoreValue5C" -> b.lines += listOf("BufferNumber", t(0), v(1))
-            "CallRoutine" -> b.lines += listOf("Call", jump(0))
+            "CallRoutine" -> {
+              b.lines += listOf("Call", jump(0))
+              // The panel's ride routine (file 888 @622) has walked the player in, ridden or
+              // cancelled, and walked them back out: the ride ends here.
+              if (elevatorSettlePending) {
+                b.lines += listOf("DsElevatorSettle")
+                elevatorSettlePending = false
+              }
+            }
             "Jump" -> b.lines += listOf("GoTo", jump(0))
             "ReturnAfterDelay" -> b.lines += listOf("WaitTime", t(0))
             // A flag id held in a VAR is the shared routines' way of naming the actor's own flag

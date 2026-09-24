@@ -1362,6 +1362,57 @@ internal constructor(
     warpService.rawWarp(session, charId, regionId, bankId, mapId, x, y)
   }
 
+  /**
+   * The Unova elevator floor table the running panel script pointed opcode 0x1CB at, as (script
+   * file, byte offset of the table): the key of NdsElevators. Per script run - the panel's entry
+   * sets it and its shared routine (file 888 @622) reads it after a call.
+   */
+  private var elevatorTable: Pair<Int, Int>? = null
+
+  /**
+   * Opcode 0x1CB: remember the table and start the ride. From here the script walks the player
+   * into the car and back out through tiles the land marks blocked, so client move reports are
+   * dropped until [settleElevator] (see PlayerState.ndsScriptedWalk).
+   */
+  fun beginElevator(scriptFile: Int, tableOffset: Int) {
+    elevatorTable = scriptFile to tableOffset
+    state.ndsScriptedWalk = true
+  }
+
+  /** Opcode 0x1CC: the rows the menu lists on the current map - every floor but this one. */
+  fun elevatorMenuFloors(): List<de.fiereu.openmmo.server.game.services.NdsElevators.Floor> {
+    val (file, offset) = elevatorTable ?: return emptyList()
+    val header = (state.bankId and 0xFF) or ((state.mapId and 0xFF) shl 8)
+    return warp?.ndsElevators?.menu(state.regionId, file, offset, header) ?: emptyList()
+  }
+
+  /**
+   * Opcode 0x1CD: ride to row [row] of the table when it exists (the ROM checks `row < count`).
+   * Lands inside the destination's car facing the row's direction and suspends until the client
+   * is on the new floor; the script then plays the ROM's own walk-out there. False = no ride.
+   */
+  suspend fun elevatorWarp(row: Int): Boolean {
+    val warpService = warp ?: return false
+    val (file, offset) = elevatorTable ?: return false
+    val floor = warpService.ndsElevators.floors(state.regionId, file, offset).getOrNull(row) ?: return false
+    return warpService.rawWarpAndWait(session, state, state.regionId, floor.destBank, floor.destMap, floor.x, floor.y, floor.facing)
+  }
+
+  /**
+   * The ride is over (after the panel's shared routine, on either the ridden or the cancelled
+   * path): client move reports count again, and the client's player is stood on the tile the
+   * script walked it to. Safety net for the door-tile question in docs/gen5-elevators.md: if the
+   * client played the walk-out, this is a no-op; if it did not, the player is not left inside a
+   * car whose door tile the client's own collision blocks.
+   */
+  suspend fun settleElevator() {
+    if (!state.ndsScriptedWalk) return
+    movement.awaitSelfActions(state)
+    state.ndsScriptedWalk = false
+    if (state.regionId !in 2..4) return
+    movement.repositionSelf(session, state, state.x.toInt(), state.y.toInt(), state.facingDirection)
+  }
+
   suspend fun warp(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, facing: Direction) {
     val warpService = checkNotNull(warp) { "Script warp service is unavailable" }
     state.scriptOwnsMapEntry = true

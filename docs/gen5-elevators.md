@@ -128,29 +128,49 @@ path the generator already emits as `DsDoor`. The GM Teleport window `f.EU1` onl
 `//moveto2` chat commands and holds no floor data. None of this was checked on the r32645
 Android client.
 
-## 5. What the server still needs (not wired here)
+## 5. Server integration (branch `elevators-gen5`)
 
-1. **Bind the chunk ids through the ROM range table** (`nds-script-ranges-2.txt`) instead of the
-   hand-written `chunkFiles()` / `unboundStdCalls()`. At minimum, bind `NDS_CHUNK_10405..10418` →
-   `U888` entries 0..13. Careful: a blanket bind changes 10100/10105 (the Center clerks, now served
-   by `NdsStandardScripts`) and every other engine id. Decide per id.
-2. Re-dump the corpus with the fixed command table so file 888 decodes fully.
-3. Generator/interpreter: `CMD_1CB n` → the table is at `pc + 6 + n` in file 888 (the tableOffset
-   column). `CMD_1CC` → at run time, the menu rows are the ones for that table whose `current`
-   is 0 for the player's current header (text = floorLabelTextId, value = floorIndex). The static
-   `SetTextScriptMessage 0 0xFFFF 255` Cancel then follows. Today the generator builds the `Menu`
-   items statically at `CloseMulti`, so it needs a dynamic-items marker.
-4. `CMD_1CD var` → if `var < rows`: raw warp to (region 2, destBank, destMap, destX, destY),
-   facing DOWN, and **keep running the script on the new map**, which does the door and the 2-step
-   walk-out.
-5. The landing (7,0) is a **blocked** tile in `nds-land-2.txt` (the car is behind the wall row).
-   The arrival must not add the generic NDS emergence step, and movement validation must accept
-   the scripted walk (7,0) → (7,2).
-6. Unverified in game: the boarding routine puts its door object at hero + (2, -1). That gives
-   (8,1) from the kind-0 panel and (9,1) from the kind-1 door tile, but the arrival puts it at
-   (7,1). Check where the client plays `ele_door1` before trusting `DsDoor` tiles for elevators.
-   `CMD_1AE` / `CMD_1AD` / `CMD_1B1` (probably start/stop/wait of the car shake) are unidentified
-   and the generator already drops them.
+- **Binding.** `NdsScriptCorpusGenerator.Unova.chunkFiles` binds `10405 → U888`. The ROM range is
+  10405-10424 and file 888 has 14 entries, so this yields `NDS_CHUNK_10405..10418` and nothing
+  else. The rest of the engine band (10100/10105 and others) is still unbound. File 888 speaks
+  from bank 261, and the range table also confirms the older hand-picked banks (862/864 → 283,
+  855 → 346).
+- **Re-dump.** `nds-scripts-2.txt` was regenerated with the fixed command table. The diff touches
+  only file 888: 15 lines removed, 58 added, plus 4 new movement tables (@852 north 2, @860
+  east 1 + north 2, @872 face south, @940 south 2).
+- **Corpus.** `CMD_1CB n` → `ds_elevatortable 888, <offset+6+n>`. A Multi containing `CMD_1CC`
+  becomes `ds_elevatormenu VAR, <Cancel text>, 255`. `CMD_1CD var` → `ds_elevatorwarp VAR`. The
+  panel entry's `CallRoutine` after 0x1CB is followed by `ds_elevatorsettle`. Everything else
+  (door objects, movements, sounds, waits) goes through the existing Unova translation.
+- **Interpreter** (`InterpretedScript`, `ScriptContext`):
+  - `ds_elevatortable` stores the table key and sets `PlayerState.ndsScriptedWalk`.
+  - `ds_elevatormenu` builds the list: the rows from `NdsElevators.menu` (current header
+    excluded, value = row index) plus the script's own Cancel. It uses the same DS text-button
+    list as `ds_menu` (dialog kind wire 49) and is registered in `multichoiceFollows`.
+  - `ds_elevatorwarp` calls `ScriptWarpService.rawWarpAndWait`: it lands on the row's tile facing
+    DOWN and suspends until the client's RequestPlayer, with `scriptOwnsMapEntry` set so the
+    arrival still spawns npcs and fades in while the script holds the lock.
+  - `ds_elevatorsettle` waits out the walk, clears the flag, and re-sends the player's committed
+    tile (`repositionSelf`, the same path SetOWPosition 255 uses).
+- **Data.** `NdsElevators` loads `nds-elevators-2.txt` (or `server.game/nds-elevators-2.txt`) and
+  reloads it when the file changes.
+- **Arrival (7,0).** A scripted raw warp arms no emergence step: `executeRawWarp` clears
+  `pendingStepDir`, and only door fires set it. The walk into the car and back out is the ROM's
+  own `ApplyMovement`, which `ScriptMovementService.moveSelf` commits without a land check. While
+  `ndsScriptedWalk` is set, `MovementService` drops NDS move reports, so a reported step onto
+  (7,1)/(7,0) cannot be taken as a bonk. The runner clears the flag at script end whatever
+  happens.
+- **Door tile mismatch.** The door object is visual only (`ds_door` → s2c 0x1F at the script's
+  x, y). A door that does not animate cannot block the ride. The settle step puts the client
+  back on the server's tile if its walk was refused.
+
+Needs an in-game check:
+1. The client plays the scripted walk into and out of the car through the blocked tiles.
+2. The door animates at the ROM's (8,1)/(9,1) boarding coordinates as well as at (7,1).
+3. The settle reposition is invisible when the walk did play.
+4. The menu shows the floor labels and Cancel from bank 261.
+`CMD_1AE` / `CMD_1AD` / `CMD_1B1` (probably the car shake) are still dropped.
 
 Reproduce: `MSYS_NO_PATHCONV=1 java tools/nds/Elevators5.java "<White.nds>"
-server.game/nds-elevators-2.txt server.game/nds-script-ranges-2.txt`
+server.game/nds-elevators-2.txt server.game/nds-script-ranges-2.txt`. Re-dump the scripts with
+`tools/nds/Dis5.java dump <rom> tools/nds/bw1-script-commands.txt server.game/nds-scripts-2.txt`.

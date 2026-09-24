@@ -218,6 +218,13 @@ constructor(
       // the client asking for its player, moves still describe the OLD map - processing them
       // against the new map's warp table was the phantom "new warp info" during desync.
       if (state.justWarped) return
+      // A Unova elevator ride walks the player into and out of the lift car, across tiles the
+      // land marks blocked; the script commits those tiles itself (ScriptMovementService.moveSelf).
+      // A report of that walk read here would be a bonk and stand the server back in the doorway.
+      if (state.ndsScriptedWalk) {
+        log.info { "NDS move dropped: char=$charId (${msg.x}, ${msg.y}) during an elevator ride" }
+        return
+      }
       // The client's report of stepping onto the door tile it just left through can arrive
       // after the arrival on the new map; read here it is a position on a map it never stood
       // on (PlayerState.dropStaleMovesAfterWarp).

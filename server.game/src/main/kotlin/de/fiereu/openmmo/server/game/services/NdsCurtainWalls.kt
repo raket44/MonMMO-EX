@@ -25,7 +25,13 @@ import javax.inject.Singleton
  * 15) turns VAR 16514 into the mask it hands the client, and that table is [MASK_BY_STATE].
  */
 @Singleton
-class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private val npcService: NpcService) {
+class NdsCurtainWalls
+@Inject
+constructor(
+    private val ndsNpcs: NdsNpcs,
+    private val npcService: NpcService,
+    private val characterStore: de.fiereu.openmmo.server.game.storage.CharacterStore,
+) {
 
   fun sync(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
     if (state.regionId != UNOVA) return
@@ -55,8 +61,15 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
    * ([GATE_POSTS]) - ov37's own tables at 0x021F3860 / 0x021F3854, the same ones kr4 draws by.
    */
   private fun syncHoneyGates(session: SessionContext, state: PlayerState, storyFlags: Map<String, Int>) {
+    val charId = state.characterId
+    val flags = charId?.let { characterStore.getCharacter(it)?.storyFlags }.orEmpty()
     val switches = HONEY_SWITCH_VARS.map { (storyFlags[it] ?: 0) != 0 }
-    val down = gatesDown(postsDown(switches))
+    var down = gatesDown(postsDown(switches))
+    // The owner's rule (2026-09-24): the switches are the cartridge's map-local temps and reset
+    // on re-entry, but the gym is solved for good the moment its last gate opens - from then on
+    // every gate stays down, here and in the map-load restore (honeyRestoreMasks).
+    if (down.all { it } && charId != null && HONEY_SOLVED_FLAG !in flags) characterStore.setStoryFlag(charId, HONEY_SOLVED_FLAG)
+    if (HONEY_SOLVED_FLAG in flags || down.all { it }) down = List(down.size) { true }
     HONEY_GATE_TILES.forEachIndexed { gate, (x, y) ->
       wall(session, state, HONEY_BANK, HONEY_MAP, FIRST_WALL_ID + 60 + gate, x, y, !down[gate])
     }
@@ -216,7 +229,12 @@ class NdsCurtainWalls @Inject constructor(private val ndsNpcs: NdsNpcs, private 
      * The client's 0x18F restore (kr4.aL): [switch bitmask, post bitmask] - it lights the pressed
      * panels, drops the posts and then the gates whose posts are all down (kr4.FZ).
      */
-    fun honeyRestoreMasks(switches: List<Boolean>): Pair<Int, Int> {
+    /** Our own persistent flag: the Castelia Gym's last gate has opened once, so all stay open. */
+    const val HONEY_SOLVED_FLAG = "unova/FLAG_CASTELIA_GYM_SOLVED"
+
+    /** With [solved], every switch lit and every post down, whatever the temps say. */
+    fun honeyRestoreMasks(switches: List<Boolean>, solved: Boolean = false): Pair<Int, Int> {
+      if (solved) return 0xFF to 0x3FF
       val switchMask = switches.withIndex().filter { it.value }.fold(0) { m, (n, _) -> m or (1 shl n) }
       val posts = postsDown(switches)
       val postMask = posts.withIndex().filter { it.value }.fold(0) { m, (n, _) -> m or (1 shl n) }

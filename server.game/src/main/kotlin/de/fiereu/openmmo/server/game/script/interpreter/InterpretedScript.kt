@@ -171,7 +171,8 @@ class InterpretedScript(
         // switch vars). The client's kr4 wants [0x18F, switch mask, gate-post mask] instead.
         "ds_casteliagates" -> {
           val switches = instruction.args.map { value(ctx, it) != 0 }
-          val (switchMask, postMask) = de.fiereu.openmmo.server.game.services.NdsCurtainWalls.honeyRestoreMasks(switches)
+          val solved = ctx.isFlagSet(de.fiereu.openmmo.server.game.services.NdsCurtainWalls.HONEY_SOLVED_FLAG)
+          val (switchMask, postMask) = de.fiereu.openmmo.server.game.services.NdsCurtainWalls.honeyRestoreMasks(switches, solved)
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
                   action = 6,

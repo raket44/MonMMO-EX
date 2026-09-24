@@ -303,6 +303,12 @@ data class PlayerState(
      * check, so a wall on a door tile (the Castelia gym before Burgh's scene) really holds.
      */
     val ndsWalls: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
+    /** NdsLookahead's temp stops for this session: wall tile key ([ndsWallKey]) -> the npc index standing there. */
+    val lookaheadWalls: MutableMap<Long, Int> = ConcurrentHashMap(),
+    /** Stamp of the last lookahead refresh; the timed decay clears the stops when it goes stale. */
+    @field:Volatile var lookaheadStamp: Long = 0,
+    /** /devlookahead off: no stops for this session. */
+    @field:Volatile var lookaheadEnabled: Boolean = true,
     /** Script-made DS actors alive for this player on the current map (scriptedNpcKey); cleared with the poses. */
     val madeNdsNpcs: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /**

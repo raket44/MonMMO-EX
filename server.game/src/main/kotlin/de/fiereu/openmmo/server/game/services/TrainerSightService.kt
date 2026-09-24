@@ -173,6 +173,38 @@ constructor(
     return false
   }
 
+  /**
+   * Every tile the map's unbeaten trainers can see (their rays, up to the first blocked tile) -
+   * the stops NdsLookahead guards. Same trainers, facings and defeated flags as [onNdsStep].
+   */
+  fun ndsArmedSightTiles(charId: Long, regionId: Int, bankId: Int, mapId: Int): List<Pair<Int, Int>> {
+    val region = Region.byId(regionId) ?: return emptyList()
+    val namespace = region.name.lowercase()
+    val out = mutableListOf<Pair<Int, Int>>()
+    for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
+      if (npc.sight <= 0) continue
+      val directions =
+          when (npc.type) {
+            1 -> listOf(ndsFacing(npc.facing))
+            2 -> CARDINALS
+            else -> continue
+          }
+      val trainerId = ndsTrainerId(regionId, npc.script) ?: continue
+      if (storyService.isFlagSet(charId, "$namespace/FLAG_DS_TRAINER_$trainerId")) continue
+      for (dir in directions) {
+        var x = npc.x
+        var y = npc.y
+        for (d in 1..npc.sight) {
+          x += dir.dx
+          y += dir.dy
+          if (ndsLand.blocked(regionId, bankId, mapId, x, y) == true) break
+          out += x to y
+        }
+      }
+    }
+    return out
+  }
+
   private fun ndsTrainerId(regionId: Int, script: Int): Int? {
     val base = when (script) { in 3000..4999 -> 3000; in 5000..6999 -> 5000; else -> return null }
     // Platinum and Unova number from 0 at the base; HeartGold from 1.

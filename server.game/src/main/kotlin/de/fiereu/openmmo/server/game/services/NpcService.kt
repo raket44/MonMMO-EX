@@ -482,6 +482,23 @@ constructor(
   }
 
   /** Removes a cutscene NPC. */
+  /**
+   * A temp invisible stop (NdsLookahead): the gyms' wall sprite at (x, y) under npc index [id],
+   * this session only. Nothing is defined in the ROM tables - the packet is built directly, so
+   * two players' stops never share a record.
+   */
+  fun spawnDsWall(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, id: Int, x: Int, y: Int) {
+    val npc =
+        NdsNpcs.Npc(
+            index = id, id = id, sprite = NdsCurtainWalls.WALL_SPRITE, movement = 0, flag = 0, script = 0,
+            facing = 1, xRange = 0, yRange = 0, x = x, y = y)
+    sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
+  }
+
+  fun despawnDsWall(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, id: Int) {
+    ctx.send(EntityLeavePacket(entityIdFor(regionId, bankId, mapId, id)))
+  }
+
   fun despawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {
     val entityId = getNpcEntityId(regionId, bankId, mapId, localId) ?: return
     ctx.send(EntityLeavePacket(entityId))

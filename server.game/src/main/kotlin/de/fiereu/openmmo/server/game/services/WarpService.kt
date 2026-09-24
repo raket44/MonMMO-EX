@@ -328,6 +328,8 @@ constructor(
     // The line the warp picks are judged against from here on (see PlayerState.railLine), and
     // saved with the character so a relog on the rail re-attaches (RAIL_LINE_KEY).
     state?.railLine = railLine
+    // The lookahead's stops belonged to the map just left; the client drops every entity with it.
+    state?.lookaheadWalls?.clear()
     characterStore.setStoryVar(charId, de.fiereu.openmmo.server.game.storage.RAIL_LINE_KEY, railLine)
     // Gen 5's VAR 0x4000..0x400F are the map's temporaries: the cartridge forgets them on a map
     // CHANGE, the way it forgets the GBA's VAR_TEMP_*, and keeps them across a reload. Kept

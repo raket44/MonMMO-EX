@@ -130,6 +130,19 @@ constructor(
             x in it.x until it.x + it.width.coerceAtLeast(1) && y in it.y until it.y + it.height.coerceAtLeast(1)
       }
 
+  /**
+   * Every tile of the map's tile triggers whose var holds its value - the stops NdsLookahead
+   * guards. Rail triggers sit in a line's frame and are left out.
+   */
+  fun ndsArmedTriggerTiles(charId: Long, regionId: Int, bankId: Int, mapId: Int): List<Pair<Int, Int>> =
+      ndsCoordTriggers[Triple(regionId, bankId, mapId)].orEmpty()
+          .filter { it.line < 0 && storyService.getVar(charId, it.varKey) == it.value }
+          .flatMap { t ->
+            (0 until t.width.coerceAtLeast(1)).flatMap { dx ->
+              (0 until t.height.coerceAtLeast(1)).map { dy -> (t.x + dx) to (t.y + dy) }
+            }
+          }
+
   /** True when a DS tile has a step trigger at all, whatever its var currently says. */
   fun hasNdsCoordinate(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, railLine: Int = -1): Boolean =
       ndsTriggersAt(regionId, bankId, mapId, x, y, railLine).isNotEmpty()

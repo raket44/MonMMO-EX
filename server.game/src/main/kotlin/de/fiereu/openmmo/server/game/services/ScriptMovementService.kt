@@ -38,6 +38,7 @@ constructor(
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
     /** Lazily: MovementService depends on this service; the edge crossing lives there. */
     private val movementService: javax.inject.Provider<MovementService>? = null,
+    private val ndsLookahead: javax.inject.Provider<NdsLookahead>? = null,
     private val presence: PresenceService? = null,
 ) {
 
@@ -735,6 +736,8 @@ constructor(
     log.info { "HOLD scripted-state ON facing=${state.facingDirection}" }
     session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = true))
     state.scriptedFacingSet = false
+    // The script may walk the player anywhere; the lookahead's stops must not be in its way.
+    ndsLookahead?.get()?.clear(session, state, "script hold")
     // Outside the arrival window only - the emergence walk owns the queue inside it. Not on a DS
     // map: the client knows its own facing better than the server does there.
     if (System.currentTimeMillis() >= state.moveIgnoreUntil && state.regionId !in 2..4) {
@@ -746,6 +749,8 @@ constructor(
   fun releasePlayerHold(session: SessionContext, state: PlayerState) {
     log.info { "RELEASE scripted-state OFF at (${state.x}, ${state.y})" }
     session.send(de.fiereu.openmmo.net.game.packets.DialogStatePacket(active = false))
+    // Free again: whatever is armed ahead of where the script left the player gets its stop now.
+    if (state.regionId in 2..4) ndsLookahead?.get()?.update(session, state)
   }
 
   /**

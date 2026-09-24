@@ -122,6 +122,7 @@ constructor(
     private val trainerSight: TrainerSightService,
     private val scriptMovement: ScriptMovementService,
     private val scope: kotlinx.coroutines.CoroutineScope,
+    private val ndsLookahead: NdsLookahead? = null,
     private val scriptRegistry: ScriptRegistry? = null,
     private val scriptRunner: Provider<ScriptRunner>? = null,
     private val safariService: SafariService? = null,
@@ -298,12 +299,16 @@ constructor(
         state.x = msg.x.toShort()
         state.y = msg.y.toShort()
         state.facingDirection = msg.direction
+        ndsLookahead?.update(ctx, state)
         return
       }
       characterStore.updatePosition(charId, toX.toShort(), toY.toShort(), facing = msg.direction)
       state.x = toX.toShort()
       state.y = toY.toShort()
       state.facingDirection = msg.direction
+      // The player's own line of sight: a temp stop past the next armed trigger or trainer sight
+      // tile on the ray ahead, before the client can run through it (NdsLookahead).
+      ndsLookahead?.update(ctx, state)
       encounterService.onAnyStep(ctx, charId)
       // The observers' copy of the step. DS steps were never relayed, so on every DS map other
       // players stood frozen where they spawned (owner, 2026-09-23). A rail map needs the rail

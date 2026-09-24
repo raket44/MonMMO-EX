@@ -308,12 +308,23 @@ constructor(
     // owner's Acro Bike outlived the cleanup that way, 2026-09-22).
     val earnedHoennBike =
         stored.storyFlags.contains(de.fiereu.openmmo.story.generated.hoenn.HoennFlags.FLAG_RECEIVED_BIKE)
+    // Unova's Bicycle is Nimbasa's gift (UNOVA_BIKE_FLAG). Until 2026-09-24 the registry folded
+    // its id onto the client's 360, so the scene's gift landed on Kanto's page as a second 360 and
+    // the Unova item was reclaimed as a "duplicate": a character with the flag and no Unova
+    // Bicycle gets it back here, and the extra 360 goes.
+    val earnedUnovaBike = stored.storyFlags.contains(UNOVA_BIKE_FLAG)
+    if (earnedUnovaBike && (stored.items[UNOVA_BICYCLE_ITEM] ?: 0) <= 0) {
+      characterStore.addItem(charId, UNOVA_BICYCLE_ITEM, 1)
+      log.info { "Character $charId: Unova Bicycle restored from its receipt flag" }
+    }
+    stored.items[CLIENT_BICYCLE_ITEM]?.takeIf { it > 1 }?.let { characterStore.addItem(charId, CLIENT_BICYCLE_ITEM, 1 - it) }
     val earnedBike =
         stored.storyFlags.contains(de.fiereu.openmmo.story.generated.kanto.KantoFlags.FLAG_GOT_BICYCLE) ||
             earnedHoennBike ||
+            earnedUnovaBike ||
             stored.items.keys.any { it in DS_BICYCLE_ITEMS }
     val toReclaim =
-        listOf(DUPLICATE_BICYCLE_ITEM) +
+        (if (earnedUnovaBike) emptyList() else listOf(UNOVA_BICYCLE_ITEM)) +
             (if (earnedBike) emptyList() else listOf(CLIENT_BICYCLE_ITEM)) +
             (if (earnedHoennBike) emptyList() else HOENN_BIKE_ITEMS)
     var reclaimed = 0

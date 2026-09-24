@@ -17,10 +17,6 @@ class ItemRegistry @Inject constructor() {
     GeneratedItems.loadInto(this)
     loadImportedItems()
     registerGbaKeyItems()
-    // The client rides FRLG's Bicycle (360); the generated table lists the item only under the
-    // Gen 5-numbered 5450. Registering 360 on the same item makes it the id scripts hand out
-    // (idOf takes the lowest), so there is one Bicycle, not two.
-    register(de.fiereu.openmmo.items.generated.Items.BICYCLE, 360)
     registerClientTools()
     registerBerryFarming()
   }
@@ -96,10 +92,15 @@ class ItemRegistry @Inject constructor() {
       register(item, wireId)
       byGbaConstant[constant] = item
     }
-    // The DS games' Bicycle (item 433 in DPPt, HGSS and BW): Eterna's Rad Rickshaw, Goldenrod's
-    // bike shop and Unova's Route 3 day-care man hand it out; StoryPlayerService turns every
-    // regional bike into the client's Bicycle (360).
-    add(2, "BICYCLE_UNOVA", 433, "Bicycle")
+    // The client rides FRLG's Bicycle (360), Kanto's page: its own item, so Kanto's voucher
+    // exchange hands out 360 and nothing else.
+    add(0, "BICYCLE", 360, "Bicycle")
+    // The DS games' Bicycles: Eterna's Rad Rickshaw and Goldenrod's bike shop at item 433 of the
+    // Gen 4 index; Unova's is the catalogue's own Gen 5 entry (item 450, wire 5450 - Nimbasa's
+    // day-care man hands it out through the key-item routine), which the client names and files
+    // on Unova's page from the ROM pocket table. It used to be folded onto 360 (one Bicycle,
+    // "idOf takes the lowest"), so Unova's gift landed on Kanto's page and Unova never saw it
+    // (owner, 2026-09-24). StoryPlayerService brings the client's 360 along with any of them.
     add(3, "BICYCLE_SINNOH", 433, "Bicycle")
     add(4, "BICYCLE_JOHTO", 433, "Bicycle")
     // The GBA HMs (339-346) are folded onto the per-move items by registerClientTools, like

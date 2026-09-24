@@ -147,7 +147,9 @@ constructor(
         useLure(ctx, charId, stored, itemId)
         return
       }
-      if (itemId == BICYCLE_ITEM_ID) {
+      // The client's Bicycle rides on Kanto's page; each other region rides from its own bike
+      // item, the one on that region's page (Unova's 5450 since 2026-09-24).
+      if (itemId == BICYCLE_ITEM_ID || itemId in REGIONAL_BIKE_ITEMS) {
         rideBike(ctx, state, charId, stored, mountType = null)
       } else {
         ctx.reply(

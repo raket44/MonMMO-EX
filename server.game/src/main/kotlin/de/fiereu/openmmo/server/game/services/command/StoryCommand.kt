@@ -11,7 +11,6 @@ import de.fiereu.openmmo.server.game.services.StoryPlayerService
 import de.fiereu.openmmo.server.game.services.WarpService
 import de.fiereu.openmmo.server.game.services.WorldStateService
 import de.fiereu.openmmo.server.game.services.CLIENT_BICYCLE_ITEM
-import de.fiereu.openmmo.server.game.services.DUPLICATE_BICYCLE_ITEM
 import de.fiereu.openmmo.server.game.services.REGIONAL_BIKE_ITEMS
 import de.fiereu.openmmo.server.game.services.itemStackUpdatePacket
 import de.fiereu.openmmo.server.game.services.storyItemStacksPackets
@@ -35,7 +34,7 @@ constructor(
   override val name = "story"
   override val usage = "/story [checkpoint|reset|reset wipe]"
 
-  private val ALL_BIKE_ITEMS = REGIONAL_BIKE_ITEMS + CLIENT_BICYCLE_ITEM + DUPLICATE_BICYCLE_ITEM
+  private val ALL_BIKE_ITEMS = REGIONAL_BIKE_ITEMS + CLIENT_BICYCLE_ITEM
   override val description = "jumps to a story scene, or lists the scenes with no argument"
   override val permission = CharacterPermissions.DEVELOPER
 
@@ -95,8 +94,9 @@ constructor(
     // Kanto's Bicycle too (2026-09-19).
     val regionBikes: Set<Int> =
         when (region) {
-          Region.KANTO -> setOf(CLIENT_BICYCLE_ITEM, DUPLICATE_BICYCLE_ITEM)
+          Region.KANTO -> setOf(CLIENT_BICYCLE_ITEM)
           Region.HOENN -> de.fiereu.openmmo.server.game.services.HOENN_BIKE_ITEMS.toSet()
+          Region.UNOVA -> setOf(de.fiereu.openmmo.server.game.services.UNOVA_BICYCLE_ITEM)
           else -> setOf(region.wireValue.toInt() * 1000 + 433)
         }
     val keptItems = stored.items.filterKeys { it !in regionBikes }

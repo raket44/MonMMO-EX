@@ -66,7 +66,9 @@ internal object BagRegions {
   fun single(itemId: Int): Byte {
     if (itemId in CosmeticsRegistry.wardrobeStock) return HIDDEN_BAG_REGION
     if (CosmeticsRegistry.byItemId(itemId) != null) return EVERYWHERE
-    if (itemId in DS_BICYCLE_ITEMS) return (itemId / 1000).toByte()
+    // Sinnoh's and Johto's Bicycles are minted at region * 1000 + 433; Unova's is the catalogue's
+    // own Gen 5 entry and files by the pocket table below like every other Unova key item.
+    if (itemId in DS_BICYCLE_ITEMS && itemId < 5000) return (itemId / 1000).toByte()
     return when (itemId) {
       in 5000..5999 -> unova(itemId - 5000)
       in 6000..6999 -> unova(itemId - 6000)

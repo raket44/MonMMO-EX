@@ -348,8 +348,16 @@ internal const val ITEM_ENTITY_TAG = 0x5000L
 /** The client's Bicycle (FRLG ITEM_BICYCLE 360), the item its bike feature is tied to. */
 const val CLIENT_BICYCLE_ITEM = 360
 
-/** The Gen 5-numbered duplicate "Bicycle" the registry used to hand out; reclaimed on sight. */
-const val DUPLICATE_BICYCLE_ITEM = 5450
+/**
+ * Unova's Bicycle: the catalogue's Gen 5 entry (item 450), on Unova's bag page. Nimbasa's day-care
+ * man hands it out (White script file 124 entry 1, key-item routine 2805) and sets ROM flag 2485
+ * right after, which is the receipt. Before 2026-09-24 the registry folded this id onto the
+ * client's 360, so the gift went to Kanto's page and the login reclaim ate it as a duplicate.
+ */
+const val UNOVA_BICYCLE_ITEM = 5450
+
+/** The flag Nimbasa's bike scene sets once the Bicycle is handed over. */
+const val UNOVA_BIKE_FLAG = "unova/FLAG_2485"
 
 /**
  * Hoenn's Mach and Acro Bike at their Gen 3 ids - the ones the client names and Rydel hands out.
@@ -359,8 +367,8 @@ const val DUPLICATE_BICYCLE_ITEM = 5450
  */
 val HOENN_BIKE_ITEMS = listOf(259, 272)
 
-/** The DS games' Bicycle, region * 1000 + 433. */
-val DS_BICYCLE_ITEMS = setOf(2433, 3433, 4433)
+/** The DS games' Bicycles: Unova's catalogue entry, Sinnoh's and Johto's at region * 1000 + 433. */
+val DS_BICYCLE_ITEMS = setOf(UNOVA_BICYCLE_ITEM, 3433, 4433)
 
 /** Every regional bike item; any of them brings the client's Bicycle along. */
 val REGIONAL_BIKE_ITEMS = HOENN_BIKE_ITEMS.toSet() + DS_BICYCLE_ITEMS

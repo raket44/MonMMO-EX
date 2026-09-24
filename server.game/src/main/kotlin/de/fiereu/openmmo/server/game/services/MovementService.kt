@@ -1259,6 +1259,11 @@ constructor(
       val ny = cy + direction.dy
       if (ndsLand.blocked(region, bank, map, nx, ny) != false) break
       if (ndsBonk(state, stored, nx, ny, -1)) break
+      // The client refuses a step between different heights, and a server-driven walk does not
+      // ask it: the slide climbed onto Cold Storage's container tops (owner, 2026-09-24).
+      val here = ndsLand.heightAt(region, bank, map, cx, cy)
+      val there = ndsLand.heightAt(region, bank, map, nx, ny)
+      if (here != null && there != null && here != there) break
       steps += spinStep(direction)
       cx = nx
       cy = ny

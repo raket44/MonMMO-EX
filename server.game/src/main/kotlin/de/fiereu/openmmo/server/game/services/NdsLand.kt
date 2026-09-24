@@ -21,6 +21,8 @@ class NdsLand @Inject constructor() {
     val type = ByteArray(width * height)
     val coll = ByteArray(width * height) { BLOCKED.toByte() }
     val present = BooleanArray(width * height)
+    /** The tile record's height word (Gen 5 word 1); the client refuses a step between different heights. */
+    val elev = ShortArray(width * height)
 
     fun index(x: Int, y: Int): Int? {
       val lx = x - minX
@@ -53,6 +55,13 @@ class NdsLand @Inject constructor() {
       if (accept(key.second, key.third)) return key.second to key.third
     }
     return null
+  }
+
+  /** The tile's height word, or null where the map or tile is unknown (or the file predates the column). */
+  fun heightAt(region: Int, bank: Int, map: Int, x: Int, y: Int): Int? {
+    val tiles = maps[Triple(region, bank, map)] ?: return null
+    val i = tiles.index(x, y) ?: return null
+    return tiles.elev[i].toInt()
   }
 
   fun blocked(region: Int, bank: Int, map: Int, x: Int, y: Int): Boolean? {
@@ -112,6 +121,8 @@ class NdsLand @Inject constructor() {
           val i = (p[4].toInt() - tiles.minY) * tiles.width + (p[3].toInt() - tiles.minX)
           tiles.type[i] = p[5].toInt().toByte()
           tiles.coll[i] = p[6].toInt().toByte()
+          // Column 8, the height word (White since 2026-09-24; the Gen 4 files have none yet).
+          tiles.elev[i] = (p.getOrNull(7)?.toIntOrNull() ?: 0).toShort()
           tiles.present[i] = true
         }
       }

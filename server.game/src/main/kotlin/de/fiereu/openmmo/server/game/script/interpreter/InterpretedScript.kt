@@ -2030,8 +2030,10 @@ class InterpretedScript(
     val cursor = value(ctx, instruction.arg(1))
     val items = (2 until instruction.args.size step 2).map { value(ctx, instruction.arg(it)) to value(ctx, instruction.arg(it + 1)) }
     val region = items.first().first ushr 28
-    val bank = (items.first().first shr 16) and 0xFFF
-    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0xFFF) != bank }) {
+    // Bits 16-26 are the bank; bit 27 is the archive (/a/0/0/3). Masked with 0xFFF the archive bit
+    // rode along and the client was asked for bank 2309, not 261: every floor read "--" (owner, 2026-09-24).
+    val bank = (items.first().first shr 16) and 0x7FF
+    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0x7FF) != bank }) {
       log.warn { "Script ${program.id.stable}: menu entries span text banks, answering 127 - `${instruction.sourceLine}`" }
       ctx.setVar(target, MULTI_B_PRESSED)
       return
@@ -2059,8 +2061,10 @@ class InterpretedScript(
       return
     }
     val region = items.first().first ushr 28
-    val bank = (items.first().first shr 16) and 0xFFF
-    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0xFFF) != bank }) {
+    // Bits 16-26 are the bank; bit 27 is the archive (/a/0/0/3). Masked with 0xFFF the archive bit
+    // rode along and the client was asked for bank 2309, not 261: every floor read "--" (owner, 2026-09-24).
+    val bank = (items.first().first shr 16) and 0x7FF
+    if (items.any { (it.first ushr 28) != region || ((it.first shr 16) and 0x7FF) != bank }) {
       log.warn { "Script ${program.id.stable}: elevator entries span text banks, answering cancel - `${instruction.sourceLine}`" }
       ctx.setVar(target, own.lastOrNull()?.second ?: MULTI_B_PRESSED)
       return

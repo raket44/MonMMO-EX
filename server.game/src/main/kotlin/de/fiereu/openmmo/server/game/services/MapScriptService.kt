@@ -18,10 +18,7 @@ import javax.inject.Singleton
  */
 private val log = KotlinLogging.logger {}
 
-private const val UNOVA = 2
 
-/** VAR 0x4000..0x400F, spelled the way Unova scripts write them: one hex digit follows this. */
-private const val UNOVA_TEMP_VAR_PREFIX = "unova/VAR_0x400"
 
 @Singleton
 class MapScriptService
@@ -150,18 +147,6 @@ constructor(
       spawnNpcs: (() -> Unit)? = null,
       afterLoad: (() -> Unit)? = null,
   ) {
-    // Gen 5's VAR 0x4000..0x400F are the map's temporaries: the cartridge forgets them on every
-    // map load, the way it forgets the GBA's VAR_TEMP_*. Kept, two of them stood at 1 from other
-    // maps' scripts, and the Castelia Gym read them as switches already pressed, its last gate
-    // open before the player got there (owner, 2026-09-24). Cleared before the load script runs,
-    // so a map's own restore (the gym's 0x18F) sees them fresh.
-    if (regionId == UNOVA) {
-      state.characterId?.let { charId ->
-        characterStore.getCharacter(charId)?.storyVars?.keys
-            ?.filter { it.startsWith(UNOVA_TEMP_VAR_PREFIX) && it.length == UNOVA_TEMP_VAR_PREFIX.length + 1 }
-            ?.forEach { characterStore.setStoryVar(charId, it, 0) }
-      }
-    }
     val spawned = java.util.concurrent.atomic.AtomicBoolean(false)
     // The cartridge runs the map-load script under the black screen and fades in afterwards. The
     // load script is what poses the gym models (the Striaton curtain mask, Nacrene's CMD_182), so

@@ -30,6 +30,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private val log = KotlinLogging.logger {}
 
+private const val UNOVA_REGION = 2
+
+/** VAR 0x4000..0x400F, spelled the way Unova scripts write them: one hex digit follows this. */
+private const val UNOVA_TEMP_VAR_PREFIX = "unova/VAR_0x400"
+
 /** How long after the transition the re-shown sprite waits for the client to have the new map up. */
 private const val SHOW_AFTER_ARRIVAL_MS = 1500L
 
@@ -324,6 +329,16 @@ constructor(
     // saved with the character so a relog on the rail re-attaches (RAIL_LINE_KEY).
     state?.railLine = railLine
     characterStore.setStoryVar(charId, de.fiereu.openmmo.server.game.storage.RAIL_LINE_KEY, railLine)
+    // Gen 5's VAR 0x4000..0x400F are the map's temporaries: the cartridge forgets them on a map
+    // CHANGE, the way it forgets the GBA's VAR_TEMP_*, and keeps them across a reload. Kept
+    // forever, leftovers from other maps' scripts lit the Castelia Gym's switches before the
+    // player reached them; cleared on every arrival, a relog inside the gym shut the gates behind
+    // the player (owner, 2026-09-24). So they go on the warp, before the new map's load script.
+    if (regionId == UNOVA_REGION) {
+      stored.storyVars.keys
+          .filter { it.startsWith(UNOVA_TEMP_VAR_PREFIX) && it.length == UNOVA_TEMP_VAR_PREFIX.length + 1 }
+          .forEach { characterStore.setStoryVar(charId, it, 0) }
+    }
     presenceService.leave(ctx)
     characterStore.updateCharacter(
         stored.info.copy(

@@ -185,6 +185,11 @@ class InterpretedScript(
           tracedWait(ctx, "xtransceiver call") { ctx.xtransceiverCall(value(ctx, instruction.arg(0))) }
           state.pc++
         }
+        // ds_ferriswheel: the Nimbasa ride, played by the client from the ROM (ScriptContext).
+        "ds_ferriswheel" -> {
+          tracedWait(ctx, "ferris wheel ride") { ctx.ferrisWheelRide() }
+          state.pc++
+        }
         // ds_makenpc id, sprite, x, y, facing: the script's own actor (Gen 5 MakeNPC).
         "ds_makenpc" -> {
           ctx.makeNdsNpc(

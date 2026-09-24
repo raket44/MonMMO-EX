@@ -308,6 +308,7 @@ class ScriptSupportAnalyzer(
           "ds_doubletrainerbattle" -> args.size == 3
           "ds_makenpc" -> args.size == 5
           "ds_xtransceiver" -> args.size == 1
+          "ds_ferriswheel" -> args.isEmpty()
           // opcode plus that opcode's own arguments
           "ds_mapgimmick" -> args.isNotEmpty()
           "ds_casteliagates" -> args.size == 8
@@ -681,6 +682,7 @@ class ScriptSupportAnalyzer(
             "ds_doubletrainerbattle",
             "ds_makenpc",
             "ds_xtransceiver",
+            "ds_ferriswheel",
             "ds_mapgimmick",
             "ds_casteliagates",
             "ds_playsound",

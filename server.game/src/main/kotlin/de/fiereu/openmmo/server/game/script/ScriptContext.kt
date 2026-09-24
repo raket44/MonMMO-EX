@@ -929,6 +929,22 @@ internal constructor(
   }
 
   /**
+   * The Nimbasa Ferris wheel ride, the ROM's own app (script 0x154) which the client plays from
+   * the ROM: 0xB6 action 9 (r32645 f/hw1 :pswitch_12d) starts a client scene by id - scene 30 is
+   * f/y01, the wheel with its gondolas and the local player, ids 0/1/5/7/8 are nothing, any
+   * other id the generic f/kk7 backdrop. When the ride ends the scene's runnable (f/bq6 ->
+   * f/eb5.kB(subject, 3)) sends the dialog action response (f/is2: subject, code), which is the
+   * same acknowledgement the Xtransceiver call waits for.
+   */
+  suspend fun ferrisWheelRide() {
+    val done = dialog.expectAcknowledgement(session)
+    sendScenePacket(
+        de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+            SCENE_ACTION, FERRIS_WHEEL_SCENE.toByte(), listOf(FERRIS_WHEEL_SCENE.toShort())))
+    done.await()
+  }
+
+  /**
    * special EnterHallOfFame: the client's own Hall of Fame screen (see [HallOfFame]) - record the
    * entry, unlock the encounter counter, show the screen, wait for the player to close it, then
    * wake them up in the bedroom the game started in. The ROM's hall-of-fame and credits never run.
@@ -1461,6 +1477,10 @@ internal constructor(
 
     /** 0xB6 world action that opens the client's Xtransceiver call window. */
     const val XTRANSCEIVER_ACTION: Byte = 3
+    /** 0xB6 action 9: start a client-side scene by id (f/hw1 :pswitch_12d). */
+    const val SCENE_ACTION: Byte = 9
+    /** Scene 30 = the Ferris wheel ride (f/y01). */
+    const val FERRIS_WHEEL_SCENE = 30
     // Sign boxes have no speaker, npc boxes point at the entity.
     const val SIGN = 3
     const val NPC = 4

@@ -684,6 +684,7 @@ class NdsScriptCorpusGenerator {
         "ScreenFade" -> out += "fadescreen ${a[0]}"
         // White OpenInterpoke: the client's own Xtransceiver call window, by call id.
         "DsXtransceiver" -> out += "ds_xtransceiver ${a[0]}"
+        "DsFerrisWheel" -> out += "ds_ferriswheel"
         // White MakeNPC: id, sprite, x, y, DS facing - an actor the script creates.
         "DsMakeNpc" -> out += "ds_makenpc ${a[0]}, ${a[1]}, ${a[2]}, ${a[3]}, ${a[4]}"
         // White Message's speaker object for the next line ("none" = the script's own entity).
@@ -2152,6 +2153,10 @@ class NdsScriptCorpusGenerator {
             // CMD_153 var runs the starter-select app and leaves the pick 0/1/2 in the var.
             "ResetScreen" -> {}
             "CMD_153" -> { starterVar = v(0); b.lines += listOf("ScreenFade", "1") }
+            // The Ferris wheel app (Nimbasa, file 128: CallStart / 0x154 / ReturnAfterDelay / CallEnd).
+            // The client plays the ride itself from the ROM (world action 9, scene 30) - "I've
+            // ridden that Ferris wheel on retail" (owner, 2026-09-24).
+            "CMD_154" -> b.lines += listOf("DsFerrisWheel")
             "CMD_1AF" -> starterVar?.let { b.lines += listOf("ScreenFade", "0"); b.lines += listOf("ChooseUnovaStarter", it); starterVar = null }
             // type, from, to, speed: 0 -> 16 darkens, 16 -> 0 restores. Dropped, every reposition
             // the games hide behind a fade was a visible jump (Nuvema's gift box, 2026-09-19).

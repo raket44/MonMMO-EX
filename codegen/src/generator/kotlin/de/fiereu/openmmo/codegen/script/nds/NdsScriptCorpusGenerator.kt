@@ -2025,12 +2025,12 @@ class NdsScriptCorpusGenerator {
             // 2026-09-24: "stepping on the switch worked but it didn't change the track").
             "CMD_17F" -> {
               b.lines += listOf("SetVar", NIMBASA_SWITCH_MASK, "0")
-              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, "1", tv(0))
-              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, "2", tv(1))
+              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, nimbasaTrack(1).toString(), tv(0))
+              b.lines += listOf("DsMaskBit", NIMBASA_SWITCH_MASK, nimbasaTrack(2).toString(), tv(1))
               b.lines += listOf("DsGimmickMask", "608", NIMBASA_SWITCH_MASK)
             }
-            "CMD_180" -> b.lines += listOf("DsGimmickBit", "384", tv(0), NIMBASA_SWITCH_MASK, "0")
-            "CMD_181" -> b.lines += listOf("DsGimmickBit", "384", tv(0), NIMBASA_SWITCH_MASK, "1")
+            "CMD_180" -> b.lines += listOf("DsGimmickBit", "384", nimbasaTrack(t(0).toInt()).toString(), NIMBASA_SWITCH_MASK, "0")
+            "CMD_181" -> b.lines += listOf("DsGimmickBit", "384", nimbasaTrack(t(0).toInt()).toString(), NIMBASA_SWITCH_MASK, "1")
             "CMD_18C" -> b.lines += listOf("DsMapGimmick", "396", tv(0))
             "CMD_18D" -> b.lines += listOf("DsMapGimmick", "397", tv(0))
             "CMD_18F" -> b.lines += listOf("DsCasteliaGates") + a.indices.map { tv(it) }
@@ -2354,6 +2354,15 @@ class NdsScriptCorpusGenerator {
     const val HEARTGOLD_STD_MENU_BANK = 191
     /** Nimbasa Gym's switch mask: a map-local temp var (the band the coord triggers use is 0x400B..0x400E). */
     const val NIMBASA_SWITCH_MASK = "VAR_0x400A"
+
+    /**
+     * ROM switch n -> client track index. The client (r32645 f/wk7, the header 63 branch) places its
+     * four track pieces at (6.4,2.4) (7.4,8.4) (3.4,4.1) (11.6,10.4) in 4-tile units, which are the
+     * four switch tiles (25,9) (29,33) (13,16) (46,41) - the ROM's switches 3, 0, 1, 2 in that
+     * order. The owner found the first: the entrance switch (ROM 0) moves the client's rail 1
+     * (2026-09-24).
+     */
+    fun nimbasaTrack(romSwitch: Int): Int = (romSwitch + 1) % 4
     /** White script files from 854 up are the engine's shared routines (ranges table), not map files. */
     const val FIRST_SHARED_FILE = 854
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */

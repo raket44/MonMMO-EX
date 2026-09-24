@@ -316,6 +316,7 @@ constructor(
     // Arrivals land on the partner warp's own tile; hold NDS warps until the player has stood on
     // a warp-free tile once, or wide boxes bounce the player straight back.
     state?.ndsWarpGuard = true
+    state?.dropStaleMovesAfterWarp = true
     // Consumed by the next LoadEntity: rail maps need the player attached to a rail line or the
     // client shows a blue void.
     state?.pendingRailLine = railLine

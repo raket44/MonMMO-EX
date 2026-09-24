@@ -115,6 +115,14 @@ data class PlayerState(
      */
     @field:Volatile var railLine: Int = -1,
     /**
+     * Set by a warp, cleared by the first move next to the landing: a move the client sent for
+     * the OLD map can land after the arrival (its report of stepping onto the door tile), and
+     * read on the new map it put the player on tiles that do not exist and lost the rail line -
+     * the phantom Skyarrow warp came back that way (owner, 2026-09-24). A first move that is
+     * not adjacent to where the player landed is that stale report and is dropped.
+     */
+    @field:Volatile var dropStaleMovesAfterWarp: Boolean = false,
+    /**
      * Developer probe: transportation byte for the player's own LoadEntity (0 = the normal walk
      * state). Set by /probe transport; applied on every arrival until changed, because the client
      * ignores a re-sent LoadEntity for an entity it already has - only a fresh spawn shows it.

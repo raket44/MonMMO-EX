@@ -94,9 +94,12 @@ class NdsWarps @Inject constructor() {
    */
   private fun pick(rows: List<Destination>?, railLine: Int): Destination? {
     if (rows.isNullOrEmpty()) return null
+    // A rail row fires only on its own line. With the line unknown it used to take any row,
+    // which was the phantom Skyarrow warp each time the tracking was confused (last by a stale
+    // pre-warp move, 2026-09-24); now the line is tracked through every segment and saved with
+    // the character, an unknown line means "no rail warp", never "any rail warp".
     return rows.firstOrNull { it.srcLine >= 0 && it.srcLine == railLine }
         ?: rows.firstOrNull { it.srcLine < 0 }
-        ?: if (railLine < 0) rows.first() else null
   }
 
   /**

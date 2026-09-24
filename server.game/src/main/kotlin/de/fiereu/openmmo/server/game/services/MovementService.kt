@@ -218,6 +218,16 @@ constructor(
       // the client asking for its player, moves still describe the OLD map - processing them
       // against the new map's warp table was the phantom "new warp info" during desync.
       if (state.justWarped) return
+      // The client's report of stepping onto the door tile it just left through can arrive
+      // after the arrival on the new map; read here it is a position on a map it never stood
+      // on (PlayerState.dropStaleMovesAfterWarp).
+      if (state.dropStaleMovesAfterWarp) {
+        if (kotlin.math.abs(msg.x - state.x) > 1 || kotlin.math.abs(msg.y - state.y) > 1) {
+          log.info { "NDS move dropped: char=$charId (${msg.x}, ${msg.y}) is not beside the landing (${state.x}, ${state.y}) - stale report from the map before the warp" }
+          return
+        }
+        state.dropStaleMovesAfterWarp = false
+      }
       // On a rail the client reports line-local coordinates and never the line. The line is
       // known from the arrival; when the client changes lines its coordinates jump (a step
       // moves them by one), and the ROM's rail graph says which line it stepped onto: the one
@@ -406,7 +416,7 @@ constructor(
         // edges). A lone door mat with no warp neighbours keeps the vanilla on-the-mat arrival.
         var ax = door.x
         var ay = door.y
-        val landing = ndsWarps.warpAt(state.regionId, door.bank, door.map, door.x, door.y)
+        val landing = ndsWarps.warpAt(state.regionId, door.bank, door.map, door.x, door.y, door.destLine)
         // A RETURN through the door just entered mirrors the entry: walked in leftward, walk out
         // facing (and stepping) rightward - Castelia's sideways alley doors. Other arrivals face
         // into the destination, opposite the landing door's exit direction.

@@ -8645,7 +8645,71 @@ mv;78;544;13,1 34,1
 82;4;234;StoreValueInVar 32802 0
 82;4;240;StoreValueInVar 32803 0
 82;4;246;StoreHeroOrientation 32802
-82;4;250;DecodeStopped
+82;4;250;CMD_246 32803
+82;4;254;PlaySound 1351
+82;4;258;FacePlayer
+82;4;260;StoreFlag 361
+82;4;264;SetStackVar 0
+82;4;268;Condition 1
+82;4;272;SetStackDerefVar 16385
+82;4;276;SetStackVar 1
+82;4;280;Condition 1
+82;4;284;Condition 7
+82;4;288;When 255 @392
+82;4;295;Message2 0 4 7 0 0
+82;4;305;CloseMessageKP2
+82;4;307;Compare 32802 0
+82;4;313;When 1 @339
+82;4;320;Compare 32802 3
+82;4;326;When 1 @339
+82;4;333;Jump @353
+82;4;392;Message 0 4 8 10 2 0
+82;4;404;YesNoBox 32784
+82;4;408;SetStackDerefVar 32784
+82;4;412;SetStackVar 0
+82;4;416;Condition 1
+82;4;420;SetStackDerefVar 32803
+82;4;424;SetStackVar 1
+82;4;428;Condition 1
+82;4;432;Condition 7
+82;4;436;When 255 @465
+82;4;443;Message 0 4 9 10 2 0
+82;4;455;WaitButton
+82;4;457;CloseMessageKP2
+82;4;459;Jump @548
+82;4;339;ApplyMovement 10 @560
+mv;82;560;15,2 34,1 63,1 
+82;4;347;Jump @386
+82;4;353;Compare 32802 2
+82;4;359;When 1 @372
+82;4;366;Jump @386
+82;4;465;SetStackDerefVar 32784
+82;4;469;SetStackVar 0
+82;4;473;Condition 1
+82;4;477;SetStackDerefVar 32803
+82;4;481;SetStackVar 0
+82;4;485;Condition 1
+82;4;489;Condition 7
+82;4;493;When 255 @522
+82;4;500;Message 0 4 10 10 2 0
+82;4;512;WaitButton
+82;4;514;CloseMessageKP2
+82;4;516;Jump @548
+82;4;548;SetFlag 361
+82;4;552;WaitMoment
+82;4;554;ReleaseAll
+82;4;556;End
+82;4;386;ReturnAfterDelay 8
+82;4;390;WaitMovement
+82;4;372;ApplyMovement 10 @576
+mv;82;576;14,2 35,1 63,1 
+82;4;380;Jump @386
+82;4;522;ApplyMovement 10 @592
+mv;82;592;32,1 
+82;4;530;WaitMovement
+82;4;532;Message 0 4 11 10 2 0
+82;4;544;WaitButton
+82;4;546;CloseMessageKP2
 82;5;26;StoreValueInVar 32800 0
 82;5;32;StoreValueInVar 32801 0
 82;5;38;StoreHeroPosition 32800 32801

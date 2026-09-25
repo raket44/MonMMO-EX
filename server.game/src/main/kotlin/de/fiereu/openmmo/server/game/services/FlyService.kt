@@ -69,9 +69,14 @@ constructor(
     // renders those maps itself, so the raw-warp path applies (WarpService.executeRawWarp).
     if (state.regionId >= 2) {
       val (bank, mapId) = dest.mapName.split(':').map { it.toInt() }
+      // A DS town lands the player in front of its Pokemon Center: the tile south of the door mat
+      // (every center faces down; the mat is the warp row into a matrix-13 interior). A rail town
+      // (Castelia) keeps the spawn tile - a plain landing beside a rail box freezes the player.
+      // Owner, 2026-09-25: "set to spawn you in front of pokecenter".
+      val pokecenter = ndsWarps.pokecenterEntry(state.regionId, bank, mapId)?.takeIf { it.third < 0 }?.let { it.first to it.second + 1 }
       val landing =
           if (dest.x >= 0) dest.x to dest.y
-          else ndsWarps.spawnOf(state.regionId, bank, mapId)
+          else pokecenter ?: ndsWarps.spawnOf(state.regionId, bank, mapId)
               ?: run {
                 log.warn { "[fly] no landing for ${state.regionId}:$bank:$mapId (${dest.healLocation})" }
                 session.send(notice("That place has no landing spot yet."))

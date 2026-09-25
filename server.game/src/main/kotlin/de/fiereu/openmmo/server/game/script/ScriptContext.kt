@@ -63,7 +63,13 @@ internal constructor(
     private val tutor: de.fiereu.openmmo.server.game.services.MoveTutorService? = null,
     private val safari: de.fiereu.openmmo.server.game.services.SafariService? = null,
     private val mapScripts: de.fiereu.openmmo.server.game.services.MapScriptService? = null,
+    private val presence: de.fiereu.openmmo.server.game.services.PresenceService? = null,
 ) {
+  /** Observers get a fresh copy of the player: after a lift ride, with the new floor. */
+  fun refreshPresenceEntity() {
+    presence?.refreshEntity(session)
+  }
+
   private val characterId: Long?
     get() = state.characterId
 

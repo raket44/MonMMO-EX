@@ -134,8 +134,23 @@ constructor(
         // its line; without it observers got a tile placement and never saw the player at all
         // (Castelia, owner, 2026-09-23).
         railLine = if (state.railLine >= 0) state.railLine else -1,
+        // The floor of a DS walkway map for OTHER players' clients: the same tile-layer byte the
+        // gym's npcs ride on. Without it a player on a lift was drawn on the bottom floor by
+        // everyone else (owner, 2026-09-25). The player's own placement never reads this.
+        z = if (state.regionId in 2..4 && state.ndsHeightMap == de.fiereu.openmmo.server.game.session.mapCacheKey(state.regionId, state.bankId, state.mapId)) dsFloorLayer(state.ndsHeight / 16) else 0,
         transportation = state.mountByte(),
         followerId = state.followerMonId)
+  }
+
+  /** Re-sends this player to everyone watching the map: a leave, then a fresh load (floor changes). */
+  fun refreshEntity(ctx: SessionContext) {
+    val key = currentMapKey(ctx) ?: return
+    val entityId = entityIdOf(ctx) ?: return
+    val self = loadEntityFor(ctx) ?: return
+    for (other in observers(ctx, key)) {
+      other.send(EntityLeavePacket(entityId))
+      other.send(self)
+    }
   }
 
   /**

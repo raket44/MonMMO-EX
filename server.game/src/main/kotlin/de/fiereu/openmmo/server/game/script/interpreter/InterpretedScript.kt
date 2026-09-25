@@ -197,6 +197,7 @@ class InterpretedScript(
               ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_LIFT_X_VAR), ctx.state.x.toInt())
               ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_LIFT_Y_VAR), ctx.state.y.toInt())
             }
+            ctx.refreshPresenceEntity()
           }
           state.pc++
         }

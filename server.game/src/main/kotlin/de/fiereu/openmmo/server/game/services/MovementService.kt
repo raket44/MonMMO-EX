@@ -51,8 +51,6 @@ private const val RECENT_TILES = 8
 // A spin-tile slide never runs longer than this; the hideout mazes are far shorter.
 private const val MAX_SPIN_STEPS = 64
 
-/** The spin tiles' facing cycle, one turn before each glide (see startSpin). */
-private val SPIN_FACES = listOf(MovementStep.FACE_DOWN, MovementStep.FACE_LEFT, MovementStep.FACE_UP, MovementStep.FACE_RIGHT)
 
 /** Seafoam tileset metatiles Icefall Cave's ice turns into (include/constants/metatile_labels.h). */
 private const val CRACKED_ICE_METATILE = 0x35A
@@ -1131,11 +1129,9 @@ constructor(
       val nx = cx + direction.dx
       val ny = cy + direction.dy
       if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
-      // The client's table has no spin rows (the GBA's 0xB2-0xB5 are absent from f/c67).
-      // One clockwise turn per tile, then that tile's glide - nothing between tiles, so the
-      // slide stays smooth; the last glide is followed by a turn to the travel direction (owner,
-      // 2026-09-24).
-      steps += SPIN_FACES[tiles % SPIN_FACES.size]
+      // The client has no action that turns a moving sprite (no spin rows; LOCK_DIR holds one
+      // facing), and a turn between two glides makes it wait for the sprite to settle - so the
+      // spin tiles are a plain glide facing the travel direction, like the ice (owner, 2026-09-24).
       steps += slideStep(direction)
       tiles++
       cx = nx
@@ -1145,7 +1141,6 @@ constructor(
       behavior.spinDirection?.let { direction = it }
     }
     if (steps.isEmpty()) return false
-    steps += faceStep(direction)
     log.info { "[Spin] char=$charId from ($x, $y) $tiles tiles to ($cx, $cy)" }
     state.spinning = true
     scope.launch {

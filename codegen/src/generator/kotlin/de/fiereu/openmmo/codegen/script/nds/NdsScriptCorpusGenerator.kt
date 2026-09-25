@@ -1131,8 +1131,12 @@ class NdsScriptCorpusGenerator {
         in DROPPED -> {}
         "WaitForAnimation" -> {}
         else -> {
-          // Unnamed engine commands: the ones that answer into a var get a zero, the rest vanish.
-          if (name.startsWith("ScrCmd_")) a.lastOrNull { it.startsWith("VAR_") }?.let { out += "setvar $it, 0" }
+          // Unnamed engine commands: the ones that answer into a TEMP var (0x8000+) get a zero, the
+          // rest vanish. A STORY var among the arguments is an input, never an answer: opcode 0x1EB
+          // in Chargestone's entrance load script names the Clay progress var (VAR_0x409A) and the
+          // old rule zeroed it on every arrival, so the web never yielded Clay's scene (owner,
+          // 2026-09-25). It also zeroed 0x4021, 0x40D8, 0x413B and Nimbasa's 0x400A the same way.
+          if (name.startsWith("ScrCmd_")) a.lastOrNull { it.startsWith("VAR_0x8") }?.let { out += "setvar $it, 0" }
           else out += "ds_${name.lowercase()}" + if (a.isEmpty()) "" else " " + a.joinToString(", ")
         }
       }

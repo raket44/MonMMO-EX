@@ -144,7 +144,7 @@ constructor(
     val ignoreBlocked = ndsLand.mostlyBlocked(regionId, bankId, mapId)
     val playerHeight = playerHeightOn(state, regionId, bankId, mapId)
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
-      if (npc.sight <= 0) continue
+      if (npc.sight <= 0 || ndsWanders(npc)) continue
       if (ignoreBlocked && !sameFloor(npc, playerHeight)) {
         if (npc.type in 1..2 && kotlin.math.abs(npc.x - playerX) + kotlin.math.abs(npc.y - playerY) <= npc.sight)
             log.info { "Trainer sight (DS): npc ${npc.index} at (${npc.x},${npc.y}) height ${npc.z} skipped: player height ${playerHeight?.let { it / 16 }} at ($playerX,$playerY)" }
@@ -190,7 +190,7 @@ constructor(
     val out = mutableListOf<Pair<Int, Int>>()
     val ignoreBlocked = ndsLand.mostlyBlocked(regionId, bankId, mapId)
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
-      if (npc.sight <= 0) continue
+      if (npc.sight <= 0 || ndsWanders(npc)) continue
       if (ignoreBlocked && !sameFloor(npc, playerHeight)) continue
       val directions =
           when (npc.type) {
@@ -230,6 +230,17 @@ constructor(
       if (!ignoreBlocked && ndsLand.blocked(regionId, bankId, mapId, x, y) == true) return null
     }
     return null
+  }
+
+  /**
+   * A trainer the client walks around (the movement types the spawn packet hands a range to,
+   * NpcService.ndsSpawnPacket): the server has no idea where it is, so its sight from the ROM
+   * spawn tile caught the player after it had wandered off (Youngster Albert, owner, 2026-09-25).
+   * Like the GBA WANDER types, it battles only when spoken to.
+   */
+  private fun ndsWanders(npc: NdsNpcs.Npc): Boolean {
+    val movement = npc.movement and 0xFF
+    return movement in 1..6 || movement in 25..52
   }
 
   /** The player's height on this map in the ROM's bg z units (height x 16), when a lift landing or ride set it. */

@@ -72,5 +72,10 @@ internal object DaycareScripts {
     put("Route117_PokemonDayCare_EventScript_DaycareWoman", hoennWoman)
     put("NDS_CHUNK_9500", kantoMan)
     put("NDS_CHUNK_9501", dsDaycareWoman())
+    // Unova's Route 3 pair (White file 856, text bank 426): 2200 the man outside, 2201 the lady
+    // inside - her "Would you like us to raise your Pokemon?" (entry 12) and "Very good. Come
+    // again." (entry 14). The man had nothing bound and said nothing (owner, 2026-09-24).
+    put("NDS_CHUNK_2200", kantoMan)
+    put("NDS_CHUNK_2201", daycareWoman(ask = 698941452, decline = 698941454))
   }
 }

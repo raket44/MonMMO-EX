@@ -49,12 +49,25 @@ constructor(
     val py = state.y.toInt()
     val triggers = mapEntryScripts.ndsArmedTriggerTiles(charId, region, bank, map).toHashSet()
     val sight = trainerSight.ndsArmedSightTiles(charId, region, bank, map, trainerSight.playerHeightOn(state, region, bank, map)).toHashSet()
-    val stop = stopAhead(px, py, state.facingDirection, triggers, sight) { x, y -> ndsLand.blocked(region, bank, map, x, y) == false }
+    // A walkway map (Driftveil Gym) flags nearly every tile blocked; there a tile the map has
+    // is walkable, or the ray died on its first tile and no wall ever stood (owner, 2026-09-25).
+    val walkable: (Int, Int) -> Boolean =
+        if (ndsLand.mostlyBlocked(region, bank, map)) { x, y -> ndsLand.heightAt(region, bank, map, x, y) != null }
+        else { x, y -> ndsLand.blocked(region, bank, map, x, y) == false }
+    // The facing ray, plus a short look the other three ways: coming round a corner the stop is
+    // beside the player, one turn away, and on a bike the turn and the step past it are announced
+    // together (owner, 2026-09-25: "coming around corners has a block waiting for you").
+    val facing = state.facingDirection
+    val stops =
+        (listOfNotNull(stopAhead(px, py, facing, triggers, sight, walkable)) +
+                Direction.entries.filter { it != facing && (it.dx != 0 || it.dy != 0) }.mapNotNull { stopAhead(px, py, it, triggers, sight, walkable, SIDE_RANGE) })
+            .distinctBy { it.wallX to it.wallY }
+            .take(MAX_WALLS)
     // Standing on a stop: the wall past it stays until the script's hold clears it. Dropped here
     // it left with the same packet that started the hold, and a step the client had already
     // sent could pass - the very race the wall exists for (VPS log 11:29:29, 2026-09-24).
     val onStop = (px to py) in triggers || (px to py) in sight
-    apply(session, state, region, bank, map, stop, keepStanding = onStop)
+    apply(session, state, region, bank, map, stops, keepStanding = onStop)
   }
 
   /** Everything down, e.g. a script took hold of the player. */
@@ -67,21 +80,22 @@ constructor(
     log.info { "[Lookahead] char=${state.characterId} walls down: $reason" }
   }
 
-  private fun apply(session: SessionContext, state: PlayerState, region: Int, bank: Int, map: Int, stop: Stop?, keepStanding: Boolean = false) {
-    val wantedKey = stop?.let { ndsWallKey(bank, map, it.wallX, it.wallY) }
+  private fun apply(session: SessionContext, state: PlayerState, region: Int, bank: Int, map: Int, stops: List<Stop>, keepStanding: Boolean = false) {
+    val wanted = stops.associateBy { ndsWallKey(bank, map, it.wallX, it.wallY) }
     for ((key, id) in state.lookaheadWalls.entries.toList()) {
-      if (key == wantedKey || keepStanding) continue
+      if (key in wanted || keepStanding) continue
       npcService.despawnDsWall(session, region, bank, map, id)
       state.lookaheadWalls.remove(key)
       log.info { "[Lookahead] char=${state.characterId} wall $id down: the ray moved on" }
     }
-    if (stop == null && !keepStanding) return
-    if (stop != null && wantedKey !in state.lookaheadWalls) {
-      val id = (FIRST_ID until FIRST_ID + MAX_WALLS).firstOrNull { it !in state.lookaheadWalls.values } ?: return
-      state.lookaheadWalls[wantedKey!!] = id
+    if (stops.isEmpty() && !keepStanding) return
+    for ((wantedKey, stop) in wanted) {
+      if (wantedKey in state.lookaheadWalls) continue
+      val id = (FIRST_ID until FIRST_ID + MAX_WALLS).firstOrNull { it !in state.lookaheadWalls.values } ?: break
+      state.lookaheadWalls[wantedKey] = id
       npcService.spawnDsWall(session, region, bank, map, id, stop.wallX, stop.wallY)
       log.info {
-        "[Lookahead] char=${state.characterId} wall $id at (${stop.wallX}, ${stop.wallY}) past the ${stop.kind} at (${stop.stopX}, ${stop.stopY}), ${stop.distance} ahead facing ${state.facingDirection}"
+        "[Lookahead] char=${state.characterId} wall $id at (${stop.wallX}, ${stop.wallY}) past the ${stop.kind} at (${stop.stopX}, ${stop.stopY}), ${stop.distance} away ${stop.direction} (facing ${state.facingDirection})"
       }
     }
     val stamp = System.currentTimeMillis()
@@ -92,11 +106,13 @@ constructor(
     }
   }
 
-  data class Stop(val stopX: Int, val stopY: Int, val wallX: Int, val wallY: Int, val distance: Int, val kind: String)
+  data class Stop(val stopX: Int, val stopY: Int, val wallX: Int, val wallY: Int, val distance: Int, val kind: String, val direction: Direction = Direction.UP)
 
   companion object {
-    /** How far ahead the ray looks, in tiles. */
+    /** How far ahead the facing ray looks, in tiles. */
     const val RANGE = 5
+    /** How far the other three rays look: the stop beside the player, one turn away. */
+    const val SIDE_RANGE = 2
     /** How long a wall outlives its last refresh. */
     const val DECAY_MS = 1500L
     /** Npc indices the walls use: above the gyms' bands (NdsCurtainWalls.FIRST_WALL_ID). */
@@ -116,13 +132,14 @@ constructor(
         triggers: Set<Pair<Int, Int>>,
         sight: Set<Pair<Int, Int>>,
         walkable: (Int, Int) -> Boolean,
+        range: Int = RANGE,
     ): Stop? {
       val dx = facing.dx
       val dy = facing.dy
       if (dx == 0 && dy == 0) return null
       var x = px
       var y = py
-      for (d in 1..RANGE) {
+      for (d in 1..range) {
         x += dx
         y += dy
         if (!walkable(x, y)) return null
@@ -138,7 +155,7 @@ constructor(
         var wy = y + dy
         if (kind == "trigger") while ((wx to wy) in triggers) { wx += dx; wy += dy }
         if (!walkable(wx, wy)) return null
-        return Stop(x, y, wx, wy, d, kind)
+        return Stop(x, y, wx, wy, d, kind, facing)
       }
       return null
     }

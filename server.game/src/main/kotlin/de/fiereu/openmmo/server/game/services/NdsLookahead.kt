@@ -48,7 +48,7 @@ constructor(
     val px = state.x.toInt()
     val py = state.y.toInt()
     val triggers = mapEntryScripts.ndsArmedTriggerTiles(charId, region, bank, map).toHashSet()
-    val sight = trainerSight.ndsArmedSightTiles(charId, region, bank, map).toHashSet()
+    val sight = trainerSight.ndsArmedSightTiles(charId, region, bank, map, trainerSight.playerHeightOn(state, region, bank, map)).toHashSet()
     val stop = stopAhead(px, py, state.facingDirection, triggers, sight) { x, y -> ndsLand.blocked(region, bank, map, x, y) == false }
     // Standing on a stop: the wall past it stays until the script's hold clears it. Dropped here
     // it left with the same packet that started the hold, and a step the client had already

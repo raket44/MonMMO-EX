@@ -23,6 +23,17 @@ class NdsLand @Inject constructor() {
     val present = BooleanArray(width * height)
     /** The tile record's height word (Gen 5 word 1); the client refuses a step between different heights. */
     val elev = ShortArray(width * height)
+    /**
+     * True when at least three quarters of the map's tiles carry the blocked flag: a 3D walkway
+     * map (Driftveil Gym: 963 of 1024) whose floors live in the model, where the flag is not a
+     * wall. Sight rays would die on their first tile there (owner, 2026-09-25).
+     */
+    val mostlyBlocked: Boolean by lazy {
+      var n = 0
+      var b = 0
+      for (i in present.indices) if (present[i]) { n++; if ((coll[i].toInt() and BLOCKED) != 0) b++ }
+      n > 0 && b * 4 >= n * 3
+    }
 
     fun index(x: Int, y: Int): Int? {
       val lx = x - minX
@@ -69,6 +80,9 @@ class NdsLand @Inject constructor() {
     val i = tiles.index(x, y) ?: return true
     return (tiles.coll[i].toInt() and BLOCKED) != 0
   }
+
+  /** See [MapTiles.mostlyBlocked]: the blocked flag is meaningless as a wall on this map. */
+  fun mostlyBlocked(region: Int, bank: Int, map: Int): Boolean = maps[Triple(region, bank, map)]?.mostlyBlocked ?: false
 
   /** True only for a tile the map HAS and marks blocked: a tile past the edge (a seam) is not. */
   fun blockedInside(region: Int, bank: Int, map: Int, x: Int, y: Int): Boolean {

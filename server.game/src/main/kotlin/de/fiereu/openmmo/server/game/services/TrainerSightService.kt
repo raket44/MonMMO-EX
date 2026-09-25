@@ -141,8 +141,11 @@ constructor(
     val source = gbaScriptSource(regionId) ?: return false
     val charId = state.characterId ?: return false
     val namespace = region.name.lowercase()
+    val ignoreBlocked = ndsLand.mostlyBlocked(regionId, bankId, mapId)
+    val playerHeight = playerHeightOn(state, regionId, bankId, mapId)
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
       if (npc.sight <= 0) continue
+      if (ignoreBlocked && !sameFloor(npc, playerHeight)) continue
       val directions =
           when (npc.type) {
             1 -> listOf(ndsFacing(npc.facing))
@@ -152,7 +155,7 @@ constructor(
       val trainerId = ndsTrainerId(regionId, npc.script) ?: continue
       if (storyService.isFlagSet(charId, "$namespace/FLAG_DS_TRAINER_$trainerId")) continue
       for (dir in directions) {
-        val distance = ndsApproachDistance(regionId, bankId, mapId, npc.x, npc.y, dir, npc.sight, playerX, playerY) ?: continue
+        val distance = ndsApproachDistance(regionId, bankId, mapId, npc.x, npc.y, dir, npc.sight, playerX, playerY, ignoreBlocked) ?: continue
         val label = if (npc.script >= 2000) "NDS_CHUNK_${npc.script}" else "NDS_${(mapId shl 8) or bankId}_${npc.script}"
         val script = runCatching { scriptRegistry.forLabel(label, source) }.getOrNull() ?: continue
         val walk = walkStep(dir) ?: return false
@@ -177,12 +180,14 @@ constructor(
    * Every tile the map's unbeaten trainers can see (their rays, up to the first blocked tile) -
    * the stops NdsLookahead guards. Same trainers, facings and defeated flags as [onNdsStep].
    */
-  fun ndsArmedSightTiles(charId: Long, regionId: Int, bankId: Int, mapId: Int): List<Pair<Int, Int>> {
+  fun ndsArmedSightTiles(charId: Long, regionId: Int, bankId: Int, mapId: Int, playerHeight: Int? = null): List<Pair<Int, Int>> {
     val region = Region.byId(regionId) ?: return emptyList()
     val namespace = region.name.lowercase()
     val out = mutableListOf<Pair<Int, Int>>()
+    val ignoreBlocked = ndsLand.mostlyBlocked(regionId, bankId, mapId)
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
       if (npc.sight <= 0) continue
+      if (ignoreBlocked && !sameFloor(npc, playerHeight)) continue
       val directions =
           when (npc.type) {
             1 -> listOf(ndsFacing(npc.facing))
@@ -197,7 +202,7 @@ constructor(
         for (d in 1..npc.sight) {
           x += dir.dx
           y += dir.dy
-          if (ndsLand.blocked(regionId, bankId, mapId, x, y) == true) break
+          if (!ignoreBlocked && ndsLand.blocked(regionId, bankId, mapId, x, y) == true) break
           out += x to y
         }
       }
@@ -211,17 +216,29 @@ constructor(
     return script - base + if (regionId == 4) 1 else 0
   }
 
-  private fun ndsApproachDistance(regionId: Int, bankId: Int, mapId: Int, fromX: Int, fromY: Int, dir: Direction, range: Int, playerX: Int, playerY: Int): Int? {
+  private fun ndsApproachDistance(regionId: Int, bankId: Int, mapId: Int, fromX: Int, fromY: Int, dir: Direction, range: Int, playerX: Int, playerY: Int, ignoreBlocked: Boolean = false): Int? {
     var x = fromX
     var y = fromY
     for (d in 1..range) {
       x += dir.dx
       y += dir.dy
       if (x == playerX && y == playerY) return d
-      if (ndsLand.blocked(regionId, bankId, mapId, x, y) == true) return null
+      if (!ignoreBlocked && ndsLand.blocked(regionId, bankId, mapId, x, y) == true) return null
     }
     return null
   }
+
+  /** The player's height on this map in the ROM's bg z units (height x 16), when a lift landing or ride set it. */
+  fun playerHeightOn(state: PlayerState, regionId: Int, bankId: Int, mapId: Int): Int? =
+      state.ndsHeight.takeIf { state.ndsHeightMap == de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId) }
+
+  /**
+   * A trainer on another floor cannot see the player: the npc record's height against the
+   * player's (Driftveil Gym walkways at 30/40/50). Only judged on walkway maps; elsewhere
+   * npc heights of 1-10 are ground detail and a script warp leaves the player at 0.
+   */
+  private fun sameFloor(npc: NdsNpcs.Npc, playerHeight: Int?): Boolean =
+      playerHeight == null || kotlin.math.abs(npc.z * 16 - playerHeight) < 8 * 16
 
   /**
    * The distance (in tiles) from the trainer to the player along [dir], or null when the player is

@@ -7,9 +7,11 @@ import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.NpcDef
 import de.fiereu.openmmo.net.game.packets.EntityLeavePacket
+import de.fiereu.openmmo.net.game.packets.EntityMovePacket
 import de.fiereu.openmmo.net.game.packets.NpcSpawnPacket
 import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
+import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
@@ -41,6 +43,7 @@ constructor(
     private val scope: kotlinx.coroutines.CoroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
     private val ndsRails: NdsRails = NdsRails(),
+    private val mapObjects: NdsMapObjects = NdsMapObjects(),
 ) {
 
   private val npcEntityIdCounter = AtomicLong(0x1A69000000000000L)
@@ -82,6 +85,7 @@ constructor(
     val map = mapManager.getMap(regionId, bankId, mapId)
     if (map == null) {
       spawnNdsNpcs(ctx, regionId, bankId, mapId)
+      spawnMapObjects(ctx, regionId, bankId, mapId)
       return
     }
     val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
@@ -497,6 +501,69 @@ constructor(
 
   fun despawnDsWall(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, id: Int) {
     ctx.send(EntityLeavePacket(entityIdFor(regionId, bankId, mapId, id)))
+  }
+
+  // ---- Map-file objects: Chargestone's electric stones (NdsMapObjects) ----
+
+  private fun stoneKey(regionId: Int, bankId: Int, mapId: Int, index: Int): Long =
+      (de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId).toLong() shl 16) or index.toLong()
+
+  /** A stone's tile for this session: where it was pushed to, else the map file's placement. */
+  private fun stoneTile(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, stone: NdsMapObjects.Stone): Pair<Int, Int> =
+      state?.ndsStones?.get(stoneKey(regionId, bankId, mapId, stone.index)) ?: (stone.x to stone.y)
+
+  /** The stones the map file places, drawn as the floating-stone sprite where this session left them. */
+  fun spawnMapObjects(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    val state = ctx.attributes[PLAYER_STATE]
+    for (stone in mapObjects.of(regionId, bankId, mapId)) {
+      if (!stone.spawned) continue
+      val (x, y) = stoneTile(state, regionId, bankId, mapId, stone)
+      val npc =
+          NdsNpcs.Npc(
+              index = NdsMapObjects.FIRST_ID + stone.index, id = stone.index, sprite = NdsMapObjects.STONE_SPRITE, movement = 0, flag = 0, script = 0,
+              facing = 1, xRange = 0, yRange = 0, x = x, y = y, z = stone.height)
+      sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
+    }
+  }
+
+  /** Any stone (big, attached or loose) standing on this tile for this session. */
+  fun stoneAt(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): NdsMapObjects.Stone? =
+      mapObjects.of(regionId, bankId, mapId).firstOrNull { stoneTile(state, regionId, bankId, mapId, it) == (x to y) }
+
+  /**
+   * The player walked into a loose stone: it slides on in that direction until the next tile
+   * is a wall, another stone or an npc (BW: the stone floats away and settles against the big
+   * one). True when a stone stood there, whether or not it moved - the player never enters the
+   * tile. Only this session sees the slide; the cave's stones are per player, like its flags.
+   */
+  fun pushStone(ctx: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, direction: Direction, wall: (Int, Int) -> Boolean): Boolean {
+    val stone = stoneAt(state, regionId, bankId, mapId, x, y) ?: return false
+    if (!stone.loose) return true
+    val dx = direction.dx
+    val dy = direction.dy
+    if (dx == 0 && dy == 0) return true
+    var sx = x
+    var sy = y
+    val path = mutableListOf<Pair<Int, Int>>()
+    while (path.size < NdsMapObjects.MAX_SLIDE) {
+      val nx = sx + dx
+      val ny = sy + dy
+      if (wall(nx, ny)) break
+      if (stoneAt(state, regionId, bankId, mapId, nx, ny) != null) break
+      if (ndsNpcs.of(regionId, bankId, mapId).any { it.x == nx && it.y == ny }) break
+      sx = nx
+      sy = ny
+      path += nx to ny
+    }
+    if (path.isEmpty()) {
+      log.info { "[Stone] char=${state.characterId} stone ${stone.index} at ($x, $y) will not move $direction" }
+      return true
+    }
+    state.ndsStones[stoneKey(regionId, bankId, mapId, stone.index)] = sx to sy
+    val entityId = entityIdFor(regionId, bankId, mapId, NdsMapObjects.FIRST_ID + stone.index)
+    for ((px, py) in path) ctx.send(EntityMovePacket(entityId = entityId, x = px, y = py, direction = direction))
+    log.info { "[Stone] char=${state.characterId} stone ${stone.index} pushed $direction from ($x, $y) to ($sx, $sy), ${path.size} tiles" }
+    return true
   }
 
   fun despawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {

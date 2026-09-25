@@ -1378,6 +1378,12 @@ internal constructor(
     warpService.rawWarp(session, charId, regionId, bankId, mapId, x, y)
   }
 
+  /** After a raw warp onto a DS map: its load and frame scripts, run by this coroutine. */
+  suspend fun ndsScriptedArrival(regionId: Int, bankId: Int, mapId: Int) {
+    if (regionId !in 2..4) return
+    mapScripts?.onNdsScriptedArrival(this, regionId, bankId, mapId)
+  }
+
   /**
    * The Unova elevator floor table the running panel script pointed opcode 0x1CB at, as (script
    * file, byte offset of the table): the key of NdsElevators. Per script run - the panel's entry

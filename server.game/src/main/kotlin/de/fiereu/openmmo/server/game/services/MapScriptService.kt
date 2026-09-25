@@ -199,6 +199,26 @@ constructor(
   }
 
   /**
+   * A script that raw-warped the player onto a DS map runs the destination's load and frame
+   * phases itself (the runner will not start a second script under its hold). The npcs are
+   * already spawned by the warp, so placements go out live rather than placement-only.
+   */
+  suspend fun onNdsScriptedArrival(ctx: de.fiereu.openmmo.server.game.script.ScriptContext, regionId: Int, bankId: Int, mapId: Int) {
+    val state = ctx.state
+    val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
+    if (state.entryScriptsMapKey == arrivalKey) return
+    state.entryScriptsMapKey = arrivalKey
+    state.ndsFrameFollowUps = 0
+    val (onLoad, frame) = entryScripts.onNdsEntryPhases(regionId, bankId, mapId)
+    try {
+      onLoad?.run(ctx)
+    } finally {
+      syncCurtainWalls(ctx.session, state)
+    }
+    frame?.run(ctx)
+  }
+
+  /**
    * The cartridge re-checks a map's frame table (its type-3 level script) every frame, so a scene
    * that advances the story var while the player stands still is picked up at once: the Accumula
    * nurse's own ROM script ends with VAR 16507 = 2, which is Juniper's cue to carry her tour on.

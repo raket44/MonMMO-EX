@@ -160,6 +160,7 @@ class InterpretedScript(
         // It is how the Striaton gym curtains are drawn - they are part of the building model,
         // so nothing else can move them.
         "ds_mapgimmick" -> {
+          log.info { "[Gimmick] char=${ctx.state.characterId} map=${ctx.state.bankId}:${ctx.state.mapId} args=${instruction.args.map { value(ctx, it) }}" }
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
                   action = 6,
@@ -831,6 +832,11 @@ class InterpretedScript(
           tracedWait(ctx, "ds_warp") {
             ctx.rawWarp(region, header and 0xFF, header shr 8, (instruction.arg(1) as IntArg).value, (instruction.arg(2) as IntArg).value)
           }
+          // A raw warp spawns the destination's npcs but runs no load script (that is the step
+          // warp's job, and the runner refuses a second script while this one holds the player).
+          // Run the destination's load and frame phases here, as the GBA warp does: the Driftveil
+          // Gym lift arrival needs the gym's flag reset (owner, 2026-09-24).
+          ctx.ndsScriptedArrival(region, header and 0xFF, header shr 8)
           state.pc++
         }
         "textcolor" -> {

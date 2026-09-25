@@ -2149,7 +2149,20 @@ class NdsScriptCorpusGenerator {
               b.lines += listOf("DsMapGimmick", "400", n.toString(), state)
             }
             "CMD_18A" -> driftveilRestore = true
-            "CMD_18B" -> b.lines += listOf("DsMapGimmick", "402", "0")
+            // 0x18B binds the entrance's app; the client already builds that lift at the top, so
+            // nothing to send (a [0x192, 0] here rode it up from below on every entry).
+            "CMD_18B" -> {}
+            // CMD_1B6 app: ride the bound lift with the player on it, before the script warps.
+            // Both handlers take [0x192, 1]: the entrance (m97) snaps to the top and sinks 10
+            // units, the gym (yj7) snaps lift 6 to the landing and rises 20 units, both at ten
+            // units a second (f/ib7.WL), riders carried. The wait covers the ride plus a beat.
+            "CMD_1B6" -> {
+              val app = t(0).toInt()
+              if (app == 401 || app == 402) {
+                b.lines += listOf("DsMapGimmick", "402", "1")
+                b.lines += listOf("Wait", if (app == 401) "132" else "72")
+              }
+            }
             "WaitButton" -> b.lines += listOf("WaitButton")
             "FacePlayer" -> b.lines += listOf("FacePlayer")
             // Message 0, 4, entry, SPEAKER, position, type: the fourth argument is the object whose
@@ -2283,7 +2296,11 @@ class NdsScriptCorpusGenerator {
             "SetOWPositionFacing" ->
                 if (t(0) == "255") b.lines += listOf("SetObjectEventPos", "LOCALID_PLAYER", tv(2), tv(4), t(1))
                 else if (t(0).toInt() < 252) b.lines += listOf("SetObjectEventPos", "OBJ_" + t(0), tv(2), tv(4))
-            "FastWarp", "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            "FastWarp" -> b.lines += listOf("Warp", t(0), t(1), t(2), t(3))
+            // White's TeleportWarp is (header, x, HEIGHT, y, dir): every use in the corpus has 0 or
+            // a lift height third. Read as (x, y) it put the Driftveil Gym arrival at (17, 50) on a
+            // 32-tall map - off the map, stuck (owner, 2026-09-24). The height is the client's.
+            "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(3))
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
             // An opcode the table only numbers (CMD_xxx) goes out as ScrCmd_xxx with its var
@@ -2341,6 +2358,12 @@ class NdsScriptCorpusGenerator {
           f += listOf("GoToIfEq", target)
         }
       }
+      // Headers whose ROM level-script file is empty (four zero bytes) but whose script file
+      // still carries a load entry the cartridge runs through its gimmick engine. Driftveil Gym
+      // (97, file 194) entry 14 resets lift flags 10-15 and binds the lift app; without it a new
+      // player's flags stay clear while the client poses lifts 1, 3, 4 raised, so half the panels
+      // did nothing (owner, 2026-09-24). Entry numbers are the ROM's 1-based script numbers.
+      for ((header, entry) in HAND_LEVEL_BINDINGS) entryLabel(header, entry)?.let { init.getOrPut(header) { mutableListOf() } += it }
       val initBlocks = mutableListOf<Block>()
       // One program PER on-load entry. They used to be chained as `call A; call B; end`, but a ROM
       // entry finishes with End, and `end` inside a call ends the whole script - so only the FIRST
@@ -2392,6 +2415,8 @@ class NdsScriptCorpusGenerator {
     fun nimbasaTrack(romSwitch: Int): Int = (romSwitch + 1) % 4
     /** White script files from 854 up are the engine's shared routines (ranges table), not map files. */
     const val FIRST_SHARED_FILE = 854
+    /** ROM header -> 1-based script number run at map load although the level-script file is empty. */
+    val HAND_LEVEL_BINDINGS = listOf(97 to 14)
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
     const val HEARTGOLD_DYNAMIC_HEADER = 4095
     val BLOCK_COMMENT = Regex("/\\*.*?\\*/")

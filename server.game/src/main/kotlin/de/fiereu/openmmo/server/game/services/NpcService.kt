@@ -564,6 +564,21 @@ constructor(
   }
 
   /** One ROM npc's spawn packet on a DS map (field notes in spawnNdsNpcs). */
+  /**
+   * The client's 2-bit floor for an npc on a DS map with stacked floors, from the ROM record's
+   * height (fx32 at +32, whole part). r32645 keeps an entity's floor as a tile-layer index
+   * (f/jd4.zl0, f/ik8.cg(x, y, layer)); the Driftveil Gym lifts pin the bands (f/yj7 rider
+   * bytes against lift heights): -59 -> 0, 30 -> 1, 40 -> 2, 50 and 70 -> 3. Everything on the
+   * ground (heights 0-29, every ordinary map) stays layer 0 as before; a trainer on a walkway
+   * stood on the bottom floor until now (owner, 2026-09-25).
+   */
+  private fun dsFloorLayer(height: Int): Int = when {
+    height < 30 -> 0
+    height < 40 -> 1
+    height < 50 -> 2
+    else -> 3
+  }
+
   private fun ndsSpawnPacket(regionId: Int, bankId: Int, mapId: Int, npc: NdsNpcs.Npc): NpcSpawnPacket {
     val movementId = npc.movement and 0xFF
     val unk4 =
@@ -599,7 +614,7 @@ constructor(
         // The client reads this byte as the terrain layer (low two bits, f/p01: `& 3` into
         // Wi1.RW1) plus a flag bit 8. Layer 2 is the GBA default; DS ground is layer 0,
         // and anything else sinks the sprite into the terrain. On a rail it is the rail line.
-        unk5 = if (rail) npc.x and 0xFF else 0,
+        unk5 = if (rail) npc.x and 0xFF else dsFloorLayer(npc.z),
         unk6 = 8,
     )
   }

@@ -1126,19 +1126,16 @@ constructor(
     var cx = x
     var cy = y
     var tiles = 0
+
     while (tiles < MAX_SPIN_STEPS) {
       val nx = cx + direction.dx
       val ny = cy + direction.dy
       if (!isWalkable(map, nx, ny, state.surfing, state.tileOverrides)) break
-      // The client's table has no spin rows (the GBA's 0xB2-0xB5 are absent from f/c67), so the
-      // spin is a facing rotation (15 ms rows) before each glide, down, left, up, right:
-      // the sprite turns as it slides (owner, 2026-09-24: "rocket tiles are supposed to spin").
-      // One turn per tile read as a random flick: the glide snaps the sprite back to the slide
-      // direction. A full four-turn rotation (about 60 ms) before each glide reads as a spin.
-      // Four turns per tile hitched the glide (owner); two per tile keep it moving and the
-      // rotation completes over two tiles.
-      steps += SPIN_FACES[(2 * tiles) % SPIN_FACES.size]
-      steps += SPIN_FACES[(2 * tiles + 1) % SPIN_FACES.size]
+      // The client's table has no spin rows (the GBA's 0xB2-0xB5 are absent from f/c67).
+      // One clockwise turn per tile, then that tile's glide - nothing between tiles, so the
+      // slide stays smooth; the last glide is followed by a turn to the travel direction (owner,
+      // 2026-09-24).
+      steps += SPIN_FACES[tiles % SPIN_FACES.size]
       steps += slideStep(direction)
       tiles++
       cx = nx
@@ -1148,6 +1145,7 @@ constructor(
       behavior.spinDirection?.let { direction = it }
     }
     if (steps.isEmpty()) return false
+    steps += faceStep(direction)
     log.info { "[Spin] char=$charId from ($x, $y) $tiles tiles to ($cx, $cy)" }
     state.spinning = true
     scope.launch {
@@ -1342,6 +1340,16 @@ constructor(
         de.fiereu.openmmo.net.game.packets.MapTileSetPacket(
             map.regionId, map.bankId, map.mapId, x.toShort(), y.toShort(), existing.collision.toShort(), metatileId.toShort()))
   }
+
+  /** A turn in place to [direction]. */
+  private fun faceStep(direction: Direction): MovementStep =
+      when (direction) {
+        Direction.UP -> MovementStep.FACE_UP
+        Direction.DOWN -> MovementStep.FACE_DOWN
+        Direction.LEFT -> MovementStep.FACE_LEFT
+        Direction.RIGHT -> MovementStep.FACE_RIGHT
+        else -> MovementStep.FACE_DOWN
+      }
 
   /** One gliding tile, the way the player faces (MovementStep.SLIDE_*): both ice slides. */
   private fun slideStep(direction: Direction): MovementStep =

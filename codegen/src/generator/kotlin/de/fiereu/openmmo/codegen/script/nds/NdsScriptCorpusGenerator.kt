@@ -1721,7 +1721,14 @@ class NdsScriptCorpusGenerator {
               // along row 35, the one open row there (row 34 is trees from x 53): Burgh, already
               // on row 35, straight on; Lenora one row down first, on a block of her own, ending
               // one tile behind him.
-              MovePatch(310, 3448, "15,8 13,4", "15,8 13,4 15,7"))
+              MovePatch(310, 3448, "15,8 13,4", "15,8 13,4 15,7"),
+              // Chargestone Cave's first scene (file 390 entry 0): Bianca and Juniper appear at the
+              // room's corner (8,45), in plain view of a player standing at the trigger on row 41,
+              // and Juniper stands there through Bianca's whole walk (owner, 2026-09-25: "move them
+              // south 3-5 tiles and adjust their walks"). Their npc rows now put them at (8,49)
+              // (nds-npcs-2.txt) and each walk starts with four steps north to make up for it.
+              MovePatch(390, 1588, "15,7 12,5 33,1", "12,4 15,7 12,5 33,1"),
+              MovePatch(390, 1604, "15,8 12,1", "12,4 15,8 12,1"))
       val viewportMoveAdds = listOf(MovePatch(310, PINWHEEL_LENORA_EXIT, "", "15,8 13,5 15,6"))
       for (p in viewportArgPatches) {
         val c = cmdsByFile[p.file]?.get(p.off)

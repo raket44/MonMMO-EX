@@ -160,6 +160,7 @@ class InterpretedScript(
         // It is how the Striaton gym curtains are drawn - they are part of the building model,
         // so nothing else can move them.
         "ds_mapgimmick" -> {
+          noteLoadGimmick(ctx)
           log.info { "[Gimmick] char=${ctx.state.characterId} map=${ctx.state.bankId}:${ctx.state.mapId} args=${instruction.args.map { value(ctx, it) }}" }
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
@@ -215,6 +216,7 @@ class InterpretedScript(
           state.pc++
         }
         "ds_gimmickflags" -> {
+          noteLoadGimmick(ctx)
           val states = (1 until instruction.args.size).map { i -> if (ctx.isFlagSet(namespaced(flagArg(instruction, i).token))) 1.toShort() else 0.toShort() }
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
@@ -223,6 +225,7 @@ class InterpretedScript(
         }
         // ds_gimmickmask opcode, VAR: the map handler gets [opcode, mask] (the load restore).
         "ds_gimmickmask" -> {
+          noteLoadGimmick(ctx)
           ctx.sendScenePacket(
               de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
                   action = 6,
@@ -233,6 +236,7 @@ class InterpretedScript(
         // ds_gimmickbit opcode, n, VAR, mode: flips (mode 0) or sets (mode 1) bit n of VAR and
         // tells the map handler [opcode, n, bit].
         "ds_gimmickbit" -> {
+          noteLoadGimmick(ctx)
           val n = value(ctx, instruction.arg(1))
           val key = namespaced(varArg(instruction, 2).token)
           val bit = 1 shl n
@@ -2719,6 +2723,11 @@ class InterpretedScript(
         }
     state.activeProgram = dependency
     state.pc = dependency.labels[arg.token] ?: 0
+  }
+
+  /** A gimmick sent by a LOGIN's load script: the fade-in waits for the model to settle (LoginService). */
+  private fun noteLoadGimmick(ctx: ScriptContext) {
+    if (ctx.state.ndsPlacementOnly) ctx.state.ndsLoadGimmicks++
   }
 
   private fun namespaced(token: String): String =

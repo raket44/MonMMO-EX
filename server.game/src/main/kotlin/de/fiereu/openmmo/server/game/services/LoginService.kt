@@ -95,7 +95,7 @@ private const val ARRIVAL_SCENE_HOLD_MS = 900L
 private const val DRIFTVEIL_GYM_HEADER = 97
 /** Black-screen hold on a gym relog: the shaft lift's two-second descent, or the instant snap plus a beat. */
 private const val LIFT_RELOG_RIDE_MS = 2400L
-private const val LIFT_RELOG_SNAP_MS = 400L
+private const val GIMMICK_SETTLE_MS = 1000L
 
 /** Rail walks wait this long for the client to finish attaching the spawn to the rail. */
 private const val RAIL_STEP_DELAY_MS = 250L
@@ -869,18 +869,21 @@ constructor(
       }
       // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter),
       // and the fade-in waits for both so the gym models are already posed when the screen shows.
+      state.ndsLoadGimmicks = 0
       mapScriptService.onNdsEnter(
           ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF,
           spawnNpcs = spawnNpcs,
           afterLoad = {
-            if (relog == null) {
+            if (relog == null && state.ndsLoadGimmicks == 0) {
               ctx.send(RenderScreenPacket(true))
             } else {
-              // A gym relog: the lifts settle behind the black screen - the flag restore's snap,
-              // and the shaft lift's descent when there is one - and only then the fade-in
-              // (owner, 2026-09-25: "leave the screen black until after the lifts have adjusted").
+              // A gym login: the models settle behind the black screen - every gimmick the load
+              // script sent (curtains, tracks, lifts: the client animates some of its restores),
+              // and the shaft lift's descent on a landing relog - and only then the fade-in
+              // (owner, 2026-09-25: "leave the screen black until after the lifts have adjusted";
+              // "still a problem in all gyms").
               relogRide?.invoke()
-              val settle = if (relogRide != null) LIFT_RELOG_RIDE_MS else LIFT_RELOG_SNAP_MS
+              val settle = if (relogRide != null) LIFT_RELOG_RIDE_MS else GIMMICK_SETTLE_MS
               ctx.attributes.getOrPut(SCRIPT_SCOPE) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }.launch {
                 delay(settle)
                 if (ctx.channel.isActive) ctx.send(RenderScreenPacket(true))

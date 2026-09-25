@@ -263,6 +263,8 @@ data class PlayerState(
      */
     @field:Volatile var ndsHeight: Int = 0,
     @field:Volatile var ndsHeightMap: Int = -1,
+    /** Gimmick packets the current login's load script sent (gym poses): the fade-in waits for them. */
+    @field:Volatile var ndsLoadGimmicks: Int = 0,
     /**
      * Creative mode for world-building admins: collision and wild encounters are skipped, so
      * walking anywhere to place warps is unobstructed. Toggled by /gm, developer-gated.

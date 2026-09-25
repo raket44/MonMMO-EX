@@ -20,6 +20,34 @@ class UnovaScriptDecodeAuditTest :
       val commands =
           corpus.readLines().filterNot { it.startsWith("mv;") }.mapNotNull { it.split(';').getOrNull(3)?.trim()?.split(' ') }
 
+      test("the generator never invents a zero write to a story var") {
+        // Chargestone's entrance load scripts pass the Clay progress var (VAR_0x409A) to opcode
+        // 0x1EB, an engine command the table only numbers. The corpus fallback for such commands
+        // zeroed "the var they answer into" - the last var-looking argument - so every arrival
+        // wiped the var Clay's badge script had set and the web never yielded his scene (owner,
+        // 2026-09-25). A story var (0x4000-0x7FFF) among an unnamed command's arguments is an
+        // input; only temp vars (0x8000+) may be answered. Every `setvar VAR_0x4xxx, 0` the
+        // corpus holds must be backed by a literal zero write in the ROM dump, bar the ones the
+        // generator writes on purpose (Nimbasa's switch mask 0x400A).
+        val romZeroed =
+            commands.filter { it[0] == "StoreValueInVar" && it.size >= 3 && it[2] == "0" }
+                .mapNotNull { it[1].toIntOrNull() }
+                .map { "VAR_0x" + it.toString(16).uppercase() }
+                .toSet()
+        val allowed = romZeroed + setOf("VAR_0x400A", "VAR_0x4000", "VAR_0x4001", "VAR_0x4002", "VAR_0x4003")
+        val invented =
+            de.fiereu.openmmo.script.GeneratedScriptCorpus.sources
+                .filter { it.source == "white" }
+                .flatMap { it.programs.values }
+                .flatMap { program ->
+                  program.instructions
+                      .filter { it.command == "setvar" && it.args.size == 2 && it.args[0].token.startsWith("VAR_0x4") && it.args[1].token == "0" }
+                      .filter { it.args[0].token !in allowed }
+                      .map { "${program.id.stable}: ${it.sourceLine}" }
+                }
+        invented shouldBe emptyList()
+      }
+
       test("no command is left one argument short (a story var decoded as an opcode)") {
         // A var (0x4000+/0x8000+) can never be an opcode; one in opcode position means the command
         // before it is missing its last argument. 97 before the 2026-09-20 fixes; the rest are

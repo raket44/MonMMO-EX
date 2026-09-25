@@ -1,3 +1,4 @@
+    markFlyPoint(session, state, regionId, bankId, mapId)
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
@@ -199,12 +200,29 @@ constructor(
   }
 
   /**
+   * The cartridge marks a town flyable on arrival: the town-map record's flag (NdsFlyPoints).
+   * Stored as the ROM flag and mirrored to the client (StoryClientState forwards these ids), so
+   * the town lights up on the client's map (owner, 2026-09-25: "you haven't been marking my
+   * fly locations").
+   */
+  private fun markFlyPoint(session: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int) {
+    val key = NdsFlyPoints.flagKey(regionId, bankId, mapId) ?: return
+    val charId = state.characterId ?: return
+    val stored = characterStore.getCharacter(charId) ?: return
+    if (key in stored.storyFlags) return
+    characterStore.setStoryFlag(charId, key)
+    StoryClientState.flagUpdate(regionId.toByte(), key, enabled = true)?.let(session::send)
+    log.info { "[fly] char=$charId unlocked $key on $regionId:$bankId:$mapId" }
+  }
+
+  /**
    * A script that raw-warped the player onto a DS map runs the destination's load and frame
    * phases itself (the runner will not start a second script under its hold). The npcs are
    * already spawned by the warp, so placements go out live rather than placement-only.
    */
   suspend fun onNdsScriptedArrival(ctx: de.fiereu.openmmo.server.game.script.ScriptContext, regionId: Int, bankId: Int, mapId: Int) {
     val state = ctx.state
+    markFlyPoint(ctx.session, state, regionId, bankId, mapId)
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
     if (state.entryScriptsMapKey == arrivalKey) return
     state.entryScriptsMapKey = arrivalKey

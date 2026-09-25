@@ -97,6 +97,9 @@ internal object StoryClientState {
               ClientStoryWhitelist.badgeIds[regionId.toInt()]?.getOrNull(n)
             }
                 ?: DS_RUNNING_SHOES_IDS[regionId.toInt()]?.takeIf { key.endsWith("FLAG_DS_RUNNING_SHOES") }
+                // Unova's fly-spot flags ARE the client's ids: its town-map table reads them off the
+                // ROM (NdsFlyPoints), so those ROM ids - and only those - forward as they are.
+                ?: Regex("FLAG_(\d+)$").find(key)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { regionId.toInt() == NdsFlyPoints.UNOVA_REGION && it in NdsFlyPoints.UNOVA_CLIENT_FLAG_IDS }
       }
 
   private fun varId(regionId: Byte, key: String): Int? =

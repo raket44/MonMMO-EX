@@ -2380,7 +2380,7 @@ class NdsScriptCorpusGenerator {
       }
       // Headers whose ROM level-script file is empty (four zero bytes) but whose script file
       // still carries a load entry the cartridge runs through its gimmick engine. Driftveil Gym
-      // (97, file 194) entry 14 resets lift flags 10-15 and binds the lift app; without it a new
+      // (97, file 194) script 15 (the entry at offset 70) resets lift flags 10-15 and binds the lift app; without it a new
       // player's flags stay clear while the client poses lifts 1, 3, 4 raised, so half the panels
       // did nothing (owner, 2026-09-24). Entry numbers are the ROM's 1-based script numbers.
       for ((header, entry) in HAND_LEVEL_BINDINGS) entryLabel(header, entry)?.let { init.getOrPut(header) { mutableListOf() } += it }
@@ -2436,7 +2436,7 @@ class NdsScriptCorpusGenerator {
     /** White script files from 854 up are the engine's shared routines (ranges table), not map files. */
     const val FIRST_SHARED_FILE = 854
     /** ROM header -> 1-based script number run at map load although the level-script file is empty. */
-    val HAND_LEVEL_BINDINGS = listOf(97 to 14)
+    val HAND_LEVEL_BINDINGS = listOf(97 to 15)
     /** Destination header -> frames to hold while its lift rides the arriving player down. */
     val LIFT_ARRIVAL_RIDES = mapOf(97 to 132)
     /** Driftveil Gym lift n -> its ROM height at state 0 and 1 (the client's f/yj7 table). */

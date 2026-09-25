@@ -1135,7 +1135,10 @@ constructor(
       // the sprite turns as it slides (owner, 2026-09-24: "rocket tiles are supposed to spin").
       // One turn per tile read as a random flick: the glide snaps the sprite back to the slide
       // direction. A full four-turn rotation (about 60 ms) before each glide reads as a spin.
-      steps += SPIN_FACES
+      // Four turns per tile hitched the glide (owner); two per tile keep it moving and the
+      // rotation completes over two tiles.
+      steps += SPIN_FACES[(2 * tiles) % SPIN_FACES.size]
+      steps += SPIN_FACES[(2 * tiles + 1) % SPIN_FACES.size]
       steps += slideStep(direction)
       tiles++
       cx = nx

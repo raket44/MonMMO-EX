@@ -2161,6 +2161,10 @@ class NdsScriptCorpusGenerator {
               if (app == 401 || app == 402) {
                 b.lines += listOf("DsMapGimmick", "402", "1")
                 b.lines += listOf("Wait", if (app == 401) "132" else "72")
+                // Then the cartridge's CMD_21 fade: black before the warp, so the lift is not seen
+                // jumping (owner, 2026-09-24: "descend and then fade before the warp"). The warp
+                // flow restores the screen on arrival.
+                b.lines += listOf("ScreenFade", "1")
               }
             }
             "WaitButton" -> b.lines += listOf("WaitButton")
@@ -2300,7 +2304,20 @@ class NdsScriptCorpusGenerator {
             // White's TeleportWarp is (header, x, HEIGHT, y, dir): every use in the corpus has 0 or
             // a lift height third. Read as (x, y) it put the Driftveil Gym arrival at (17, 50) on a
             // 32-tall map - off the map, stuck (owner, 2026-09-24). The height is the client's.
-            "TeleportWarp" -> b.lines += listOf("Warp", t(0), t(1), t(3))
+            "TeleportWarp" -> {
+              b.lines += listOf("Warp", t(0), t(1), t(3))
+              // A lift landing: the ROM warps the player in at the lift's LOWER height (the third
+              // argument), below the tile's own floor. The client places a warped player at the
+              // tile height, so the destination's lift must ride down carrying them: [0x192, 0]
+              // snaps the gym's lift 6 to the top and rides it to the landing, and riders get the
+              // landing's elevation byte (f/ib7.WL). The load script released the hold, so hold
+              // again for the ride.
+              LIFT_ARRIVAL_RIDES[t(0).toIntOrNull()]?.let { frames ->
+                b.lines += listOf("LockAll")
+                b.lines += listOf("DsMapGimmick", "402", "0")
+                b.lines += listOf("Wait", frames.toString())
+              }
+            }
             "CallStd" -> b.lines += listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
             // An opcode the table only numbers (CMD_xxx) goes out as ScrCmd_xxx with its var
@@ -2417,6 +2434,8 @@ class NdsScriptCorpusGenerator {
     const val FIRST_SHARED_FILE = 854
     /** ROM header -> 1-based script number run at map load although the level-script file is empty. */
     val HAND_LEVEL_BINDINGS = listOf(97 to 14)
+    /** Destination header -> frames to hold while its lift rides the arriving player down. */
+    val LIFT_ARRIVAL_RIDES = mapOf(97 to 132)
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
     const val HEARTGOLD_DYNAMIC_HEADER = 4095
     val BLOCK_COMMENT = Regex("/\\*.*?\\*/")

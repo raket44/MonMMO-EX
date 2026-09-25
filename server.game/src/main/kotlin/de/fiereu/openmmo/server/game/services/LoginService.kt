@@ -758,15 +758,14 @@ constructor(
     state.x = x.toShort()
     state.y = y.toShort()
     log.info { "Relog on Driftveil Gym lift $lift at ($x, $y), floor $floor: char=$charId" }
+    // Lifts 0-5: NO ride. The load script has posed them from their flags and the client sets
+    // a logged-in player down at that lift's height; riding the lift away and back left Argeno
+    // standing inside the returned platform, unable to move (2026-09-25, 08:58). The shaft lift
+    // is the exception: its tile's own floor is the upper level, so the client sets the player
+    // down above the lift, and the descent ([0x192, 0]) is what carries them to the landing.
+    if (lift in 0..5) return null
     val ride: () -> Unit = {
-      val states = (10..15).map { if (storyService.isFlagSet(charId, "$ns/FLAG_$it")) 1.toShort() else 0.toShort() }
-      if (lift in 0..5) {
-        val flipped = states.toMutableList().also { it[lift] = (1 - it[lift]).toShort() }
-        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x191.toShort()) + flipped))
-        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x190.toShort(), lift.toShort(), states[lift])))
-      } else {
-        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x192.toShort(), 0.toShort())))
-      }
+      ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x192.toShort(), 0.toShort())))
     }
     return ride
   }

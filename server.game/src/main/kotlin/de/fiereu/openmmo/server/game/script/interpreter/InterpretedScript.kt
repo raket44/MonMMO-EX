@@ -179,6 +179,12 @@ class InterpretedScript(
         }
         // ds_gimmickflags opcode, FLAG...: the map handler gets [opcode, 0/1 per flag] (Driftveil
         // Gym's six lifts at map load).
+        // ds_playerheight h: the player now stands at ROM height h (a lift landing or ride end).
+        "ds_playerheight" -> {
+          ctx.state.ndsHeight = value(ctx, instruction.arg(0)) * 16
+          ctx.state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(ctx.state.regionId, ctx.state.bankId, ctx.state.mapId)
+          state.pc++
+        }
         "ds_gimmickflags" -> {
           val states = (1 until instruction.args.size).map { i -> if (ctx.isFlagSet(namespaced(flagArg(instruction, i).token))) 1.toShort() else 0.toShort() }
           ctx.sendScenePacket(

@@ -707,6 +707,7 @@ class NdsScriptCorpusGenerator {
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
         "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
         "DsGimmickFlags" -> out += "ds_gimmickflags ${a.joinToString(", ")}"
+        "DsPlayerHeight" -> out += "ds_playerheight ${a[0]}"
         "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
         "DsMaskBit" -> out += "ds_maskbit ${a.joinToString(", ")}"
         // Castelia Gym map-load restore (0x18F): the eight switch vars.
@@ -2147,6 +2148,7 @@ class NdsScriptCorpusGenerator {
               val write = list.drop(ci + 1).take(8).firstOrNull { it.name == "SetFlag" || it.name == "ClearFlag" }
               val state = if (write?.name == "SetFlag") "1" else "0"
               b.lines += listOf("DsMapGimmick", "400", n.toString(), state)
+              LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString()) }
             }
             "CMD_18A" -> driftveilRestore = true
             // 0x18B binds the entrance's app; the client already builds that lift at the top, so
@@ -2306,6 +2308,7 @@ class NdsScriptCorpusGenerator {
             // 32-tall map - off the map, stuck (owner, 2026-09-24). The height is the client's.
             "TeleportWarp" -> {
               b.lines += listOf("Warp", t(0), t(1), t(3))
+              b.lines += listOf("DsPlayerHeight", t(2))
               // A lift landing: the ROM warps the player in at the lift's LOWER height (the third
               // argument), below the tile's own floor. The client places a warped player at the
               // tile height, so the destination's lift must ride down carrying them: [0x192, 0]
@@ -2436,6 +2439,8 @@ class NdsScriptCorpusGenerator {
     val HAND_LEVEL_BINDINGS = listOf(97 to 14)
     /** Destination header -> frames to hold while its lift rides the arriving player down. */
     val LIFT_ARRIVAL_RIDES = mapOf(97 to 132)
+    /** Driftveil Gym lift n -> its ROM height at state 0 and 1 (the client's f/yj7 table). */
+    val LIFT_HEIGHTS = listOf(listOf(50, 40), listOf(50, 40), listOf(40, 30), listOf(40, 30), listOf(50, 30), listOf(50, -59), listOf(70, 50))
     /** A HeartGold warp whose destination header is 4095 goes to the dynamic warp (an elevator exit). */
     const val HEARTGOLD_DYNAMIC_HEADER = 4095
     val BLOCK_COMMENT = Regex("/\\*.*?\\*/")

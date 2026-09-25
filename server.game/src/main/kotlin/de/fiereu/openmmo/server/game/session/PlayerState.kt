@@ -256,6 +256,14 @@ data class PlayerState(
     /** DS frame re-checks used since this map was entered; bounded so a branch cannot spin. */
     @field:Volatile var ndsFrameFollowUps: Int = 0,
     /**
+     * The player's height on a DS map with stacked floors, in the ROM's bg-event z units (height
+     * x 16): the lift landing a warp put them on, or the last lift ride's destination. Panels at
+     * one (x, y) exist once per floor (Driftveil Gym, 2026-09-24), and the nearest z is the one
+     * the player is facing. Valid only while [ndsHeightMap] is the current map.
+     */
+    @field:Volatile var ndsHeight: Int = 0,
+    @field:Volatile var ndsHeightMap: Int = -1,
+    /**
      * Creative mode for world-building admins: collision and wild encounters are skipped, so
      * walking anywhere to place warps is unobstructed. Toggled by /gm, developer-gated.
      */

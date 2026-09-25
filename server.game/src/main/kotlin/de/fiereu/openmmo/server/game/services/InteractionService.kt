@@ -144,7 +144,14 @@ constructor(
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId
-    val bg = npcService.ndsBgEventsOn(regionId, bankId, mapId).firstOrNull { it.x == x && it.y == y } ?: return false
+    val here = npcService.ndsBgEventsOn(regionId, bankId, mapId).filter { it.x == x && it.y == y }
+    // Stacked floors carry one panel per floor at the same (x, y) (Driftveil Gym: z 800/640/480/
+    // -944); the player's own height picks theirs, else the first as before.
+    val bg =
+        if (here.size > 1 && state.ndsHeightMap == de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId))
+            here.minByOrNull { kotlin.math.abs(it.z - state.ndsHeight) }
+        else here.firstOrNull()
+    bg ?: return false
     val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"
     val script =
         try {

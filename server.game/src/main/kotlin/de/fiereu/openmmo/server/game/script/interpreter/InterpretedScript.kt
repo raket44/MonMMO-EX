@@ -176,6 +176,15 @@ class InterpretedScript(
           ctx.setVar(key, if (on) ctx.getVar(key) or bit else ctx.getVar(key) and bit.inv())
           state.pc++
         }
+        // ds_gimmickflags opcode, FLAG...: the map handler gets [opcode, 0/1 per flag] (Driftveil
+        // Gym's six lifts at map load).
+        "ds_gimmickflags" -> {
+          val states = (1 until instruction.args.size).map { i -> if (ctx.isFlagSet(namespaced(flagArg(instruction, i).token))) 1.toShort() else 0.toShort() }
+          ctx.sendScenePacket(
+              de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket(
+                  action = 6, subject = 0, args = listOf(value(ctx, instruction.arg(0)).toShort()) + states))
+          state.pc++
+        }
         // ds_gimmickmask opcode, VAR: the map handler gets [opcode, mask] (the load restore).
         "ds_gimmickmask" -> {
           ctx.sendScenePacket(

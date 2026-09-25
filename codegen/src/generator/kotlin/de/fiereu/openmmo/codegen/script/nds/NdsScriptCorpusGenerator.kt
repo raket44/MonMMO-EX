@@ -706,6 +706,7 @@ class NdsScriptCorpusGenerator {
         // nothing at all (owner, 2026-09-21).
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
         "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
+        "DsGimmickFlags" -> out += "ds_gimmickflags ${a.joinToString(", ")}"
         "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
         "DsMaskBit" -> out += "ds_maskbit ${a.joinToString(", ")}"
         // Castelia Gym map-load restore (0x18F): the eight switch vars.
@@ -1770,6 +1771,9 @@ class NdsScriptCorpusGenerator {
         var elevatorMenu = false
         // After 0x1CB the panel entry calls its shared ride routine; the ride settles when it returns.
         var elevatorSettlePending = false
+        // Driftveil Gym (header 97, client handler f/yj7): 0x18A arms the map-load restore, which
+        // goes out at the entry script's ReleaseAll - after it has rewritten lift flags 10-15.
+        var driftveilRestore = false
         // The starter-select app's result var, from its open (0xB4 331 339 var) to its close (CMD_1AF).
         var starterVar: String? = null
         // Door objects a script made (CMD_127 handle var -> its tile), until it frees them (CMD_128).
@@ -1986,7 +1990,7 @@ class NdsScriptCorpusGenerator {
             "CMD_0FF", "CMD_208", "CMD_24F", "CMD_250", "CMD_252", "CMD_A3", "CMD_A5", "GetDerefVar07", "CMD_01B",
             "CMD_1B2", "CMD_1D1", "CMD_23A", "CMD_25F", "CMD_6F", "DVar92", "Unknown_13",
             "CMD_15A", "CMD_13C", "CMD_11F", "CMD_13A", "CMD_137", "CMD_1DE", "CMD_01A" -> {}
-            "CMD_146", "CMD_400", "CMD_190", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
+            "CMD_146", "CMD_400", "CMD_78", "CMD_1B5", "CMD_9F", "CMD_220",
             "CMD_1F0", "CMD_24C", "GetDerefVar06", "CMD_1A8", "CMD_144", "CMD_248" -> {}
             // The map's own gimmick handler: the client picks an f/vc0 subclass by ROM header at
             // map load (Striaton Gym 7 -> f/iu5) and s2c 0xB6 action 6 hands it [opcode, args] -
@@ -2124,7 +2128,28 @@ class NdsScriptCorpusGenerator {
             "AddVars" -> b.lines += listOf("AddVar", v(0), t(1))
             "SubVars" -> b.lines += listOf("SubVar", v(0), t(1))
             "LockAll" -> b.lines += listOf("LockAll")
-            "ReleaseAll" -> b.lines += listOf("ReleaseAll")
+            "ReleaseAll" -> {
+              if (driftveilRestore) {
+                b.lines += listOf("DsGimmickFlags", "401") + (10..15).map { "FLAG_$it" }
+                driftveilRestore = false
+              }
+              b.lines += listOf("ReleaseAll")
+            }
+            // Driftveil Gym (header 97, f/yj7) and its entrance (98, f/m97). The client takes
+            // [0x190, lift n, state] to ride lift n, [0x191, six states] to restore the gym's
+            // six lifts at map load, [0x192, state] to restore the entrance lift. The ROM's
+            // 0x190 n rides lift n and its script then sets or clears the lift's flag (10 + n);
+            // that following write is the state the client is told. 0x18A (437, 401, 0) at
+            // entry arms the restore (sent at ReleaseAll, after the script resets the flags);
+            // 0x18B (437, 402, 0) is the entrance's (owner, 2026-09-24: "had to teleport out").
+            "CMD_190" -> {
+              val n = t(0).toInt()
+              val write = list.drop(ci + 1).take(8).firstOrNull { it.name == "SetFlag" || it.name == "ClearFlag" }
+              val state = if (write?.name == "SetFlag") "1" else "0"
+              b.lines += listOf("DsMapGimmick", "400", n.toString(), state)
+            }
+            "CMD_18A" -> driftveilRestore = true
+            "CMD_18B" -> b.lines += listOf("DsMapGimmick", "402", "0")
             "WaitButton" -> b.lines += listOf("WaitButton")
             "FacePlayer" -> b.lines += listOf("FacePlayer")
             // Message 0, 4, entry, SPEAKER, position, type: the fourth argument is the object whose

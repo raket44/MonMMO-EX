@@ -93,6 +93,9 @@ private const val ARRIVAL_SCENE_HOLD_MS = 900L
 
 /** ROM header (map << 8 | bank) of the Driftveil Gym, the one map with lift relogs. */
 private const val DRIFTVEIL_GYM_HEADER = 97
+/** Black-screen hold on a gym relog: the shaft lift's two-second descent, or the instant snap plus a beat. */
+private const val LIFT_RELOG_RIDE_MS = 2400L
+private const val LIFT_RELOG_SNAP_MS = 400L
 
 /** Rail walks wait this long for the client to finish attaching the spawn to the rail. */
 private const val RAIL_STEP_DELAY_MS = 250L
@@ -870,8 +873,19 @@ constructor(
           ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF,
           spawnNpcs = spawnNpcs,
           afterLoad = {
-            ctx.send(RenderScreenPacket(true))
-            relogRide?.invoke()
+            if (relog == null) {
+              ctx.send(RenderScreenPacket(true))
+            } else {
+              // A gym relog: the lifts settle behind the black screen - the flag restore's snap,
+              // and the shaft lift's descent when there is one - and only then the fade-in
+              // (owner, 2026-09-25: "leave the screen black until after the lifts have adjusted").
+              relogRide?.invoke()
+              val settle = if (relogRide != null) LIFT_RELOG_RIDE_MS else LIFT_RELOG_SNAP_MS
+              ctx.attributes.getOrPut(SCRIPT_SCOPE) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }.launch {
+                delay(settle)
+                if (ctx.channel.isActive) ctx.send(RenderScreenPacket(true))
+              }
+            }
           })
     } else {
       spawnNpcs()

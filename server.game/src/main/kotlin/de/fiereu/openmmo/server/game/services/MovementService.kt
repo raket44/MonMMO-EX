@@ -156,7 +156,10 @@ constructor(
     if (ndsWarps.warpAt(regionId, bankId, mapId, toX, toY, railLine) != null ||
         ndsWarps.warpAtMatrix(regionId, bankId, mapId, toX, toY, railLine) != null ||
         ndsWarps.isDynamicExit(regionId, bankId, mapId, toX, toY)) return false
-    if (ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
+    // A walkway map (NdsLand.mostlyBlocked - Driftveil Gym marks 963 of 1024 tiles) carries its
+    // floors in the model, so the flag is no wall there: every step bonked, which committed no
+    // step and so ran no trainer sight, no encounter and no seam (owner, 2026-09-25).
+    if (!ndsLand.mostlyBlocked(regionId, bankId, mapId) && ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
     val poses = state.scriptedNpcPoses
     return npcService.ndsNpcsOn(regionId, bankId, mapId).any { npc ->
       // Server-made walls are judged by state.ndsWalls above: their definitions outlive an

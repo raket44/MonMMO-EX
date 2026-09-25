@@ -145,7 +145,11 @@ constructor(
     val playerHeight = playerHeightOn(state, regionId, bankId, mapId)
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
       if (npc.sight <= 0) continue
-      if (ignoreBlocked && !sameFloor(npc, playerHeight)) continue
+      if (ignoreBlocked && !sameFloor(npc, playerHeight)) {
+        if (npc.type in 1..2 && kotlin.math.abs(npc.x - playerX) + kotlin.math.abs(npc.y - playerY) <= npc.sight)
+            log.info { "Trainer sight (DS): npc ${npc.index} at (${npc.x},${npc.y}) height ${npc.z} skipped: player height ${playerHeight?.let { it / 16 }} at ($playerX,$playerY)" }
+        continue
+      }
       val directions =
           when (npc.type) {
             1 -> listOf(ndsFacing(npc.facing))

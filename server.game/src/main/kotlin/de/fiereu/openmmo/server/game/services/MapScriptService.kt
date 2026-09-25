@@ -1,4 +1,3 @@
-    markFlyPoint(session, state, regionId, bankId, mapId)
 package de.fiereu.openmmo.server.game.services
 
 import de.fiereu.network.SessionContext
@@ -163,6 +162,7 @@ constructor(
         afterLoad?.invoke()
       }
     }
+    markFlyPoint(session, state, regionId, bankId, mapId)
     if (state.scriptOwnsMapEntry || state.blocksNewScript) return spawnOnce()
     val arrivalKey = (regionId.toLong() and 0xFF shl 40) or (bankId.toLong() and 0xFF shl 20) or (mapId.toLong() and 0xFF)
     if (state.entryScriptsMapKey == arrivalKey) return spawnOnce()

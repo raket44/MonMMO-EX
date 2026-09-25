@@ -69,21 +69,23 @@ constructor(
     // renders those maps itself, so the raw-warp path applies (WarpService.executeRawWarp).
     if (state.regionId >= 2) {
       val (bank, mapId) = dest.mapName.split(':').map { it.toInt() }
-      // A DS town lands the player in front of its Pokemon Center: the tile south of the door mat
-      // (every center faces down; the mat is the warp row into a matrix-13 interior). A rail town
-      // (Castelia) keeps the spawn tile - a plain landing beside a rail box freezes the player.
-      // Owner, 2026-09-25: "set to spawn you in front of pokecenter".
-      val pokecenter = ndsWarps.pokecenterEntry(state.regionId, bank, mapId)?.takeIf { it.third < 0 }?.let { it.first to it.second + 1 }
+      // A DS town lands the player where walking out of its Pokemon Center leaves them: the
+      // interior's exit row back into the town, tile or rail position alike (Castelia's center
+      // opens onto a rail and the row carries the line). Owner, 2026-09-25: "set to spawn you in
+      // front of pokecenter" - and no town is different.
+      val exit = ndsWarps.pokecenterExit(state.regionId, bank, mapId)
       val landing =
           if (dest.x >= 0) dest.x to dest.y
-          else pokecenter ?: ndsWarps.spawnOf(state.regionId, bank, mapId)
+          else exit?.let { it.x to it.y } ?: ndsWarps.spawnOf(state.regionId, bank, mapId)
               ?: run {
                 log.warn { "[fly] no landing for ${state.regionId}:$bank:$mapId (${dest.healLocation})" }
                 session.send(notice("That place has no landing spot yet."))
                 return
               }
+      val railLine = if (dest.x >= 0) -1 else exit?.destLine ?: -1
+      log.info { "[fly] char=$charId landing ${state.regionId}:$bank:$mapId at $landing line=$railLine (${dest.healLocation})" }
       if (banners.send(session, stored, state.regionId, FieldMoves.FLY)) kotlinx.coroutines.delay(FieldMoveBanners.FLY_HOLD_MILLIS)
-      warpService.executeRawWarp(session, charId, state.regionId, bank, mapId, landing.first, landing.second)
+      warpService.executeRawWarp(session, charId, state.regionId, bank, mapId, landing.first, landing.second, railLine)
       return
     }
     val map =

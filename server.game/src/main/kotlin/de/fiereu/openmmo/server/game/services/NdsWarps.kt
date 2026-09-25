@@ -230,6 +230,29 @@ class NdsWarps @Inject constructor() {
   }
 
   /**
+   * Where a player stands after walking out of this map's Pokemon Center: the destination of the
+   * interior's warp row back into this map - tile or rail position alike (Castelia's center door
+   * opens onto a rail, and its exit row carries the line). Null when the map has no center or its
+   * interior has no row back. The fly landing (owner, 2026-09-25: "in front of pokecenter").
+   */
+  fun pokecenterExit(region: Int, bank: Int, map: Int): Destination? {
+    refresh()
+    for ((key, rows) in warps) {
+      if ((key shr 56).toInt() != region) continue
+      if (((key shr 48) and 0xFF).toInt() != bank) continue
+      if (((key shr 40) and 0xFF).toInt() != map) continue
+      val entry = rows.firstOrNull { mapMatrix[mapKey(region, it.bank, it.map)] == 13 } ?: continue
+      for ((innerKey, innerRows) in warps) {
+        if ((innerKey shr 56).toInt() != region) continue
+        if (((innerKey shr 48) and 0xFF).toInt() != entry.bank) continue
+        if (((innerKey shr 40) and 0xFF).toInt() != entry.map) continue
+        innerRows.firstOrNull { it.bank == bank && it.map == map }?.let { return it }
+      }
+    }
+    return null
+  }
+
+  /**
    * The rail line of a rail warp row on EXACTLY this tile, or -1. Any proximity-based guess is
    * wrong somewhere: attaching a plain-grid landing beside a rail box (Skyarrow's gate at (15,0), 2
    * tiles from a bridge-mouth box) froze the player at an off-rail position. Vanilla behavior for

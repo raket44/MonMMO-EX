@@ -31,6 +31,7 @@ constructor(
     private val curtainWalls: NdsCurtainWalls? = null,
     private val layoutVariants: LayoutVariants? = null,
     private val presence: PresenceService? = null,
+    private val ndsWarps: NdsWarps? = null,
 ) {
   fun onMapEnter(session: SessionContext, state: PlayerState, map: MapDef) {
     // A script is already running for this player, do not start a second one on top of it.
@@ -200,13 +201,15 @@ constructor(
   }
 
   /**
-   * The cartridge marks a town flyable on arrival: the town-map record's flag (NdsFlyPoints).
-   * Stored as the ROM flag and mirrored to the client (StoryClientState forwards these ids), so
-   * the town lights up on the client's map (owner, 2026-09-25: "you haven't been marking my
-   * fly locations").
+   * A town becomes flyable when the player steps into its Pokemon Center - never by merely
+   * reaching the town, which would let a fly skip the flags on the way (owner, 2026-09-25). The
+   * center interior (ROM matrix 13) names its town through its exit row; the town's town-map
+   * record gives the flag (NdsFlyPoints), stored as the ROM flag and mirrored to the client
+   * (StoryClientState forwards these ids), so the town lights up on the client's map.
    */
   private fun markFlyPoint(session: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int) {
-    val key = NdsFlyPoints.flagKey(regionId, bankId, mapId) ?: return
+    val (townBank, townMap) = ndsWarps?.pokecenterTown(regionId, bankId, mapId) ?: return
+    val key = NdsFlyPoints.flagKey(regionId, townBank, townMap) ?: return
     val charId = state.characterId ?: return
     val stored = characterStore.getCharacter(charId) ?: return
     if (key in stored.storyFlags) return

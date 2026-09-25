@@ -253,6 +253,24 @@ class NdsWarps @Inject constructor() {
   }
 
   /**
+   * The town a Pokemon Center interior belongs to: for a map on ROM matrix 13 (every center
+   * interior), the (bank, map) its exit row warps back into. Null for any other map. The fly
+   * spot unlocks on stepping into the center, not the town (owner, 2026-09-25: "you're only
+   * supposed to have a fly location unlocked if you have visited that PC").
+   */
+  fun pokecenterTown(region: Int, bank: Int, map: Int): Pair<Int, Int>? {
+    refresh()
+    if (mapMatrix[mapKey(region, bank, map)] != 13) return null
+    for ((key, rows) in warps) {
+      if ((key shr 56).toInt() != region) continue
+      if (((key shr 48) and 0xFF).toInt() != bank) continue
+      if (((key shr 40) and 0xFF).toInt() != map) continue
+      rows.firstOrNull { mapMatrix[mapKey(region, it.bank, it.map)] != 13 }?.let { return it.bank to it.map }
+    }
+    return null
+  }
+
+  /**
    * The rail line of a rail warp row on EXACTLY this tile, or -1. Any proximity-based guess is
    * wrong somewhere: attaching a plain-grid landing beside a rail box (Skyarrow's gate at (15,0), 2
    * tiles from a bridge-mouth box) froze the player at an off-rail position. Vanilla behavior for

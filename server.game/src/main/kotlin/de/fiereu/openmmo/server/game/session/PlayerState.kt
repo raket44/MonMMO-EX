@@ -409,3 +409,7 @@ fun doorApproachKey(
 const val DS_FLOOR_VAR = "VAR_DS_FLOOR"
 /** The map header (map << 8 \| bank) [DS_FLOOR_VAR] was stored on; a login elsewhere ignores the floor. */
 const val DS_FLOOR_MAP_VAR = "VAR_DS_FLOOR_MAP"
+/** The lift (index + 1, 0 none) the floor was reached on, and the tile the player rode it from. */
+const val DS_LIFT_VAR = "VAR_DS_LIFT"
+const val DS_LIFT_X_VAR = "VAR_DS_LIFT_X"
+const val DS_LIFT_Y_VAR = "VAR_DS_LIFT_Y"

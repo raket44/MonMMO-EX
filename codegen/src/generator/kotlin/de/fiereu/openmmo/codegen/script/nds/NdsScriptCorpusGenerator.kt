@@ -2158,7 +2158,7 @@ class NdsScriptCorpusGenerator {
               val state = if (write?.name == "SetFlag") "1" else "0"
               b.lines += listOf("DsMapGimmick", "400", n.toString(), state)
               // A lift ride remembers the floor across a logout (owner: "a lift exclusive thing").
-              LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString(), "1") }
+              LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString(), "1", n.toString()) }
             }
             "CMD_18A" -> driftveilRestore = true
             // 0x18B binds the entrance's app; the client already builds that lift at the top, so
@@ -2329,7 +2329,7 @@ class NdsScriptCorpusGenerator {
                 b.lines += listOf("LockAll")
                 b.lines += listOf("DsMapGimmick", "402", "0")
                 b.lines += listOf("Wait", frames.toString())
-                b.lines += listOf("DsPlayerHeight", t(2), "1")
+                b.lines += listOf("DsPlayerHeight", t(2), "1", "6")
               }
             }
             "CallStd" -> b.lines += listOf("CallStd", t(0))

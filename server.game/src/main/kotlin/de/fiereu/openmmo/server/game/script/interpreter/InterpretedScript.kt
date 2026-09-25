@@ -190,6 +190,13 @@ class InterpretedScript(
           if (instruction.args.size > 1 && value(ctx, instruction.arg(1)) != 0) {
             ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR), height)
             ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_MAP_VAR), (ctx.state.mapId shl 8) or ctx.state.bankId)
+            // The lift and the tile the player rode it on: a relog spawns there and rides it again
+            // (owner: "the lifts can save your location and their state").
+            if (instruction.args.size > 2) {
+              ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_LIFT_VAR), value(ctx, instruction.arg(2)) + 1)
+              ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_LIFT_X_VAR), ctx.state.x.toInt())
+              ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_LIFT_Y_VAR), ctx.state.y.toInt())
+            }
           }
           state.pc++
         }

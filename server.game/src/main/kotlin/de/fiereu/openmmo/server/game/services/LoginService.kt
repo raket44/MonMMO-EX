@@ -29,6 +29,7 @@ import de.fiereu.openmmo.net.game.packets.ObjectiveProgressBulkPacket
 import de.fiereu.openmmo.net.game.packets.PokedexSpeciesResetPacket
 import de.fiereu.openmmo.net.game.packets.RailEntityMovePacket
 import de.fiereu.openmmo.net.game.packets.RenderScreenPacket
+import de.fiereu.openmmo.net.game.packets.WorldActionDispatchPacket
 import de.fiereu.openmmo.net.game.packets.RequestCharactersPacket
 import de.fiereu.openmmo.net.game.packets.RequestPlayerPacket
 import de.fiereu.openmmo.net.game.packets.Season
@@ -89,6 +90,9 @@ private const val EMERGENCE_STEP_DELAY_MS = 0L
 private const val GBA_STEP_DELAY_MS = 300L
 /** How long after LoadEntity the client is still loading and drops scene packets (PlayerState.sceneHoldUntil). */
 private const val ARRIVAL_SCENE_HOLD_MS = 900L
+
+/** ROM header (map << 8 | bank) of the Driftveil Gym, the one map with lift relogs. */
+private const val DRIFTVEIL_GYM_HEADER = 97
 
 /** Rail walks wait this long for the client to finish attaching the spawn to the rail. */
 private const val RAIL_STEP_DELAY_MS = 250L
@@ -725,6 +729,48 @@ constructor(
     }
   }
 
+  /**
+   * The remembered floor of a DS walkway map (VAR_DS_FLOOR, stored by lift rides only, with the
+   * map it belongs to), restored for a fresh session that spawns on that map. With a lift on
+   * record the player is moved onto the tile they rode it from, and the returned action rides
+   * that lift again after the load script: lifts 0-5 from the other end to their flag's state
+   * ([0x191] snap, then [0x190, n, state]), the shaft lift down to the landing ([0x192, 0]).
+   */
+  private fun restoreLiftRelog(ctx: SessionContext, state: PlayerState, charId: Long): (() -> Unit)? {
+    val current = characterStore.getCharacter(charId)?.info ?: return null
+    val regionId = current.positionRegionId.toInt()
+    if (regionId !in 2..4) return null
+    val bankId = current.positionBankId.toInt() and 0xFF
+    val mapId = current.positionMapId.toInt() and 0xFF
+    val spawnMapKey = de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId)
+    if (state.ndsHeightMap == spawnMapKey) return null
+    val ns = Region.byId(regionId)?.name?.lowercase() ?: return null
+    fun v(key: String): Int = storyService.getVar(charId, "$ns/$key")
+    val floor = v(de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR)
+    if (floor == 0 || v(de.fiereu.openmmo.server.game.session.DS_FLOOR_MAP_VAR) != ((mapId shl 8) or bankId)) return null
+    state.ndsHeight = floor * 16
+    state.ndsHeightMap = spawnMapKey
+    val lift = v(de.fiereu.openmmo.server.game.session.DS_LIFT_VAR) - 1
+    if (lift < 0 || ((mapId shl 8) or bankId) != DRIFTVEIL_GYM_HEADER) return null
+    val x = v(de.fiereu.openmmo.server.game.session.DS_LIFT_X_VAR)
+    val y = v(de.fiereu.openmmo.server.game.session.DS_LIFT_Y_VAR)
+    characterStore.updatePosition(charId, x.toShort(), y.toShort())
+    state.x = x.toShort()
+    state.y = y.toShort()
+    log.info { "Relog on Driftveil Gym lift $lift at ($x, $y), floor $floor: char=$charId" }
+    val ride: () -> Unit = {
+      val states = (10..15).map { if (storyService.isFlagSet(charId, "$ns/FLAG_$it")) 1.toShort() else 0.toShort() }
+      if (lift in 0..5) {
+        val flipped = states.toMutableList().also { it[lift] = (1 - it[lift]).toShort() }
+        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x191.toShort()) + flipped))
+        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x190.toShort(), lift.toShort(), states[lift])))
+      } else {
+        ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x192.toShort(), 0.toShort())))
+      }
+    }
+    return ride
+  }
+
   fun onRequestPlayer(event: PacketEvent<RequestPlayerPacket>) {
     val ctx = event.session
     val state = ctx.attributes[PLAYER_STATE]
@@ -741,6 +787,14 @@ constructor(
     // waiter is only cleared at the end, so a throw in between leaves the deadline to rescue it.
     state.justWarped = false
     val pendingLoad = ctx.attributes[PENDING_MAP_LOAD]
+
+    // A relog inside the Driftveil Gym: the last lift ride stored the floor, the lift and the
+    // tile the player rode it on. The player spawns on that tile and, once the load script has
+    // posed the lifts from their flags, that lift rides from its other end to its state carrying
+    // the player - the client's own way of putting an entity on a floor (owner, 2026-09-25: "the
+    // lifts can save your location and their state"). Only for a fresh session: a warp into the
+    // gym has its floor set by the script before the client asks for its player.
+    val relogRide = restoreLiftRelog(ctx, state, charId)
 
     val stored = characterStore.getCharacter(charId)
     if (stored == null) {
@@ -808,7 +862,10 @@ constructor(
       mapScriptService.onNdsEnter(
           ctx, state, info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF,
           spawnNpcs = spawnNpcs,
-          afterLoad = { ctx.send(RenderScreenPacket(true)) })
+          afterLoad = {
+            ctx.send(RenderScreenPacket(true))
+            relogRide?.invoke()
+          })
     } else {
       spawnNpcs()
     }

@@ -60,7 +60,7 @@ constructor(
     val facing = state.facingDirection
     val stops =
         (listOfNotNull(stopAhead(px, py, facing, triggers, sight, walkable)) +
-                Direction.entries.filter { it != facing && (it.dx != 0 || it.dy != 0) }.mapNotNull { stopAhead(px, py, it, triggers, sight, walkable, SIDE_RANGE) })
+                Direction.entries.filter { it != facing && (it.dx != 0 || it.dy != 0) }.mapNotNull { stopWithin(px, py, it, SIDE_RANGE, triggers, sight, walkable) })
             .distinctBy { it.wallX to it.wallY }
             .take(MAX_WALLS)
     // Standing on a stop: the wall past it stays until the script's hold clears it. Dropped here
@@ -132,7 +132,17 @@ constructor(
         triggers: Set<Pair<Int, Int>>,
         sight: Set<Pair<Int, Int>>,
         walkable: (Int, Int) -> Boolean,
-        range: Int = RANGE,
+    ): Stop? = stopWithin(px, py, facing, RANGE, triggers, sight, walkable)
+
+    /** [stopAhead] over [range] tiles: the short side looks. */
+    fun stopWithin(
+        px: Int,
+        py: Int,
+        facing: Direction,
+        range: Int,
+        triggers: Set<Pair<Int, Int>>,
+        sight: Set<Pair<Int, Int>>,
+        walkable: (Int, Int) -> Boolean,
     ): Stop? {
       val dx = facing.dx
       val dy = facing.dy

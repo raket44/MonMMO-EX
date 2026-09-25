@@ -749,31 +749,14 @@ constructor(
     }
     val info = stored.info
 
-    // The floor of a DS walkway map (the Driftveil Gym): the ROM height a lift landing or ride
-    // stored in VAR_DS_FLOOR, restored here so a relog keeps the panels, trainer sight and -
-    // through the load packet's z, the client's tile layer - the player on that floor instead
-    // of the bottom one (owner, 2026-09-25: "spawned me all the way on the bottom floor").
-    val dsRegion = info.positionRegionId.toInt()
-    var dsFloorZ: Int? = null
-    if (dsRegion in 2..4) {
-      val spawnMapKey = de.fiereu.openmmo.server.game.session.mapCacheKey(dsRegion, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
-      if (state.ndsHeightMap != spawnMapKey) {
-        val floor = Region.byId(dsRegion)?.let { storyService.getVar(charId, "${it.name.lowercase()}/${de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR}") } ?: 0
-        if (floor != 0) {
-          state.ndsHeight = floor * 16
-          state.ndsHeightMap = spawnMapKey
-        }
-      }
-      if (state.ndsHeightMap == spawnMapKey) dsFloorZ = dsFloorLayer(state.ndsHeight / 16)
-    }
-    log.info { "Sending LoadEntity for character '${info.name}'" + (dsFloorZ?.let { " floor layer $it" } ?: "") }
+    log.info { "Sending LoadEntity for character '${info.name}'" }
     state.sceneHoldUntil = System.currentTimeMillis() + ARRIVAL_SCENE_HOLD_MS
     val facing = state.facingDirection
     val loadEntity =
         mapLoadService.createLoadEntity(
             info,
             facing,
-            dsFloorZ ?: state.elevation,
+            state.elevation,
             party = stored.pokemon,
             skins = stored.skins,
             railLine = state.pendingRailLine,
@@ -806,6 +789,15 @@ constructor(
     }
     val isDsMap = info.positionRegionId.toInt() in 2..4
     if (isDsMap) {
+      // The floor the player logged out on (a walkway map: the Driftveil Gym), so its stacked
+      // panels and trainer sight still know it; the ROM height a lift landing or ride stored.
+      Region.byId(info.positionRegionId.toInt())?.let { region ->
+        val floor = storyService.getVar(charId, "${region.name.lowercase()}/${de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR}")
+        if (floor != 0) {
+          state.ndsHeight = floor * 16
+          state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
+        }
+      }
       // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter),
       // and the fade-in waits for both so the gym models are already posed when the screen shows.
       mapScriptService.onNdsEnter(

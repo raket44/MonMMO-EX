@@ -572,6 +572,12 @@ constructor(
    * ground (heights 0-29, every ordinary map) stays layer 0 as before; a trainer on a walkway
    * stood on the bottom floor until now (owner, 2026-09-25).
    */
+  private fun dsFloorLayer(height: Int): Int = when {
+    height < 30 -> 0
+    height < 40 -> 1
+    height < 50 -> 2
+    else -> 3
+  }
 
   private fun ndsSpawnPacket(regionId: Int, bankId: Int, mapId: Int, npc: NdsNpcs.Npc): NpcSpawnPacket {
     val movementId = npc.movement and 0xFF
@@ -750,16 +756,4 @@ constructor(
     const val ROUTE_101_ZIGZAGOON = 3
     const val ROUTE_101_RESCUE_HIDDEN_FLAG = "hoenn/FLAG_HIDE_ROUTE_101_BIRCH_ZIGZAGOON_BATTLE"
   }
-}
-
-/**
- * The client's 2-bit floor (tile layer) for a ROM height on a DS map with stacked floors: the
- * Driftveil Gym lift rider bytes (f/yj7 pB1) against the lift heights give -59 -> 0, 30 -> 1,
- * 40 -> 2, 50 and 70 -> 3. Heights 0-29 (every ordinary map) are layer 0.
- */
-internal fun dsFloorLayer(height: Int): Int = when {
-  height < 30 -> 0
-  height < 40 -> 1
-  height < 50 -> 2
-  else -> 3
 }

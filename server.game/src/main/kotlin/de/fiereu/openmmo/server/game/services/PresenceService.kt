@@ -134,8 +134,6 @@ constructor(
         // its line; without it observers got a tile placement and never saw the player at all
         // (Castelia, owner, 2026-09-23).
         railLine = if (state.railLine >= 0) state.railLine else -1,
-        // The floor of a DS walkway map, as the player's own load packet carries it.
-        z = if (state.regionId in 2..4 && state.ndsHeightMap == de.fiereu.openmmo.server.game.session.mapCacheKey(state.regionId, state.bankId, state.mapId)) dsFloorLayer(state.ndsHeight / 16) else 0,
         transportation = state.mountByte(),
         followerId = state.followerMonId)
   }

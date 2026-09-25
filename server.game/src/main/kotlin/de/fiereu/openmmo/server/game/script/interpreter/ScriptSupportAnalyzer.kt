@@ -315,6 +315,7 @@ class ScriptSupportAnalyzer(
           "ds_gimmickmask" -> args.size == 2 && args[1] is VarArg
           "ds_gimmickflags" -> args.size >= 2 && args.drop(1).all { it is FlagArg }
           "ds_playerheight" -> args.size == 1 && args[0] is IntArg
+          "ds_flagsunlesslogin" -> args.size >= 2 && args.size % 2 == 0 && args.withIndex().all { (i, a) -> if (i % 2 == 0) a is FlagArg else a is IntArg }
           "ds_gimmickbit" -> args.size == 4 && args[2] is VarArg
           "ds_maskbit" -> args.size == 3 && args[0] is VarArg
           "ds_playsound", "ds_changemusic" -> args.size == 1
@@ -693,6 +694,7 @@ class ScriptSupportAnalyzer(
             "ds_gimmickmask",
             "ds_gimmickflags",
             "ds_playerheight",
+            "ds_flagsunlesslogin",
             "ds_gimmickbit",
             "ds_maskbit",
             "ds_playsound",

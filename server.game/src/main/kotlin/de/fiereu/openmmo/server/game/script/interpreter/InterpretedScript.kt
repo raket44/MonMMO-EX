@@ -181,8 +181,25 @@ class InterpretedScript(
         // Gym's six lifts at map load).
         // ds_playerheight h: the player now stands at ROM height h (a lift landing or ride end).
         "ds_playerheight" -> {
-          ctx.state.ndsHeight = value(ctx, instruction.arg(0)) * 16
+          val height = value(ctx, instruction.arg(0))
+          ctx.state.ndsHeight = height * 16
           ctx.state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(ctx.state.regionId, ctx.state.bankId, ctx.state.mapId)
+          // Remembered across a logout: LoginService restores it, so the panels and trainer
+          // sight of a walkway map still know the floor (owner, 2026-09-25).
+          ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR), height)
+          state.pc++
+        }
+        // ds_flagsunlesslogin FLAG, 0/1, ...: a map-load flag reset that a LOGIN skips - the
+        // Driftveil Gym's lifts stay where the player left them instead of moving under them.
+        "ds_flagsunlesslogin" -> {
+          if (!ctx.state.ndsPlacementOnly) {
+            var i = 0
+            while (i + 1 < instruction.args.size) {
+              val flag = namespaced(flagArg(instruction, i).token)
+              if (value(ctx, instruction.arg(i + 1)) != 0) ctx.setFlag(flag) else ctx.clearFlag(flag)
+              i += 2
+            }
+          }
           state.pc++
         }
         "ds_gimmickflags" -> {

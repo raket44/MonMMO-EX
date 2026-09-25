@@ -118,6 +118,7 @@ constructor(
     private val linkService: LinkService,
     private val encounterTracker: EncounterTrackerService,
     private val itemRegistry: de.fiereu.openmmo.items.ItemRegistry,
+    private val storyService: StoryService,
     private val ndsRails: NdsRails = NdsRails(),
 ) {
 
@@ -788,6 +789,15 @@ constructor(
     }
     val isDsMap = info.positionRegionId.toInt() in 2..4
     if (isDsMap) {
+      // The floor the player logged out on (a walkway map: the Driftveil Gym), so its stacked
+      // panels and trainer sight still know it; the ROM height a lift landing or ride stored.
+      Region.byId(info.positionRegionId.toInt())?.let { region ->
+        val floor = storyService.getVar(charId, "${region.name.lowercase()}/${de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR}")
+        if (floor != 0) {
+          state.ndsHeight = floor * 16
+          state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
+        }
+      }
       // A DS map: the on-load script places its actors first, then they are spawned (onNdsEnter),
       // and the fade-in waits for both so the gym models are already posed when the screen shows.
       mapScriptService.onNdsEnter(

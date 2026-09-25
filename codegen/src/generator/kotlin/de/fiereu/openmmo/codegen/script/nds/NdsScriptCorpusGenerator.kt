@@ -708,6 +708,7 @@ class NdsScriptCorpusGenerator {
         "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
         "DsGimmickFlags" -> out += "ds_gimmickflags ${a.joinToString(", ")}"
         "DsPlayerHeight" -> out += "ds_playerheight ${a[0]}"
+        "DsFlagsUnlessLogin" -> out += "ds_flagsunlesslogin ${a.joinToString(", ")}"
         "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
         "DsMaskBit" -> out += "ds_maskbit ${a.joinToString(", ")}"
         // Castelia Gym map-load restore (0x18F): the eight switch vars.
@@ -2131,6 +2132,14 @@ class NdsScriptCorpusGenerator {
             "LockAll" -> b.lines += listOf("LockAll")
             "ReleaseAll" -> {
               if (driftveilRestore) {
+                // The ROM resets the six lift flags on every load. On a LOGIN inside the gym that
+                // moved the lifts under a player who logged out on a walkway - a soft lock (owner,
+                // 2026-09-25). The writes become one instruction the runtime skips on a login, so
+                // the restore that follows poses the lifts as they were left.
+                val liftFlags = (10..15).map { "FLAG_$it" }.toSet()
+                val writes = b.lines.filter { it.size == 2 && (it[0] == "SetFlag" || it[0] == "ClearFlag") && it[1] in liftFlags }
+                b.lines.removeAll(writes)
+                if (writes.isNotEmpty()) b.lines += listOf("DsFlagsUnlessLogin") + writes.flatMap { listOf(it[1], if (it[0] == "SetFlag") "1" else "0") }
                 b.lines += listOf("DsGimmickFlags", "401") + (10..15).map { "FLAG_$it" }
                 driftveilRestore = false
               }

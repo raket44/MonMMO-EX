@@ -404,3 +404,6 @@ fun doorApproachKey(
         ((destMap.toLong() and 0xFF) shl 24) or
         ((destX.toLong() and 0xFFF) shl 12) or
         (destY.toLong() and 0xFFF)
+
+/** The story var that remembers the player's floor on a walkway map across a logout (ROM height units). */
+const val DS_FLOOR_VAR = "VAR_DS_FLOOR"

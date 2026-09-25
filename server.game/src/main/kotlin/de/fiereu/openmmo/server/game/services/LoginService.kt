@@ -792,8 +792,13 @@ constructor(
       // The floor the player logged out on (a walkway map: the Driftveil Gym), so its stacked
       // panels and trainer sight still know it; the ROM height a lift landing or ride stored.
       Region.byId(info.positionRegionId.toInt())?.let { region ->
-        val floor = storyService.getVar(charId, "${region.name.lowercase()}/${de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR}")
-        if (floor != 0) {
+        val ns = region.name.lowercase()
+        val floor = storyService.getVar(charId, "$ns/${de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR}")
+        // Only for the map the floor was stored on: the var is per region, and a floor from the
+        // gym restored on every later Unova login drew the player off grid everywhere (2026-09-25).
+        val floorMap = storyService.getVar(charId, "$ns/${de.fiereu.openmmo.server.game.session.DS_FLOOR_MAP_VAR}")
+        val spawnHeader = ((info.positionMapId.toInt() and 0xFF) shl 8) or (info.positionBankId.toInt() and 0xFF)
+        if (floor != 0 && floorMap == spawnHeader) {
           state.ndsHeight = floor * 16
           state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(info.positionRegionId.toInt(), info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF)
         }

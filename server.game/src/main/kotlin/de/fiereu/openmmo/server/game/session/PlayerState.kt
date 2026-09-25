@@ -407,3 +407,5 @@ fun doorApproachKey(
 
 /** The story var that remembers the player's floor on a walkway map across a logout (ROM height units). */
 const val DS_FLOOR_VAR = "VAR_DS_FLOOR"
+/** The map header (map << 8 \| bank) [DS_FLOOR_VAR] was stored on; a login elsewhere ignores the floor. */
+const val DS_FLOOR_MAP_VAR = "VAR_DS_FLOOR_MAP"

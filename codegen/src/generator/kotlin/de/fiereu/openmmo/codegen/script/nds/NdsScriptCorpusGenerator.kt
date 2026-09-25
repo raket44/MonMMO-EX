@@ -707,7 +707,7 @@ class NdsScriptCorpusGenerator {
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
         "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
         "DsGimmickFlags" -> out += "ds_gimmickflags ${a.joinToString(", ")}"
-        "DsPlayerHeight" -> out += "ds_playerheight ${a[0]}"
+        "DsPlayerHeight" -> out += "ds_playerheight ${a.joinToString(", ")}"
         "DsFlagsUnlessLogin" -> out += "ds_flagsunlesslogin ${a.joinToString(", ")}"
         "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
         "DsMaskBit" -> out += "ds_maskbit ${a.joinToString(", ")}"
@@ -2157,7 +2157,8 @@ class NdsScriptCorpusGenerator {
               val write = list.drop(ci + 1).take(8).firstOrNull { it.name == "SetFlag" || it.name == "ClearFlag" }
               val state = if (write?.name == "SetFlag") "1" else "0"
               b.lines += listOf("DsMapGimmick", "400", n.toString(), state)
-              LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString()) }
+              // A lift ride remembers the floor across a logout (owner: "a lift exclusive thing").
+              LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString(), "1") }
             }
             "CMD_18A" -> driftveilRestore = true
             // 0x18B binds the entrance's app; the client already builds that lift at the top, so
@@ -2328,6 +2329,7 @@ class NdsScriptCorpusGenerator {
                 b.lines += listOf("LockAll")
                 b.lines += listOf("DsMapGimmick", "402", "0")
                 b.lines += listOf("Wait", frames.toString())
+                b.lines += listOf("DsPlayerHeight", t(2), "1")
               }
             }
             "CallStd" -> b.lines += listOf("CallStd", t(0))

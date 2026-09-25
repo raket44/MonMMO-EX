@@ -184,9 +184,13 @@ class InterpretedScript(
           val height = value(ctx, instruction.arg(0))
           ctx.state.ndsHeight = height * 16
           ctx.state.ndsHeightMap = de.fiereu.openmmo.server.game.session.mapCacheKey(ctx.state.regionId, ctx.state.bankId, ctx.state.mapId)
-          // Remembered across a logout: LoginService restores it, so the panels and trainer
-          // sight of a walkway map still know the floor (owner, 2026-09-25).
-          ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR), height)
+          // A second argument of 1 (lift rides and the lift landing only - owner, 2026-09-25: "a
+          // lift exclusive thing") remembers it across a logout for this map; LoginService
+          // restores it so the panels and trainer sight of a walkway map still know the floor.
+          if (instruction.args.size > 1 && value(ctx, instruction.arg(1)) != 0) {
+            ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_VAR), height)
+            ctx.setVar(namespaced(de.fiereu.openmmo.server.game.session.DS_FLOOR_MAP_VAR), (ctx.state.mapId shl 8) or ctx.state.bankId)
+          }
           state.pc++
         }
         // ds_flagsunlesslogin FLAG, 0/1, ...: a map-load flag reset that a LOGIN skips - the

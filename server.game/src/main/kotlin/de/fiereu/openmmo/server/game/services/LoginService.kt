@@ -736,7 +736,9 @@ constructor(
    * that lift again after the load script: lifts 0-5 from the other end to their flag's state
    * ([0x191] snap, then [0x190, n, state]), the shaft lift down to the landing ([0x192, 0]).
    */
-  private fun restoreLiftRelog(ctx: SessionContext, state: PlayerState, charId: Long): (() -> Unit)? {
+  private class LiftRelog(val floorLayer: Int, val ride: (() -> Unit)?)
+
+  private fun restoreLiftRelog(ctx: SessionContext, state: PlayerState, charId: Long): LiftRelog? {
     val current = characterStore.getCharacter(charId)?.info ?: return null
     val regionId = current.positionRegionId.toInt()
     if (regionId !in 2..4) return null
@@ -763,11 +765,11 @@ constructor(
     // standing inside the returned platform, unable to move (2026-09-25, 08:58). The shaft lift
     // is the exception: its tile's own floor is the upper level, so the client sets the player
     // down above the lift, and the descent ([0x192, 0]) is what carries them to the landing.
-    if (lift in 0..5) return null
+    if (lift in 0..5) return LiftRelog(dsFloorLayer(floor), null)
     val ride: () -> Unit = {
       ctx.send(WorldActionDispatchPacket(action = 6, subject = 0, args = listOf(0x192.toShort(), 0.toShort())))
     }
-    return ride
+    return LiftRelog(dsFloorLayer(floor), ride)
   }
 
   fun onRequestPlayer(event: PacketEvent<RequestPlayerPacket>) {
@@ -793,7 +795,8 @@ constructor(
     // the player - the client's own way of putting an entity on a floor (owner, 2026-09-25: "the
     // lifts can save your location and their state"). Only for a fresh session: a warp into the
     // gym has its floor set by the script before the client asks for its player.
-    val relogRide = restoreLiftRelog(ctx, state, charId)
+    val relog = restoreLiftRelog(ctx, state, charId)
+    val relogRide = relog?.ride
 
     val stored = characterStore.getCharacter(charId)
     if (stored == null) {
@@ -809,7 +812,12 @@ constructor(
         mapLoadService.createLoadEntity(
             info,
             facing,
-            state.elevation,
+            // A gym relog: the floor byte of the player's own load packet is the client's tile layer
+            // for them too (it drew the player on wrong layers everywhere when the floor memory
+            // leaked region-wide, 2026-09-25). Under a lift the tile's own floor is the pit, so
+            // the layer of the remembered floor is what sets the player down on the lift. Only
+            // for this map, only from a lift ride's memory.
+            relog?.floorLayer ?: state.elevation,
             party = stored.pokemon,
             skins = stored.skins,
             railLine = state.pendingRailLine,

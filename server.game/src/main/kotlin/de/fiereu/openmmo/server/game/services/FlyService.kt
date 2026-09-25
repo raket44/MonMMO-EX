@@ -32,6 +32,7 @@ constructor(
     private val battleService: BattleService,
     private val banners: FieldMoveBanners,
     private val ndsWarps: NdsWarps,
+    private val ndsRails: NdsRails = NdsRails(),
 ) {
   private data class Destination(val mapName: String, val x: Int, val y: Int, val healLocation: String)
 
@@ -73,10 +74,25 @@ constructor(
       // interior's exit row back into the town, tile or rail position alike (Castelia's center
       // opens onto a rail and the row carries the line). Owner, 2026-09-25: "set to spawn you in
       // front of pokecenter" - and no town is different.
+      // The exit row lands ON the door mat and the arrival then walks one step out (the
+      // emergence step, LoginService); a fly must land on the tile AFTER that step - nobody
+      // flies in and then walks out of a building (owner, 2026-09-25). Same delta rule as the
+      // emergence step: the line's own axes on a rail, negated deltas on a rail without a line.
       val exit = ndsWarps.pokecenterExit(state.regionId, bank, mapId)
+      val outOfDoor = exit?.let { e ->
+        val out = de.fiereu.openmmo.common.enums.Direction.DOWN
+        val line = if (e.destLine >= 0) ndsRails.areaOf(state.regionId, bank, mapId)?.let { ndsRails.line(it, e.destLine) } else null
+        val (sdx, sdy) =
+            when {
+              line != null -> ndsRails.delta(line, out)
+              e.destLine >= 0 -> -out.dx to -out.dy
+              else -> out.dx to out.dy
+            }
+        (e.x + sdx) to (e.y + sdy)
+      }
       val landing =
           if (dest.x >= 0) dest.x to dest.y
-          else exit?.let { it.x to it.y } ?: ndsWarps.spawnOf(state.regionId, bank, mapId)
+          else outOfDoor ?: ndsWarps.spawnOf(state.regionId, bank, mapId)
               ?: run {
                 log.warn { "[fly] no landing for ${state.regionId}:$bank:$mapId (${dest.healLocation})" }
                 session.send(notice("That place has no landing spot yet."))

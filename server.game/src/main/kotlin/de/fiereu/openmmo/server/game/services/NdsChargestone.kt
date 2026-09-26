@@ -43,8 +43,12 @@ class NdsChargestone @Inject constructor() {
   }
 
   companion object {
-    /** The ROM's field-object code for a small stone; the client draws DS objects by that code. */
-    const val SMALL_STONE_SPRITE = 253
+    /**
+     * The graphic the client draws a small stone with: 8202, found by the owner's /devsprite probe
+     * in the cave (2026-09-25). The overlay's own object code 253 is a blank carrier this client
+     * draws nothing for; the 8192+ band is BW's prop objects (8195/8197 = Strength boulders).
+     */
+    const val SMALL_STONE_SPRITE = 8202
     /** Npc index band for the stones on our side (above the server's walls, 300+). */
     const val FIRST_ID = 500
     const val MAX_SLIDE = 32

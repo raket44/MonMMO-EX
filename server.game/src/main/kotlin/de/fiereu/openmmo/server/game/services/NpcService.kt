@@ -44,6 +44,7 @@ constructor(
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
     private val ndsRails: NdsRails = NdsRails(),
     private val chargestone: NdsChargestone = NdsChargestone(),
+    private val ndsLand: NdsLand = NdsLand(),
 ) {
 
   private val npcEntityIdCounter = AtomicLong(0x1A69000000000000L)
@@ -589,6 +590,22 @@ constructor(
       ctx.send(EntityMovePacket(entityId = entityId, x = px, y = py, direction = direction))
     }
     log.info { "[Stone] char=${state.characterId} stone ${stone.index} pushed $direction from ($x, $y) to ($cx, $cy), $steps tiles, now charged" }
+    return true
+  }
+
+  /**
+   * Pressing A on a Chargestone stone pushes it the way the player faces. Walking into it never
+   * reaches the server: the client treats the stone as solid and refuses the step itself.
+   */
+  fun pushChargestoneEntity(ctx: SessionContext, state: PlayerState, entityId: Long): Boolean {
+    val regionId = state.regionId
+    val bankId = state.bankId
+    val mapId = state.mapId
+    val stone =
+        chargestone.of(regionId, bankId, mapId).firstOrNull { !it.big && entityIdFor(regionId, bankId, mapId, NdsChargestone.FIRST_ID + it.index) == entityId }
+            ?: return false
+    val (x, y) = stoneTile(state, regionId, bankId, mapId, stone)
+    pushChargestone(ctx, state, regionId, bankId, mapId, x, y, state.facingDirection) { wx, wy -> ndsLand.blocked(regionId, bankId, mapId, wx, wy) != false }
     return true
   }
 

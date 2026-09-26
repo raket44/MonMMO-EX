@@ -72,6 +72,7 @@ constructor(
    * the ROM map header id, and the DS corpus binds the two as `NDS_<header>_<index>`.
    */
   private fun onNdsEntityInteract(session: SessionContext, state: PlayerState, npcEntityId: Long) {
+    if (npcService.pushChargestoneEntity(session, state, npcEntityId)) return
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId

@@ -20,4 +20,6 @@ data class ParsedTrainer(
     val rematchIds: List<Int?>,
     /** DS trainer speech: message kind (intro 0, in-battle defeat 1, post-battle 2, doubles 3-10, rematch 17-19) to the client text id. */
     val messages: Map<Int, Int> = emptyMap(),
+    /** The ROM's battle type: 0 single, 1 double, 2 triple, 3 rotation (Unova's trainer data byte 2). */
+    val battleType: Int = 0,
 )

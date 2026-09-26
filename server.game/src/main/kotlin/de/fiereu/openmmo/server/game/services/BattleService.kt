@@ -707,6 +707,10 @@ constructor(
         when {
           formatOverride != null -> formatOverride
           allyMons.isNotEmpty() -> BattleFormat.DOUBLES
+          // Unova's triple (2) and rotation (3) trainers: three a side, the Crystal Onix field.
+          // Rotation is triples plus a rotate action (owner, 2026-09-26); until that action is
+          // wired, a rotation trainer fights the plain three-a-side field - not doubles.
+          trainer != null && trainer.battleType >= 2 && partner == null && alive.size >= 3 && enemies.size >= 3 -> BattleFormat.TRIPLES
           (trainer?.doubleBattle == true || partner != null) && alive.size >= 2 && enemies.size >= 2 -> BattleFormat.DOUBLES
           trainer == null && enemies.size >= 2 -> BattleFormat.HORDE
           else -> BattleFormat.SINGLES

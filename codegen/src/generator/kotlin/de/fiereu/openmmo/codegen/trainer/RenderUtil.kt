@@ -9,7 +9,7 @@ object RenderUtil {
         t.rematchIds.joinToString(", ", "listOf(", ")") { id -> id?.toString() ?: "null" }
     return "reg.register(Region.${region.uppercase()}, TrainerDef(${t.id}, \"${escape(t.name)}\", " +
         "${t.trainerClass}, ${t.doubleBattle}, ${t.prizeRate}, $party, " +
-        "\"${t.constant}\", $rematches, $messages))"
+        "\"${t.constant}\", $rematches, $messages" + (if (t.battleType > 1) ", battleType = ${t.battleType}" else "") + "))"
   }
 
   private fun mon(m: ParsedTrainerMon): String {

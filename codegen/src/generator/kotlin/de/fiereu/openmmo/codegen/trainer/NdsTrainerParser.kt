@@ -56,7 +56,7 @@ class NdsTrainerParser(private val root: File) {
     return heads.mapNotNull { (id, h) ->
       val party = mons[id].orEmpty()
       if (party.isEmpty()) null
-      else ParsedTrainer(id, "TRAINER_$id", "", h[0], h[2] != 0, DEFAULT_PRIZE_RATE, party, emptyList(), messages[id].orEmpty())
+      else ParsedTrainer(id, "TRAINER_$id", "", h[0], h[2] != 0, DEFAULT_PRIZE_RATE, party, emptyList(), messages[id].orEmpty(), battleType = h[2])
     }
   }
 

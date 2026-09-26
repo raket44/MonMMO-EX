@@ -37,6 +37,8 @@ data class TrainerDef(
      * Values are client text ids. Empty for the GBA regions, whose scripts carry the text.
      */
     val messages: Map<Int, Int> = emptyMap(),
+    /** The ROM's battle type: 0 single, 1 double, 2 triple, 3 rotation (the DS regions). */
+    val battleType: Int = if (doubleBattle) 1 else 0,
 )
 
 private data class TrainerKey(val region: Region, val id: Int)

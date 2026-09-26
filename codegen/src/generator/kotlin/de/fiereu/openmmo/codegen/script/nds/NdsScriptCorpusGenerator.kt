@@ -1712,7 +1712,7 @@ class NdsScriptCorpusGenerator {
               // Chargestone's N scene (file 390 entry 3): Juniper and Bianca wait at (56,13)/(58,14),
               // in view while the player speaks with N (owner, 2026-09-26: "move them left 2 tiles").
               ArgPatch(390, 2427, 1, "56", "54"),
-              ArgPatch(390, 2439, 1, "58", "56"))
+              ArgPatch(390, 2439, 1, "58", "55")) // Bianca: three tiles (owner: "1 further")
       val viewportMovePatches =
           listOf(
               MovePatch(32, 2004, "14,7", "14,14"), // Cheren/Bianca walk in: west 14
@@ -1733,7 +1733,7 @@ class NdsScriptCorpusGenerator {
               // (nds-npcs-2.txt) and each walk starts with four steps north to make up for it.
               MovePatch(390, 1588, "15,7 12,5 33,1", "12,4 15,7 12,5 33,1"),
               MovePatch(390, 1604, "15,8 12,1", "12,4 15,8 12,1"),
-              MovePatch(390, 3124, "15,7", "15,9"), // Bianca walks in: east 9
+              MovePatch(390, 3124, "15,7", "15,10"), // Bianca walks in: east 10
               MovePatch(390, 3140, "15,9", "15,11")) // Juniper walks in: east 11
       val viewportMoveAdds = listOf(MovePatch(310, PINWHEEL_LENORA_EXIT, "", "15,8 13,5 15,6"))
       for (p in viewportArgPatches) {

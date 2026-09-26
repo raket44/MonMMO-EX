@@ -1392,10 +1392,14 @@ constructor(
     state.mapId = map
     characterStore.updatePosition(charId, x.toShort(), y.toShort(), bankId = bank.toByte(), mapId = map.toByte())
     presenceService.refresh(ctx)
-    if (state.spawnedNpcMaps.add(de.fiereu.openmmo.server.game.session.mapCacheKey(region, bank, map))) {
-      npcService.spawnNpcsForMap(ctx, bank, map, region)
-    }
-    mapScriptService.onNdsEnter(ctx, state, region, bank, map)
+    // The map's load script first, then its npcs - as login and warps already do. Route 7's load
+    // script sets both rotation-trainer hide flags and clears one by game version; spawned first,
+    // both copies stood on (119,259) and one stayed behind when the other walked up (owner,
+    // 2026-09-26: "I still see a copy of him where he was standing").
+    val spawn: (() -> Unit)? =
+        if (state.spawnedNpcMaps.add(de.fiereu.openmmo.server.game.session.mapCacheKey(region, bank, map))) ({ npcService.spawnNpcsForMap(ctx, bank, map, region) })
+        else null
+    mapScriptService.onNdsEnter(ctx, state, region, bank, map, spawnNpcs = spawn)
   }
 
   /** A real desync: the server's tile is re-asserted and the echo window opens. */

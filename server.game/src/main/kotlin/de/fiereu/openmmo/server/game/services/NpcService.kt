@@ -531,7 +531,9 @@ constructor(
         changed = false
         for (s in stones) {
           if (s.big || charged(state, regionId, bankId, mapId, s)) continue
-          val touching = stones.any { o -> o !== s && charged(state, regionId, bankId, mapId, o) && kotlin.math.abs(o.x - s.x) + kotlin.math.abs(o.y - s.y) == 1 }
+          val touching =
+              stones.any { o -> o !== s && charged(state, regionId, bankId, mapId, o) && kotlin.math.abs(o.x - s.x) + kotlin.math.abs(o.y - s.y) == 1 } ||
+                  listOf(0 to -1, 0 to 1, -1 to 0, 1 to 0).any { (dx, dy) -> chargestone.isRock(regionId, bankId, mapId, s.x + dx, s.y + dy) }
           if (touching) { state.ndsChargedStones += stoneKey(regionId, bankId, mapId, s.index); changed = true }
         }
       }
@@ -568,7 +570,9 @@ constructor(
       val ny = cy + direction.dy
       val other = chargestoneAt(state, regionId, bankId, mapId, nx, ny)
       if (other != null) { reached = charged(state, regionId, bankId, mapId, other); break }
-      if (wall(nx, ny)) break
+      // A big stone's footprint is charged; anything else that is not cave floor is a plain wall.
+      if (chargestone.isRock(regionId, bankId, mapId, nx, ny)) { reached = true; break }
+      if (!chargestone.isFloor(regionId, bankId, mapId, nx, ny)) break
       if (ndsNpcs.of(regionId, bankId, mapId).any { it.x == nx && it.y == ny }) break
       cx = nx
       cy = ny

@@ -23,14 +23,31 @@ class NdsChargestone @Inject constructor() {
   data class Stone(val index: Int, val big: Boolean, val x: Int, val y: Int, val level: Int)
 
   private val byMap: Map<Triple<Int, Int, Int>, List<Stone>> by lazy { load() }
+  private val floors = HashMap<Triple<Int, Int, Int>, MutableSet<Long>>()
+  private val rocks = HashMap<Triple<Int, Int, Int>, MutableSet<Long>>()
 
   fun of(regionId: Int, bankId: Int, mapId: Int): List<Stone> = byMap[Triple(regionId, bankId, mapId)].orEmpty()
+
+  private fun tile(x: Int, y: Int): Long = (x.toLong() shl 20) or (y.toLong() and 0xFFFFF)
+
+  /** A tile a stone can slide over: the cave floor (tile flags 0x84). */
+  fun isFloor(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Boolean { byMap; return floors[Triple(regionId, bankId, mapId)]?.contains(tile(x, y)) == true }
+
+  /** A big stone's footprint (behaviour 0x32): charged, so a loose stone sliding into it sticks. */
+  fun isRock(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Boolean { byMap; return rocks[Triple(regionId, bankId, mapId)]?.contains(tile(x, y)) == true }
 
   private fun load(): Map<Triple<Int, Int, Int>, List<Stone>> {
     val out = HashMap<Triple<Int, Int, Int>, MutableList<Stone>>()
     val file = listOf(File("nds-chargestone-2.txt"), File("server.game/nds-chargestone-2.txt")).firstOrNull { it.isFile } ?: return out
     file.bufferedReader().useLines { lines ->
       for (line in lines) {
+        if (line.startsWith("ctile;")) {
+          val t = line.split(';')
+          if (t.size < 7) continue
+          val key = Triple(t[1].toInt(), t[2].toInt(), t[3].toInt())
+          (if (t[6] == "rock") rocks else floors).getOrPut(key) { HashSet() } += tile(t[4].toInt(), t[5].toInt())
+          continue
+        }
         if (!line.startsWith("cstone;")) continue
         val p = line.split(';')
         if (p.size < 8) continue

@@ -707,6 +707,8 @@ class NdsScriptCorpusGenerator {
         "DsMapGimmick" -> out += "ds_mapgimmick ${a.joinToString(", ")}"
         "DsGimmickMask" -> out += "ds_gimmickmask ${a.joinToString(", ")}"
         "DsGimmickFlags" -> out += "ds_gimmickflags ${a.joinToString(", ")}"
+        "DsDexCount" -> out += "ds_dexcount ${a[0]}, ${a[1]}"
+        "DsDexHas" -> out += "ds_dexhas ${a.joinToString(", ")}"
         "DsPlayerHeight" -> out += "ds_playerheight ${a.joinToString(", ")}"
         "DsFlagsUnlessLogin" -> out += "ds_flagsunlesslogin ${a.joinToString(", ")}"
         "DsGimmickBit" -> out += "ds_gimmickbit ${a.joinToString(", ")}"
@@ -2178,6 +2180,12 @@ class NdsScriptCorpusGenerator {
               LIFT_HEIGHTS.getOrNull(n)?.let { b.lines += listOf("DsPlayerHeight", it[state.toInt()].toString(), "1", n.toString()) }
             }
             "CMD_18A" -> driftveilRestore = true
+            // The Pokedex, NATIONAL - one dex for the whole MMO, as the Kanto ratings (owner, 2026-09-26:
+            // "he can't be checking my Unova dex"). 0xDD (mode, VAR): the dex count, mode 0 seen, else
+            // caught. 0xDF (mode, species, VAR): 1 when that species is seen (mode 0) / caught. Unsized,
+            // 0xDF swallowed the 0xDD after it and the fallback zeroed the count: "you've seen 0".
+            "CMD_0DD" -> b.lines += listOf("DsDexCount", if (t(0) == "0") "seen" else "caught", v(1))
+            "CMD_0DF" -> b.lines += listOf("DsDexHas", if (t(0) == "0") "seen" else "caught", tv(1), v(2))
             // 0x18B binds the entrance's app; the client already builds that lift at the top, so
             // nothing to send (a [0x192, 0] here rode it up from below on every entry).
             "CMD_18B" -> {}

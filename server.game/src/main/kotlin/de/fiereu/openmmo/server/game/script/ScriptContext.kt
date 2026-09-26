@@ -1193,6 +1193,13 @@ internal constructor(
     return seen.size to owned.size
   }
 
+  /** One species in the national dex: seen (or caught) by the same tiers [dexCounts] uses. */
+  fun dexHas(species: Int, caught: Boolean): Boolean {
+    val stored = characterId?.let { characters?.getCharacter(it) } ?: return false
+    val ids = if (caught) de.fiereu.openmmo.server.game.services.DexProgressService.ownedWireIds(stored) else de.fiereu.openmmo.server.game.services.DexProgressService.seenWireIds(stored)
+    return species in ids
+  }
+
   fun leadSpeciesName(): String? =
       characterId?.let { characters?.getCharacter(it)?.pokemon?.firstOrNull() }?.let { speciesName(it.dexId) }
 

@@ -327,6 +327,7 @@ class ScriptSupportAnalyzer(
           "ds_getpartymonspecies", "ds_messagevar" -> args.size == 2
           "ds_countpartynoneggs", "ds_dexcompleted", "ds_gameversion" -> args.size == 1
           "ds_dexcount", "ds_storepartycount" -> args.size == 2
+          "ds_dexhas" -> args.size == 3
           // ds_dexrating VAR, 21 national rating text entries
           "ds_dexrating" -> args.size == 22
           "ds_getfriendsprite", "ds_getpartyleadalive" -> args.size == 1 && args[0] is VarArg
@@ -446,6 +447,7 @@ class ScriptSupportAnalyzer(
           "givemon" -> isValue(args[0]) && isValue(args[1])
           "ds_startchoosestarterscene", "ds_dexrating" -> args[0] is VarArg && args.drop(1).all { it is IntArg || it.token == "index" }
           "ds_dexcount" -> args[0].token in setOf("seen", "caught") && args[1] is VarArg
+          "ds_dexhas" -> args.size == 3 && args[0].token in setOf("seen", "caught") && args[2] is VarArg
           "ds_startfirstbattle" -> args[0] is IntArg
           "ds_starttagbattle" -> isValue(args[1]) && isValue(args[2])
           "ds_getpartymonspecies" -> isValue(args[0]) && args[1] is VarArg
@@ -708,6 +710,7 @@ class ScriptSupportAnalyzer(
             "ds_storepartycount",
             "ds_gameversion",
             "ds_dexcount",
+            "ds_dexhas",
             "ds_dexcompleted",
             "ds_dexrating",
             "ds_messagevar",

@@ -602,6 +602,11 @@ class InterpretedScript(
           ctx.setVar(namespaced(varArg(instruction, 1).token), if (instruction.arg(0).token == "caught") caught else seen)
           state.pc++
         }
+        // ds_dexhas seen|caught, SPECIES, VAR: 1 when the NATIONAL dex has that species seen / caught.
+        "ds_dexhas" -> {
+          ctx.setVar(namespaced(varArg(instruction, 2).token), if (ctx.dexHas(value(ctx, instruction.arg(1)), caught = instruction.arg(0).token == "caught")) 1 else 0)
+          state.pc++
+        }
         // Pokedex_NationalDexCompleted: caught >= NATIONAL_DEX_GOAL (493 less the 11 mythicals).
         "ds_dexcompleted" -> {
           ctx.setVar(namespaced(varArg(instruction, 0).token), if (ctx.dexCounts(kantoOnly = false).second >= NATIONAL_DEX_GOAL) 1 else 0)

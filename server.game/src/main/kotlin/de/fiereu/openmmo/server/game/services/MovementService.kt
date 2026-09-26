@@ -143,7 +143,7 @@ constructor(
    * (where a scene moved it), or a wall the server stood. Both are what the client's own
    * collision stops the player with.
    */
-  private fun ndsBonk(state: PlayerState, stored: StoredCharacter, toX: Int, toY: Int, railLine: Int): Boolean {
+  private fun ndsBonk(state: PlayerState, stored: StoredCharacter, toX: Int, toY: Int, railLine: Int, direction: Direction = state.facingDirection, session: SessionContext? = null): Boolean {
     val regionId = state.regionId
     val bankId = state.bankId
     val mapId = state.mapId
@@ -160,6 +160,9 @@ constructor(
     // floors in the model, so the flag is no wall there: every step bonked, which committed no
     // step and so ran no trainer sight, no encounter and no seam (owner, 2026-09-25).
     if (!ndsLand.mostlyBlocked(regionId, bankId, mapId) && ndsLand.blockedInside(regionId, bankId, mapId, toX, toY)) return true
+    // Chargestone Cave's electric stones (NdsChargestone): walking into a small stone pushes it by
+    // the overlay's rules; any stone on the tile holds the player.
+    if (session != null && npcService.pushChargestone(session, state, regionId, bankId, mapId, toX, toY, direction) { x, y -> ndsLand.blocked(regionId, bankId, mapId, x, y) != false }) return true
     val poses = state.scriptedNpcPoses
     return npcService.ndsNpcsOn(regionId, bankId, mapId).any { npc ->
       // Server-made walls are judged by state.ndsWalls above: their definitions outlive an
@@ -298,7 +301,7 @@ constructor(
       // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
       // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -
       // the ROM's own or a wall NdsCurtainWalls stands - only turns the player.
-      if (ndsBonk(state, stored, toX, toY, railLine)) {
+      if (ndsBonk(state, stored, toX, toY, railLine, msg.direction, ctx)) {
         characterStore.updatePosition(charId, msg.x.toShort(), msg.y.toShort(), facing = msg.direction)
         state.x = msg.x.toShort()
         state.y = msg.y.toShort()

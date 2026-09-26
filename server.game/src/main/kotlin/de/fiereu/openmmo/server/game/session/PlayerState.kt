@@ -315,6 +315,10 @@ data class PlayerState(
     val ndsWalls: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /** NdsLookahead's temp stops for this session: wall tile key ([ndsWallKey]) -> the npc index standing there. */
     val lookaheadWalls: MutableMap<Long, Int> = ConcurrentHashMap(),
+    /** Chargestone stones this session moved on its current map: (map key shl 16 or index) -> tile. */
+    val ndsStones: MutableMap<Long, Pair<Int, Int>> = ConcurrentHashMap(),
+    /** Chargestone small stones charged in this session (same keys). */
+    val ndsChargedStones: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /** Stamp of the last lookahead refresh; the timed decay clears the stops when it goes stale. */
     @field:Volatile var lookaheadStamp: Long = 0,
     /** /devlookahead off: no stops for this session. */

@@ -7,9 +7,11 @@ import de.fiereu.openmmo.common.enums.Region
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.NpcDef
 import de.fiereu.openmmo.net.game.packets.EntityLeavePacket
+import de.fiereu.openmmo.net.game.packets.EntityMovePacket
 import de.fiereu.openmmo.net.game.packets.NpcSpawnPacket
 import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.server.game.session.PLAYER_STATE
+import de.fiereu.openmmo.server.game.session.PlayerState
 import de.fiereu.openmmo.server.game.storage.CharacterStore
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
@@ -41,6 +43,7 @@ constructor(
     private val scope: kotlinx.coroutines.CoroutineScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default),
     private val ndsNpcs: NdsNpcs = NdsNpcs(),
     private val ndsRails: NdsRails = NdsRails(),
+    private val chargestone: NdsChargestone = NdsChargestone(),
 ) {
 
   private val npcEntityIdCounter = AtomicLong(0x1A69000000000000L)
@@ -82,6 +85,7 @@ constructor(
     val map = mapManager.getMap(regionId, bankId, mapId)
     if (map == null) {
       spawnNdsNpcs(ctx, regionId, bankId, mapId)
+      spawnChargestones(ctx, regionId, bankId, mapId)
       return
     }
     val stored = ctx.attributes[PLAYER_STATE]?.characterId?.let(characterStore::getCharacter)
@@ -497,6 +501,95 @@ constructor(
 
   fun despawnDsWall(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, id: Int) {
     ctx.send(EntityLeavePacket(entityIdFor(regionId, bankId, mapId, id)))
+  }
+
+  // ---- Chargestone Cave's electric stones (NdsChargestone: the rules of White overlay 51) ----
+
+  private fun stoneKey(regionId: Int, bankId: Int, mapId: Int, index: Int): Long =
+      (de.fiereu.openmmo.server.game.session.mapCacheKey(regionId, bankId, mapId).toLong() shl 16) or index.toLong()
+
+  private fun stoneTile(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, stone: NdsChargestone.Stone): Pair<Int, Int> =
+      if (stone.big) stone.x to stone.y else state?.ndsStones?.get(stoneKey(regionId, bankId, mapId, stone.index)) ?: (stone.x to stone.y)
+
+  private fun charged(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, stone: NdsChargestone.Stone): Boolean =
+      stone.big || state?.ndsChargedStones?.contains(stoneKey(regionId, bankId, mapId, stone.index)) == true
+
+  /**
+   * Entering a cave floor lays its stones out afresh from the table (the overlay creates them from
+   * the table on a floor's first load) and charges every small stone that touches a charged one,
+   * then draws the small ones as field object 253. The big ones are the client's own models.
+   */
+  fun spawnChargestones(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int) {
+    val stones = chargestone.of(regionId, bankId, mapId)
+    if (stones.isEmpty()) return
+    val state = ctx.attributes[PLAYER_STATE]
+    if (state != null) {
+      stones.forEach { state.ndsStones.remove(stoneKey(regionId, bankId, mapId, it.index)); state.ndsChargedStones.remove(stoneKey(regionId, bankId, mapId, it.index)) }
+      var changed = true
+      while (changed) {
+        changed = false
+        for (s in stones) {
+          if (s.big || charged(state, regionId, bankId, mapId, s)) continue
+          val touching = stones.any { o -> o !== s && charged(state, regionId, bankId, mapId, o) && kotlin.math.abs(o.x - s.x) + kotlin.math.abs(o.y - s.y) == 1 }
+          if (touching) { state.ndsChargedStones += stoneKey(regionId, bankId, mapId, s.index); changed = true }
+        }
+      }
+    }
+    for (stone in stones) {
+      if (stone.big) continue
+      val npc =
+          NdsNpcs.Npc(
+              index = NdsChargestone.FIRST_ID + stone.index, id = stone.index, sprite = NdsChargestone.SMALL_STONE_SPRITE, movement = 0, flag = 0, script = 0,
+              facing = 1, xRange = 0, yRange = 0, x = stone.x, y = stone.y)
+      sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
+    }
+  }
+
+  /** The Chargestone stone (small or big) on this tile for this session, if any. */
+  fun chargestoneAt(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): NdsChargestone.Stone? =
+      chargestone.of(regionId, bankId, mapId).firstOrNull { stoneTile(state, regionId, bankId, mapId, it) == (x to y) }
+
+  /**
+   * The player walked into a small stone. Charged: it holds. Loose: it looks along the push for a
+   * charged stone within 32 tiles, stopping at the first wall or object; finding one, it slides up
+   * to it and is charged. True whenever a stone stands on the tile (the player never enters it).
+   */
+  fun pushChargestone(ctx: SessionContext, state: PlayerState, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int, direction: Direction, wall: (Int, Int) -> Boolean): Boolean {
+    val stone = chargestoneAt(state, regionId, bankId, mapId, x, y) ?: return false
+    if (stone.big || charged(state, regionId, bankId, mapId, stone)) return true
+    if (direction.dx == 0 && direction.dy == 0) return true
+    var steps = 0
+    var reached = false
+    var cx = x
+    var cy = y
+    while (steps <= NdsChargestone.MAX_SLIDE) {
+      val nx = cx + direction.dx
+      val ny = cy + direction.dy
+      val other = chargestoneAt(state, regionId, bankId, mapId, nx, ny)
+      if (other != null) { reached = charged(state, regionId, bankId, mapId, other); break }
+      if (wall(nx, ny)) break
+      if (ndsNpcs.of(regionId, bankId, mapId).any { it.x == nx && it.y == ny }) break
+      cx = nx
+      cy = ny
+      steps++
+    }
+    if (!reached || steps == 0) {
+      log.info { "[Stone] char=${state.characterId} stone ${stone.index} at ($x, $y) holds against a push $direction" }
+      return true
+    }
+    val key = stoneKey(regionId, bankId, mapId, stone.index)
+    state.ndsStones[key] = cx to cy
+    state.ndsChargedStones += key
+    val entityId = entityIdFor(regionId, bankId, mapId, NdsChargestone.FIRST_ID + stone.index)
+    var px = x
+    var py = y
+    repeat(steps) {
+      px += direction.dx
+      py += direction.dy
+      ctx.send(EntityMovePacket(entityId = entityId, x = px, y = py, direction = direction))
+    }
+    log.info { "[Stone] char=${state.characterId} stone ${stone.index} pushed $direction from ($x, $y) to ($cx, $cy), $steps tiles, now charged" }
+    return true
   }
 
   fun despawnNpc(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, localId: Int) {

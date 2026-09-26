@@ -179,13 +179,16 @@ constructor(
           BattleAction.BALL -> ChosenAction(position, ChosenAction.Kind.SAFARI_BALL)
           BattleAction.BAIT -> ChosenAction(position, ChosenAction.Kind.SAFARI_BAIT)
           BattleAction.ROCK -> ChosenAction(position, ChosenAction.Kind.SAFARI_ROCK)
+          // Triple Shift (kind 11): unknown, it froze the turn (owner, 2026-09-26). The Pokemon now
+          // sits the turn out; moving it to the centre needs the client's position-change event.
+          BattleAction.SHIFT -> ChosenAction(position, ChosenAction.Kind.SHIFT).also { log.info { "[Shift] position=$position asked to shift - passing its turn, no swap yet" } }
         }
     battle.pendingActions[position] = chosen
     battle.awaitingPositions -= position
     // Running, a ball and the safari choices are the whole side's turn: the client offers no
     // second pick after them, so waiting for the other position hung every dark-grass double the
     // player tried to leave (owner, 2026-09-23).
-    if (chosen.kind != ChosenAction.Kind.MOVE && chosen.kind != ChosenAction.Kind.SWITCH) battle.awaitingPositions.clear()
+    if (chosen.kind != ChosenAction.Kind.MOVE && chosen.kind != ChosenAction.Kind.SWITCH && chosen.kind != ChosenAction.Kind.SHIFT) battle.awaitingPositions.clear()
     if (battle.awaitingPositions.isEmpty()) resolvePending(battle)
   }
 

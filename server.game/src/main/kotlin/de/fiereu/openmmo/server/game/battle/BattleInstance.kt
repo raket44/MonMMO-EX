@@ -59,6 +59,8 @@ data class ChosenAction(
     SAFARI_BAIT,
     SAFARI_ROCK,
     RUN,
+    /** Triple Shift: the Pokemon sits this turn out (the swap itself is not wired yet). */
+    SHIFT,
   }
 }
 

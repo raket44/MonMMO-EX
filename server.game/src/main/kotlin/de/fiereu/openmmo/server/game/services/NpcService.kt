@@ -526,31 +526,6 @@ constructor(
     }
   }
 
-  /**
-   * The direction(s) a loose stone can be pushed: toward the nearest big or attached stone on the
-   * same row or column as its map-file placement (a tie allows both). Empty when nothing lines
-   * up, which leaves the stone free - one stone on the cave's first floor (40,24) has no partner.
-   */
-  fun pushDirections(regionId: Int, bankId: Int, mapId: Int, stone: NdsMapObjects.Stone): Set<Direction> {
-    val anchors = mapObjects.of(regionId, bankId, mapId).filter { !it.loose }
-    val distance = HashMap<Direction, Int>()
-    for (d in listOf(Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT)) {
-      val best =
-          anchors.mapNotNull { a ->
-            val ax = a.x - stone.x
-            val ay = a.y - stone.y
-            when {
-              d.dx != 0 && ay == 0 && ax * d.dx > 0 -> ax * d.dx
-              d.dy != 0 && ax == 0 && ay * d.dy > 0 -> ay * d.dy
-              else -> null
-            }
-          }.minOrNull() ?: continue
-      distance[d] = best
-    }
-    val nearest = distance.values.minOrNull() ?: return emptySet()
-    return distance.filterValues { it == nearest }.keys
-  }
-
   /** Any stone (big, attached or loose) standing on this tile for this session. */
   fun stoneAt(state: PlayerState?, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): NdsMapObjects.Stone? =
       mapObjects.of(regionId, bankId, mapId).firstOrNull { stoneTile(state, regionId, bankId, mapId, it) == (x to y) }
@@ -567,14 +542,6 @@ constructor(
     val dx = direction.dx
     val dy = direction.dy
     if (dx == 0 && dy == 0) return true
-    // Each loose stone moves one way only: toward the nearest big or attached stone in line with
-    // where the map file placed it (owner, 2026-09-25: "they each only have 1 direction they can be
-    // pushed"; nearly every loose stone sits 2-3 tiles from one). Pushed any other way, it holds.
-    val allowed = pushDirections(regionId, bankId, mapId, stone)
-    if (allowed.isNotEmpty() && direction !in allowed) {
-      log.info { "[Stone] char=${state.characterId} stone ${stone.index} at ($x, $y) only moves $allowed, not $direction" }
-      return true
-    }
     var sx = x
     var sy = y
     val path = mutableListOf<Pair<Int, Int>>()

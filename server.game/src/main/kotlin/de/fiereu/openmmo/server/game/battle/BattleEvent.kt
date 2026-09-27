@@ -68,7 +68,7 @@ sealed interface BattleEvent {
   /** The monster left the field of view (Fly, Dig...) or came back. */
   data class Hidden(val targetId: Long, val hidden: Boolean) : BattleEvent
 
-  /** A rotation battle's row turned one slot at the end of a turn (client event 26). */
+  /** A rotation battle's row turned one slot at the end of a turn (client event -16). */
   data class Rotated(val targetId: Long, val side: Int, val toLowerSlots: Boolean) : BattleEvent
 
   /**

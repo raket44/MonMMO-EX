@@ -101,7 +101,8 @@ sealed interface BattleEventBody {
   data class Visibility(val hidden: Boolean) : BattleEventBody
 
   /**
-   * Event 26 (client f/ax4, r32645 factory f/ko1): a side's row turns one slot. [side] is the
+   * Event -16 (client f/ax4, whose Dd1() returns -16; factory f/ko1 table base -42, entry 26 - the
+   * first build sent 26, which the client reads as another event): a side's row turns one slot. [side] is the
    * client's side index; [toLowerSlots] is the direction byte == 1 - every monster moves to the
    * slot below, the first wrapping to the last (f/or7); 0 moves each up, the last wrapping to the
    * first. The client prints its own line (ROM battle text 38 / 40) and animates the turn.
@@ -553,7 +554,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
   VISIBILITY(id = 92, codec = VisibilityBodyCodec),
-  ROTATION(id = 26, codec = RotationBodyCodec),
+  ROTATION(id = -16, codec = RotationBodyCodec),
   ABILITY_POPUP(id = 51, codec = AbilityPopupBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),

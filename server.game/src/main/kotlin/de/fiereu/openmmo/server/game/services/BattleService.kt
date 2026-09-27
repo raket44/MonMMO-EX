@@ -772,7 +772,7 @@ constructor(
    * A rotation battle (Unova trainer data type 3, fought on the three-a-side field) turns both rows
    * one slot once the whole turn is over (owner, 2026-09-26): the player's row moves each monster
    * up a slot, the last wrapping to the first; the opponent's moves each down, the first wrapping
-   * to the last. The client animates it and prints its own line on event 26 (f/ax4 -> f/or7,
+   * to the last. The client animates it and prints its own line on event -16 (f/ax4 -> f/or7,
    * which rotates the same way: direction byte 1 = down, 0 = up). Client side index: 0 the
    * player's row, 1 the opponent's.
    */

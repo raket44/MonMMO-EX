@@ -287,11 +287,25 @@ constructor(
     // plain very tall grass and have no Dark Grass tables at all.
     val darkGrass =
         ndsLand.isDarkGrass(type) && RetailEncounters.ndsHeaderHasType(region, header, "Dark Grass")
+    // Buildings with wild monsters (Celestial Tower's floors): retail lists them as "Inside" - a
+    // walkable plain tile on a header with an Inside table, the same rule as a cave (owner, 2026-09-26).
+    val inside =
+        type == 0 &&
+            ndsLand.blocked(region, bank, map, x, y) == false &&
+            RetailEncounters.ndsHeaderHasType(region, header, "Inside")
+    // The Desert Resort's encounters are its SAND's, which retail lists as Grass: sand rolls the
+    // Grass table on a map with no grass tiles of its own (a beach with grass keeps it for the grass).
+    val sand =
+        type == NdsLand.SAND &&
+            RetailEncounters.ndsHeaderHasType(region, header, "Grass") &&
+            !ndsLand.hasGrass(region, bank, map)
     val types =
         when {
           darkGrass -> setOf("Dark Grass")
           ndsLand.isGrass(type) -> setOf("Grass")
           cave -> setOf("Cave")
+          inside -> setOf("Inside")
+          sand -> setOf("Grass")
           else -> return
         }
     if (battleService.inBattle(charId) || !hasUsablePartyMon(charId)) return

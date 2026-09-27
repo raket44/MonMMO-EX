@@ -93,6 +93,14 @@ class NdsLand @Inject constructor() {
 
   fun isGrass(type: Int): Boolean = type == TALL_GRASS || type == VERY_TALL_GRASS
 
+  /** True when any tile of the map is grass or dark grass: its Grass table then belongs to the grass. */
+  fun hasGrass(region: Int, bank: Int, map: Int): Boolean {
+    val tiles = maps[Triple(region, bank, map)] ?: return false
+    return grassMaps.getOrPut(Triple(region, bank, map)) { tiles.type.indices.any { tiles.present[it] && isGrass(tiles.type[it].toInt()) } }
+  }
+
+  private val grassMaps = java.util.concurrent.ConcurrentHashMap<Triple<Int, Int, Int>, Boolean>()
+
   /**
    * Unova's dark grass, where the retail tables keep a separate (and higher level) pool and the
    * doubles live. The extractor maps the Gen 5 behaviour 0x18 onto Gen 4's VERY_TALL_GRASS -
@@ -156,5 +164,7 @@ class NdsLand @Inject constructor() {
     const val WATER_SEA = 21
     /** Ice the player slides on (Gen 4 TILE_BEHAVIOR_ICE; White's terrain 0x18, Cold Storage). */
     const val ICE = 32
+    /** Gen 5 sand (behaviours 0x0B/0x0C): the Desert Resort's ground, where its Grass table rolls. */
+    const val SAND = 40
   }
 }

@@ -110,6 +110,13 @@ sealed interface BattleEventBody {
   data class Rotation(val side: Byte, val toLowerSlots: Boolean) : BattleEventBody
 
   /**
+   * Event 97 (client f/th2 -> swap task f/kk2): two monsters of one side trade places. [ref] is the
+   * mover's packed slot (position in the high nibble, side in the low, as in the action packet),
+   * [otherSlot] the slot it swaps with, [flag] one byte the client keeps (sent 0). Triple Shift.
+   */
+  data class Swap(val ref: Byte, val otherSlot: Byte, val flag: Byte = 0) : BattleEventBody
+
+  /**
    * The Safari Zone's bait event, client kind -33 (f/h31): 0 "{00} is eating!" with the eating
    * animation, 1 "There's too many {00}! The bait would be wasted!", 2 "{00} can't eat more!",
    * 3 / 4 / 5 "{thrower} tossed a Mellow / Hearty / Giant Bait to {00}!" with the toss animation;
@@ -381,6 +388,16 @@ private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEv
   }
 }
 
+private val SwapBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val ref = field(S8) { (it as BattleEventBody.Swap).ref }
+        val other = field(S8) { (it as BattleEventBody.Swap).otherSlot }
+        val flag = field(S8) { (it as BattleEventBody.Swap).flag }
+        return BattleEventBody.Swap(ref, other, flag)
+      }
+    }
+
 private val RotationBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
@@ -555,6 +572,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
   VISIBILITY(id = 92, codec = VisibilityBodyCodec),
   ROTATION(id = -16, codec = RotationBodyCodec),
+  SWAP(id = 97, codec = SwapBodyCodec),
   ABILITY_POPUP(id = 51, codec = AbilityPopupBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
@@ -581,6 +599,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.WeatherChange -> WEATHER_CHANGE
           is BattleEventBody.Visibility -> VISIBILITY
           is BattleEventBody.Rotation -> ROTATION
+          is BattleEventBody.Swap -> SWAP
           is BattleEventBody.AbilityPopup -> ABILITY_POPUP
           is BattleEventBody.SafariBait -> SAFARI_BAIT
           is BattleEventBody.ClientLine -> CLIENT_LINE

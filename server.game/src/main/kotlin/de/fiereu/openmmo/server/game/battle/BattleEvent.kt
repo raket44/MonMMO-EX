@@ -71,6 +71,9 @@ sealed interface BattleEvent {
   /** A rotation battle's row turned one slot at the end of a turn (client event -16). */
   data class Rotated(val targetId: Long, val side: Int, val toLowerSlots: Boolean) : BattleEvent
 
+  /** Triple Shift: the monster at [fromSlot] traded places with [toSlot] on its side (client event 97). */
+  data class Swapped(val targetId: Long, val side: Int, val fromSlot: Int, val toSlot: Int) : BattleEvent
+
   /**
    * One of the client's fixed battle lines, with its body values; lines that carry an hp move the
    * bar as well, so no separate [HpChanged] is needed for them.

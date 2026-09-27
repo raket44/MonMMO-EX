@@ -227,6 +227,19 @@ constructor(
       if (leaving.fainted) continue
       performSwitch(battle, switch.position, target)
     }
+    // Triple Shift: an end monster trades places with the centre one before the moves, and that is
+    // its turn (client event 97 swaps the sprites).
+    for (shift in actions.filter { it.kind == ChosenAction.Kind.SHIFT }) {
+      val from = shift.position
+      val to = battle.playerPositions.size / 2
+      if (battle.playerPositions.size != 3 || from == to || battle.playerPositions[from] < 0) continue
+      val mover = battle.party[battle.playerPositions[from]]
+      val held = battle.playerPositions[to]
+      battle.playerPositions[to] = battle.playerPositions[from]
+      battle.playerPositions[from] = held
+      log.info { "[Shift] char=${battle.charId} position $from -> $to: ${battle.playerPositions.toList()}" }
+      emitter.sendEvents(battle, listOf(de.fiereu.openmmo.server.game.battle.BattleEvent.Swapped(mover.entityId, 0, from, to)))
+    }
     val events = engine.resolveTurn(battle, actions.filter { it.kind == ChosenAction.Kind.MOVE })
     // The raid logs every turn it plays, so a broken fight can be read back from the server log.
     if (battle.raid != null) {

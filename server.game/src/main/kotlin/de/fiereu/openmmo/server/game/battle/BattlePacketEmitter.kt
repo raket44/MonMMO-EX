@@ -303,6 +303,9 @@ class BattlePacketEmitter @Inject constructor(private val interestManager: Inter
         is BattleEvent.Hidden ->
             target(event.targetId).subEvents +=
                 BattleActionEvent(null, null, BattleEventBody.Visibility(event.hidden))
+        is BattleEvent.Rotated ->
+            target(event.targetId).subEvents +=
+                BattleActionEvent(null, null, BattleEventBody.Rotation(event.side.toByte(), event.toLowerSlots))
         is BattleEvent.Fainted -> Unit
         is BattleEvent.Charging -> target(event.attackerId).outcome = CHARGING_TARGET_MOVE
         is BattleEvent.CantMove,

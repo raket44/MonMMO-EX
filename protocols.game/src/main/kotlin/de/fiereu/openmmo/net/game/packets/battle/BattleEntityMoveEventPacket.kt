@@ -101,6 +101,14 @@ sealed interface BattleEventBody {
   data class Visibility(val hidden: Boolean) : BattleEventBody
 
   /**
+   * Event 26 (client f/ax4, r32645 factory f/ko1): a side's row turns one slot. [side] is the
+   * client's side index; [toLowerSlots] is the direction byte == 1 - every monster moves to the
+   * slot below, the first wrapping to the last (f/or7); 0 moves each up, the last wrapping to the
+   * first. The client prints its own line (ROM battle text 38 / 40) and animates the turn.
+   */
+  data class Rotation(val side: Byte, val toLowerSlots: Boolean) : BattleEventBody
+
+  /**
    * The Safari Zone's bait event, client kind -33 (f/h31): 0 "{00} is eating!" with the eating
    * animation, 1 "There's too many {00}! The bait would be wasted!", 2 "{00} can't eat more!",
    * 3 / 4 / 5 "{thrower} tossed a Mellow / Hearty / Giant Bait to {00}!" with the toss animation;
@@ -372,6 +380,15 @@ private class LineBodyCodec(private val line: BattleLine) : PacketCodec<BattleEv
   }
 }
 
+private val RotationBodyCodec: Codec<BattleEventBody> =
+    object : PacketCodec<BattleEventBody>() {
+      override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
+        val side = field(S8) { (it as BattleEventBody.Rotation).side }
+        val dir = field(S8) { if ((it as BattleEventBody.Rotation).toLowerSlots) 1 else 0 }
+        return BattleEventBody.Rotation(side, dir.toInt() == 1)
+      }
+    }
+
 private val VisibilityBodyCodec: Codec<BattleEventBody> =
     object : PacketCodec<BattleEventBody>() {
       override fun CodecScope<BattleEventBody>.body(): BattleEventBody {
@@ -536,6 +553,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
   STATUS_CHANGE(id = 2, codec = StatusChangeBodyCodec),
   WEATHER_CHANGE(id = 12, codec = WeatherChangeBodyCodec),
   VISIBILITY(id = 92, codec = VisibilityBodyCodec),
+  ROTATION(id = 26, codec = RotationBodyCodec),
   ABILITY_POPUP(id = 51, codec = AbilityPopupBodyCodec),
   EFFECTIVENESS_MESSAGE(id = 4, codec = EffectivenessMessageBodyCodec),
   POKEMON_FAINTED(id = 5, codec = FaintBodyCodec),
@@ -561,6 +579,7 @@ enum class BattleEventType(val id: Int, val codec: Codec<BattleEventBody>) {
           is BattleEventBody.StatusChange -> STATUS_CHANGE
           is BattleEventBody.WeatherChange -> WEATHER_CHANGE
           is BattleEventBody.Visibility -> VISIBILITY
+          is BattleEventBody.Rotation -> ROTATION
           is BattleEventBody.AbilityPopup -> ABILITY_POPUP
           is BattleEventBody.SafariBait -> SAFARI_BAIT
           is BattleEventBody.ClientLine -> CLIENT_LINE

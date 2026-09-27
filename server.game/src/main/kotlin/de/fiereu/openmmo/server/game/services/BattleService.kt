@@ -768,6 +768,31 @@ constructor(
     return battle
   }
 
+  /**
+   * A rotation battle (Unova trainer data type 3, fought on the three-a-side field) turns both rows
+   * one slot once the whole turn is over (owner, 2026-09-26): the player's row moves each monster
+   * up a slot, the last wrapping to the first; the opponent's moves each down, the first wrapping
+   * to the last. The client animates it and prints its own line on event 26 (f/ax4 -> f/or7,
+   * which rotates the same way: direction byte 1 = down, 0 = up). Client side index: 0 the
+   * player's row, 1 the opponent's.
+   */
+  private fun rotateRows(battle: BattleInstance) {
+    if (battle.trainer?.battleType != 3 || battle.format != BattleFormat.TRIPLES) return
+    val events = mutableListOf<de.fiereu.openmmo.server.game.battle.BattleEvent>()
+    fun turn(row: IntArray, down: Boolean, side: Int, lead: Long?) {
+      if (row.count { it >= 0 } < 2 || lead == null) return
+      val old = row.copyOf()
+      val n = row.size
+      for (k in 0 until n) row[if (down) (k - 1 + n) % n else (k + 1) % n] = old[k]
+      events += de.fiereu.openmmo.server.game.battle.BattleEvent.Rotated(lead, side, down)
+    }
+    turn(battle.playerPositions, down = false, side = 0, lead = battle.playerActives().firstOrNull { !it.fainted }?.entityId)
+    turn(battle.opponentPositions, down = true, side = 1, lead = battle.opponentActives().firstOrNull { !it.fainted }?.entityId)
+    if (events.isEmpty()) return
+    log.info { "Rotation turn ${battle.turn} char=${battle.charId}: player ${battle.playerPositions.toList()} opponent ${battle.opponentPositions.toList()}" }
+    emitter.sendEvents(battle, events)
+  }
+
   private suspend fun afterTurn(battle: BattleInstance) {
     // Every opponent that fell this turn pays out once, before the field is tidied.
     for (foe in battle.opponentActives()) {
@@ -830,6 +855,7 @@ constructor(
         if (battle.forcedSwitchPositions.isNotEmpty()) {
           for (position in battle.forcedSwitchPositions) emitter.sendSwitchPrompt(battle, position)
         } else {
+          rotateRows(battle)
           battle.turn += 1
           prompt(battle)
         }

@@ -68,6 +68,9 @@ sealed interface BattleEvent {
   /** The monster left the field of view (Fly, Dig...) or came back. */
   data class Hidden(val targetId: Long, val hidden: Boolean) : BattleEvent
 
+  /** A rotation battle's row turned one slot at the end of a turn (client event 26). */
+  data class Rotated(val targetId: Long, val side: Int, val toLowerSlots: Boolean) : BattleEvent
+
   /**
    * One of the client's fixed battle lines, with its body values; lines that carry an hp move the
    * bar as well, so no separate [HpChanged] is needed for them.

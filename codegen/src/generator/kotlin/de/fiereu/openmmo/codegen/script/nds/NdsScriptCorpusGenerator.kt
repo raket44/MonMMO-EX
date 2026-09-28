@@ -2234,6 +2234,10 @@ class NdsScriptCorpusGenerator {
             "CloseBubbleMessage" -> b.lines += listOf("CloseMessage")
             // SetVarPoke slot, species (a literal or a var): the species name in a text slot.
             "SetVarPoke" -> b.lines += listOf("BufferSpeciesName", t(0), tv(1))
+            // StorePartySpecies VAR, slotVar: the species in that party slot (N's Mistralton scene
+            // buffers it straight after), Platinum's GetPartyMonSpecies slot, VAR. Unlowered it was
+            // an unknown command that failed the whole Mistralton frame table (2026-09-28).
+            "StorePartySpecies" -> b.lines += listOf("GetPartyMonSpecies", tv(1), tv(0))
             // Opcode 0xB4 (table name "ResetScreen") is a function-call family: (40, var, value)
             // stores, (260, 169, 1300) sits between a fade and WaitFanfare. Nuvema's gift box
             // (file 782 entry 8) uses two of them around the Gen 5 starter-select app: CMD_1AE +

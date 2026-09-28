@@ -146,12 +146,12 @@ constructor(
     for (npc in ndsNpcs.of(regionId, bankId, mapId)) {
       if (npc.sight <= 0 || ndsWanders(npc)) continue
       if (ignoreBlocked && !sameFloor(npc, playerHeight)) {
-        if (npc.type in 1..2 && kotlin.math.abs(npc.x - playerX) + kotlin.math.abs(npc.y - playerY) <= npc.sight)
+        if (ndsEyeClass(regionId, npc.type) in 1..2 && kotlin.math.abs(npc.x - playerX) + kotlin.math.abs(npc.y - playerY) <= npc.sight)
             log.info { "Trainer sight (DS): npc ${npc.index} at (${npc.x},${npc.y}) height ${npc.z} skipped: player height ${playerHeight?.let { it / 16 }} at ($playerX,$playerY)" }
         continue
       }
       val directions =
-          when (npc.type) {
+          when (ndsEyeClass(regionId, npc.type)) {
             1 -> listOf(ndsFacing(npc.facing))
             2 -> CARDINALS
             else -> continue
@@ -193,7 +193,7 @@ constructor(
       if (npc.sight <= 0 || ndsWanders(npc)) continue
       if (ignoreBlocked && !sameFloor(npc, playerHeight)) continue
       val directions =
-          when (npc.type) {
+          when (ndsEyeClass(regionId, npc.type)) {
             1 -> listOf(ndsFacing(npc.facing))
             2 -> CARDINALS
             else -> continue
@@ -213,6 +213,16 @@ constructor(
     }
     return out
   }
+
+  /**
+   * How the ROM's trainer eye treats an npc type: 1 = sees along its facing, 2 = all four
+   * directions, anything else never spots. White's eye check (ov21 0x21AE2A8) first folds the
+   * turning/timed trainer types 4-8 and 11-13 into 1 (ov10 0x216E454), so they see like a plain
+   * trainer; 0, 3, 9 and 10 have no sight. Celestial Tower's type 11 trainers were skipped
+   * (owner, 2026-09-28). Gen 4 types are left as they were - that code was not read.
+   */
+  private fun ndsEyeClass(regionId: Int, type: Int): Int =
+      if (regionId == 2 && (type in 4..8 || type in 11..13)) 1 else type
 
   private fun ndsTrainerId(regionId: Int, script: Int): Int? {
     val base = when (script) { in 3000..4999 -> 3000; in 5000..6999 -> 5000; else -> return null }

@@ -301,7 +301,7 @@ constructor(
       // A Mistralton Gym cannon: the client has flown the player and waits, input locked, for the
       // server to place him on the landing (NdsCannons).
       if (railArea == null && (msg.stateRaw and 0xC0) == 0) {
-        val landing = NdsCannons.landing(state.regionId, state.bankId, state.mapId, toX, toY, msg.stateRaw and 0x03)
+        val landing = NdsCannons.landing(state.regionId, state.bankId, state.mapId, toX, toY, msg.stateRaw and 0x03, jetBadge = "unova/FLAG_DS_BADGE_5" in stored.storyFlags)
         if (landing != null) {
           val (lx, ly) = landing
           log.info { "NDS cannon: char=$charId fired from (${msg.x}, ${msg.y}) ${msg.direction}, lands at ($lx, $ly)" }

@@ -5307,8 +5307,30 @@ mv;38;844;33,1 63,1 18,1 17,7
 46;2;674;LockAll
 46;2;676;StoreValueInVar 32805 0
 46;2;682;StoreValueInVar 32806 0
-46;2;688;CMD_10D 32806
-46;2;692;End
+46;2;688;CMD_10D 32806 2
+46;2;694;CMD_0FC 32805 32806
+46;2;700;SetVarPartyPoke 0 32806
+46;2;705;PlaySound 1351
+46;2;709;FacePlayer
+46;2;711;Message2 0 4 10 0 0
+46;2;721;SetStackDerefVar 32805
+46;2;725;SetStackVar 70
+46;2;729;Condition 0
+46;2;733;When 255 @756
+46;2;740;Message2 0 4 13 0 0
+46;2;750;Jump @801
+46;2;756;SetStackDerefVar 32805
+46;2;760;SetStackVar 120
+46;2;764;Condition 0
+46;2;768;When 255 @791
+46;2;775;Message2 0 4 12 0 0
+46;2;785;Jump @801
+46;2;801;WaitButton
+46;2;803;CloseMessageKP
+46;2;805;WaitMoment
+46;2;807;ReleaseAll
+46;2;809;End
+46;2;791;Message2 0 4 11 0 0
 46;3;904;LockAll
 46;3;906;PlaySound 1351
 46;3;910;FacePlayer
@@ -21948,14 +21970,38 @@ mv;156;2792;1,1 13,2 15,3 33,1
 178;2;82;SetStackVar 0
 178;2;86;Condition 1
 178;2;90;When 255 @226
-178;2;97;CMD_10D 32776
-178;2;101;End
+178;2;97;CMD_10D 32776 2
+178;2;103;CMD_0FC 32777 32776
+178;2;109;SetStackDerefVar 32777
+178;2;113;SetStackVar 70
+178;2;117;Condition 4
+178;2;121;When 255 @201
+178;2;128;SetVarPartyPoke 0 32776
+178;2;133;Message2 0 4 2 0 0
+178;2;143;CloseMessageKP2
+178;2;145;SetStackDerefVar 32768
+178;2;149;SetStackDerefVar 32769
+178;2;153;StoreDerefVarInVar 32768 218
+178;2;159;StoreDerefVarInVar 32769 1
+178;2;165;CallStd 2805
+178;2;169;GetStackVar 32769
+178;2;173;GetStackVar 32768
+178;2;177;SetFlag 366
+178;2;181;Message2 0 4 3 0 0
+178;2;191;WaitButton
+178;2;193;CloseMessageKP2
+178;2;195;Jump @220
 178;2;226;Message2 0 4 3 0 0
 178;2;236;WaitButton
 178;2;238;CloseMessageKP2
 178;2;240;WaitMoment
 178;2;242;ReleaseAll
 178;2;244;End
+178;2;201;SetVarPartyPoke 0 32776
+178;2;206;Message2 0 4 4 0 0
+178;2;216;WaitButton
+178;2;218;CloseMessageKP2
+178;2;220;Jump @240
 180;0;30;LockAll
 180;0;32;PlaySound 1351
 180;0;36;FacePlayer
@@ -24631,8 +24677,61 @@ mv;214;644;15,7
 214;12;60;CMD_13D
 214;12;62;StoreValueInVar 32800 0
 214;12;68;StoreValueInVar 32801 0
-214;12;74;CMD_10D 32800
-214;12;78;End
+214;12;74;CMD_10D 32800 2
+214;12;80;StorePartySpecies 32801 32800
+214;12;86;SetVarPoke 0 32801
+214;12;91;SetVarHero 1
+214;12;94;ChangeMusic 1092
+214;12;98;ApplyMovement 255 @3312
+214;12;106;WaitMovement
+214;12;108;ApplyMovement 255 @3336
+mv;214;3336;2,1 
+214;12;116;WaitMovement
+214;12;118;Message 0 4 21 13 3 0
+214;12;130;CloseMessageKP2
+214;12;132;ApplyMovement 13 @356
+mv;214;356;11,1 
+214;12;140;WaitMovement
+214;12;142;Message 0 4 22 13 3 0
+214;12;154;CloseMessageKP2
+214;12;156;ReturnAfterDelay 32
+214;12;160;Message 0 4 23 13 3 0
+214;12;172;SetVarPoke 1 32801
+214;12;177;Message 0 4 24 13 3 0
+214;12;189;CloseMessageKP2
+214;12;191;ApplyMovement 13 @364
+mv;214;364;71,1 10,1 72,1 
+214;12;199;WaitMovement
+214;12;201;Message 0 4 25 13 3 0
+214;12;213;Message 0 4 26 13 3 0
+214;12;225;CloseMessageKP2
+214;12;227;ApplyMovement 13 @3360
+214;12;235;WaitMovement
+214;12;237;ReturnAfterDelay 24
+214;12;241;ApplyMovement 13 @336
+mv;214;336;182,1 
+214;12;249;ReturnAfterDelay 32
+214;12;253;Message 0 4 27 13 3 0
+214;12;265;CloseMessageKP2
+214;12;267;WaitMovement
+214;12;269;ApplyMovement 13 @344
+mv;214;344;63,1 31,1 
+214;12;277;WaitMovement
+214;12;279;Message 0 4 28 13 3 0
+214;12;291;CloseMessageKP2
+214;12;293;ApplyMovement 13 @380
+mv;214;380;13,2 15,9 
+214;12;301;ApplyMovement 255 @392
+mv;214;392;63,5 35,1 
+214;12;309;WaitMovement
+214;12;311;RemoveNPC 13
+214;12;315;FadeToDefaultMusic
+214;12;317;StoreValueInVar 16537 3
+214;12;323;SetFlag 804
+214;12;327;CMD_13E
+214;12;329;WaitMoment
+214;12;331;ReleaseAll
+214;12;333;End
 214;13;3564;LockAll
 214;13;3566;PlaySound 1351
 214;13;3570;FacePlayer
@@ -25127,8 +25226,54 @@ mv;216;176;13,2
 226;0;64;CMD_13D
 226;0;66;SetVarHero 0
 226;0;69;StoreValueInVar 32800 0
-226;0;75;CMD_10D 32800
-226;0;79;End
+226;0;75;CMD_10D 32800 2
+226;0;81;SetVarPartyPoke 1 32800
+226;0;86;StoreValueInVar 32801 0
+226;0;92;CMD_0FC 32801 32800
+226;0;98;ApplyMovement 2 @336
+mv;226;336;14,2 
+226;0;106;WaitMovement
+226;0;108;Message 0 4 0 2 2 0
+226;0;120;SetStackDerefVar 32801
+226;0;124;SetStackVar 70
+226;0;128;Condition 4
+226;0;132;When 255 @157
+226;0;139;Message 0 4 1 2 2 0
+226;0;151;Jump @169
+226;0;157;Message 0 4 2 2 2 0
+226;0;169;Message 0 4 3 2 2 0
+226;0;181;YesNoBox 32784
+226;0;185;SetStackDerefVar 32784
+226;0;189;SetStackVar 0
+226;0;193;Condition 1
+226;0;197;When 255 @222
+226;0;204;Message 0 4 4 2 2 0
+226;0;216;Jump @234
+226;0;222;Message 0 4 5 2 2 0
+226;0;234;DoubleMessage 0 4 6 7 2 2 0
+226;0;248;CloseMessageKP
+226;0;250;ApplyMovement 2 @344
+mv;226;344;32,0 
+226;0;258;WaitMovement
+226;0;260;Message 0 4 8 2 2 0
+226;0;272;CloseMessageKP
+226;0;274;ApplyMovement 2 @352
+mv;226;352;34,0 
+226;0;282;WaitMovement
+226;0;284;Message 0 4 9 2 2 0
+226;0;296;CloseMessageKP
+226;0;298;ApplyMovement 2 @360
+mv;226;360;15,4 12,9 
+226;0;306;WaitMovement
+226;0;308;RemoveNPC 2
+226;0;312;SetFlag 579
+226;0;316;ClearFlag 2429
+226;0;320;StoreValueInVar 16535 2
+226;0;326;FadeToDefaultMusic
+226;0;328;CMD_13E
+226;0;330;WaitMoment
+226;0;332;ReleaseAll
+226;0;334;End
 226;1;372;LockAll
 226;1;374;CMD_13D
 226;1;376;SetVarHero 0
@@ -27787,8 +27932,7 @@ mv;246;568;65,1 33,0
 258;2;72;StoreValueInVar 32800 0
 258;2;78;PlaySound 1351
 258;2;82;FacePlayer
-258;2;84;CMD_10D 32800
-258;2;88;Nop2
+258;2;84;CMD_10D 32800 1
 258;2;90;SetVarPartyPoke 0 32800
 258;2;95;Message2 0 4 2 0 0
 258;2;105;CMD_112 32784 32800
@@ -39569,8 +39713,9 @@ mv;496;564;14,1
 508;6;8304;DisableTrainer
 508;6;8306;DeactivateTrainerID 545
 508;6;8310;SetFlag 2752
-508;6;8314;CMD_10D 32806
-508;6;8318;End
+508;6;8314;CMD_10D 32806 2
+508;6;8320;StorePartySpecies 16660 32806
+508;6;8326;Jump @8334
 508;6;8332;EndBattle
 508;6;8334;SetVarPoke 0 16660
 508;6;8339;Message 0 4 22 5 1 0

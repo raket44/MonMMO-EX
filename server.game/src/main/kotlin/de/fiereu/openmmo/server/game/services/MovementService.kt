@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import de.fiereu.openmmo.maps.MapDef
 import de.fiereu.openmmo.maps.MapManager
 import de.fiereu.openmmo.maps.WarpTile
+import de.fiereu.openmmo.net.game.packets.NpcUpdatePacket
 import de.fiereu.openmmo.net.game.packets.EntityFaceTurnPacket
 import de.fiereu.openmmo.net.game.packets.EntityMovePacket
 import de.fiereu.openmmo.net.game.packets.FaceDirectionPacket
@@ -297,6 +298,34 @@ constructor(
       // patched client, bits 2-5), else the line tracked from the arrival; negative = unknown.
       // Line 0 is a real line, never "none".
       val railLine = ((msg.stateRaw shr 2) and 0x0F).takeIf { it != 0 } ?: state.railLine
+      // A Mistralton Gym cannon: the client has flown the player and waits, input locked, for the
+      // server to place him on the landing (NdsCannons).
+      if (railArea == null && (msg.stateRaw and 0xC0) == 0) {
+        val landing = NdsCannons.landing(state.regionId, state.bankId, state.mapId, toX, toY, msg.stateRaw and 0x03)
+        if (landing != null) {
+          val (lx, ly) = landing
+          log.info { "NDS cannon: char=$charId fired from (${msg.x}, ${msg.y}) ${msg.direction}, lands at ($lx, $ly)" }
+          characterStore.updatePosition(charId, lx.toShort(), ly.toShort(), facing = msg.direction)
+          state.x = lx.toShort()
+          state.y = ly.toShort()
+          state.facingDirection = msg.direction
+          val place =
+              NpcUpdatePacket(
+                  entityId = charId,
+                  regionId = state.regionId,
+                  bankId = state.bankId,
+                  mapId = state.mapId,
+                  x = lx,
+                  y = ly,
+                  facing = 0xF6,
+                  unk = msg.stateRaw and 0x03,
+              )
+          ctx.send(place)
+          presenceService.broadcastToObservers(ctx, place)
+          ndsLookahead?.update(ctx, state)
+          return
+        }
+      }
       // A bonk: the client sends the attempt and stays put, and committing it stood the server's
       // player inside the bookshelf he walked into, so the next press at the shelf aimed past it
       // (owner, 2026-09-23). A destination the ROM land marks blocked, or a solid object holds -

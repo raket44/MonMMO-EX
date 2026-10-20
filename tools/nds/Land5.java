@@ -48,6 +48,8 @@ public class Land5{
    case 0x04: return 2;   // TALL_GRASS
    case 0x06: return 3;   // VERY_TALL_GRASS, which is Unova's dark grass
    case 0x17: case 0x19: case 0x3f: return 21;  // WATER_SEA
+   case 0x0b: case 0x0c: return 40;  // SAND - the Desert Resort's walkable ground (headers 157/158), whose encounters retail lists as Grass
+   case 0x18: return 32;  // ICE (Gen 4 TILE_BEHAVIOR_ICE 36 - 4): Cold Storage's 170 slippery tiles, header 192 map file 329
    default: return 0;
   }
  }
@@ -82,7 +84,7 @@ public class Land5{
     int bank=(int)(owner&0xFF),map=(int)(owner>>8);int cx=c%mw,cy=c/mw;
     for(int y=0;y<th;y++)for(int x=0;x<tw;x++){int o=p+(y*tw+x)*8;int terrain=u16(f,o+4),flags=u16(f,o+6);
      out.append("2;").append(bank).append(';').append(map).append(';').append(cx*32+x).append(';').append(cy*32+y)
-        .append(';').append(type(terrain)).append(';').append((flags&1)!=0?0x80:0).append('\n');}}}
+        .append(';').append(type(terrain)).append(';').append((flags&1)!=0?0x80:0).append(';').append(u16(f,o+2)).append('\n');}}}
   Files.write(Paths.get(a[2]),out.toString().getBytes("UTF-8"));
   System.out.println("cells "+cells+"  distinct map files "+seenMaps.size()+" / "+mapIdx.length);
  }

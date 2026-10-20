@@ -42,10 +42,17 @@ public class Triggers5{
    for(int i=0;i<n3&&p+i*22+22<=f.length;i++){
     int o=p+i*22;
     int script=u16(f,o),value=u16(f,o+2),var=u16(f,o+4),type=u16(f,o+6),railFlag=u16(f,o+8);
-    int x=s16(f,o+10),y=s16(f,o+12),w=s16(f,o+14),h=s16(f,o+16),z=s16(f,o+18);
-    if(railFlag!=0){rail++;continue;}
     if(var<0x4000||var>=0x4400){varless++;continue;}
     if(type!=0){typed++;continue;}
+    if(railFlag!=0){
+     // Rail trigger (like the rail warp records): +10 rail line, +12 x along it, +14 y across, +16 w, +18 h.
+     // Castelia main's one trigger - Burgh's walk-up after the pier, script 19 on line 4 at x 24, y -5..2 -
+     // was dropped here and the story stalled after the pier (owner, 2026-09-23). A 14th column carries the line.
+     int line=s16(f,o+10),x=s16(f,o+12),y=s16(f,o+14),w=s16(f,o+16),h=s16(f,o+18);
+     rows.add("coord;2;"+(header&0xFF)+";"+(header>>8)+";"+i+";"+script+";"+x+";"+y+";"+Math.max(1,w)+";"+Math.max(1,h)+";0;"+value+";"+var+";"+line);
+     rail++;written++;continue;
+    }
+    int x=s16(f,o+10),y=s16(f,o+12),w=s16(f,o+14),h=s16(f,o+16),z=s16(f,o+18);
     rows.add("coord;2;"+(header&0xFF)+";"+(header>>8)+";"+i+";"+script+";"+x+";"+y+";"+Math.max(1,w)+";"+Math.max(1,h)+";"+z+";"+value+";"+var);
     written++;
    }

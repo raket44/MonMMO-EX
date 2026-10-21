@@ -950,6 +950,20 @@ internal constructor(
   }
 
   /**
+   * White CMD_19F: a "get" cut-in from ROM archive a/1/1/7 (the gym badge case opening on its new
+   * badge, Pokedex and item gets). 0xB6 action 10 (r32645 f/hw1 :pswitch_11b) hands shorts[0] to
+   * f/eb5.kU1, which plays that same a/1/1/7 entry in f/bz2 (models a/1/1/5) and, when it ends,
+   * acknowledges with f/eb5.kB(subject, 0) (f/a11) - the reply [clientScene] waits for too.
+   */
+  suspend fun clientCutIn(cutIn: Int) {
+    val done = dialog.expectAcknowledgement(session)
+    sendScenePacket(
+        pirated.net.game.packets.WorldActionDispatchPacket(
+            CUT_IN_ACTION, cutIn.toByte(), listOf(cutIn.toShort())))
+    done.await()
+  }
+
+  /**
    * special EnterHallOfFame: the client's own Hall of Fame screen (see [HallOfFame]) - record the
    * entry, unlock the encounter counter, show the screen, wait for the player to close it, then
    * wake them up in the bedroom the game started in. The ROM's hall-of-fame and credits never run.
@@ -1508,6 +1522,8 @@ internal constructor(
     const val XTRANSCEIVER_ACTION: Byte = 3
     /** 0xB6 action 9: start a client-side scene by id (f/hw1 :pswitch_12d). */
     const val SCENE_ACTION: Byte = 9
+    /** 0xB6 action 10: play a/1/1/7 cut-in entry shorts[0] (f/hw1 :pswitch_11b -> f/eb5.kU1). */
+    const val CUT_IN_ACTION: Byte = 10
     /** Scene 3 = the Ferris wheel (f/kk7 loads a/1/6/0 entries 65/71/76/78: f_wheel_01..04). Scene 30 is Platinum's Spear Pillar (f/y01) - played by mistake 2026-09-24. */
     const val FERRIS_WHEEL_SCENE = 3
     // Sign boxes have no speaker, npc boxes point at the entity.

@@ -685,6 +685,7 @@ class NdsScriptCorpusGenerator {
         // White OpenInterpoke: the client's own Xtransceiver call window, by call id.
         "DsXtransceiver" -> out += "ds_xtransceiver ${a[0]}"
         "DsClientScene" -> out += "ds_clientscene ${a[0]}"
+        "DsCutIn" -> out += "ds_cutin ${a[0]}"
         // White MakeNPC: id, sprite, x, y, DS facing - an actor the script creates.
         "DsMakeNpc" -> out += "ds_makenpc ${a[0]}, ${a[1]}, ${a[2]}, ${a[3]}, ${a[4]}"
         // White Message's speaker object for the next line ("none" = the script's own entity).
@@ -2111,7 +2112,12 @@ class NdsScriptCorpusGenerator {
             "CMD_BB" -> b.lines += listOf("UnovaItemPocket", v(1), item(0))
             "Screen_B5" -> b.lines += listOf("GiveItem", item(0), tv(1), v(2))
             "CloseShowMessageAt" -> b.lines += listOf("CloseMessage")
-            "CMD_6A", "CMD_19F" -> {}
+            "CMD_6A" -> {}
+            // CMD_19F id: the ROM's "get" cut-in (White ov21 0x021C8144 starts field event
+            // 0x021C1CC8 on a/1/1/7 entry id, models from a/1/1/5). Every gym plays its badge case
+            // after the fanfare: 2,4..10 male / 42..49 female (gymbadge1..8 / gymbadge1f..8f);
+            // 41/50/51 are item and Pokedex gets. The client plays the same entry (world action 10).
+            "CMD_19F" -> b.lines += listOf("DsCutIn", tv(0))
             "CMD_BA" -> b.lines += listOf("CheckItem", v(0), v(1), v(3))
             // ShowMessageAt text, OBJECT, position, window: a bubble over one actor, closed by
             // window id (CloseShowMessageAt). Speaker-less it inherited the last Message's

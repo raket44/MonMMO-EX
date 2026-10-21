@@ -274,6 +274,11 @@ class InterpretedScript(
           tracedWait(ctx, "client scene") { ctx.clientScene(value(ctx, instruction.arg(0))) }
           state.pc++
         }
+        // ds_cutin id: a ROM "get" cut-in such as the gym badge case, played by the client (ScriptContext).
+        "ds_cutin" -> {
+          tracedWait(ctx, "client cut-in") { ctx.clientCutIn(value(ctx, instruction.arg(0))) }
+          state.pc++
+        }
         // ds_makenpc id, sprite, x, y, facing: the script's own actor (Gen 5 MakeNPC).
         "ds_makenpc" -> {
           ctx.makeNdsNpc(

@@ -310,6 +310,7 @@ class ScriptSupportAnalyzer(
           "ds_makenpc" -> args.size == 5
           "ds_xtransceiver" -> args.size == 1
           "ds_clientscene" -> args.size == 1
+          "ds_cutin" -> args.size == 1
           // opcode plus that opcode's own arguments
           "ds_mapgimmick" -> args.isNotEmpty()
           "ds_casteliagates" -> args.size == 8
@@ -693,6 +694,7 @@ class ScriptSupportAnalyzer(
             "ds_makenpc",
             "ds_xtransceiver",
             "ds_clientscene",
+            "ds_cutin",
             "ds_mapgimmick",
             "ds_casteliagates",
             "ds_gimmickmask",

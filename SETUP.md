@@ -7,7 +7,7 @@ the server.
 ## 1. Clone with submodules
 
 ```bash
-git clone --recursive https://github.com/raket44/PokeMMO-Pirated.git
+git clone --recursive <repo-url>
 ```
 
 Already cloned without `--recursive`:
@@ -16,7 +16,7 @@ Already cloned without `--recursive`:
 git submodule update --init --recursive
 ```
 
-`decomp/` is nine pret decompilations plus `pokeemerald-expansion`, pinned to the exact commit
+`decomp/` is eight pret decompilations plus `pokeemerald-expansion`, pinned to the exact commit
 the generated species, moves, abilities, learnsets and form tables come from. Do not bump the
 Expansion pin casually: it changes game data, so it is a deliberate commit with the regenerated
 output beside it.
@@ -35,7 +35,7 @@ Postgres comes up with `docker compose up -d`; `.env.example` is the template fo
 | | what it is | needed for |
 |---|---|---|
 | `roms/`, NDS ROMs | your own game ROMs | ONLY re-extracting ROM data (`tools/nds/*`, `refreshDialogTable`). The extracted results are committed, so the server builds and runs without them. |
-| retail APK, `Client-31914` | the PokeMMO client we patch | only client packaging (`tools/client-package/build-android.sh`) |
+| retail APK (`apks/`) | the PokeMMO Android client we patch | only client packaging (`tools/client-package/build-android.sh`) |
 | `keys/build/*.pem` | the server's signing keys | **required to run a server your client will trust** |
 | `.env` | DB passwords, session secret | **required to run a server** |
 

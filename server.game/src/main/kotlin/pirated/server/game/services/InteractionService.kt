@@ -41,6 +41,7 @@ constructor(
     private val berryPlots: BerryPlotService,
     private val raid: CrystalOnixRaidService,
     private val ndsStandardScripts: NdsStandardScripts,
+    private val ndsLand: NdsLand,
 ) {
 
   /**
@@ -137,6 +138,15 @@ constructor(
     // tile further, which let shelves be read from a tile away (owner, 2026-09-23).
     if (runNdsBgEventAt(session, state, facingX, facingY)) return
     if (runNdsBgEventAt(session, state, state.x.toInt(), state.y.toInt())) return
+    // A PC is a tile type, not an event (White's terrain 0xD6, (4,11) in every Pokemon Center, 28
+    // tiles in all): it opens the same client PC menu and storage window as Kanto's (owner,
+    // 2026-10-21). The tile stood on counts too, as for the shelves above: the owner's presses
+    // logged both (4,11) and (4,10) in front of it.
+    if (ndsLand.typeAt(regionId, bankId, mapId, facingX, facingY) == NdsLand.PC ||
+        ndsLand.typeAt(regionId, bankId, mapId, state.x.toInt(), state.y.toInt()) == NdsLand.PC) {
+      currentCharacter(state)?.let { openPcStorage(session, state, it) }
+      return
+    }
     log.info { "DS tile interaction at ($facingX, $facingY) on $regionId:$bankId:$mapId: no bg event" }
   }
 
@@ -153,13 +163,6 @@ constructor(
             here.minByOrNull { kotlin.math.abs(it.z - state.ndsHeight) }
         else here.firstOrNull()
     bg ?: return false
-    // A Unova Pokemon Center PC: engine script 2108, three bg tiles in each of the thirteen Centers
-    // that have one. No script file holds it, so it answered nothing; it opens the same client PC
-    // menu and storage window as Kanto's (owner, 2026-10-21).
-    if (regionId == UNOVA_REGION_ID && bg.script == UNOVA_CENTER_PC_SCRIPT) {
-      currentCharacter(state)?.let { openPcStorage(session, state, it) }
-      return true
-    }
     val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"
     val script =
         try {
@@ -557,9 +560,6 @@ constructor(
 private const val KANTO_STORAGE_OPENED = 1724606
 private const val HOENN_STORAGE_OPENED = 271001251
 private const val HOENN_REGION_ID = 1
-private const val UNOVA_REGION_ID = 2
-/** White's Pokemon Center PC bg event (nds-npcs-2.txt `bg` rows, 39 tiles over 13 Centers). */
-private const val UNOVA_CENTER_PC_SCRIPT = 2108
 
 /** The client's built-in menu registry set 3: "{01}'s PC" / Global Trade Link / Mail / Cancel. */
 private const val PC_MENU_SET = 3

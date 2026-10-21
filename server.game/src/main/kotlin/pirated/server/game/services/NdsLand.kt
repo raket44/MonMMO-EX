@@ -164,6 +164,8 @@ class NdsLand @Inject constructor() {
     const val WATER_SEA = 21
     /** Ice the player slides on (Gen 4 TILE_BEHAVIOR_ICE; White's terrain 0x18, Cold Storage). */
     const val ICE = 32
+    /** A PC (Gen 4 TILE_BEHAVIOR_PC; White's terrain 0xD6, the Pokemon Center PCs). */
+    const val PC = 131
     /** Gen 5 sand (behaviours 0x0B/0x0C): the Desert Resort's ground, where its Grass table rolls. */
     const val SAND = 40
   }

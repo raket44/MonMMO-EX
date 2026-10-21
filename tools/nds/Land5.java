@@ -50,6 +50,7 @@ public class Land5{
    case 0x17: case 0x19: case 0x3f: return 21;  // WATER_SEA
    case 0x0b: case 0x0c: return 40;  // SAND - the Desert Resort's walkable ground (headers 157/158), whose encounters retail lists as Grass
    case 0x18: return 32;  // ICE (Gen 4 TILE_BEHAVIOR_ICE 36 - 4): Cold Storage's 170 slippery tiles, header 192 map file 329
+   case 0xd6: return 131; // PC (Gen 4 TILE_BEHAVIOR_PC): the Pokemon Center PC, one tile at (4,11) in all 13 Centers
    default: return 0;
   }
  }

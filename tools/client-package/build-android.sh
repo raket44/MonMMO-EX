@@ -18,10 +18,12 @@
 #   config          server host/ports and the client keys, written by ApkPackager
 set -euo pipefail
 
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd "$REPO/.." && pwd -W)"   # the project folder (repo/ local/ apks/ builds/); Windows-form: a POSIX path breaks java -cp
 HOST=91.98.41.154
-APK="$USERPROFILE/Downloads/pokemmo-r32645.apk"
-OUT="$USERPROFILE/Downloads/MonMMO.apk"
-THEME="$USERPROFILE/Downloads/Dark Theme - Mobile(1).zip"
+APK="$ROOT/apks/pokemmo-r32645.apk"
+OUT="$ROOT/builds/PokeMMO-Pirated.apk"
+THEME="$ROOT/apks/Dark Theme - Mobile(1).zip"
 REBUILD_DEX=0 VERIFY_DEX=0 SKIP_STAGE=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -36,12 +38,11 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 TOOLS="$REPO/tools/client-package"
-CACHE="$HOME/.monmmo/build"
+CACHE="$ROOT/local/build"
 JDK=${JDK:-"/c/Program Files/Eclipse Adoptium/jdk-25.0.4.101-hotspot/bin"}
-KEYDIR="$HOME/.monmmo/android-signing"
-SMALI="${USERPROFILE:-$HOME}/.monmmo/tools/smali-3.0.10"   # Windows-form: a POSIX path breaks java -cp
+KEYDIR="$ROOT/local/android-signing"
+SMALI="$ROOT/local/tools/smali-3.0.10"
 STOCK="$CACHE/stock-root" STAGE="$CACHE/stage" OVERLAY="$CACHE/overlay" WORK="$CACHE/work"
 DEX="$CACHE/classes.dex" MOD="$CACHE/monmmo-theme.zip"
 
@@ -142,7 +143,7 @@ fi
 #     checks the icon chain, the ids and the dex afterwards. The desktop window icons come from
 #     the same art via IconSet.
 ICON_SRC="$TOOLS/app-icon/app-icon-source.png"
-APKTOOL="${USERPROFILE:-$HOME}/.monmmo/tools/apktool_3.0.3.jar"
+APKTOOL="$ROOT/local/tools/apktool_3.0.3.jar"
 RES_APK="-"
 if [ -f "$ICON_SRC" ]; then
   echo "== rebuilding the resource side with our icon (apktool)"
@@ -162,6 +163,10 @@ if [ -f "$ICON_SRC" ]; then
   done
   sed -i "s|<color name=\"pokemmo_background\">#[0-9a-fA-F]*</color>|<color name=\"pokemmo_background\">${ICON_PLATE:-#ff14161a}</color>|" "$DEC/res/values/colors.xml"
   grep -q "pokemmo_background\">${ICON_PLATE:-#ff14161a}<" "$DEC/res/values/colors.xml" || { echo "ERROR: background colour not set"; exit 1; }
+  # The launcher label. Retail's app_name points at app_name_alias; only the alias text changes.
+  APP_NAME=${APP_NAME:-PokeMMO Pirated}
+  sed -i "s|<string name=\"app_name_alias\">[^<]*</string>|<string name=\"app_name_alias\">$APP_NAME</string>|" "$DEC/res/values/strings.xml"
+  grep -q "app_name_alias\">$APP_NAME<" "$DEC/res/values/strings.xml" || { echo "ERROR: app name not set"; exit 1; }
   RES_APK="$AT/retail-icon.apk"
   "$JDK/java.exe" -Xmx2g -jar "$APKTOOL" b -f -o "$RES_APK" "$DEC" > "$AT-build.log" 2>&1 \
     || { tail -5 "$AT-build.log"; echo "ERROR: apktool build failed"; exit 1; }

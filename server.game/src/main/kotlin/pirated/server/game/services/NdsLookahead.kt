@@ -4,6 +4,7 @@ import pirated.network.SessionContext
 import pirated.common.enums.Direction
 import pirated.server.game.session.PlayerState
 import pirated.server.game.session.ndsWallKey
+import pirated.server.game.session.scriptedNpcKey
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +34,7 @@ constructor(
     private val ndsLand: NdsLand,
     private val mapEntryScripts: MapEntryScripts,
     private val trainerSight: TrainerSightService,
+    private val characterStore: pirated.server.game.storage.CharacterStore,
     private val scope: CoroutineScope,
 ) {
   /** Recompute after a committed or refused step, or a script release. */
@@ -54,13 +56,18 @@ constructor(
     val walkable: (Int, Int) -> Boolean =
         if (ndsLand.mostlyBlocked(region, bank, map)) { x, y -> ndsLand.heightAt(region, bank, map, x, y) != null }
         else { x, y -> ndsLand.blocked(region, bank, map, x, y) == false }
+    // A tile a solid object holds (a standing cut tree) already stops the player: the ray ends
+    // there. A trigger under the Dreamyard's tree drew a wall past the tree, and the player hung
+    // on it once the tree was cut (owner, 2026-10-21).
+    val solid = solidObjectTiles(state, charId, region, bank, map)
+    val open: (Int, Int) -> Boolean = { x, y -> (x to y) !in solid && walkable(x, y) }
     // The facing ray, plus a short look the other three ways: coming round a corner the stop is
     // beside the player, one turn away, and on a bike the turn and the step past it are announced
     // together (owner, 2026-09-25: "coming around corners has a block waiting for you").
     val facing = state.facingDirection
     val stops =
-        (listOfNotNull(stopAhead(px, py, facing, triggers, sight, walkable)) +
-                Direction.entries.filter { it != facing && (it.dx != 0 || it.dy != 0) }.mapNotNull { stopWithin(px, py, it, SIDE_RANGE, triggers, sight, walkable) })
+        (listOfNotNull(stopAhead(px, py, facing, triggers, sight, open)) +
+                Direction.entries.filter { it != facing && (it.dx != 0 || it.dy != 0) }.mapNotNull { stopWithin(px, py, it, SIDE_RANGE, triggers, sight, open) })
             .distinctBy { it.wallX to it.wallY }
             .take(MAX_WALLS)
     // Standing on a stop: the wall past it stays until the script's hold clears it. Dropped here
@@ -68,6 +75,22 @@ constructor(
     // sent could pass - the very race the wall exists for (VPS log 11:29:29, 2026-09-24).
     val onStop = (px to py) in triggers || (px to py) in sight
     apply(session, state, region, bank, map, stops, keepStanding = onStop)
+  }
+
+  /** The tiles this player's solid ROM objects stand on, by the rule MovementService.ndsBonk holds them to. */
+  private fun solidObjectTiles(state: PlayerState, charId: Long, region: Int, bank: Int, map: Int): Set<Pair<Int, Int>> {
+    val flags = characterStore.getCharacter(charId)?.storyFlags.orEmpty()
+    return npcService.ndsNpcsOn(region, bank, map)
+        .filter { npc ->
+          npc.index < NdsCurtainWalls.FIRST_WALL_ID &&
+              !NdsCurtainWalls.replacesRomNpc(region, bank, map, npc.index) &&
+              !NdsStoryFlags.isHidden(region, npc.flag, flags) &&
+              scriptedNpcKey(region, bank, map, npc.index) !in state.removedNdsNpcs
+        }
+        .mapTo(HashSet()) { npc ->
+          val pose = state.scriptedNpcPoses[scriptedNpcKey(region, bank, map, npc.index)]
+          (pose?.x ?: npc.x) to (pose?.y ?: npc.y)
+        }
   }
 
   /** Everything down, e.g. a script took hold of the player. */

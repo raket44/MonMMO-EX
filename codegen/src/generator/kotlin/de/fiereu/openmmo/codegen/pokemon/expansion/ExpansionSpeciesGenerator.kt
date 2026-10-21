@@ -397,7 +397,7 @@ class ExpansionSpeciesGenerator(
             "config/overworld.h",
             path,
         )
-    val process = ProcessBuilder(command).directory(rootDir).redirectErrorStream(true).start()
+    val process = withToolDirOnPath(ProcessBuilder(command), cpp).directory(rootDir).redirectErrorStream(true).start()
     val output = process.inputStream.bufferedReader().readText()
     check(process.waitFor() == 0) { "Expansion preprocessor failed for $path:\n$output" }
     return output
@@ -415,9 +415,22 @@ class ExpansionSpeciesGenerator(
         ?: error("No C preprocessor found. Set EXPANSION_CPP to gcc or clang.")
   }
 
+  // msys2's gcc loads its DLLs (and cc1's) from its own bin directory, so a machine without
+  // msys2 on PATH got "cc1.exe: error while loading shared libraries" - put the tool's dir first.
+  private fun withToolDirOnPath(builder: ProcessBuilder, tool: String): ProcessBuilder {
+    val dir = File(tool).parentFile?.takeIf { it.isDirectory } ?: return builder
+    val env = builder.environment()
+    val key = env.keys.firstOrNull { it.equals("PATH", ignoreCase = true) } ?: "PATH"
+    env[key] = dir.path + File.pathSeparator + env[key].orEmpty()
+    return builder
+  }
+
   private fun canRun(command: String): Boolean =
       runCatching {
-            val process = ProcessBuilder(command, "--version").redirectErrorStream(true).start()
+            val process =
+                withToolDirOnPath(ProcessBuilder(command, "--version"), command)
+                    .redirectErrorStream(true)
+                    .start()
             process.inputStream.close()
             process.waitFor() == 0
           }

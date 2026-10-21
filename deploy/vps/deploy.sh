@@ -8,7 +8,10 @@
 # Only files whose checksum differs from the server's copy are uploaded: a code change is a
 # handful of our own jars, not the 90 MB of third-party ones. Run from Git Bash in the repo root.
 set -e
-VPS=${PIRATED_VPS:-root@91.98.41.154}
+# The server address lives in ../local/server.env (outside the repo), or PIRATED_VPS in the environment.
+ENV_FILE="$(dirname "$0")/../../../local/server.env"
+[ -f "$ENV_FILE" ] && . "$ENV_FILE"
+VPS=${PIRATED_VPS:?set PIRATED_VPS (user@host) or put it in ../local/server.env}
 KEY=${PIRATED_VPS_KEY:-$HOME/.ssh/pirated_vps}
 SSH="ssh -i $KEY -o BatchMode=yes $VPS"
 cd "$(dirname "$0")/../.."

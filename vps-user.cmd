@@ -4,7 +4,10 @@ rem   vps-user.cmd set <username> <password>     create the account or change it
 rem   vps-user.cmd delete <username>             remove the account
 rem   vps-user.cmd list                          show all accounts
 setlocal
-set "VPS=root@91.98.41.154"
+set "VPS="
+rem The server address lives in ..\local\server.env (outside the repo), never in git.
+if exist "%~dp0..\local\server.env" for /f "usebackq tokens=1,* delims==" %%A in ("%~dp0..\local\server.env") do if "%%A"=="PIRATED_VPS" set "VPS=%%B"
+if "%VPS%"=="" echo Put PIRATED_VPS=user@host in ..\local\server.env first.& exit /b 1
 set "KEY=%USERPROFILE%\.ssh\pirated_vps"
 set "PSQL=cd /opt/pirated && . ./.env && docker exec -i login-db psql -U $LOGIN_DB_USER -d $LOGIN_DB_NAME -v ON_ERROR_STOP=1"
 set "SQL=%TEMP%\pirated-user.sql"

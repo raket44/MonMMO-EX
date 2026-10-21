@@ -21,7 +21,9 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT="$(cd "$REPO/.." && pwd -W)"   # the project folder (repo/ local/ apks/ builds/); Windows-form: a POSIX path breaks java -cp
-HOST=91.98.41.154
+# The default server comes from ../local/server.env (outside the repo); otherwise pass --host.
+[ -f "$REPO/../local/server.env" ] && . "$REPO/../local/server.env"
+HOST=${PIRATED_HOST:-}
 APK="$ROOT/apks/pokemmo-r32645.apk"
 OUT="$ROOT/builds/PokeMMO-Pirated.apk"
 THEME=""   # no theme mod unless --theme is given; the baked title screen replaced it (986511ed9)
@@ -38,6 +40,7 @@ while [ $# -gt 0 ]; do
     *) echo "unknown option: $1"; exit 2;;
   esac
 done
+[ -n "$HOST" ] || { echo "ERROR: no server address - pass --host or put PIRATED_HOST in ../local/server.env"; exit 1; }
 
 TOOLS="$REPO/tools/client-package"
 CACHE="$ROOT/local/build"

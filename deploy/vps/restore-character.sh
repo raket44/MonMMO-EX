@@ -8,7 +8,9 @@ set -euo pipefail
 CHAR="${1:?character id}"
 DUMP="${2:?dump file name, e.g. game-20260913-1020.sql.gz}"
 KEY="${PIRATED_VPS_KEY:-$HOME/.ssh/pirated_vps}"
-HOST="${PIRATED_VPS_HOST:-root@91.98.41.154}"
+ENV_FILE="$(dirname "$0")/../../../local/server.env"
+[ -f "$ENV_FILE" ] && . "$ENV_FILE"
+HOST="${PIRATED_VPS:?set PIRATED_VPS (user@host) or put it in local/server.env}"
 
 ssh -i "$KEY" "$HOST" CHAR="$CHAR" DUMP="$DUMP" 'bash -s' <<'REMOTE'
 set -euo pipefail

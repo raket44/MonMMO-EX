@@ -172,6 +172,9 @@ constructor(
       // The Castelia Gym's honey objects are never spawned; their gates are walls (above).
       if (NdsCurtainWalls.replacesRomNpc(regionId, bankId, mapId, npc.index)) return@any false
       if (NdsStoryFlags.isHidden(regionId, npc.flag, stored.storyFlags)) return@any false
+      // A felled cut tree (removeobject, no hide flag): its tile held every step, so the Dreamyard
+      // trigger under the Dreamyard tree never fired after Sep 23 (owner, 2026-10-21).
+      if (pirated.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index) in state.removedNdsNpcs) return@any false
       val pose = poses[pirated.server.game.session.scriptedNpcKey(regionId, bankId, mapId, npc.index)]
       val x = pose?.x ?: npc.x
       val y = pose?.y ?: npc.y

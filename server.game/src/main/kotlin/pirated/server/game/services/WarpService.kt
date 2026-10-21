@@ -361,6 +361,7 @@ constructor(
       state.spawnedNpcMaps.clear()
       state.scriptedNpcPoses.clear()
       state.madeNdsNpcs.clear()
+      state.removedNdsNpcs.clear()
       // Same dismount rule as executeWarp - the fresh spawn draws on foot regardless.
       state.riding = false
     }

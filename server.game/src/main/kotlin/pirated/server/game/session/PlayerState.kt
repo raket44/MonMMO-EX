@@ -326,6 +326,12 @@ data class PlayerState(
     /** Script-made DS actors alive for this player on the current map (scriptedNpcKey); cleared with the poses. */
     val madeNdsNpcs: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
     /**
+     * ROM npcs a script removed for this player on the current map (scriptedNpcKey) - a felled cut
+     * tree has no hide flag, so only this says the tile is open until the map reloads; cleared with
+     * the poses.
+     */
+    val removedNdsNpcs: MutableSet<Long> = ConcurrentHashMap.newKeySet(),
+    /**
      * The map whose entry scripts already ran for this arrival. The client re-requests its player
      * several times while loading an outdoor map (once per connection), and each request used to
      * re-run the ON_TRANSITION script and re-take the script lock - one logical arrival must run

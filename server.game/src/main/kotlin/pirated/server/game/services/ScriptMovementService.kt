@@ -306,6 +306,9 @@ constructor(
   fun showNpc(session: SessionContext, state: PlayerState, localId: Int) {
     val charId = state.characterId ?: return
     val info = characterStore.getCharacter(charId)?.info ?: return
+    val regionId = info.positionRegionId.toInt()
+    val (bankId, mapId) = ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
+    state.removedNdsNpcs.remove(scriptedNpcKey(regionId, bankId, mapId, localId))
     npcService.spawnNpc(
         session,
         info.positionRegionId.toInt(),
@@ -407,6 +410,7 @@ constructor(
         ndsCell(regionId, info.positionBankId.toInt() and 0xFF, info.positionMapId.toInt() and 0xFF, localId)
     state.scriptedNpcPoses.remove(scriptedNpcKey(regionId, bankId, mapId, localId))
     state.madeNdsNpcs.remove(scriptedNpcKey(regionId, bankId, mapId, localId))
+    state.removedNdsNpcs += scriptedNpcKey(regionId, bankId, mapId, localId)
     npcService.despawnNpc(session, regionId, bankId, mapId, localId)
   }
 

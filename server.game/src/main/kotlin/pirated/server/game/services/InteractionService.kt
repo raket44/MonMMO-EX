@@ -153,6 +153,13 @@ constructor(
             here.minByOrNull { kotlin.math.abs(it.z - state.ndsHeight) }
         else here.firstOrNull()
     bg ?: return false
+    // A Unova Pokemon Center PC: engine script 2108, three bg tiles in each of the thirteen Centers
+    // that have one. No script file holds it, so it answered nothing; it opens the same client PC
+    // menu and storage window as Kanto's (owner, 2026-10-21).
+    if (regionId == UNOVA_REGION_ID && bg.script == UNOVA_CENTER_PC_SCRIPT) {
+      currentCharacter(state)?.let { openPcStorage(session, state, it) }
+      return true
+    }
     val label = if (bg.script >= 2000) "NDS_CHUNK_${bg.script}" else "NDS_${(mapId shl 8) or bankId}_${bg.script}"
     val script =
         try {
@@ -550,6 +557,9 @@ constructor(
 private const val KANTO_STORAGE_OPENED = 1724606
 private const val HOENN_STORAGE_OPENED = 271001251
 private const val HOENN_REGION_ID = 1
+private const val UNOVA_REGION_ID = 2
+/** White's Pokemon Center PC bg event (nds-npcs-2.txt `bg` rows, 39 tiles over 13 Centers). */
+private const val UNOVA_CENTER_PC_SCRIPT = 2108
 
 /** The client's built-in menu registry set 3: "{01}'s PC" / Global Trade Link / Mail / Cancel. */
 private const val PC_MENU_SET = 3

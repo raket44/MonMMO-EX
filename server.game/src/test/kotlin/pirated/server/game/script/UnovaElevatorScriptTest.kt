@@ -38,7 +38,7 @@ class UnovaElevatorScriptTest :
 
       test("all fourteen panel ids are bound") {
         (10405..10418).forEach { id -> reg.scriptsByLabel["NDS_CHUNK_$id"] shouldNotBe null }
-        // Nothing else of the engine band came along: the Center clerks stay NdsStandardScripts'.
+        // Nothing else of the engine band came along: the Center back-counter attendants stay NdsStandardScripts'.
         reg.scriptsByLabel["NDS_CHUNK_10100"] shouldBe null
         reg.scriptsByLabel["NDS_CHUNK_10419"] shouldBe null
       }

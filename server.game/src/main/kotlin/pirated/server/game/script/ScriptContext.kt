@@ -1,6 +1,5 @@
 package pirated.server.game.script
 
-import pirated.server.game.script.interpreter.DS_COMMON_MART
 import pirated.network.SessionContext
 import pirated.common.DynamicWarp
 import pirated.common.dialog.DialogLine
@@ -737,17 +736,17 @@ internal constructor(
       checkNotNull(shops) { "Shop service is unavailable" }.open(session, entityId, items.toList())
 
   /**
-   * The DS common mart shelf, which widens with the badges - what the engine's own mart clerk sells
-   * (Unova script 2101). The item numbers are the games' own and carry over from Gen 4; Unova's
-   * client ids are the 5000 band, the other DS regions' are region * 1000.
+   * White's mart counter (CallStd 10110) on shelf [shelfId]: 255 the badge-tiered common shelf, a
+   * lower id the town's own (see [UnovaMarts]). False when the id is no mart shelf, nothing opened.
+   * Unova's client item ids are the 5000 band.
    */
-  fun pokemartCommon() {
+  fun unovaMart(shelfId: Int): Boolean {
     val badges = (0 until 16).count { isFlagSet(namespacedVar("FLAG_DS_BADGE_$it")) }
-    val tier = when (badges) { 0 -> 1; 1, 2 -> 2; 3, 4 -> 3; 5, 6 -> 4; 7 -> 5; else -> 6 }
-    val band = if (state.regionId == 2) 5000 else state.regionId * 1000
-    val shelf = DS_COMMON_MART.filter { it.second <= tier }.mapNotNull { resolveItemWire(band + it.first) }
-    if (shelf.isEmpty()) return
+    val ids = UnovaMarts.shelf(shelfId, badges) ?: return false
+    val shelf = ids.mapNotNull { resolveItemWire(5000 + it) }
+    if (shelf.isEmpty()) return false
     pokemart(*shelf.toTypedArray())
+    return true
   }
 
   /** A story key in the region the player stands in (the interpreter's own namespacing). */

@@ -691,6 +691,8 @@ class NdsScriptCorpusGenerator {
         "DsSpeaker" -> out += "ds_speaker ${a[0]}"
         // White CMD_129 on a door: 0 opens, 1 closes the door at x, y.
         "DsDoor" -> out += "ds_door ${a[0]}, ${a[1]}, ${a[2]}"
+        // White's mart counter (CallStd 10110) on the shelf id in the var.
+        "DsUnovaMart" -> out += "ds_unovamart ${a[0]}"
         // White elevators (0x1CB table, 0x1CC menu rows, 0x1CD ride; docs/gen5-elevators.md).
         "DsElevatorTable" -> out += "ds_elevatortable ${a[0]}, ${a[1]}"
         "DsElevatorMenu" -> out += "ds_elevatormenu " + a.joinToString(", ")
@@ -2361,7 +2363,10 @@ class NdsScriptCorpusGenerator {
                 b.lines += listOf("DsPlayerHeight", t(2), "1", "6")
               }
             }
-            "CallStd" -> b.lines += listOf("CallStd", t(0))
+            // CallStd 10110 is the mart counter (file 871): VAR_0x8000 picks the shelf, 255 the
+            // badge-tiered common one, 0-19 a town's own (tools/nds/Marts5). Every Center clerk and
+            // shop counter in Unova goes through it; dropped, both Center clerks answered nothing.
+            "CallStd" -> b.lines += if (t(0) == "10110") listOf("DsUnovaMart", "VAR_0x8000") else listOf("CallStd", t(0))
             "ShowMoneyBox", "CloseMoneyBox", "UpdateMoneyBox" -> {}
             // An opcode the table only numbers (CMD_xxx) goes out as ScrCmd_xxx with its var
             // arguments marked, so the transpiler treats it the way it treats Platinum's unnamed

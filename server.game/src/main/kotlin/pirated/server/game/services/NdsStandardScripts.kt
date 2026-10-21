@@ -8,11 +8,16 @@ import javax.inject.Singleton
 /**
  * The DS games' ENGINE-STANDARD npc scripts: ids that no script file holds because the engine runs
  * them itself, so the corpus has nothing to bind and the npc answered nothing at all. Unova's
- * Pokemon Center nurse is 2100 (fourteen of them, all sprite 78) and the mart clerk is 2101
- * (thirteen, sprite 79) - the owner was soft-locked in a Pokemon Center by the nurse not healing
- * (2026-09-20).
+ * Pokemon Center nurse is 2100 (fourteen of them, all sprite 78) - the owner was soft-locked in a
+ * Pokemon Center by the nurse not healing (2026-09-20).
  *
- * Their words are the ROM's own: text bank 346 belongs to no map header, which is what an engine
+ * The three attendants on every Center's BACK counter are 2101 (x 4), 10100 (x 7) and 10105 (x 10),
+ * all at y 4 (nds-npcs-2.txt). They were taken for mart clerks and opened the shop, while the real
+ * clerks on the mart counter (map scripts calling CallStd 10110, see UnovaMarts) did nothing. Their
+ * systems are not built, so they say the client's own "This function is not yet implemented."
+ * (owner, 2026-10-21).
+ *
+ * The nurse's words are the ROM's own: text bank 346 belongs to no map header, which is what an engine
  * script's text looks like.
  */
 @Singleton
@@ -23,7 +28,7 @@ class NdsStandardScripts @Inject constructor() {
     if (regionId != UNOVA) return null
     return when (scriptId) {
       NURSE -> Script { ctx -> nurse(ctx) }
-      MART, MART_LEFT, MART_RIGHT -> Script { ctx -> ctx.pokemartCommon() }
+      BACK_COUNTER_LEFT, BACK_COUNTER_MIDDLE, BACK_COUNTER_RIGHT -> Script { ctx -> ctx.clientMessage(NOT_YET_IMPLEMENTED) }
       else -> null
     }
   }
@@ -48,17 +53,18 @@ class NdsStandardScripts @Inject constructor() {
     const val UNOVA = 2
     /** Unova npc script ids the engine owns. */
     const val NURSE = 2100
-    const val MART = 2101
 
     /**
-     * The other two clerks at every Center's counter, 10100 (sprite 82) and 10105 (sprite 81),
-     * thirteen of each. Their ids sit in the engine's 10000+ standard-script space, which was
-     * wrongly bound to the hidden-item file and had them handing out a Pearl; un-bound, they went
-     * silent (owner, 2026-09-21). They sell, through the client's own shop window like Kanto.
-     * OPEN: retail may give them stock of their own rather than the common shelf.
+     * The back counter, left to right: 2101 (sprite 79, file 856), 10100 (sprite 82, file 869) and
+     * 10105 (sprite 81, file 870). 10100/10105 sit in the engine's 10000+ standard-script space,
+     * which was once wrongly bound to the hidden-item file and had them handing out a Pearl.
      */
-    const val MART_LEFT = 10100
-    const val MART_RIGHT = 10105
+    const val BACK_COUNTER_LEFT = 2101
+    const val BACK_COUNTER_MIDDLE = 10100
+    const val BACK_COUNTER_RIGHT = 10105
+
+    /** Client string (strings_en.xml): "This function is not yet implemented." */
+    const val NOT_YET_IMPLEMENTED = 16777226
 
     /** A Unova ROM text id: region 2, the DS bit, then the bank and entry (the corpus' own T-label). */
     private fun text(bank: Int, entry: Int) = (UNOVA shl 28) or (1 shl 27) or (bank shl 16) or entry

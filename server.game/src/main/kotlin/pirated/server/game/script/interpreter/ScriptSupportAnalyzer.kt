@@ -299,6 +299,7 @@ class ScriptSupportAnalyzer(
           "ds_checktrainerflag", "ds_trainermsg" -> args.size == 2
           "ds_trainermsgtypes", "ds_trainermsgtypes_rematch" -> args.size == 3
           "ds_martcommon" -> args.isEmpty()
+          "ds_unovamart" -> args.size == 1
           "ds_buffer" -> args.size in 2..3
           "ds_pokemart" -> args.isNotEmpty()
           "ds_countbadges" -> args.size == 1
@@ -681,6 +682,7 @@ class ScriptSupportAnalyzer(
             "ds_trainermsgtypes",
             "ds_trainermsgtypes_rematch",
             "ds_martcommon",
+            "ds_unovamart",
             "ds_buffer",
             "ds_pokemart",
             "ds_countbadges",

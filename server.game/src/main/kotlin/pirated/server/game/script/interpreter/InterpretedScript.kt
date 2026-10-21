@@ -426,6 +426,13 @@ class InterpretedScript(
           else ctx.clearFlag(namespaced("FLAG_DS_TRAINER_$id"))
           state.pc++
         }
+        // ds_unovamart VAR: White's mart counter on the shelf id the clerk's script put in the var.
+        // An open shelf ends the script like pokemart; a counter with no shelf yet (247-254, the
+        // BP and League-side shops) carries on as the dropped call did.
+        "ds_unovamart" -> {
+          if (ctx.unovaMart(value(ctx, instruction.arg(0)))) return
+          state.pc++
+        }
         // Gen 4 marts. The common shelf is the badge-tiered table both games share; a specialty
         // shelf lists the game's own item indexes. Wire ids are region * 1000 + index.
         "ds_martcommon",

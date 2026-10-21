@@ -45,7 +45,7 @@ against, every client fails with `Failed to verify signature` and reconnects in 
 build re-stamps `src/main/resources/*.pem` from `keys/build/` on EVERY build, so editing the
 copies does nothing.
 
-## Deploying
+## Running it
 
-`deploy/vps/deploy.sh [--force] [--data]` from the repository root. It refuses while players are
-connected unless you pass `--force`, which kicks them.
+Run your own copy locally: `docker compose up -d` for the databases, then `start-servers.bat`.
+`deploy/` contains scripts for hosting your own server.

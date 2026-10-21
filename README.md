@@ -1,7 +1,7 @@
 # PokeMMO Pirated Version
 
 RaKeT's own Pokemon MMO: a Kotlin server and a patched build of the PokeMMO Android client,
-run on a private VPS for people he knows. Kanto, Hoenn and the DS regions share one world, and
+run as a private server for people he knows. Kanto, Hoenn and the DS regions share one world, and
 the Expansion species, the Fairy type, raids, breeding and more are built straight into the
 client's own code and data, not added as mods. Players supply their own ROMs.
 
@@ -9,7 +9,7 @@ client's own code and data, not added as mods. Players supply their own ROMs.
 - [Layout](#layout)
 - [Building the server](#building-the-server)
 - [Building the Android client](#building-the-android-client)
-- [Running and deploying](#running-and-deploying)
+- [Running your own copy](#running-your-own-copy)
 - [Configuration](#configuration)
 - [Documentation](#documentation)
 - [License](#license)
@@ -73,22 +73,23 @@ bash tools/client-package/build-android.sh --rebuild-dex   # after changing andr
 
 It stages the Expansion content into the retail APK's own `data.pak` and string table, applies
 the patched client classes in `tools/client-package/android-smali`, points the client at the
-VPS, replaces the server keys, and signs the result as `builds\PokeMMO-Pirated.apk`. Every
+server given by `--host`, replaces the server keys, and signs the result as `builds\PokeMMO-Pirated.apk`. Every
 patched class is explained in `tools/client-package/android-smali/README.md`.
 
-## Running and deploying
+## Running your own copy
 
-Production is the VPS. Deploy from the repository root:
+Everything runs locally on your own machine:
 
 ```bash
-bash deploy/vps/deploy.sh            # refuses while players are online
-bash deploy/vps/deploy.sh --data     # also uploads server.game/*.txt, monsters.json and keys
-bash deploy/vps/deploy.sh --force    # restarts even with players online
+cp .env.example .env            # then fill in the values
+docker compose up -d            # the two Postgres databases
+start-servers.bat               # login (2106) and game (7777) servers
+stop-local-servers.cmd          # stop them again
 ```
 
-Accounts on the VPS are managed with `vps-user.cmd`. For local testing, `docker compose up -d`
-starts the two Postgres databases and `start-servers.bat` / `stop-local-servers.cmd` run the
-servers.
+`add-user.cmd` creates a login account on the local server. Build a client for your server
+with `build-android.sh --host <your address>`. `deploy/` contains scripts for hosting your own
+server.
 
 ## Configuration
 

@@ -14,7 +14,8 @@
 #   stock data      the retail APK's own data.pak + strings_en.xml, staged with our content
 #   classes.dex     retail dex + tools/client-package/android-smali (cached; see --rebuild-dex)
 #   overlay         android-overlay/ (hand-made: Fairy button, atlas pages) + the staged mod's art
-#   theme mod       composed by theme-mod/compose-theme-mod.sh, enabled by the packager's config
+#   theme mod       only with --theme: composed by theme-mod/compose-theme-mod.sh and enabled by the
+#                   packager's config. Off by default - the baked title screen replaced it (986511ed9).
 #   config          server host/ports and the client keys, written by ApkPackager
 set -euo pipefail
 
@@ -23,7 +24,7 @@ ROOT="$(cd "$REPO/.." && pwd -W)"   # the project folder (repo/ local/ apks/ bui
 HOST=91.98.41.154
 APK="$ROOT/apks/pokemmo-r32645.apk"
 OUT="$ROOT/builds/PokeMMO-Pirated.apk"
-THEME="$ROOT/apks/Dark Theme - Mobile(1).zip"
+THEME=""   # no theme mod unless --theme is given; the baked title screen replaced it (986511ed9)
 REBUILD_DEX=0 VERIFY_DEX=0 SKIP_STAGE=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -181,13 +182,16 @@ if [ -f "$ICON_SRC" ]; then
   for n in 16 32 128; do cp "$WORK/icons/icon-$n.png" "$OVERLAY/assets/data/icons/${n}x${n}.png"; done
 fi
 
-# 3. The theme, with our Fairy extension, atlas pages and its own badge folded in.
-if [ -f "$THEME" ]; then
+# 3. The theme mod, only when --theme names one: our Fairy extension, atlas pages and its own badge
+#    are folded in. Without it nothing is bundled and enabled_mods is not written.
+if [ -z "$THEME" ]; then
+  echo "== no theme mod (pass --theme to bundle one)"
+  MOD="-"
+elif [ -f "$THEME" ]; then
   echo "== composing the theme mod"
   bash "$TOOLS/theme-mod/compose-theme-mod.sh" "$THEME" "$MOD"
 else
-  echo "== no theme zip at $THEME - building without it"
-  MOD="-"
+  echo "ERROR: theme zip not found: $THEME"; exit 1
 fi
 
 # 4. classes.dex. A full baksmali of the 8.4k-class dex needs a 2-3 GB JVM, so the built dex is

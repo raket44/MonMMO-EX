@@ -500,8 +500,13 @@ constructor(
     sendAfterArrival(ctx, ndsSpawnPacket(regionId, bankId, mapId, npc))
   }
 
+  /**
+   * Through the same ordered queue as [spawnDsWall]. Sent directly, a remove issued while the
+   * spawn still waited out an arrival hold overtook it, and the late spawn left a wall nothing
+   * would ever clear: Striaton Gym's water guide, wall 300 at (12, 41) (VPS log 03:54:51, 2026-10-21).
+   */
   fun despawnDsWall(ctx: SessionContext, regionId: Int, bankId: Int, mapId: Int, id: Int) {
-    ctx.send(EntityLeavePacket(entityIdFor(regionId, bankId, mapId, id)))
+    sendAfterArrival(ctx, EntityLeavePacket(entityIdFor(regionId, bankId, mapId, id)))
   }
 
   // ---- Chargestone Cave's electric stones (NdsChargestone: the rules of White overlay 51) ----

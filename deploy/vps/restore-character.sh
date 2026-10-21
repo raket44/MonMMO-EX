@@ -1,18 +1,18 @@
 #!/bin/bash
 # Restores ONE character's Pokemon and bag from a nightly dump on the owner's own VPS.
-#   deploy/vps/restore-character.sh <characterId> <dump file name in /opt/monmmo/backups>
+#   deploy/vps/restore-character.sh <characterId> <dump file name in /opt/pirated/backups>
 # The game server is stopped first (its character cache would overwrite the rows), a fresh dump
 # is taken, the character's rows are replaced in one transaction, and the server is started again.
 # Nobody else's data is touched; story flags, money and position stay as they are now.
 set -euo pipefail
 CHAR="${1:?character id}"
 DUMP="${2:?dump file name, e.g. game-20260913-1020.sql.gz}"
-KEY="${MONMMO_VPS_KEY:-$HOME/.ssh/monmmo_vps}"
-HOST="${MONMMO_VPS_HOST:-root@91.98.41.154}"
+KEY="${PIRATED_VPS_KEY:-$HOME/.ssh/pirated_vps}"
+HOST="${PIRATED_VPS_HOST:-root@91.98.41.154}"
 
 ssh -i "$KEY" "$HOST" CHAR="$CHAR" DUMP="$DUMP" 'bash -s' <<'REMOTE'
 set -euo pipefail
-cd /opt/monmmo
+cd /opt/pirated
 . ./.env
 D="backups/$DUMP"
 [ -f "$D" ] || { echo "no such dump: $D"; exit 1; }
@@ -20,9 +20,9 @@ online=$(ss -tn state established "( sport = :7777 )" | tail -n +2 | wc -l)
 [ "$online" = 0 ] || { echo "$online player(s) online - log out first"; exit 1; }
 
 ./backup.sh
-systemctl stop monmmo-game.service
+systemctl stop pirated-game.service
 T=$(mktemp -d)
-trap 'rm -rf "$T"; systemctl start monmmo-game.service' EXIT
+trap 'rm -rf "$T"; systemctl start pirated-game.service' EXIT
 
 # One decompression to a file: `zcat | grep -m1` dies of SIGPIPE under pipefail.
 zcat "$D" > "$T/dump.sql"

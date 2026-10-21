@@ -4,9 +4,9 @@ cd
 
 set "JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot"
 set "PATH=%JAVA_HOME%\bin;C:\Program Files\Docker\Docker\resources\bin;%PATH%"
-set "OPENMMO_DEV_TOOLS=true"
+set "PIRATED_DEV_TOOLS=true"
 rem Generated Expansion species are installed in Client-31914, so the server may hand them out.
-set "OPENMMO_EXPANSION_CLIENT_CONTENT=true"
+set "PIRATED_EXPANSION_CLIENT_CONTENT=true"
 
 rem The gradle run tasks forwarded .env into the server environment; the direct dist launch must
 rem do the same (DB credentials, session secret, game key) or login-to-game handoff breaks.
@@ -16,7 +16,7 @@ if not defined LOGIN_DB_SEED_DEV set "LOGIN_DB_SEED_DEV=true"
 if not defined GAME_DB_SEED_DEV set "GAME_DB_SEED_DEV=true"
 rem Jars exclude *.pem on purpose (keys.gradle.kts), so the dist launch must hand the key over
 rem as a file path; the gradle run classpath carried it as a loose resource instead.
-if not defined OPENMMO_GAME_PRIVATE_KEY if not defined OPENMMO_GAME_PRIVATE_KEY_FILE set "OPENMMO_GAME_PRIVATE_KEY_FILE=%~dp0server.game\src\main\resources\game.private.pem"
+if not defined PIRATED_GAME_PRIVATE_KEY if not defined PIRATED_GAME_PRIVATE_KEY_FILE set "PIRATED_GAME_PRIVATE_KEY_FILE=%~dp0server.game\src\main\resources\game.private.pem"
 
 docker info >nul 2>&1
 if errorlevel 1 (

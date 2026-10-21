@@ -1,7 +1,7 @@
 #!/bin/bash
-# Nightly dump of both databases into /opt/monmmo/backups, keeping the last 14.
+# Nightly dump of both databases into /opt/pirated/backups, keeping the last 14.
 set -e
-cd /opt/monmmo
+cd /opt/pirated
 . ./.env
 mkdir -p backups
 stamp=$(date +%Y%m%d-%H%M)

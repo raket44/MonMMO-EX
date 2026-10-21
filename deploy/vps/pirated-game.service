@@ -1,0 +1,18 @@
+[Unit]
+Description=Pirated Version game server
+After=docker.service network-online.target pirated-login.service
+Wants=network-online.target
+
+[Service]
+User=pirated
+# The game server reads its map/warp/NDS tables from the working directory.
+WorkingDirectory=/opt/pirated/server.game
+EnvironmentFile=/opt/pirated/.env
+ExecStart=/opt/java/current/bin/java -Xms128m -Xmx768m -Dpirated.retailData=/opt/pirated/data/pokemmo/monsters.json -cp "lib/*" pirated.server.game.MainKt
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/pirated/logs/server-game.log
+StandardError=append:/opt/pirated/logs/server-game.err.log
+
+[Install]
+WantedBy=multi-user.target

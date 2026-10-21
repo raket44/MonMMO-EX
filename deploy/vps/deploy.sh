@@ -8,8 +8,8 @@
 # Only files whose checksum differs from the server's copy are uploaded: a code change is a
 # handful of our own jars, not the 90 MB of third-party ones. Run from Git Bash in the repo root.
 set -e
-VPS=${MONMMO_VPS:-root@91.98.41.154}
-KEY=${MONMMO_VPS_KEY:-$HOME/.ssh/monmmo_vps}
+VPS=${PIRATED_VPS:-root@91.98.41.154}
+KEY=${PIRATED_VPS_KEY:-$HOME/.ssh/pirated_vps}
 SSH="ssh -i $KEY -o BatchMode=yes $VPS"
 cd "$(dirname "$0")/../.."
 
@@ -33,7 +33,7 @@ trap 'rm -rf "$stage"' EXIT
 mkdir -p "$stage/server.game" "$stage/server.login" "$stage/deploy/vps"
 cp -r server.game/build/install/server.game/lib "$stage/server.game/lib"
 cp -r server.login/build/install/server.login/lib "$stage/server.login/lib"
-cp deploy/vps/docker-compose.yml deploy/vps/monmmo-login.service deploy/vps/monmmo-game.service deploy/vps/backup.sh "$stage/deploy/vps/"
+cp deploy/vps/docker-compose.yml deploy/vps/pirated-login.service deploy/vps/pirated-game.service deploy/vps/backup.sh "$stage/deploy/vps/"
 if [ $data = 1 ]; then
   mkdir -p "$stage/data/pokemmo"
   cp server.game/src/main/resources/game.private.pem "$stage/server.game/game.private.pem"
@@ -41,7 +41,7 @@ if [ $data = 1 ]; then
   cp data/pokemmo/monsters.json "$stage/data/pokemmo/"
 fi
 
-remote_sums=$($SSH "cd /opt/monmmo && find server.game/lib server.login/lib deploy/vps -type f -print0 2>/dev/null | xargs -0 sha256sum" || true)
+remote_sums=$($SSH "cd /opt/pirated && find server.game/lib server.login/lib deploy/vps -type f -print0 2>/dev/null | xargs -0 sha256sum" || true)
 # sha256sum prints "hash  path" on Linux and "hash *./path" on Windows; normalise both.
 norm() { awk '{ sub(/^\*?\.\//, "", $2); print $1 "  " $2 }'; }
 (cd "$stage" && find . -type f -print0 | xargs -0 sha256sum) | norm | sort > "$stage.local"
@@ -53,14 +53,14 @@ rm -f "$stage.local" "$stage.remote"
 count=$(echo "$changed" | grep -c . || true)
 echo "Uploading $count changed file(s)$( [ -n "$stale" ] && echo ", removing $(echo "$stale" | grep -c .) stale jar(s)" )..."
 { [ -n "$changed" ] && (cd "$stage" && echo "$changed" | tar czf - -T -) || tar czf - -T /dev/null; } \
-  | $SSH "set -e; cd /opt/monmmo; tar xzf -; \
+  | $SSH "set -e; cd /opt/pirated; tar xzf -; \
     for f in $stale; do rm -f \"\$f\"; done; \
     cp deploy/vps/docker-compose.yml docker-compose.yml; cp deploy/vps/backup.sh backup.sh; chmod +x backup.sh; \
-    cp deploy/vps/monmmo-login.service deploy/vps/monmmo-game.service /etc/systemd/system/; systemctl daemon-reload; \
-    chown -R monmmo:monmmo /opt/monmmo/server.game /opt/monmmo/server.login /opt/monmmo/data /opt/monmmo/logs; \
+    cp deploy/vps/pirated-login.service deploy/vps/pirated-game.service /etc/systemd/system/; systemctl daemon-reload; \
+    chown -R pirated:pirated /opt/pirated/server.game /opt/pirated/server.login /opt/pirated/data /opt/pirated/logs; \
     docker compose up -d --quiet-pull 2>/dev/null; \
-    systemctl enable monmmo-login monmmo-game >/dev/null 2>&1; \
-    systemctl restart monmmo-login; sleep 3; systemctl restart monmmo-game; sleep 8; \
-    systemctl is-active monmmo-login monmmo-game; \
+    systemctl enable pirated-login pirated-game >/dev/null 2>&1; \
+    systemctl restart pirated-login; sleep 3; systemctl restart pirated-game; sleep 8; \
+    systemctl is-active pirated-login pirated-game; \
     tail -n 2 logs/server-login.log logs/server-game.log"
 echo "Deployed."

@@ -49,7 +49,7 @@ constructor(
     }
 
     // On a dev-tools server every character is an admin; permission bits matter once the
-    // server is opened up and OPENMMO_DEV_TOOLS is off.
+    // server is opened up and PIRATED_DEV_TOOLS is off.
     fun allowed(command: ChatCommand): Boolean =
         developerTools.enabled || character.info.hasPermission(command.permission)
 

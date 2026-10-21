@@ -9,8 +9,8 @@ rem what made "connecting" feel slow). Refresh the dists after code changes with
 rem   gradlew.bat :server.game:installDist :server.login:installDist
 rem Falls back to gradlew run when a dist has not been built yet.
 cd /d "%~dp0"
-set OPENMMO_DEV_TOOLS=true
-set OPENMMO_EXPANSION_CLIENT_CONTENT=true
+set PIRATED_DEV_TOOLS=true
+set PIRATED_EXPANSION_CLIENT_CONTENT=true
 
 if exist "server.login\build\install\server.login\bin\server.login.bat" (
   start "Pirated Version Login Server" cmd /k "cd /d "%~dp0server.login" && build\install\server.login\bin\server.login.bat"

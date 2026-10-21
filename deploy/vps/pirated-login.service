@@ -4,14 +4,14 @@ After=docker.service network-online.target
 Wants=network-online.target
 
 [Service]
-User=monmmo
-WorkingDirectory=/opt/monmmo/server.login
-EnvironmentFile=/opt/monmmo/.env
+User=pirated
+WorkingDirectory=/opt/pirated/server.login
+EnvironmentFile=/opt/pirated/.env
 ExecStart=/opt/java/current/bin/java -Xms64m -Xmx256m -cp "lib/*" pirated.server.login.MainKt
 Restart=always
 RestartSec=5
-StandardOutput=append:/opt/monmmo/logs/server-login.log
-StandardError=append:/opt/monmmo/logs/server-login.err.log
+StandardOutput=append:/opt/pirated/logs/server-login.log
+StandardError=append:/opt/pirated/logs/server-login.err.log
 
 [Install]
 WantedBy=multi-user.target

@@ -88,8 +88,8 @@ client can reach.
 
 ### First account
 
-A fresh login database has no users in it at all. Set `OPENMMO_ADMIN_USERNAME`
-and `OPENMMO_ADMIN_PASSWORD` and the server creates that account on startup,
+A fresh login database has no users in it at all. Set `PIRATED_ADMIN_USERNAME`
+and `PIRATED_ADMIN_PASSWORD` and the server creates that account on startup,
 but only while the user table is still empty. It never touches an account that
 already exists, so changing either value later does nothing and is not a way to
 reset a password. Leave both unset and no account is created.
@@ -104,7 +104,7 @@ needs no setup.
 
 Released archives ship no keys. Generate a pair with
 `./gradlew :keys:generateGame` and pass the private key to both servers through
-`OPENMMO_GAME_PRIVATE_KEY` (the PEM) or `OPENMMO_GAME_PRIVATE_KEY_FILE` (a path
+`PIRATED_GAME_PRIVATE_KEY` (the PEM) or `PIRATED_GAME_PRIVATE_KEY_FILE` (a path
 to it). Clients need a patched build carrying the matching public key.
 
 ## Releases

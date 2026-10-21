@@ -24,7 +24,7 @@ val POKEMMO_FEED_URLS: List<Pair<String, FeedFile>> =
 /** Fixed, because a separate process serves the feed and the launcher has to know the port. */
 const val DEV_FEED_PORT = 20443
 
-val OPENMMO_FEED_PATHS =
+val PIRATED_FEED_PATHS =
     mapOf(
         FeedFile.MAIN to "/main.xml",
         FeedFile.SIGNATURE to "/main.sig256",
@@ -83,6 +83,6 @@ fun feedPatches(origin: String = FeedOrigin.configured): List<Patch> =
           target = CLIENT_TARGET,
           name = "Feed(${file.name}, $url)",
           find = url,
-          replace = padUrl(origin + OPENMMO_FEED_PATHS.getValue(file), url.length),
+          replace = padUrl(origin + PIRATED_FEED_PATHS.getValue(file), url.length),
       )
     }

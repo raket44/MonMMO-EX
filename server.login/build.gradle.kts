@@ -32,9 +32,9 @@ dependencies {
 
 tasks.named<JavaExec>("run") {
   listOf(
-          "OPENMMO_SESSION_SECRET",
-          "OPENMMO_ADMIN_USERNAME",
-          "OPENMMO_ADMIN_PASSWORD",
+          "PIRATED_SESSION_SECRET",
+          "PIRATED_ADMIN_USERNAME",
+          "PIRATED_ADMIN_PASSWORD",
           "GAME_SERVER_PUBLIC_IPV4",
           "GAME_SERVER_PUBLIC_IPV6",
           "GAME_SERVER_PORT",

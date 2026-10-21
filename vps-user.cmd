@@ -1,13 +1,13 @@
 @echo off
-rem Manages login accounts on the VPS (over SSH with the monmmo_vps key).
+rem Manages login accounts on the VPS (over SSH with the pirated_vps key).
 rem   vps-user.cmd set <username> <password>     create the account or change its password
 rem   vps-user.cmd delete <username>             remove the account
 rem   vps-user.cmd list                          show all accounts
 setlocal
 set "VPS=root@91.98.41.154"
-set "KEY=%USERPROFILE%\.ssh\monmmo_vps"
-set "PSQL=cd /opt/monmmo && . ./.env && docker exec -i login-db psql -U $LOGIN_DB_USER -d $LOGIN_DB_NAME -v ON_ERROR_STOP=1"
-set "SQL=%TEMP%\monmmo-user.sql"
+set "KEY=%USERPROFILE%\.ssh\pirated_vps"
+set "PSQL=cd /opt/pirated && . ./.env && docker exec -i login-db psql -U $LOGIN_DB_USER -d $LOGIN_DB_NAME -v ON_ERROR_STOP=1"
+set "SQL=%TEMP%\pirated-user.sql"
 if /i "%~1"=="list" (
   echo select username, created_at from users order by id;> "%SQL%"
   goto run

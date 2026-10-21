@@ -101,9 +101,9 @@ class GameLaunchTest :
 
       test("the dev server answers the paths the client is patched to ask for") {
         // The patched url and the path the dev server answers have to match.
-        OPENMMO_FEED_PATHS.getValue(FeedFile.MAIN) shouldBe "/$MAIN_NAME"
-        OPENMMO_FEED_PATHS.getValue(FeedFile.SIGNATURE) shouldBe "/$SIGNATURE_NAME"
-        OPENMMO_FEED_PATHS.getValue(FeedFile.NEWS) shouldBe "/$NEWS_NAME"
+        PIRATED_FEED_PATHS.getValue(FeedFile.MAIN) shouldBe "/$MAIN_NAME"
+        PIRATED_FEED_PATHS.getValue(FeedFile.SIGNATURE) shouldBe "/$SIGNATURE_NAME"
+        PIRATED_FEED_PATHS.getValue(FeedFile.NEWS) shouldBe "/$NEWS_NAME"
       }
 
       test("reads the origin the build baked in") {

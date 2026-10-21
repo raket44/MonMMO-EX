@@ -34,11 +34,11 @@ dependencies {
 
 tasks.named<JavaExec>("run") {
   listOf(
-          "OPENMMO_SESSION_SECRET",
-          "OPENMMO_SESSION_TOKEN_MAX_AGE",
-          "OPENMMO_DEV_TOOLS",
-          "OPENMMO_EXPANSION_CLIENT_CONTENT",
-          "OPENMMO_INTERPRETER_VERBOSE",
+          "PIRATED_SESSION_SECRET",
+          "PIRATED_SESSION_TOKEN_MAX_AGE",
+          "PIRATED_DEV_TOOLS",
+          "PIRATED_EXPANSION_CLIENT_CONTENT",
+          "PIRATED_INTERPRETER_VERBOSE",
           "GAME_DB_HOST",
           "GAME_DB_PORT",
           "GAME_DB_NAME",

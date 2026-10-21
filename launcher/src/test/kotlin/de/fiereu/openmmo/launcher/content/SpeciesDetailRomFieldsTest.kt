@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 /**
- * Section 6's MonMMO-EX bits (0x800 ROM scalars, 0x1000 evolutions, 0x2000 types) are read by the
+ * Section 6's Pirated Version bits (0x800 ROM scalars, 0x1000 evolutions, 0x2000 types) are read by the
  * client code in f/fi7 in bit order after the form list; the codec has to write exactly that order.
  */
 class SpeciesDetailRomFieldsTest :

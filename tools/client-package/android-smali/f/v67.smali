@@ -5796,7 +5796,7 @@
 
     .line 496
     .line 497
-    # MonMMO-EX: Arceus's form entries take sprite ids 2001-2016 instead of retail's 801-816, which
+    # Pirated Version: Arceus's form entries take sprite ids 2001-2016 instead of retail's 801-816, which
     # the species data adds own (Hakamo-o 801 ... Kartana 816). No ROM sprite is filed at either
     # range (the loader files slots 0-711); pr.TO1 folds this range back onto Arceus (493).
     add-int/lit16 v5, v4, 0x7d0
@@ -8687,7 +8687,7 @@
     .line 1893
     .line 1894
     :try_start_765
-    # MonMMO-EX 2026-09-19: retail opens sp-icon.pak (the shiny icon palette remaps) with
+    # Pirated Version 2026-09-19: retail opens sp-icon.pak (the shiny icon palette remaps) with
     # `new z46(String)` = libgdx Absolute, i.e. /data/sprites/sp-icon.pak on the phone, which never
     # exists - so hz1() is false, the map below stays empty and every shiny icon falls back to the
     # normal icon. Every other pak in this class goes through u43.G4 (the APK asset handle f/rz,

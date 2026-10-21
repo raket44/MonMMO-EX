@@ -1,6 +1,6 @@
 ---
 title: Deploying the feed and the launcher
-description: How to publish the OpenMMO feed and build a launcher that trusts it.
+description: How to publish the Pirated Version feed and build a launcher that trusts it.
 ---
 
 Players run a launcher. The launcher downloads a PokeMMO client, patches it, and

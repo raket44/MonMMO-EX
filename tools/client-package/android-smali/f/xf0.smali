@@ -8102,7 +8102,7 @@
     .line 421
     .line 422
     iget v2, v9, Lf/b81;->zw0:I
-    # MonMMO-EX: drop a data evolution's time-of-day bits (f/fi7 0x1000) from the dumped value.
+    # Pirated Version: drop a data evolution's time-of-day bits (f/fi7 0x1000) from the dumped value.
     shl-int/lit8 v2, v2, 0x10
     ushr-int/lit8 v2, v2, 0x10
 

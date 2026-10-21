@@ -9,7 +9,7 @@ package de.fiereu.openmmo.items
  * hands out this one.
  */
 object ClientTools {
-  /** Ids from here up are the block MonMMO-EX creates items in, not the client's own. */
+  /** Ids from here up are the block Pirated Version creates items in, not the client's own. */
   const val FIRST_CREATED_ITEM_ID = 20000
 
   /** The client lists every 5000-band tool again at +1000 and its 1600 tools at 7600. */

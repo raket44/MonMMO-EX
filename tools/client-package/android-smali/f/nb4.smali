@@ -180,7 +180,7 @@
     move-result v0
 
     .line 5
-    # MonMMO-EX: the weekday is the real calendar one in the server's zone, not the in-game day
+    # Pirated Version: the weekday is the real calendar one in the server's zone, not the in-game day
     # counter at 4x (which reset to Sunday every real midnight). qN()/4 = real seconds since the
     # join anchor, which the server sets to a Sunday midnight (WorldClock.dayStartSecond), so
     # real days since it mod 7 is the calendar weekday, Sunday 0.

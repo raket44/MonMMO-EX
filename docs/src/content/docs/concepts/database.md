@@ -3,7 +3,7 @@ title: The database
 description: How persistence works and how dev data is seeded.
 ---
 
-OpenMMO uses two PostgreSQL databases, matching the two servers:
+Pirated Version uses two PostgreSQL databases, matching the two servers:
 
 - **login-db**: accounts (`users` table), owned by `server.login`.
 - **game-db**: characters, pokemon, and items, owned by `server.game`.

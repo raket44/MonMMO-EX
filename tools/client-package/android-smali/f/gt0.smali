@@ -7788,7 +7788,7 @@
 .method public static varargs tt1(BLf/pn2;II[Ljava/lang/String;)Ljava/lang/String;
     .registers 7
 
-    # MonMMO-EX: ROM text the string table supplies. Source 2 (the dex text archive) has no rows for
+    # Pirated Version: ROM text the string table supplies. Source 2 (the dex text archive) has no rows for
     # species the ROM never had - category, entry, height and weight rendered "--". A string at
     # 1500000000 + table * 100000 + entry takes the ROM row's place; nothing is written there for a
     # species the ROM owns, so retail text is untouched.

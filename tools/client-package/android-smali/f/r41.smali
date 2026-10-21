@@ -152,7 +152,7 @@
 
 .field public xr0:Lf/m39;
 
-# MonMMO-EX: the evolution tab's battle form-change symbols (atlas page monmmo-evo-symbols), loaded
+# Pirated Version: the evolution tab's battle form-change symbols (atlas page monmmo-evo-symbols), loaded
 # with the clock badges in f/rm4 - Mega Evolution, and the alpha / omega of Primal Kyogre / Groudon.
 .field public mmxMega:Lf/m39;
 
@@ -1391,7 +1391,7 @@
     move-result-object p1
 
     .line 49
-    # MonMMO-EX: 20 badge slots (was 18) so type 19, Fairy, loads monster_type_19 / skill_type_19.
+    # Pirated Version: 20 badge slots (was 18) so type 19, Fairy, loads monster_type_19 / skill_type_19.
     const/16 v0, 0x14
 
     .line 50

@@ -1,5 +1,5 @@
 [Unit]
-Description=MonMMO login server
+Description=Pirated Version login server
 After=docker.service network-online.target
 Wants=network-online.target
 

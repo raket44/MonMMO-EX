@@ -80,7 +80,7 @@ data class ParsedExpansionAssets(
 class ExpansionSpeciesGenerator(
     private val rootDir: File,
     private val retailForms: List<RetailForm> = emptyList(),
-    /** MonMMO-EX's own species (codegen/custom-species), appended after the Expansion's. */
+    /** Pirated Version's own species (codegen/custom-species), appended after the Expansion's. */
     private val customDir: File? = null,
 ) {
   fun parseAll(): List<ParsedExpansionSpecies> {

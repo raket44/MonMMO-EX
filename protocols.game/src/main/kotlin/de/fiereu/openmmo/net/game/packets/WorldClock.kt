@@ -21,7 +21,7 @@ object WorldClock {
    * The anchor the client counts from: midnight of the most recent Sunday in [zone]. In-game
    * midnight still falls every six real hours from a local midnight (whole days are multiples of
    * the six-hour in-game day, so the hour and the day/night bands are untouched), and the
-   * MonMMO-EX client's menu-header weekday (f/nb4.D60, patched) is real days since this anchor
+   * Pirated Version client's menu-header weekday (f/nb4.D60, patched) is real days since this anchor
    * mod 7 - the calendar weekday in this zone, which is what the owner wants shown. Retail's
    * D60 divides the 4x in-game counter instead, so an unpatched client shows a weekday that
    * changes every six hours.

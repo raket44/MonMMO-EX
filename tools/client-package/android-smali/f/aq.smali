@@ -959,7 +959,7 @@
 
     .line 479
     :goto_1de
-    # MonMMO-EX: nine Pokedex tabs (regions 0-4 plus Kalos/Alola/Galar/Paldea 6-9 in o80.gt0).
+    # Pirated Version: nine Pokedex tabs (regions 0-4 plus Kalos/Alola/Galar/Paldea 6-9 in o80.gt0).
     const/16 v4, 0x9
 
     .line 480

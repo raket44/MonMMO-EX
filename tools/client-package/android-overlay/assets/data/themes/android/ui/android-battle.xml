@@ -2,7 +2,7 @@
 <themes>
 	<theme name="battlegui" ref="-defaults">
 		<param name="defaultGap"><dimension>2,2</dimension></param>
-		<!-- MonMMO-EX: the triple-battle prompt asks for maingui.battlegui.battlebutton, which retail's Android theme never defined. -->
+		<!-- Pirated Version: the triple-battle prompt asks for maingui.battlegui.battlebutton, which retail's Android theme never defined. -->
 		<theme name="battlebutton" ref="battle-button" allowWildcard="true"/>
 		<theme name="battle-text" ref="label" allowWildcard="true">
 			<param name="background"><image>label1.background</image></param>   
@@ -369,7 +369,7 @@
 		<param name="background"><image>mobile.rmove.type0.background</image></param>
 	</theme>
 
-	<!-- MonMMO-EX: Fairy, type 19 (the client names the style after the type's table index). -->
+	<!-- Pirated Version: Fairy, type 19 (the client names the style after the type's table index). -->
 	<theme name="battle-move-button-right-type19" ref="battle-move-button-right" allowWildcard="true">
 		<param name="background"><image>mobile.rmove.type19.background</image></param>
 	</theme>

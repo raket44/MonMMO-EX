@@ -18,7 +18,7 @@ data class ScriptProgram(
     val sourceFile: String,
     val labels: Map<String, Int>,
     val instructions: List<ScriptInstruction>,
-    /** Map-local pret object constants normalized to MonMMO's zero-based npc indexes. */
+    /** Map-local pret object constants normalized to Pirated Version's zero-based npc indexes. */
     val objectIds: Map<String, Int> = emptyMap(),
 )
 

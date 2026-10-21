@@ -54,7 +54,7 @@ class CrystalOnixRaidPlacement @Inject constructor(private val mapManager: MapMa
     /**
      * The npc is drawn by the client's follower renderer, like a player's walking monster (project
      * owner, 2026-09-14). The client's own npc follower mapping (f/dw2.Kk0 via f/o80.T02) only
-     * reaches the retail species, so the MonMMO client patch in dw2.Kk0 adds: graphics id
+     * reaches the retail species, so the Pirated Version client patch in dw2.Kk0 adds: graphics id
      * [FOLLOWER_GRAPHICS_BASE] + N in any sprite set but 4 and 10 draws species N's follower
      * sprite. Retail and ROM npcs never use ids that high. Kanto's set is the one sent.
      */

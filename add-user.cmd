@@ -16,4 +16,4 @@ if errorlevel 1 (
   echo Could not add the user. Is Docker and the login-db container running?
   exit /b 1
 )
-echo Account '%USERNAME_LC%' is ready. Use it on the MonMMO-EX login screen.
+echo Account '%USERNAME_LC%' is ready. Use it on the Pirated Version login screen.

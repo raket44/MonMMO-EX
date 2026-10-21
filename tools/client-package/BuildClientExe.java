@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Builds a double-clickable client exe: the launch4j stub taken from the retail PokeMMO.exe,
  * followed by one jar holding every entry of the patched client jar with the classpath overlay
- * (patch-classes.jar) merged over it. The result is what "Play MonMMO Local.cmd" assembles on the
+ * (patch-classes.jar) merged over it. The result is what "Play Pirated Version Local.cmd" assembles on the
  * command line, baked into one file the stub launches with the bundled jre.
  *
  * Usage: java BuildClientExe.java <stubExe> <baseJar> <overlayJar> <out.exe>

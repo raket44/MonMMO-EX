@@ -3,7 +3,7 @@ title: Writing a code generator
 description: How to add a new build-time generator that turns pret decomp data into Kotlin game data.
 ---
 
-OpenMMO builds most of its game data (maps, moves, species, ...) at compile time.
+Pirated Version builds most of its game data (maps, moves, species, ...) at compile time.
 The `:codegen` module reads the raw data files from the pret decomps under
 `decomp/` and turns them into Kotlin `*Def` objects. Those generated files are
 **not committed**. They are regenerated on every build.

@@ -1,6 +1,6 @@
 # Gen 5 (Unova) elevators
 
-Investigation of the Castelia office-building elevators in Pokemon White (IRAO), for MonMMO-EX,
+Investigation of the Castelia office-building elevators in Pokemon White (IRAO), for Pirated Version,
 the owner's own self-hosted server. Data extractor: `tools/nds/Elevators5.java`. Outputs:
 `server.game/nds-elevators-2.txt` and `server.game/nds-script-ranges-2.txt`.
 

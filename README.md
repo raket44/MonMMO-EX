@@ -1,21 +1,17 @@
-# MonMMO-EX: My WIP changes to MonMMO
-> Message to PokeMMO Devs: *Hold off on any DMCA's for this repository, I am making these changes purely for MonMMO and not to modify PokeMMO, anything you have asked for the removal of will be removed when I have the time*
+# PokeMMO Pirated Version
+
+A Pokemon MMO server and Android client built by RaKeT and the Lost Knights, with the
+Expansion species, the Fairy type, raids, breeding and more built straight into the client.
+
+Based on OpenMMO by Fiereu.
 
 ## ToC
-- [Description](#description)
 - [Building](#building)
 - [Configuration](#configuration)
 - [Releases](#releases)
-- [Documentation](#wiki)
-- [License](LICENSE)
+- [Documentation](#documentation)
+- [License](#license)
 - [Disclaimer](#disclaimer)
-
-## Description
-
-> OpenMMO is currently in development and not yet ready for any real use.
-
-OpenMMO is an open-source implementation of the PokeMMO server.
-The goal is it to provide a free and open-source alternative to the PokeMMO server.
 
 ## Building
 
@@ -113,64 +109,26 @@ to it). Clients need a patched build carrying the matching public key.
 
 ## Releases
 
-[release-please](https://github.com/googleapis/release-please) cuts releases from
-the commit history. Pull requests are squash merged, so their titles become the
-commit messages it reads and must follow
-[Conventional Commits](https://www.conventionalcommits.org/). CI rejects titles
-that do not.
-
-`feat` bumps the minor version, `fix` the patch version. Below `1.0.0` a
-breaking change bumps the minor version instead of jumping to `1.0.0`.
-
-Every push to `master` opens or updates a release pull request. Merging it tags
-the release and attaches the server archives. It also publishes a container
-image per server, under the release version, its `major.minor` line and
-`latest`:
-
-```bash
-docker pull ghcr.io/openmmo-org/openmmo-login:latest
-docker pull ghcr.io/openmmo-org/openmmo-game:latest
-```
-
-Every push to `master` publishes a `dev` image alongside those, so `dev` is
-always the current default branch rather than the last release. Each one also
-gets a `sha-<short commit>` tag, which is what to pin when a build needs to stay
-put. These are built from whatever was pushed and do not wait for the test suite,
-so `dev` can be broken in a way `latest` is not.
-
-```bash
-docker pull ghcr.io/openmmo-org/openmmo-game:dev
-```
-
-`deploy/` holds a Compose stack per server, each with its own database, taking
-the `dev` images by default. Copy `deploy/.env.example`, fill it in, and bring
-the game side up first:
-
-```bash
-docker compose --env-file .env -f game.compose.yml up -d
-docker compose --env-file .env -f login.compose.yml up -d
-```
-
-The private key is mounted as a Compose secret, so the file has to be readable
-by uid 10001, which is what the servers run as. Only `2106` and `7777` are
-published, and neither database is.
-
-An image carries no keys and no `.env`, so pass the database settings, the
-session secret, the private key and the game server address as environment
-variables. Build one yourself with:
+Build a server image yourself with:
 
 ```bash
 ./gradlew :server.login:installDist
-docker build -f server.login/Dockerfile -t openmmo-login .
+docker build -f server.login/Dockerfile -t pirated-login .
 ```
+
+The production server is deployed with `deploy/vps/deploy.sh`.
 
 The version lives in `gradle.properties` and applies to every module, do not
 edit it by hand.
 
-## Wiki
+## Documentation
 
-The documentation wiki can be found [here](https://docs.openmmo.dev/).
-Or you can navigate to it via the `docs` folder in this repository.
+The documentation lives in the `docs` folder in this repository.
+
+## License
+
+AGPL-3.0, see [LICENSE](LICENSE). This project started from OpenMMO by Fiereu and has
+been rebuilt and extended since.
 
 ## Disclaimer
 [PokeMMO](https://pokemmo.eu/) is not affiliated with this project in any way.

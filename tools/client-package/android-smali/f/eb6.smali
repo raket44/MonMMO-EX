@@ -643,7 +643,7 @@
     .line 291
     sput-object v1, Lf/eb6;->tj:[Lf/eb6;
 
-    # MonMMO-EX: Fairy is ordinal 19, type byte 19 (server PokemonType.FAIRY, data.pak TYPE_FAIRY).
+    # Pirated Version: Fairy is ordinal 19, type byte 19 (server PokemonType.FAIRY, data.pak TYPE_FAIRY).
     # Appended before the lookup-map loop below so Bd(19)/AUx(19) resolve to it.
     sget-object v0, Lf/eb6;->tj:[Lf/eb6;
     const/16 v1, 0x14
@@ -1734,7 +1734,7 @@
     .line 880
     .line 881
     .line 882
-    # MonMMO-EX: Fairy matchups (pokeemerald-expansion types_info.h, Gen 6+). attacker.VT0(defender, x)
+    # Pirated Version: Fairy matchups (pokeemerald-expansion types_info.h, Gen 6+). attacker.VT0(defender, x)
     sget-object v0, Lf/eb6;->FAIRY:Lf/eb6;
     const-wide/high16 v2, 0x4000000000000000L    # 2.0
     sget-object v1, Lf/eb6;->Ah0:Lf/eb6;
@@ -2298,7 +2298,7 @@
     move-result v0
 
     .line 5
-    # MonMMO-EX: Fairy's name is string 9226, the id the staged strings_en.xml carries.
+    # Pirated Version: Fairy's name is string 9226, the id the staged strings_en.xml carries.
     const/16 v1, 0x13
     if-ne v0, v1, :monmmo_not_fairy
     const/16 v0, 0x240a

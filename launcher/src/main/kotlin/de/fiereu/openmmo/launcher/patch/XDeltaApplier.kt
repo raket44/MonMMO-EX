@@ -210,7 +210,7 @@ object XDeltaApplier {
       val downloadRequest =
           HttpRequest.newBuilder()
               .uri(URI.create(pinned.downloadUrl))
-              .header("User-Agent", "OpenMMO-Launcher")
+              .header("User-Agent", "PiratedVersion-Launcher")
               .timeout(Duration.ofMinutes(2))
               .GET()
               .build()

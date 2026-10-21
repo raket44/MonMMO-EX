@@ -1,6 +1,6 @@
 ---
 title: Running the game client
-description: How the launcher downloads a PokeMMO client, patches it, and points it at an OpenMMO server.
+description: How the launcher downloads a PokeMMO client, patches it, and points it at an Pirated Version server.
 ---
 
 The launcher gets a PokeMMO client from the official servers, patches it, and

@@ -1,4 +1,4 @@
-# Keys (OpenMMO)
+# Keys (Pirated Version)
 
 ## ToC
 - [Description](#description)

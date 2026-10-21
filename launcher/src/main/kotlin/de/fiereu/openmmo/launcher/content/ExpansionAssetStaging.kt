@@ -93,7 +93,7 @@ class ExpansionAssetStaging(
               val front = indexed(entry.assets.frontPicPath)
               val back = indexed(entry.assets.backPicPath)
               val icon = indexed(entry.assets.iconPath)
-              // MonMMO-EX's own species (codegen/custom-species) can carry animated battle GIFs
+              // Pirated Version's own species (codegen/custom-species) can carry animated battle GIFs
               // and an icon palette of their own beside the decomp-style art.
               val artDir = Path.of(entry.assets.frontPicPath).parent?.let(expansionRoot::resolve)
               fun customArt(name: String): Path? = artDir?.resolve(name)?.takeIf(Files::isRegularFile)
@@ -894,7 +894,7 @@ class ExpansionAssetStaging(
     val INFO_XML =
         """
         <?xml version="1.0" encoding="UTF-8"?>
-        <resource name="MonMMO by Lost Knights" version="1.0" description="Pokemon beyond the stock client, sourced from pokeemerald-expansion." author="Lost Knights">
+        <resource name="Pirated Version by Lost Knights" version="1.0" description="Pokemon beyond the stock client, sourced from pokeemerald-expansion." author="Lost Knights">
         </resource>
         """
             .trimIndent()

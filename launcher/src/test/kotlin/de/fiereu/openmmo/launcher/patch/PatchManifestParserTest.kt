@@ -47,7 +47,7 @@ class PatchManifestParserTest :
                 type = "strings"
                 name = "Branding"
                 target = "data/strings/strings_en.xml"
-                strings = { 1000000000 = "OpenMMO" }
+                strings = { 1000000000 = "Pirated Version" }
 
                 [[patches]]
                 type = "file"
@@ -63,7 +63,7 @@ class PatchManifestParserTest :
         (parsed.patches[1] as BinaryStringPatch).replaceRef shouldBe "key.game.public"
         (parsed.patches[2] as BinarySignaturePatch).offset shouldBe 6
         (parsed.patches[2] as BinarySignaturePatch).replace shouldBe "B8 01 00 00 00"
-        (parsed.patches[3] as StringsPatch).strings shouldBe mapOf(1000000000 to "OpenMMO")
+        (parsed.patches[3] as StringsPatch).strings shouldBe mapOf(1000000000 to "Pirated Version")
         (parsed.patches[4] as FilePatch).source shouldBe "mod.zip"
       }
 

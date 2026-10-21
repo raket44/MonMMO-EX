@@ -24,8 +24,8 @@ const val SIGNATURE_NAME = "main.sig256"
 const val NEWS_NAME = "news.xml"
 
 private val DEV_NEWS =
-    ("""<?xml version="1.0"?><rss version="2.0"><channel><title>OpenMMO</title>""" +
-            """<link>https://github.com/openmmo-org/OpenMMO</link>""" +
+    ("""<?xml version="1.0"?><rss version="2.0"><channel><title>Pirated Version</title>""" +
+            """<link>https://github.com/raket44/PokeMMO-Pirated</link>""" +
             """<description>Development feed</description><language>en</language>""" +
             """<item><title>Development build</title><description>Connected to a local server.""" +
             """</description><guid isPermaLink="false">openmmo-dev</guid></item></channel></rss>""")

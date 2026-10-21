@@ -14,11 +14,11 @@ object ClientItemRecords {
   /** Clone a donor: u16 donor id. The clone pass after the table (fi7 :cond_9bb) builds the item. */
   const val CLONE = 0x40
 
-  /** The move a tool teaches: u16. The clone pass carries it onto the clone (MonMMO-EX client code). */
+  /** The move a tool teaches: u16. The clone pass carries it onto the clone (Pirated Version client code). */
   const val TAUGHT_MOVE = 0x200
 
   /**
-   * MonMMO-EX client code: i32 name string, i32 description string, u16 icon id (the file
+   * Pirated Version client code: i32 name string, i32 description string, u16 icon id (the file
    * sprites/itemicons/<icon>.png). Without it a clone wears its donor's name, text and icon.
    */
   const val TEXT_AND_ICON = 0x8000000

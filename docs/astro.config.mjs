@@ -10,12 +10,12 @@ export default defineConfig({
   base: url?.pathname,
   integrations: [
     starlight({
-      title: "OpenMMO",
+      title: "Pirated Version",
       social: [
         {
           icon: "github",
           label: "GitHub",
-          href: "https://github.com/openmmo-org/OpenMMO",
+          href: "https://github.com/raket44/PokeMMO-Pirated",
         },
       ],
       sidebar: [

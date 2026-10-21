@@ -3,7 +3,7 @@ package de.fiereu.openmmo.launcher.content
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-/** Section 6's MonMMO-EX bit 0x4000: the dex listing byte, after the types, as f/fi7 reads it. */
+/** Section 6's Pirated Version bit 0x4000: the dex listing byte, after the types, as f/fi7 reads it. */
 class SpeciesDexListingTest :
     FunSpec({
       test("the listing byte follows the types and round-trips") {

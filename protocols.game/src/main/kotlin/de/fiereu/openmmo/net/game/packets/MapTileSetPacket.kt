@@ -10,7 +10,7 @@ import de.fiereu.bytecodec.S8
  * Three bytes key the map (f/jp0.Jx0 -> f/tS1.tt), two shorts pick the block (f/tM.Pp(x, y, 0)),
  * then a short METATILE and a short COLLISION reach f/eP1.Bp0: the metatile indexes the tileset's
  * tile table (raw ROM id, secondary from 0x280) and the collision becomes the block's upper byte. The client then re-checks the
- * local player and every entity standing on the map (f/eZ.aK). OpenMMO had this opcode as the
+ * local player and every entity standing on the map (f/eZ.aK). Pirated Version had this opcode as the
  * client-to-server interaction request's mirror; the two directions are unrelated packets.
  */
 data class MapTileSetPacket(

@@ -1,6 +1,6 @@
 #include "GalarEncounters.h"
 
-// Galar encounter tables for OpenMMO.
+// Galar encounter tables for Pirated Version.
 // Data sourced from pkNX/SSWE analysis of Sword v1.3.2.
 // Symbol = overworld visible; Hidden = tall-grass random.
 // Each SubTable = one weather/time condition block.

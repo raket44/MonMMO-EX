@@ -31,7 +31,7 @@
 .end method
 
 .method public static Mo(Ljava/nio/ByteBuffer;)V
-    # MonMMO-EX: three more locals (v22-v24); v22 keeps section 6's flag word past the form loop.
+    # Pirated Version: three more locals (v22-v24); v22 keeps section 6's flag word past the form loop.
     .registers 26
 
     .line 1
@@ -1293,7 +1293,7 @@
     .line 595
     # Retail: section 10 creates every species hidden from the Pokedex - that is how the client keeps
     # its reserved 1000-1052 block out of the lists. Species data adds are listed by section 6's
-    # MonMMO-EX bit 0x4000 instead.
+    # Pirated Version bit 0x4000 instead.
     iput-boolean v6, v8, Lf/zp3;->Nm1:Z
 
     .line 596
@@ -2100,7 +2100,7 @@
     .line 984
     move-result v8
 
-    # MonMMO-EX: the form loop below reuses v8 as its counter; the bits past 0x400 still need it.
+    # Pirated Version: the form loop below reuses v8 as its counter; the bits past 0x400 still need it.
     move/from16 v22, v8
 
     .line 985
@@ -2666,7 +2666,7 @@
 
     .line 1248
     :cond_4df
-    # MonMMO-EX: species fields only the ROM loader (v67.SB) used to fill, so a species data adds
+    # Pirated Version: species fields only the ROM loader (v67.SB) used to fill, so a species data adds
     # carries everything a ROM species does. Payloads follow 0x400 in bit order:
     #   0x800  u8 growth (o9 key, the ROM byte), u16 base exp, u16 height dm, u16 weight hg
     #   0x1000 u8 count, then per evolution u8 method (vj3 ROM key), u16 param, u16 target,
@@ -2769,7 +2769,7 @@
     iput-object v10, v9, Lf/zp3;->yE1:Lf/eb6;
 
     :mmx_types_done
-    # MonMMO-EX 0x4000: u8 dex listing, for a species data adds (section 10 created it hidden, as
+    # Pirated Version 0x4000: u8 dex listing, for a species data adds (section 10 created it hidden, as
     # retail does). 1 lists it; 2 lists it but outside the National list - a regional form, which
     # its own region tab lists (the constructor put the record id in the National slot, index 5).
     # An alternate form (Mega, Gigantamax, gender, cosmetic) carries no listing and stays hidden:
@@ -5395,7 +5395,7 @@
     .line 2486
     .line 2487
     :cond_9b6
-    # MonMMO-EX: flag 0x8000000 - an item's own text and icon: i32 name string (FU), i32 description
+    # Pirated Version: flag 0x8000000 - an item's own text and icon: i32 name string (FU), i32 description
     # string (Dt), u16 icon id (of, sprites/itemicons/<of>.png). Retail's records never set it; the
     # clone pass below carries it onto a 0x40 clone the way it carries price, pocket and sort.
     const/high16 v5, 0x8000000
@@ -5579,7 +5579,7 @@
     .line 2566
     .line 2567
     :cond_a06
-    # MonMMO-EX: a clone takes its record's taught move (0x200) and its own name, description and
+    # Pirated Version: a clone takes its record's taught move (0x200) and its own name, description and
     # icon (0x8000000) - otherwise a new TM teaches its donor's move and a new item wears the donor's
     # name. Same pattern as the retail copies above; v6 is scratch here.
     and-int/lit16 v6, v2, 0x200

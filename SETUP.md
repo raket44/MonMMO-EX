@@ -1,4 +1,4 @@
-# Setting up MonMMO-EX
+# Setting up Pirated Version
 
 Everything the server needs to build is in this repository or in one of its submodules.
 Four things are deliberately NOT here, and only the last two matter if you are working on
@@ -7,7 +7,7 @@ the server.
 ## 1. Clone with submodules
 
 ```bash
-git clone --recursive https://github.com/raket44/MonMMO-EX.git
+git clone --recursive https://github.com/raket44/PokeMMO-Pirated.git
 ```
 
 Already cloned without `--recursive`:

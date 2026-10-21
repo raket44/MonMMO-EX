@@ -1,9 +1,9 @@
 ---
 title: Concepts
-description: Short explanations of the systems that make up OpenMMO.
+description: Short explanations of the systems that make up Pirated Version.
 ---
 
-Short explanations of the systems that make up OpenMMO.
+Short explanations of the systems that make up Pirated Version.
 
 - [The database](database/): how persistence works and how dev data is
   seeded.

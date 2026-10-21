@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 4. Copy build-ommo/libsword_bridge.so to the JVM lib path / LD_LIBRARY_PATH
 # ───────────────────────────────────────────────────────────────────────────
 
-option(SWORD_BRIDGE_JNI "Build JNI entry points for OpenMMO JVM" ON)
+option(SWORD_BRIDGE_JNI "Build JNI entry points for Pirated Version JVM" ON)
 
 if(SWORD_BRIDGE_JNI)
     find_package(Java REQUIRED)

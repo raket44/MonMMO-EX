@@ -22,7 +22,7 @@ class GameServerCatalog @Inject constructor(endpoint: GameServerEndpointConfig) 
               server =
                   GameServer(
                       id = 0x00u,
-                      name = "OpenMMO",
+                      name = "Pirated Version",
                       currentPlayers = 0u,
                       maxPlayers = 1u,
                       joinable = true,

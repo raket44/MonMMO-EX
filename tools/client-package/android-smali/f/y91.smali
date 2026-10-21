@@ -220,7 +220,7 @@
     .line 6
     iget-object v1, p0, Lf/y91;->XU0:Ljava/util/HashMap;
 
-    # MonMMO-EX: the Pokedex map is filled once with ids 1-649 up to the first gap, so Expansion
+    # Pirated Version: the Pokedex map is filled once with ids 1-649 up to the first gap, so Expansion
     # species never reach it. Re-copy the full registry each time a list is built.
     iget-object v2, p0, Lf/y91;->Uv:Ljava/util/HashMap;
     invoke-virtual {v1}, Ljava/util/HashMap;->clear()V

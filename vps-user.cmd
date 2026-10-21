@@ -29,7 +29,7 @@ if errorlevel 1 (
   exit /b 1
 )
 del "%SQL%"
-if /i "%~1"=="set" echo Account '%~2' is ready on the MonMMO-EX server.
+if /i "%~1"=="set" echo Account '%~2' is ready on the Pirated Version server.
 exit /b
 :usage
 echo usage: vps-user.cmd set ^<username^> ^<password^>  ^|  delete ^<username^>  ^|  list

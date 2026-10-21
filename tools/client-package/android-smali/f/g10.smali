@@ -528,7 +528,7 @@
     .line 216
     :cond_d7
     :goto_d7
-    # MonMMO-EX: a cry the resources tree supplied as a file (data/resources/cries/<id>.wav, registered
+    # Pirated Version: a cry the resources tree supplied as a file (data/resources/cries/<id>.wav, registered
     # by c85.ZY1 under the bundled-sound region 10) plays through the same file player as the client's
     # own sounds/10 oggs. Retail only knows ROM cries - loadSSEQ(2, 1, species) on the Black ROM - so an
     # Expansion species had no cry at all on this client. Anything without a file still takes the ROM path.

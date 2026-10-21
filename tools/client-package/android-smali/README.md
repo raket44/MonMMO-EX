@@ -1,6 +1,6 @@
 # Android client (r32645) code patches
 
-The 22 files under `f/` are the MonMMO-EX versions of the retail classes they replace, as smali
+The 22 files under `f/` are the Pirated Version versions of the retail classes they replace, as smali
 (smali/baksmali 3.0.10, `--api 21`). They are the source of the `classes.dex` that
 `ApkPackager prepare` takes as its rebuilt-dex argument; everything else in the dex is retail.
 
@@ -15,7 +15,7 @@ Rebuild:
 Only disassemble the classes being checked (`--classes Lf/x;`) when verifying a build: a full
 baksmali of the 8.4k-class dex is a 2-3 GB JVM.
 
-What each class changes (every edit is marked `# MonMMO-EX` in the file):
+What each class changes (every edit is marked `# Pirated Version` in the file):
 
 | class | change |
 | --- | --- |

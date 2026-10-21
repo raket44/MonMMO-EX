@@ -619,7 +619,7 @@ private fun checkNoCollisions(
 /**
  * A new species' optional-field record, carrying everything the ROM carries for a species it
  * defines (retail is the reference, project owner 2026-09-13): egg groups, EV yield, held items,
- * catch rate, rarity, forms, and - through MonMMO-EX's client code - growth rate, base exp, height,
+ * catch rate, rarity, forms, and - through Pirated Version's client code - growth rate, base exp, height,
  * weight and evolutions. Only fields with a value are flagged.
  */
 private fun detail(
@@ -1006,7 +1006,7 @@ private fun patchNames(
   // strings_en.xml no longer carries - so they are staged here in FireRed's words
   // (src/battle_message.c), with the placeholders the client fills: {06} the monster, {23} the
   // trainer, {0F} the monster that fled.
-  // The evolution tab's labels for the battle form changes it lists (MonMMO-EX client code, f/j67).
+  // The evolution tab's labels for the battle form changes it lists (Pirated Version client code, f/j67).
   FORM_CHANGE_LABELS.forEach { (stringId, value) ->
     require(stringId !in occupied) { "Client string $stringId is taken; pick another for the form-change label" }
     root.appendChild(
@@ -1152,7 +1152,7 @@ private val SAFARI_STRINGS =
         200148 to "Wild {0F} fled!",
     )
 
-/** The PC menu's first entry: stock "{01}'s PC" reads oddly beside GTL and Mail; MonMMO names the function (was hand-edited in the client before 2026-09-09). */
+/** The PC menu's first entry: stock "{01}'s PC" reads oddly beside GTL and Mail; Pirated Version names the function (was hand-edited in the client before 2026-09-09). */
 private val PC_MENU_REWORDS = mapOf(2351 to "Storage System")
 
 /**
@@ -1202,7 +1202,7 @@ private const val ROM_ITEM_SHIFT = 5000
 private const val SPECIES_NAME_STRING_BASE = 150000
 
 /**
- * The string id that takes the place of ROM text row [entry] of dex table [table]: the MonMMO-EX
+ * The string id that takes the place of ROM text row [entry] of dex table [table]: the Pirated Version
  * client code in f/gt0.tt1 reads 1500000000 + table * 100000 + entry before the ROM archive.
  */
 internal fun romTextId(table: Int, entry: Int): Int = 1_500_000_000 + table * 100_000 + entry

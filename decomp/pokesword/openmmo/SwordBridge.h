@@ -3,7 +3,7 @@
 extern "C" {
 #endif
 
-// OpenMMO ↔ pokesword C bridge.
+// Pirated Version ↔ pokesword C bridge.
 // The Java side loads libsword_bridge.so via System.loadLibrary("sword_bridge")
 // and calls these through JNI (see SwordShieldService.kt).
 //

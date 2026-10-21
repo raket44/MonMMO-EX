@@ -3,7 +3,7 @@ package de.fiereu.openmmo.net.game.packets
 import de.fiereu.bytecodec.*
 
 /**
- * The Gen 5 season. OpenMMO originally guessed this packet was a "map transition ack" with kinds
+ * The Gen 5 season. Pirated Version originally guessed this packet was a "map transition ack" with kinds
  * WARP(1)/WORLD_ENTRY(2), but the client handler (f.IK0 -> f.u2.GM0) clamps the byte to -1..3,
  * stores it as the global season, and fires graphics-refresh listeners when it changes; seasonal
  * resource lookups then add it to their file index (f.CK0, f.Hg). Sending WARP everywhere meant

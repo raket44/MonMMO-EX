@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <ctime>
 
-// OpenMMO bridge implementation.
+// Pirated Version bridge implementation.
 // Uses the encounter tables in GalarEncounters.cpp (pkNX-derived).
 // Replace stub bodies with calls into RecompSwordC objects once linked:
 // see CMakeLists.txt for the recomp/ drop-in instructions.

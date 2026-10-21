@@ -149,9 +149,9 @@ compose.desktop {
           "jdk.unsupported",
       )
       targetFormats(TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Dmg)
-      packageName = "OpenMMO"
+      packageName = "PiratedVersion"
       packageVersion = project.version.toString()
-      description = "Provisions and patches a PokeMMO client for OpenMMO"
+      description = "Provisions and patches a PokeMMO client for Pirated Version"
       vendor = "openmmo-org"
       licenseFile.set(rootProject.file("LICENSE"))
 
@@ -234,7 +234,7 @@ tasks.register<JavaExec>("dev") {
 
 tasks.register<JavaExec>("launcherUi") {
   group = "application"
-  description = "Runs the OpenMMO launcher window"
+  description = "Runs the Pirated Version launcher window"
 
   mainClass.set("de.fiereu.openmmo.launcher.ui.MainKt")
   classpath(sourceSets.main.get().runtimeClasspath)

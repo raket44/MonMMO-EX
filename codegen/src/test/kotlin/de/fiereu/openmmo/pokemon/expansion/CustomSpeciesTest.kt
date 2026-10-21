@@ -6,7 +6,7 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 
-/** MonMMO-EX's own species (codegen/custom-species) reach the catalogue like Expansion ones. */
+/** Pirated Version's own species (codegen/custom-species) reach the catalogue like Expansion ones. */
 class CustomSpeciesTest :
     FunSpec({
       val registry = ExpansionSpeciesRegistry()

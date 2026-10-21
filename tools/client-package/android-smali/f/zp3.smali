@@ -290,7 +290,7 @@
 
     .line 91
     .line 92
-    # MonMMO-EX: per-region dex numbers for regions 0-9 (national number stays at index 5).
+    # Pirated Version: per-region dex numbers for regions 0-9 (national number stays at index 5).
     const/16 v3, 0xa
 
     .line 93
@@ -1278,7 +1278,7 @@
     .line 12
     :cond_b
     :goto_b
-    # MonMMO-EX: the national number is pinned at index 5; the array is wider than six now.
+    # Pirated Version: the national number is pinned at index 5; the array is wider than six now.
     const/4 p1, 0x5
 
     .line 13

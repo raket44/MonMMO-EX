@@ -6384,7 +6384,7 @@
     goto :goto_1ca7
 
     :cond_1ced
-    # MonMMO-EX: every Fairy move the Expansion adds borrows Moonlight's moon staging (ub case 21 =
+    # Pirated Version: every Fairy move the Expansion adds borrows Moonlight's moon staging (ub case 21 =
     # f/i10, retail's entry for move 236), as the desktop client's Moonblast did (project owner,
     # 2026-09-14). Retail registers nothing between 560 and 999, so no retail animation is replaced;
     # Sweet Kiss, Charm and Moonlight keep their own. v3 is still the registry, v1/v2 are free.

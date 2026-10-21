@@ -35,7 +35,7 @@ fun LauncherWindow(
           verticalArrangement = Arrangement.SpaceBetween,
       ) {
         Column {
-          Text("OpenMMO", style = MaterialTheme.typography.headlineMedium)
+          Text("Pirated Version", style = MaterialTheme.typography.headlineMedium)
           Spacer(Modifier.height(4.dp))
           Text(
               "An open server for PokeMMO",

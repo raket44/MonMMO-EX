@@ -282,7 +282,7 @@
 
     .line 2
     .line 3
-    # MonMMO-EX: Arceus's form sprite ids are 2001-2016 (f/v67.SB; retail used 801-816, which the
+    # Pirated Version: Arceus's form sprite ids are 2001-2016 (f/v67.SB; retail used 801-816, which the
     # species data adds own), so the fold onto Arceus (493) covers that range instead.
     const/16 v0, 0x7d0
 

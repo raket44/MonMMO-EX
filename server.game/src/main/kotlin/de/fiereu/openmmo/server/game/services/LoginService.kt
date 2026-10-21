@@ -448,7 +448,7 @@ constructor(
         ChatMessagePacket(
             ChatType.GAME_NOTIFICATIONS,
             Language.EN,
-            "Welcome to OpenMMO!",
+            "Welcome to Pirated Version!",
             "",
         ))
 

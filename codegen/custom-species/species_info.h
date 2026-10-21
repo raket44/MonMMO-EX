@@ -1,4 +1,4 @@
-// MonMMO-EX's own species, read by ExpansionSpeciesGenerator after the Expansion's species_info.
+// Pirated Version's own species, read by ExpansionSpeciesGenerator after the Expansion's species_info.
 // Written in the Expansion's syntax but NOT preprocessed: plain numbers, no config ternaries, no
 // macros. Each entry is numbered after the Expansion's highest species id, in file order, so an
 // entry appended here never moves an existing wire id. Art paths are relative to this directory.

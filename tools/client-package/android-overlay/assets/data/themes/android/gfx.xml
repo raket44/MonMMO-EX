@@ -607,7 +607,7 @@
 		<area name="mobile.rmove.type15" xywh="358,811,320,130"/>
 		<area name="mobile.rmove.type16" xywh="27,146,320,130"/>
         <area name="mobile.rmove.type17" xywh="27,279,320,130"/>
-		<!-- MonMMO-EX: Fairy (type 19), the Normal button recoloured Fairy pink with sparkles. -->
+		<!-- Pirated Version: Fairy (type 19), the Normal button recoloured Fairy pink with sparkles. -->
 		<area name="mobile.rmove.type19" xywh="704,944,320,130"/>
 
 		<select name="mobile.rmove.type0.background">

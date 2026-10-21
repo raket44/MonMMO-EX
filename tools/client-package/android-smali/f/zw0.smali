@@ -134,7 +134,7 @@
 .method public final Oe(B)Z
     .registers 5
 
-    # MonMMO-EX: Pokedex regions 6-9 (Kalos, Alola, Galar, Paldea) have no ROM to check; always available.
+    # Pirated Version: Pokedex regions 6-9 (Kalos, Alola, Galar, Paldea) have no ROM to check; always available.
     const/4 v2, 0x6
     if-lt p1, v2, :monmmo_stock_regions
     const/16 v2, 0xa

@@ -3945,7 +3945,7 @@
     .line 1868
     iput-object v2, v4, Lf/r41;->xr0:Lf/m39;
 
-    # MonMMO-EX: the form-change symbols the evolution tab (f/j67) draws for Megas and Primals.
+    # Pirated Version: the form-change symbols the evolution tab (f/j67) draws for Megas and Primals.
     const-string v2, "monmmo-mega"
     invoke-virtual {v4, v2}, Lf/r41;->qp0(Ljava/lang/String;)Lf/m39;
     move-result-object v2

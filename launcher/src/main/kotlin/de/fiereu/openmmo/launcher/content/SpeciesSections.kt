@@ -171,16 +171,16 @@ data class SpeciesDetail(
      */
     val specialVariants: List<Int>? = null,
     /**
-     * Bit 0x800, read by MonMMO-EX's client code (f/fi7): the ROM personal fields data never
+     * Bit 0x800, read by Pirated Version's client code (f/fi7): the ROM personal fields data never
      * carried, so a species data adds has an exp curve, a base exp yield, a height and a weight.
      */
     val romScalars: RomScalars? = null,
-    /** Bit 0x1000, MonMMO-EX client code: evolutions appended to the species' list, linked. */
+    /** Bit 0x1000, Pirated Version client code: evolutions appended to the species' list, linked. */
     val evolutions: List<ClientEvolution>? = null,
-    /** Bit 0x2000, MonMMO-EX client code: both types, in place (the Fairy retypes). */
+    /** Bit 0x2000, Pirated Version client code: both types, in place (the Fairy retypes). */
     val types: Pair<Int, Int>? = null,
     /**
-     * Bit 0x4000, MonMMO-EX client code: u8 dex listing for a species data adds - [LISTED], or
+     * Bit 0x4000, Pirated Version client code: u8 dex listing for a species data adds - [LISTED], or
      * [LISTED_OUTSIDE_NATIONAL] for a regional form. Without it the record keeps section 10's hide.
      */
     val dexListing: Int? = null,
@@ -241,7 +241,7 @@ data class ClientEvolution(
 )
 
 /**
- * The badge byte of a data evolution (MonMMO-EX client code, f/fi7 0x1000; drawn by f/j67): 0 none,
+ * The badge byte of a data evolution (Pirated Version client code, f/fi7 0x1000; drawn by f/j67): 0 none,
  * 1 day, 2 night, and for the battle form changes on the evolution tab 3 Mega Evolution, 4 alpha
  * (Primal Kyogre), 5 omega (Primal Groudon), which also relabel the entry.
  */

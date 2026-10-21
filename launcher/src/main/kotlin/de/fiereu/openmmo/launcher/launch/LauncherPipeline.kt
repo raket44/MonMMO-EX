@@ -33,7 +33,7 @@ sealed interface LaunchStage {
 
 class UnsupportedRevisionException(revision: Int) :
     Exception(
-        "OpenMMO has no patch set or delta patch for client revision $revision yet. " +
+        "Pirated Version has no patch set or delta patch for client revision $revision yet. " +
             "Patching a client whose layout changed would corrupt it, so this is a hard stop.")
 
 class LauncherPipeline(

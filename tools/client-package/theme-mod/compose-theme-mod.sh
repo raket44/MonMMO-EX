@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compose the client's theme mod: a third-party theme zip exactly as its authors shipped it, plus
-# the MonMMO-EX pieces that a theme would otherwise leave behind.
+# the Pirated Version pieces that a theme would otherwise leave behind.
 #
 #   compose-theme-mod.sh <their-theme.zip> <out.zip>
 #
@@ -23,7 +23,7 @@ OVERLAY="$HERE/../android-overlay/assets/data"
 JDK=${JDK:-"/c/Program Files/Eclipse Adoptium/jdk-25.0.4.101-hotspot/bin"}
 
 EXT_DIR="data/MonMMOFairy_mobile"   # must not be named `default` or `android` (the parser refuses)
-EXT_NAME="MonMMO Fairy"
+EXT_NAME="Pirated Version Fairy"
 EXT_REVISION=8                      # their theme ships revision 8 and this client accepts it
 
 WORK=$(mktemp -d)
@@ -49,7 +49,7 @@ fi
 OUR_ATLAS="$OVERLAY/sprites/atlas/main.atlas"
 { echo; awk '/^monmmo-fairy\.png$/{found=1} found' "$OUR_ATLAS"; } >> "$MOD/atlas/main.atlas"
 cp "$OVERLAY/sprites/atlas/monmmo-fairy.png" "$OVERLAY/sprites/atlas/monmmo-evo-symbols.png" "$MOD/atlas/"
-echo "[theme] appended $(grep -c '^monmmo-' "$MOD/atlas/main.atlas") MonMMO-EX atlas regions"
+echo "[theme] appended $(grep -c '^monmmo-' "$MOD/atlas/main.atlas") Pirated Version atlas regions"
 
 # 3. The Fairy move button, drawn from THIS theme's own Psychic button so it matches its language.
 mkdir -p "$MOD/$EXT_DIR/res"

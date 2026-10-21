@@ -171,14 +171,14 @@ class PatchEngineTest :
                     StringsPatch(
                         "data/strings/strings_en.xml",
                         "Branding",
-                        mapOf(1000000001 to "OpenMMO", 1000000000 to "Connected to OpenMMO"))))
+                        mapOf(1000000001 to "Pirated Version", 1000000000 to "Connected to Pirated Version"))))
 
         PatchEngine(install).apply(manifest, feed)
 
         val patched = Files.readString(install.runtime.resolve("data/strings/strings_en.xml"))
         patched shouldContain "Day-Care"
         patched shouldContain """id="1000000000""""
-        patched shouldContain "Connected to OpenMMO"
+        patched shouldContain "Connected to Pirated Version"
         patched shouldContain """id="1000000001""""
       }
 
@@ -291,7 +291,7 @@ class PatchEngineTest :
                 32763,
                 listOf(
                     StringsPatch(
-                        "data/strings/strings_en.xml", "Branding", mapOf(1000000000 to "OpenMMO"))))
+                        "data/strings/strings_en.xml", "Branding", mapOf(1000000000 to "Pirated Version"))))
         engine.apply(patched, feed)
 
         Files.readString(install.resolve("data/strings/strings_en.xml")) shouldBe STRINGS

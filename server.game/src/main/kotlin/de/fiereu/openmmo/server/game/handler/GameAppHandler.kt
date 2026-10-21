@@ -245,7 +245,7 @@ constructor(
     on<BattleTeamPreviewConfirmPacket> { event -> battleService.onBattlePacket(event) }
     on<BattleRewardSelectPacket> { event -> battleService.onBattlePacket(event) }
     onSuspend<MapLoadedAckPacket> { event ->
-      // The payload was never decoded by OpenMMO; on NDS maps it may name the map the client just
+      // The payload was never decoded by Pirated Version; on NDS maps it may name the map the client just
       // loaded, which would fix seam tracking. Logged raw until the format is pinned down.
       if (event.packet.data.isNotEmpty()) {
         log.info {

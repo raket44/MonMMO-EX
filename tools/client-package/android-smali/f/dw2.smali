@@ -626,7 +626,7 @@
     :cond_2d
     iget-short v0, p0, Lf/dw2;->y9:S
 
-    # MonMMO: graphics id 20000 + N draws the npc with species N's follower sheet (sprite sets 4
+    # Pirated Version: graphics id 20000 + N draws the npc with species N's follower sheet (sprite sets 4
     # and 10 are handled above). o80.T02 below only reaches the retail species.
     const/16 v3, 0x4e20
 
@@ -634,7 +634,7 @@
 
     sub-int/2addr v0, v3
 
-    # MonMMO 2026-09-15: 30000 + N is the same sheet one size up - follower flag 0x80, which the
+    # Pirated Version 2026-09-15: 30000 + N is the same sheet one size up - follower flag 0x80, which the
     # follower entity (f/vc1.eL0, fed by d11() = x71) draws at 4/3 scale, as retail does for alphas.
     const/16 v3, 0x2710
 

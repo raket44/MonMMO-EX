@@ -25,7 +25,7 @@ sealed interface BattleEventBody {
    * top of the text line and the HUD arrows it shows either way. Through that path the stock engine
    * anchors the effect CASTER/ABSOLUTE (cj1.bl1 -> ParticleEffectExt.init keeps the controller
    * default) and PolarAccelerationExt applies down.vfx's dir (0,-1,0) x strength -5.523 literally,
-   * so a DROP drifted upward (blue particles rising, 2026-09-15). The MonMMO-EX Android build
+   * so a DROP drifted upward (blue particles rising, 2026-09-15). The Pirated Version Android build
    * re-anchors both stat paths CASTER -> ENEMY (f/i90.tn0, f/z57.Gu0), where down falls and up
    * rises; that build is what this default assumes. Set false to suppress the particles (the
    * desktop-era encoding).

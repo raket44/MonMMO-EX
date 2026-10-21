@@ -1,4 +1,4 @@
-MonMMO-EX client
+Pirated Version client
 ================
 
 1. Unzip this folder anywhere (for example your Desktop). Keep everything together.
@@ -13,7 +13,7 @@ MonMMO-EX client
 It is already pointed at our server (config\zzz-monmmo-ex-server.properties). If the
 server moves, edit the two host lines in that file.
 
-The MonMMO-EX expansion content (extra species, forms and items) is built in: the
+The Pirated Version expansion content (extra species, forms and items) is built in: the
 "monmmo-lost-knights" mod under data\mods is enabled and must stay enabled.
 
 Do not try to play on the official PokeMMO servers with this client.

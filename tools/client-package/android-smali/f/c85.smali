@@ -7287,7 +7287,7 @@
     .line 110
     invoke-static {v0, v1}, Lf/vh7;->Tn(SLf/xg7;)V
 
-    # MonMMO-EX: vh7.qi1 is write-only on this client (mod cries never played on Android), so a
+    # Pirated Version: vh7.qi1 is write-only on this client (mod cries never played on Android), so a
     # cries/<id>.wav is also filed where the client keeps its own bundled sounds - aw3.SE0 under region
     # 10, key 10<<16 | id - and g10.run plays it from there. Same thread and map as the sounds/ branch
     # above; the ids (668+) sit far above the client's own sounds/10 files (1..22).

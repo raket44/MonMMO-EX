@@ -1227,7 +1227,7 @@
     .line 380
     .line 381
     .line 382
-    # MonMMO-EX: retail switches the whole native (ROM) sound engine off here - `km0.Es = false` -
+    # Pirated Version: retail switches the whole native (ROM) sound engine off here - `km0.Es = false` -
     # the first time ONE song fails to load, and nothing ever turns it back on. A follower or party
     # member from the Expansion has no cry in the Black ROM's SDAT (cries are `loadSSEQ(2, 1, species)`),
     # so its first cry after login threw "Unable to load sseq" and every map song after it was silent.

@@ -9852,7 +9852,7 @@
     sput-object v0, Lf/o80;->qg0:[[Ljava/lang/String;
 
     .line 16
-    # MonMMO-EX: Pokedex tab order gains regions 6-9 after the stock five.
+    # Pirated Version: Pokedex tab order gains regions 6-9 after the stock five.
     const/16 v0, 0x9
     new-array v0, v0, [B
 

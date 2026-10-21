@@ -39,7 +39,7 @@ public class SpritePreview {
         rows.sort(Comparator.comparingInt(r -> Integer.parseInt(r[1])));
 
         StringBuilder h = new StringBuilder();
-        h.append("<!doctype html><meta charset=utf-8><title>MonMMO sprite preview</title><style>")
+        h.append("<!doctype html><meta charset=utf-8><title>Pirated Version sprite preview</title><style>")
          .append("body{background:#14161a;color:#ddd;font:14px sans-serif;margin:16px}")
          .append("table{border-collapse:collapse}td,th{padding:4px 8px;border-bottom:1px solid #333;text-align:center;vertical-align:middle}")
          .append("img{image-rendering:pixelated}.gif{width:96px;height:96px}.icon{width:32px;height:32px}")

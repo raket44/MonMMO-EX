@@ -72,7 +72,7 @@ jteCodegen {
   }
   register("expansionPokemon") {
     mainClass.set("de.fiereu.openmmo.codegen.pokemon.expansion.ExpansionPokemonMain")
-    // MonMMO-EX's own species (Crystal Onix), appended after the Expansion's in its syntax.
+    // Pirated Version's own species (Crystal Onix), appended after the Expansion's in its syntax.
     val customSpecies = layout.projectDirectory.dir("custom-species")
     inputDirs.from(expansionDecompDir, customSpecies)
     // The client's own form catalogue (launcher :stageRetailData), so Expansion forms the client

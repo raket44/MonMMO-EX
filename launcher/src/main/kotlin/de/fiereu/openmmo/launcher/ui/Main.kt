@@ -44,7 +44,7 @@ fun main() = application {
 
   Window(
       onCloseRequest = ::exitApplication,
-      title = "OpenMMO",
+      title = "Pirated Version",
       state = rememberWindowState(size = DpSize(520.dp, 320.dp)),
   ) {
     LauncherWindow(

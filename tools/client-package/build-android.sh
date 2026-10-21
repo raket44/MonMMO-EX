@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the MonMMO-EX Android client from a retail PokeMMO APK - the whole thing, in one command.
+# Build the Pirated Version Android client from a retail PokeMMO APK - the whole thing, in one command.
 #
 #   build-android.sh [--host H] [--apk retail.apk] [--out out.apk] [--theme theme.zip]
 #                    [--rebuild-dex] [--verify-dex] [--skip-stage]

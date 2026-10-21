@@ -1,12 +1,12 @@
 ---
 title: Guides
-description: How-to guides for working on OpenMMO.
+description: How-to guides for working on Pirated Version.
 ---
 
-How-to guides for working on OpenMMO.
+How-to guides for working on Pirated Version.
 
 - [Running the game client](running-the-client/): how the launcher downloads a
-  PokeMMO client, patches it, and points it at an OpenMMO server.
+  PokeMMO client, patches it, and points it at an Pirated Version server.
 - [Deploying the feed and the launcher](deploying-the-feed/): how to publish the
   feed players connect through, and build a launcher that trusts it.
 - [Writing a code generator](writing-generators/): how to add a new

@@ -108,7 +108,7 @@ class RaidBossTest :
         boss.fainted shouldBe true
       }
 
-      // The MonMMO client patch in f/dw2.Kk0 draws graphics 20000 + N as species N's follower; the
+      // The Pirated Version client patch in f/dw2.Kk0 draws graphics 20000 + N as species N's follower; the
       // Crystal Onix form's client id is 1643, the id its follower sheet is staged under.
       test("the boss npc asks the client for the Crystal Onix follower sprite") {
         de.fiereu.openmmo.server.game.services.CrystalOnixRaidPlacement.SPRITE_ID shouldBe 31643

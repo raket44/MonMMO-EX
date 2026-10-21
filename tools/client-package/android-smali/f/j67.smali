@@ -120,7 +120,7 @@
 
 # virtual methods
 .method public final cw0(Lf/er7;BB)V
-    # MonMMO-EX: one more local (v35) keeps a data evolution's time of day for the badge.
+    # Pirated Version: one more local (v35) keeps a data evolution's time of day for the badge.
     .registers 40
 
     .line 1
@@ -4059,7 +4059,7 @@
     .line 1936
     .line 1937
     iget v6, v9, Lf/b81;->zw0:I
-    # MonMMO-EX: a data evolution (f/fi7 0x1000) carries its time of day (1 day, 2 night) above the
+    # Pirated Version: a data evolution (f/fi7 0x1000) carries its time of day (1 day, 2 night) above the
     # u16 parameter; split it off so the level, item or move label reads the parameter alone.
     move/from16 v35, v6
     ushr-int/lit8 v35, v35, 0x10
@@ -5169,7 +5169,7 @@
     .line 2465
     .line 2466
     :goto_9a1
-    # MonMMO-EX: every label case joins here. A data evolution's badge code (f/fi7 0x1000, the byte
+    # Pirated Version: every label case joins here. A data evolution's badge code (f/fi7 0x1000, the byte
     # above the parameter) gets its symbol at the friendship and held-item cases' badge offsets:
     # 1 day (sun sW1), 2 night (moon xr0), 3 Mega Evolution, 4 alpha (Primal Kyogre), 5 omega
     # (Primal Groudon). v2 and v6 are scratch here: both are written below before they are read
@@ -5231,7 +5231,7 @@
     .line 2470
     add-int/2addr v2, v5
 
-    # MonMMO-EX: a Mega or Primal entry (badge 3-5, method 0) is labelled by its own string instead
+    # Pirated Version: a Mega or Primal entry (badge 3-5, method 0) is labelled by its own string instead
     # of method 0's: 2578 "Mega Evolution", 2579 "Primal Reversion".
     move/from16 v6, v35
     add-int/lit8 v6, v6, -0x3

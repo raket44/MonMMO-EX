@@ -29,7 +29,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Builds the MonMMO-EX Android client from a retail PokeMMO APK, in two passes around jarsigner.
+ * Builds the Pirated Version Android client from a retail PokeMMO APK, in two passes around jarsigner.
  *
  * <pre>
  *   prepare &lt;retail.apk&gt; &lt;unsigned.apk&gt; &lt;host&gt; &lt;mod.zip|-&gt; &lt;game.public.pem&gt; &lt;chat.public.pem&gt;
@@ -107,7 +107,7 @@ public class ApkPackager {
    * the asset loader may memory-map a stored entry.
    *
    * [classesDex], when not "-", is a classes.dex rebuilt with smali from the APK's own code plus
-   * MonMMO-EX edits (Fairy in the type enum, badge tables, Pokedex regions). It replaces the APK's
+   * Pirated Version edits (Fairy in the type enum, badge tables, Pokedex regions). It replaces the APK's
    * classes.dex BEFORE the server-key swap, so the same key patch and checksum repair apply to it.
    *
    * [overlayDir], when not "-", holds files laid out by APK path (assets/...): each replaces the
@@ -245,7 +245,7 @@ public class ApkPackager {
     if (!replaced.isEmpty()) System.out.println("[apk] replaced " + replaced);
 
     String props =
-        "# MonMMO-EX: points the client at our server instead of the official one.\n"
+        "# Pirated Version: points the client at our server instead of the official one.\n"
             + "force.ls.host=" + host + "\n"
             + "force.ls.port=2106\n"
             + "force.gs.host=" + host + "\n"

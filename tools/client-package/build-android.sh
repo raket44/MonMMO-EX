@@ -47,7 +47,7 @@ SMALI="$ROOT/local/tools/smali-3.0.10"
 STOCK="$CACHE/stock-root" STAGE="$CACHE/stage" OVERLAY="$CACHE/overlay" WORK="$CACHE/work"
 DEX="$CACHE/classes.dex" MOD="$CACHE/pirated-theme.zip"
 
-for f in "$APK" "$KEYDIR/monmmo-ex.p12" "$KEYDIR/password.txt"; do
+for f in "$APK" "$KEYDIR/pirated.p12" "$KEYDIR/password.txt"; do
   [ -f "$f" ] || { echo "ERROR: missing $f"; exit 1; }
 done
 mkdir -p "$CACHE"
@@ -227,10 +227,10 @@ rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
 "$JDK/java.exe" -Xmx2g "-Dpirated.resourcesApk=$RES_APK" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
   "$REPO/launcher/src/main/resources/game.public.pem" "$REPO/launcher/src/main/resources/chat.public.pem" \
   "$STAGE/data/data.pak" "$STAGE/data/strings/strings_en.xml" "$DEX" "$OVERLAY"
-"$JDK/jarsigner.exe" -keystore "$KEYDIR/monmmo-ex.p12" -storetype PKCS12 -storepass:file "$KEYDIR/password.txt" \
-  -sigalg SHA256withRSA -digestalg SHA-256 -signedjar "$WORK/apk/v1.apk" "$WORK/apk/unsigned.apk" monmmo > /dev/null
+"$JDK/jarsigner.exe" -keystore "$KEYDIR/pirated.p12" -storetype PKCS12 -storepass:file "$KEYDIR/password.txt" \
+  -sigalg SHA256withRSA -digestalg SHA-256 -signedjar "$WORK/apk/v1.apk" "$WORK/apk/unsigned.apk" pirated > /dev/null
 "$JDK/java.exe" -Xmx2g "$TOOLS/ApkPackager.java" finish "$WORK/apk/v1.apk" "$OUT" \
-  "$KEYDIR/monmmo-ex.p12" "$KEYDIR/password.txt" monmmo
+  "$KEYDIR/pirated.p12" "$KEYDIR/password.txt" pirated
 "$JDK/jarsigner.exe" -verify "$OUT" > /dev/null || { echo "ERROR: v1 signature does not verify"; exit 1; }
 
 # 6. Say what actually shipped, rather than trusting that it did.

@@ -874,12 +874,13 @@ class InterpretedScript(
           // Was "heartgold ? 4 : 3" - a White warp landed in Sinnoh's map space.
           val region = dsRegion()
           tracedWait(ctx, "ds_warp") {
-            ctx.rawWarp(region, header and 0xFF, header shr 8, (instruction.arg(1) as IntArg).value, (instruction.arg(2) as IntArg).value)
+            ctx.rawWarpAndWait(region, header and 0xFF, header shr 8, (instruction.arg(1) as IntArg).value, (instruction.arg(2) as IntArg).value)
           }
           // A raw warp spawns the destination's npcs but runs no load script (that is the step
           // warp's job, and the runner refuses a second script while this one holds the player).
           // Run the destination's load and frame phases here, as the GBA warp does: the Driftveil
-          // Gym lift arrival needs the gym's flag reset (owner, 2026-09-24).
+          // Gym lift arrival needs the gym's flag reset (owner, 2026-09-24). Only once the client
+          // has the map and its npcs - the frame scene walks them (Fennel's house, 2026-10-21).
           ctx.ndsScriptedArrival(region, header and 0xFF, header shr 8)
           state.pc++
         }

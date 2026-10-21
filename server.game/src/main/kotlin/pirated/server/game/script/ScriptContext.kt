@@ -1391,6 +1391,17 @@ internal constructor(
     warpService.rawWarp(session, charId, regionId, bankId, mapId, x, y)
   }
 
+  /**
+   * [rawWarp], suspended until the client has loaded the map and its npcs are spawned (false on
+   * the load timeout). The destination's scenes walk those npcs: run before the spawn, Fennel's
+   * walk into her house and the walk into Juniper's lab went to actors the client did not have
+   * yet, and they stood at the door (owner, 2026-10-21).
+   */
+  suspend fun rawWarpAndWait(regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int): Boolean {
+    val warpService = checkNotNull(warp) { "Script warp service is unavailable" }
+    return warpService.rawWarpAndWait(session, state, regionId, bankId, mapId, x, y, state.facingDirection)
+  }
+
   /** After a raw warp onto a DS map: its load and frame scripts, run by this coroutine. */
   suspend fun ndsScriptedArrival(regionId: Int, bankId: Int, mapId: Int) {
     if (regionId !in 2..4) return

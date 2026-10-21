@@ -1,0 +1,66 @@
+package pirated.server.game.storage
+
+import pirated.common.CharacterPermissions
+import pirated.common.enums.Region
+import pirated.common.hasPermission
+import pirated.server.game.config.ConfigLoader
+import pirated.server.game.testsupport.FakeCharacterRepository
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class DevCharacterSeederTest :
+    FunSpec({
+      val loaded = ConfigLoader.load()
+      val config = loaded.copy(db = loaded.db.copy(seedDev = true))
+
+      test("the shipped config does not seed, whatever the caller does") {
+        runTest {
+          val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
+
+          DevCharacterSeeder(store, loaded).seed()
+
+          store.getCharactersByUser(1).shouldBeEmpty()
+        }
+      }
+
+      test("seeds one developer character per region on its new game start") {
+        runTest {
+          val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
+
+          DevCharacterSeeder(store, config).seed()
+
+          // Only the GBA regions get seeded characters - the NDS regions have no playable
+          // new-game start yet.
+          val seededRegions = listOf(Region.KANTO, Region.HOENN)
+          val seeded = store.getCharactersByUser(1)
+          seeded.size shouldBe seededRegions.size
+          seededRegions.forEach { region ->
+            val start = NewGameStarts.forRegion(region, female = false)
+            val character = seeded.single { it.info.positionRegionId == region.wireValue }
+            character.info.positionBankId shouldBe start.bankId
+            character.info.positionMapId shouldBe start.mapId
+            character.info.positionX shouldBe start.x
+            character.info.positionY shouldBe start.y
+            // Every character carries all five regions' new-game flags; the seeded region's are among them.
+            (character.storyFlags.containsAll(start.storyFlags)) shouldBe true
+            character.info.hasPermission(CharacterPermissions.DEVELOPER) shouldBe true
+          }
+        }
+      }
+
+      test("running twice does not add a second set") {
+        runTest {
+          val store = CharacterStore(FakeCharacterRepository(), EntityIdService(), backgroundScope)
+          val seeder = DevCharacterSeeder(store, config)
+
+          seeder.seed()
+          seeder.seed()
+
+          store.getCharactersByUser(1).size shouldBe 2
+        }
+      }
+    })

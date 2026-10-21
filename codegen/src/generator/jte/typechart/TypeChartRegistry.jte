@@ -1,11 +1,11 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.typechart.ParsedMatchup
+@import pirated.codegen.typechart.ParsedMatchup
 
 @param List<ParsedMatchup> matchups
-package de.fiereu.openmmo.typechart.generated
+package pirated.typechart.generated
 
-import de.fiereu.openmmo.common.enums.PokemonType
-import de.fiereu.openmmo.typechart.TypeChart
+import pirated.common.enums.PokemonType
+import pirated.typechart.TypeChart
 
 internal object GeneratedTypeChart {
   fun loadInto(chart: TypeChart) {

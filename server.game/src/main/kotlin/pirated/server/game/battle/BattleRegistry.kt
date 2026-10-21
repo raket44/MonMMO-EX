@@ -1,0 +1,54 @@
+package pirated.server.game.battle
+
+import pirated.network.SessionContext
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/** The running battles, one per character. */
+@Singleton
+class BattleRegistry @Inject constructor() {
+
+  private val byChar = ConcurrentHashMap<Long, BattleInstance>()
+  private val ids = AtomicLong(1)
+
+  fun create(
+      charId: Long,
+      session: SessionContext,
+      party: List<BattleMonState>,
+      opponent: List<BattleMonState>,
+      rng: BattleRng,
+      rules: BattleRules = BattleRules(),
+      format: pirated.net.game.packets.battle.BattleFormat = pirated.net.game.packets.battle.BattleFormat.SINGLES,
+      /** Where the ally's monsters begin in [party] (BattleInstance.allyStart). */
+      allyStart: Int = party.size,
+  ): BattleInstance {
+    val battle =
+        BattleInstance(
+            ids.getAndIncrement(),
+            charId,
+            session,
+            party,
+            opponent,
+            rng,
+            rules.catchable,
+            rules.escapable,
+            rules.trainer,
+            rules.defeatTextId,
+            rules.whiteoutOnDefeat,
+            rules.trainerRegion,
+            format,
+            partner = rules.partner,
+            partnerDefeatTextId = rules.partnerDefeatTextId,
+            ally = rules.ally,
+            allyStart = allyStart,
+        )
+    byChar[charId] = battle
+    return battle
+  }
+
+  fun byChar(charId: Long): BattleInstance? = byChar[charId]
+
+  fun remove(charId: Long): BattleInstance? = byChar.remove(charId)
+}

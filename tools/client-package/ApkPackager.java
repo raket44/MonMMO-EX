@@ -43,10 +43,10 @@ import java.util.zip.Inflater;
  *       ours inside classes.dex. The APK carries the exact same key strings as desktop 31914, and ours
  *       are the same length, so this is an in-place swap followed by the dex checksum and SHA-1
  *       repair.
- *   <li>assets/config/zzz-monmmo-ex-server.properties: AndroidLauncher.onCreate loads every
+ *   <li>assets/config/zzz-pirated-server.properties: AndroidLauncher.onCreate loads every
  *       properties file under the APK's assets/config/ into the client's config, the Android
  *       counterpart of the desktop config/ folder. Same keys as the Windows package.
- *   <li>assets/data/mods/monmmo-lost-knights.zip, beside the retail example mod.
+ *   <li>assets/data/mods/pirated-lost-knights.zip, beside the retail example mod.
  *   <li>The retail v1 signature files are dropped; the old v2 block goes with the rewrite.
  * </ul>
  *
@@ -59,7 +59,7 @@ public class ApkPackager {
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtqx2myJz3ftlYWgd7cbNqf2t208itQMY7ouPNBDpQetbi7eXbEDxDDZy4Q9fMnI6mF5/D0qMdRd40SRXf0OS7Q==";
   static final String RETAIL_CHAT_KEY =
       "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEh4Vqgnd+8Fqebu0H40v+FgwhE6RwgAYxJMihb8mJmcHDy8r/rPz3kLHH1oabyKIRUa5Y2cK0TsxZky+mp7DKWA==";
-  static final String CONFIG_ENTRY = "assets/config/zzz-monmmo-ex-server.properties";
+  static final String CONFIG_ENTRY = "assets/config/zzz-pirated-server.properties";
   static final String MOD_DIR = "assets/data/mods/";
   /**
    * The adaptive icon's two layers, by the names the retail resource table gives them. Resolved
@@ -126,13 +126,13 @@ public class ApkPackager {
     keys.put(RETAIL_GAME_KEY, pemBody(gamePem));
     keys.put(RETAIL_CHAT_KEY, pemBody(chatPem));
 
-    // -Dmonmmo.resourcesApk=<apk>: take the RESOURCE side - resources.arsc, AndroidManifest.xml and
+    // -Dpirated.resourcesApk=<apk>: take the RESOURCE side - resources.arsc, AndroidManifest.xml and
     // every res/ file - from an apktool rebuild of the retail APK instead of the retail APK itself.
     // apktool renames res/ files by resource name and config on the way through, so the whole set
     // must come from one place; everything else (dex, assets, libs) still comes from retail.
     // This is how the launcher icon gets density-qualified bitmap layers, which no in-place patch
     // of the retail table can express (see build-android.sh).
-    String resourcesApk = System.getProperty("monmmo.resourcesApk", "-");
+    String resourcesApk = System.getProperty("pirated.resourcesApk", "-");
     List<Entry> transplant = resourcesApk.equals("-") ? List.of() : read(Files.readAllBytes(Path.of(resourcesApk)));
 
     List<Entry> result = new ArrayList<>();
@@ -171,7 +171,7 @@ public class ApkPackager {
           throw new IllegalStateException("foreground path is not an .xml: " + icon.foregroundPath);
         }
         System.arraycopy(target.getBytes(StandardCharsets.US_ASCII), 0, arsc, icon.foregroundPathAt, target.length());
-        int argb = Integer.parseUnsignedInt(System.getProperty("monmmo.iconBackground", "FF14161A"), 16);
+        int argb = Integer.parseUnsignedInt(System.getProperty("pirated.iconBackground", "FF14161A"), 16);
         ByteBuffer buf = ByteBuffer.wrap(arsc).order(ByteOrder.LITTLE_ENDIAN);
         buf.putInt(icon.backgroundValueAt, argb);
         // The retail foreground is a vector in a no-density config. A BITMAP there is scaled up by
@@ -181,7 +181,7 @@ public class ApkPackager {
         // vectors, which density does not affect.
         // Declaring 640 here made the icon fail to load outright (Android drew its default robot), so
         // the chunk is left at no-density and the art is sized in dp instead (see MakeForeground).
-        int density = Integer.parseInt(System.getProperty("monmmo.iconDensity", "0"));
+        int density = Integer.parseInt(System.getProperty("pirated.iconDensity", "0"));
         if (icon.foregroundDensity == 0 && density > 0) {
           buf.putShort(icon.foregroundDensityAt, (short) density);
         }

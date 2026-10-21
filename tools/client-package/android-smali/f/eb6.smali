@@ -2300,11 +2300,11 @@
     .line 5
     # Pirated Version: Fairy's name is string 9226, the id the staged strings_en.xml carries.
     const/16 v1, 0x13
-    if-ne v0, v1, :monmmo_not_fairy
+    if-ne v0, v1, :pirated_not_fairy
     const/16 v0, 0x240a
     return v0
 
-    :monmmo_not_fairy
+    :pirated_not_fairy
     packed-switch v0, :pswitch_data_3c
 
     .line 6

@@ -136,13 +136,13 @@
 
     # Pirated Version: Pokedex regions 6-9 (Kalos, Alola, Galar, Paldea) have no ROM to check; always available.
     const/4 v2, 0x6
-    if-lt p1, v2, :monmmo_stock_regions
+    if-lt p1, v2, :pirated_stock_regions
     const/16 v2, 0xa
-    if-ge p1, v2, :monmmo_stock_regions
+    if-ge p1, v2, :pirated_stock_regions
     const/4 v2, 0x1
     return v2
 
-    :monmmo_stock_regions
+    :pirated_stock_regions
 
     .line 1
     const/4 v0, 0x0

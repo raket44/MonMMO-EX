@@ -25,14 +25,14 @@ dependencies {
 }
 
 tasks.register<JavaExec>("stageExpansionClientContent") {
-  group = "openmmo"
+  group = "pirated"
   description = "Builds a local, inactive Expansion data.pak and English string table"
   dependsOn(":codegen:generateExpansionPokemon", "classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.ExpansionClientContentMain")
+  mainClass.set("pirated.launcher.content.ExpansionClientContentMain")
   classpath(sourceSets.main.get().runtimeClasspath)
   val local = System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home")
   val install =
-      (project.findProperty("expansion.clientRoot") as String?) ?: "$local/MonMMO-EX/Client-31914"
+      (project.findProperty("expansion.clientRoot") as String?) ?: "$local/PiratedVersion/Client-31914"
   // Once generated content is installed the client no longer holds stock data. Installing keeps a
   // pristine copy beside it, and staging reads that so the task stays repeatable.
   val stock = File("$install/stock-backup")
@@ -53,10 +53,10 @@ tasks.register<JavaExec>("stageExpansionClientContent") {
 }
 
 tasks.register<JavaExec>("checkRetailPreserved") {
-  group = "openmmo"
+  group = "pirated"
   description = "Fails when a staged data.pak or string table changed or removed any retail record"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.RetailPreservationCheckMainKt")
+  mainClass.set("pirated.launcher.content.RetailPreservationCheckMainKt")
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "1g"
   // Both are client roots holding data/data.pak and data/strings/strings_en.xml.
@@ -71,10 +71,10 @@ tasks.register<JavaExec>("checkRetailPreserved") {
 }
 
 tasks.register<JavaExec>("fetchShowdownSprites") {
-  group = "openmmo"
+  group = "pirated"
   description = "Downloads Pokemon Showdown's Gen 5-style sprites for the species the mod stages"
   dependsOn(":codegen:generateExpansionPokemon", "classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.ShowdownSpriteFetchMain")
+  mainClass.set("pirated.launcher.content.ShowdownSpriteFetchMain")
   classpath(sourceSets.main.get().runtimeClasspath)
   args(
       rootProject.layout.projectDirectory.dir("reference/sprite-packs/showdown").asFile.absolutePath,
@@ -83,10 +83,10 @@ tasks.register<JavaExec>("fetchShowdownSprites") {
 }
 
 tasks.register<JavaExec>("stageRetailData") {
-  group = "openmmo"
+  group = "pirated"
   description = "Compacts the retail monsters.json into server calibration tables"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.RetailMonstersMain")
+  mainClass.set("pirated.launcher.content.RetailMonstersMain")
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   args(
@@ -95,37 +95,37 @@ tasks.register<JavaExec>("stageRetailData") {
           .asFile
           .absolutePath,
       rootProject.layout.projectDirectory
-          .dir("codegen/src/main/resources/monmmo")
+          .dir("codegen/src/main/resources/pirated")
           .asFile
           .absolutePath,
   )
 }
 
 tasks.register<JavaExec>("stageTutorLearnsets") {
-  group = "openmmo"
+  group = "pirated"
   description = "Writes the Expansion species' move tutor compatibility table for the game server"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.TutorLearnsetsMain")
+  mainClass.set("pirated.launcher.content.TutorLearnsetsMain")
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   args(
       rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
       rootProject.layout.projectDirectory
-          .file("server.game/src/main/resources/monmmo/tutor-learnsets-expansion.csv")
+          .file("server.game/src/main/resources/pirated/tutor-learnsets-expansion.csv")
           .asFile
           .absolutePath,
   )
 }
 
 tasks.register<JavaExec>("patchClientTypes") {
-  group = "openmmo"
+  group = "pirated"
   description = "Writes Fairy-aware client classes into a classpath overlay jar"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.FairyTypePatchMain")
+  mainClass.set("pirated.launcher.content.FairyTypePatchMain")
   classpath(sourceSets.main.get().runtimeClasspath)
   val local = System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home")
   val install =
-      (project.findProperty("expansion.clientRoot") as String?) ?: "$local/MonMMO-EX/Client-31914"
+      (project.findProperty("expansion.clientRoot") as String?) ?: "$local/PiratedVersion/Client-31914"
   args(
       "$install/PokeMMO.exe",
       rootProject.layout.projectDirectory.dir("decomp/pokeemerald-expansion").asFile.absolutePath,
@@ -135,7 +135,7 @@ tasks.register<JavaExec>("patchClientTypes") {
 
 compose.desktop {
   application {
-    mainClass = "de.fiereu.openmmo.launcher.ui.MainKt"
+    mainClass = "pirated.launcher.ui.MainKt"
     jvmArgs += "--enable-native-access=ALL-UNNAMED"
 
     nativeDistributions {
@@ -152,7 +152,7 @@ compose.desktop {
       packageName = "PiratedVersion"
       packageVersion = project.version.toString()
       description = "Provisions and patches a PokeMMO client for Pirated Version"
-      vendor = "openmmo-org"
+      vendor = "Lost Knights"
       licenseFile.set(rootProject.file("LICENSE"))
 
       // Only the platform subdirectories of this root are copied, hence the staged "common".
@@ -163,7 +163,7 @@ compose.desktop {
 
 val stageAppResources by
     tasks.registering(Copy::class) {
-      group = "openmmo"
+      group = "pirated"
       description = "Stages the patch manifests and keys where the packaging step picks them up"
       dependsOn("copyPublicKeys", "copyPrivateKeyFeed")
       from(layout.projectDirectory.dir("manifests"))
@@ -177,14 +177,14 @@ val stageAppResources by
 tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(stageAppResources) }
 
 val feedOrigin =
-    (project.findProperty("openmmo.feedOrigin") as String?) ?: "https://127.0.0.1:20443"
+    (project.findProperty("pirated.feedOrigin") as String?) ?: "https://127.0.0.1:20443"
 
 val archiveOrigin =
-    (project.findProperty("openmmo.archiveOrigin") as String?)
+    (project.findProperty("pirated.archiveOrigin") as String?)
         ?: "https://github.com/openmmo-org/archive"
 
 val archiveRawOrigin =
-    (project.findProperty("openmmo.archiveRawOrigin") as String?)
+    (project.findProperty("pirated.archiveRawOrigin") as String?)
         ?: "https://raw.githubusercontent.com/openmmo-org/archive/master"
 
 // Loopback by default. A hostname cannot be padded, so a replacement must be exactly 23 wide.
@@ -193,7 +193,7 @@ val launcherPropertiesDir = layout.buildDirectory.dir("launcherProperties")
 
 val writeLauncherProperties by
     tasks.registering(WriteProperties::class) {
-      group = "openmmo"
+      group = "pirated"
       description = "Bakes the feed and archive origins into the launcher"
       destinationFile.set(launcherPropertiesDir.map { it.file("launcher.properties") })
       property("feed.origin", feedOrigin)
@@ -207,16 +207,16 @@ tasks.named("processResources") { dependsOn(writeLauncherProperties) }
 
 fun JavaExec.devFeed() {
   group = "application"
-  mainClass.set("de.fiereu.openmmo.launcher.launch.DevFeedServerCli")
+  mainClass.set("pirated.launcher.launch.DevFeedServerCli")
   classpath(sourceSets.main.get().runtimeClasspath)
-  systemProperty("openmmo.manifests", layout.projectDirectory.dir("manifests").asFile.path)
+  systemProperty("pirated.manifests", layout.projectDirectory.dir("manifests").asFile.path)
   listOf(
-          "openmmo.root",
-          "openmmo.manifests",
-          "openmmo.devFeedPort",
-          "openmmo.revision",
-          "openmmo.archiveOrigin",
-          "openmmo.archiveRawOrigin")
+          "pirated.root",
+          "pirated.manifests",
+          "pirated.devFeedPort",
+          "pirated.revision",
+          "pirated.archiveOrigin",
+          "pirated.archiveRawOrigin")
       .forEach { name -> (project.findProperty(name) as String?)?.let { systemProperty(name, it) } }
   standardInput = System.`in`
 }
@@ -229,17 +229,17 @@ tasks.register<JavaExec>("feedServer") {
 tasks.register<JavaExec>("dev") {
   description = "Serves the development feed and starts the launcher against it"
   devFeed()
-  systemProperty("openmmo.launchUi", "true")
+  systemProperty("pirated.launchUi", "true")
 }
 
 tasks.register<JavaExec>("launcherUi") {
   group = "application"
   description = "Runs the Pirated Version launcher window"
 
-  mainClass.set("de.fiereu.openmmo.launcher.ui.MainKt")
+  mainClass.set("pirated.launcher.ui.MainKt")
   classpath(sourceSets.main.get().runtimeClasspath)
-  systemProperty("openmmo.manifests", layout.projectDirectory.dir("manifests").asFile.path)
-  listOf("openmmo.root", "openmmo.manifests").forEach { name ->
+  systemProperty("pirated.manifests", layout.projectDirectory.dir("manifests").asFile.path)
+  listOf("pirated.root", "pirated.manifests").forEach { name ->
     (project.findProperty(name) as String?)?.let { systemProperty(name, it) }
   }
   // Skiko loads its native renderer, which Java 25 warns about unless it is allowed up front.
@@ -251,9 +251,9 @@ tasks.register<JavaExec>("patchClient") {
   group = "application"
   description = "Applies a patch manifest to the managed install and builds the runtime tree"
 
-  mainClass.set("de.fiereu.openmmo.launcher.patch.PatchCli")
+  mainClass.set("pirated.launcher.patch.PatchCli")
   classpath(sourceSets.main.get().runtimeClasspath)
-  listOf("openmmo.root", "openmmo.manifest").forEach { name ->
+  listOf("pirated.root", "pirated.manifest").forEach { name ->
     (project.findProperty(name) as String?)?.let { systemProperty(name, it) }
   }
   maxHeapSize = "1g"
@@ -264,10 +264,10 @@ listOf("classes", "processResources").forEach { taskName ->
 }
 
 tasks.register<JavaExec>("extractNdsMaps") {
-  group = "openmmo"
+  group = "pirated"
   description = "Extracts NDS-region map headers and warps from the local decomps"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.NdsMapExtractor")
+  mainClass.set("pirated.launcher.content.NdsMapExtractor")
   classpath(sourceSets.main.get().runtimeClasspath)
   args(
       rootProject.layout.projectDirectory.dir("decomp").asFile.absolutePath,
@@ -276,18 +276,18 @@ tasks.register<JavaExec>("extractNdsMaps") {
 }
 
 tasks.register<JavaExec>("reportWildLocations") {
-  group = "openmmo"
+  group = "pirated"
   description = "Reports the per-season wild-locations section builds"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.WildLocationsSectionKt")
+  mainClass.set("pirated.launcher.content.WildLocationsSectionKt")
   classpath(sourceSets.main.get().runtimeClasspath)
 }
 
 tasks.register<JavaExec>("extractNdsCollision") {
-  group = "openmmo"
+  group = "pirated"
   description = "Extracts NDS map collision grids from a ROM"
   dependsOn("classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.NdsCollisionExtractor")
+  mainClass.set("pirated.launcher.content.NdsCollisionExtractor")
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   val rom = (project.findProperty("nds.rom") as String?) ?: ""
@@ -296,10 +296,10 @@ tasks.register<JavaExec>("extractNdsCollision") {
 }
 
 tasks.register<JavaExec>("mergeMonstersJson") {
-  group = "openmmo"
+  group = "pirated"
   description = "Adds the Expansion's species to data/pokemmo/monsters.json in the dump's schema"
   dependsOn(":codegen:generateExpansionPokemon", "classes")
-  mainClass.set("de.fiereu.openmmo.launcher.content.MonstersJsonMerge")
+  mainClass.set("pirated.launcher.content.MonstersJsonMerge")
   classpath(sourceSets.main.get().runtimeClasspath)
   maxHeapSize = "2g"
   args(

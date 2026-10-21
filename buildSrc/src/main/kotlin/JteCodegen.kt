@@ -48,7 +48,7 @@ class JteCodegenPlugin : Plugin<Project> {
         val generate =
             project.tasks.register<JavaExec>(
                 "generate${spec.name.replaceFirstChar { it.uppercase() }}") {
-                  group = "openmmo"
+                  group = "pirated"
                   description = "Render ${spec.name} sources from the GBA decomp data via JTE"
                   dependsOn(project.tasks.named("${generator.name}Classes"))
                   // A plain file in inputDirs (retail-forms.csv) is an input too, not a directory.

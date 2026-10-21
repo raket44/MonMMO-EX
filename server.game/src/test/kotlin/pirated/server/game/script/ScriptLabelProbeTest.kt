@@ -1,0 +1,79 @@
+package pirated.server.game.script
+
+import pirated.server.game.script.interpreter.InterpretedScripts
+import pirated.server.game.script.interpreter.ScriptSupportAnalyzer
+import io.kotest.core.spec.style.FunSpec
+
+/**
+ * Not an assertion - a diagnostic. Prints the analyzer's verdict and full reason for a handful of
+ * labels under investigation, so a "this npc does nothing" report can be pinned to the exact
+ * unsupported command without booting the server.
+ */
+class ScriptLabelProbeTest :
+    FunSpec({
+      test("print analyzer verdicts for probe labels") {
+        val labels =
+            listOf(
+                "OldaleTown_Mart_EventScript_Clerk",
+                "SlateportCity_Mart_EventScript_Clerk",
+                "ViridianCity_Mart_EventScript_Clerk",
+                "CeladonCity_DepartmentStore_2F_EventScript_Clerk1",
+                "PewterCity_Gym_EventScript_Brock",
+                "CeruleanCity_Gym_EventScript_Misty",
+                "VermilionCity_Gym_EventScript_LtSurge",
+                "CeladonCity_Gym_EventScript_Erika",
+                "CeladonCity_GameCorner_OnLoad",
+                "RocketHideout_Elevator_EventScript_FloorSelect",
+                "CeladonCity_DepartmentStore_Elevator_EventScript_FloorSelect",
+                "SilphCo_Elevator_EventScript_FloorSelect",
+                "SilphCo_5F_OnLoad",
+                "SilphCo_3F_EventScript_Door2",
+                "SilphCo_11F_EventScript_Door",
+                "EventScript_Close5FDoor1",
+                "EventScript_OpenDoor",
+                "FuchsiaCity_SafariZone_Entrance_EventScript_AskEnterSafariZone",
+                "FuchsiaCity_SafariZone_Entrance_EventScript_TryEnterSafariZone",
+                "FuchsiaCity_SafariZone_Entrance_EventScript_CheckSpaceForMons",
+                "SafariZone_EventScript_TimesUp",
+                "SafariZone_EventScript_OutOfBalls",
+                "SafariZone_EventScript_Exit",
+                "SafariZone_EventScript_RetirePrompt",
+                "VermilionCity_House1_EventScript_FishingGuru",
+                "FuchsiaCity_House2_EventScript_FishingGurusBrother",
+                "Route12_FishingHouse_EventScript_FishingGuruBrother",
+                "Route12_FishingHouse_EventScript_CheckMagikarpRecord",
+                "PewterCity_Gym_EventScript_JrTrainer",
+                "Route2_EastBuilding_EventScript_Aide",
+                "EventScript_FldEffFlash",
+                "UTR_0",
+                "NDS_CHUNK_3001",
+                "NDS_CHUNK_3002",
+                "NDS_CHUNK_3043",
+            )
+        val analyzer = ScriptSupportAnalyzer()
+        println("[probe] DS menu-entry bank: ${pirated.script.GeneratedScriptCorpus.dsMenuEntries.size} labels")
+        InterpretedScripts.sources.forEach { registration ->
+          println("[probe] ${registration.corpus.source} menus=${registration.corpus.menus.size} dynamicExits=${registration.corpus.dynamicExits.size} headerFloors=${registration.corpus.headerFloors.size}")
+          registration.scriptsByLabel.values
+              .filter { it.program.id.label.contains("Elevator", ignoreCase = true) || it.program.sourceFile.contains("T07R0206") || it.program.sourceFile.contains("T25R1007") || it.program.sourceFile.contains("veilstone_store_elevator") }
+              .forEach { script ->
+                val support = analyzer.analyze(script)
+                println("[probe] ${registration.corpus.source} ${script.program.id.label} (${script.program.sourceFile.substringAfterLast('/')}) complete=${support.complete} reason=${support.reason}")
+                script.program.instructions.filter { it.command.startsWith("ds_menu") || it.command.startsWith("ds_setdynamicwarp") || it.command.startsWith("ds_dynamicwarpfloor") || it.command == "message" }.forEach { println("[probe]     ${it.sourceLine}") }
+              }
+          listOf("MULTICHOICE_ROCKET_HIDEOUT_ELEVATOR", "MULTICHOICE_DEPT_STORE_ELEVATOR", "LISTMENU_SILPHCO_FLOORS", "LISTMENU#1", "MULTI_PC", "MULTICHOICE_YES_NO").forEach { menu ->
+            val options = registration.corpus.menus[menu] ?: return@forEach
+            println("[probe] ${registration.corpus.source} $menu options=$options ds=${pirated.server.game.script.interpreter.InterpreterSupport.dsTextList(options)}")
+          }
+          labels.forEach { label ->
+            val script = registration.scriptsByLabel[label] ?: return@forEach
+            val support = analyzer.analyze(script)
+            println(
+                "[probe] ${registration.corpus.source} $label complete=${support.complete} " +
+                    "reason=${support.reason}")
+            if (label.startsWith("UTR_") || label.startsWith("NDS_CHUNK_30"))
+                script.program.instructions.forEach { println("[probe]     ${it.sourceLine}") }
+          }
+        }
+      }
+    })

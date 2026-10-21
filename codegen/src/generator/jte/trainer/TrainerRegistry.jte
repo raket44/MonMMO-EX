@@ -1,6 +1,6 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.trainer.ParsedTrainer
-@import de.fiereu.openmmo.codegen.trainer.RenderUtil
+@import pirated.codegen.trainer.ParsedTrainer
+@import pirated.codegen.trainer.RenderUtil
 
 @param String pkg
 @param String objectName
@@ -8,10 +8,10 @@
 @param List<List<ParsedTrainer>> chunks
 package ${pkg}
 
-import de.fiereu.openmmo.common.enums.Region
-import de.fiereu.openmmo.trainer.TrainerDef
-import de.fiereu.openmmo.trainer.TrainerMon
-import de.fiereu.openmmo.trainer.TrainerRegistry
+import pirated.common.enums.Region
+import pirated.trainer.TrainerDef
+import pirated.trainer.TrainerMon
+import pirated.trainer.TrainerRegistry
 
 internal object ${objectName} {
   fun loadInto(reg: TrainerRegistry) {

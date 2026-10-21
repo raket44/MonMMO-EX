@@ -8,7 +8,7 @@ User=monmmo
 # The game server reads its map/warp/NDS tables from the working directory.
 WorkingDirectory=/opt/monmmo/server.game
 EnvironmentFile=/opt/monmmo/.env
-ExecStart=/opt/java/current/bin/java -Xms128m -Xmx768m -Dmonmmo.retailData=/opt/monmmo/data/pokemmo/monsters.json -cp "lib/*" de.fiereu.openmmo.server.game.MainKt
+ExecStart=/opt/java/current/bin/java -Xms128m -Xmx768m -Dpirated.retailData=/opt/monmmo/data/pokemmo/monsters.json -cp "lib/*" pirated.server.game.MainKt
 Restart=always
 RestartSec=5
 StandardOutput=append:/opt/monmmo/logs/server-game.log

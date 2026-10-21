@@ -1,0 +1,21 @@
+package pirated.codegen.trainer
+
+object RenderUtil {
+
+  fun trainer(region: String, t: ParsedTrainer): String {
+    val party = t.party.joinToString(", ", "listOf(", ")") { mon(it) }
+    val messages = if (t.messages.isEmpty()) "emptyMap()" else t.messages.entries.joinToString(", ", "mapOf(", ")") { (k, v) -> "$k to $v" }
+    val rematches =
+        t.rematchIds.joinToString(", ", "listOf(", ")") { id -> id?.toString() ?: "null" }
+    return "reg.register(Region.${region.uppercase()}, TrainerDef(${t.id}, \"${escape(t.name)}\", " +
+        "${t.trainerClass}, ${t.doubleBattle}, ${t.prizeRate}, $party, " +
+        "\"${t.constant}\", $rematches, $messages" + (if (t.battleType > 1) ", battleType = ${t.battleType}" else "") + "))"
+  }
+
+  private fun mon(m: ParsedTrainerMon): String {
+    val moves = m.moveIds.joinToString(", ", "listOf(", ")")
+    return "TrainerMon(${m.dexId}, ${m.level}, ${m.iv}, ${m.heldItem}, $moves)"
+  }
+
+  private fun escape(name: String) = name.replace("\\", "\\\\").replace("\"", "\\\"")
+}

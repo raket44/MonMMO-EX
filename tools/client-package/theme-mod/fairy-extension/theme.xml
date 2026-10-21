@@ -13,7 +13,7 @@
   (MakeFairyButton), so it always matches the theme it is layered onto.
 -->
 <themes>
-	<images file="res/monmmo-fairy-move.png" filter="nearest">
+	<images file="res/pirated-fairy-move.png" filter="nearest">
 		<area name="mobile.rmove.type19" xywh="0,0,320,130"/>
 		<area name="mobile.lmove.type19" xywh="0,0,-320,130"/>
 

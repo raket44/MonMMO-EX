@@ -1,0 +1,120 @@
+package pirated.server.game.services
+
+import pirated.network.PacketEvent
+import pirated.network.SessionContext
+import pirated.common.Pokemon
+import pirated.common.clientSpeciesId
+import pirated.common.enums.PokemonContainer
+import pirated.net.game.packets.EvolutionPromptPacket
+import pirated.net.game.packets.EvolutionPromptResponsePacket
+import pirated.net.game.packets.PokedexSpeciesUnlockPacket
+import pirated.net.game.packets.PokemonContainerPacket
+import pirated.pokemon.SpeciesRegistry
+import pirated.pokemon.expansion.ExpansionSpeciesRegistry
+import pirated.server.game.battle.StatCalculator
+import pirated.server.game.session.PLAYER_STATE
+import pirated.server.game.session.PendingEvolution
+import pirated.server.game.session.PlayerState
+import pirated.server.game.storage.CharacterStore
+import io.github.oshai.kotlinlogging.KotlinLogging
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private val log = KotlinLogging.logger {}
+
+/**
+ * Offers an evolution to the client: the s2c 0x18 prompt makes the client queue its own evolution
+ * cinematic (sprite morph, cry, the cancellable return button) for that party monster - after the
+ * current battle's remaining events, or right away out of battle. Nothing changes server-side until
+ * the client answers; see [EvolutionService.onResponse].
+ */
+fun promptEvolution(
+    ctx: SessionContext,
+    state: PlayerState,
+    mon: Pokemon,
+    targetWire: Int,
+    consumeItemId: Int = 0,
+    consumeHeldItem: Boolean = false,
+) {
+  state.pendingEvolutions[mon.id] = PendingEvolution(targetWire, consumeItemId, consumeHeldItem)
+  ctx.send(EvolutionPromptPacket(mon.id, targetWire.toShort(), cancellable = true))
+}
+
+/**
+ * The answer to an evolution prompt. The client sends c2s 0x0B (uid, accepted) from its evolution
+ * scene: accepted=true when the morph sequence completes, accepted=false when the player pressed
+ * the return button and confirmed the cancel. Only then does the species change - the same order
+ * the cartridges use, where B during the animation keeps the monster as it was.
+ */
+@Singleton
+class EvolutionService
+@Inject
+constructor(
+    private val characters: CharacterStore,
+    private val species: SpeciesRegistry,
+    private val expansion: ExpansionSpeciesRegistry,
+    private val dexProgress: DexProgressService,
+) {
+
+  suspend fun onResponse(event: PacketEvent<EvolutionPromptResponsePacket>) {
+    val ctx = event.session
+    val state = ctx.attributes[PLAYER_STATE] ?: return
+    val charId = state.characterId ?: return
+    val monId = event.packet.pokemonEntityId
+    val pending = state.pendingEvolutions.remove(monId)
+    if (pending == null) {
+      log.info { "char=$charId answered an evolution prompt for monster=$monId with none pending" }
+      return
+    }
+    val mon = characters.getCharacter(charId)?.pokemon?.firstOrNull { it.id == monId } ?: return
+    val fromName = expansion.getByClientWireId(clientSpeciesId(mon.dexId))?.displayName
+        ?: species.forMonster(mon)?.name ?: "The monster"
+    if (!event.packet.accepted) {
+      log.info { "char=$charId cancelled the evolution of $fromName (monster=$monId)" }
+      ctx.send(notice("Huh? $fromName stopped evolving!"))
+      return
+    }
+    val newDexId = expansion.getByClientWireId(pending.targetWire)?.serverId ?: pending.targetWire
+    val evolvedDef = species.get(newDexId)
+    val toName =
+        expansion.getByClientWireId(pending.targetWire)?.displayName ?: evolvedDef?.name ?: "something new"
+    var evolved = mon.copy(dexId = newDexId)
+    // A held item that triggered a trade evolution is used up, as on the cartridges.
+    if (pending.consumeHeldItem && mon.heldItem != 0) evolved = evolved.copy(heldItem = 0)
+    if (evolvedDef != null) {
+      // Max HP rises with the new base stats; current HP carries over, capped at the new max.
+      val maxHp = StatCalculator.computeAll(evolvedDef, evolved).hp
+      evolved = evolved.copy(hp = mon.hp.toInt().coerceAtMost(maxHp).toShort())
+    }
+    characters.updatePokemon(charId, evolved)
+    if (pending.consumeHeldItem && mon.heldItem != 0) {
+      ctx.send(pirated.net.game.packets.battle.BattleEntityDeltaPacket(entityId = monId, heldItem = 0))
+    }
+    if (pending.consumeItemId > 0) {
+      characters.addItem(charId, pending.consumeItemId, -1)
+      val left = characters.getCharacter(charId)?.items?.get(pending.consumeItemId) ?: 0
+      ctx.send(itemStackUpdatePacket(pending.consumeItemId, left))
+    }
+    characters.getCharacter(charId)?.pokemon?.let { party ->
+      ctx.send(
+          PokemonContainerPacket(
+              container = PokemonContainer.PARTY,
+              hasChange = true,
+              delete = false,
+              pokemon = party,
+          ))
+    }
+    // An alternate form (Hisuian Typhlosion, a Mega) unlocks its base species' entry, never its own;
+    // a regional form unlocks its own and its base species' National entry (Alolan Marowak is #105).
+    val forms = pirated.pokemon.expansion.RegionalForms
+    ctx.send(PokedexSpeciesUnlockPacket((forms.alternateFormBaseOf(pending.targetWire) ?: pending.targetWire).toShort()))
+    forms.baseWireOf(pending.targetWire)?.let { ctx.send(PokedexSpeciesUnlockPacket(it.toShort())) }
+    dexProgress.refresh(ctx, charId)
+    characters.flushCharacterAsync(charId)
+    ctx.send(notice("$fromName evolved into $toName!"))
+    log.info {
+      "char=$charId $fromName (monster=$monId) evolved into $toName (wire ${pending.targetWire})" +
+          if (pending.consumeItemId > 0) " using item ${pending.consumeItemId}" else ""
+    }
+  }
+}

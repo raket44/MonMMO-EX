@@ -1,13 +1,13 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.dialog.DialogEntry
-@import de.fiereu.openmmo.codegen.dialog.RenderUtil
+@import pirated.codegen.dialog.DialogEntry
+@import pirated.codegen.dialog.RenderUtil
 
 @param String pkg
 @param String enumName
 @param List<DialogEntry> entries
 package ${pkg}
 
-import de.fiereu.openmmo.common.dialog.DialogLine
+import pirated.common.dialog.DialogLine
 
 /**
  * Overworld dialog lines for this location, generated from the decomp text. Each [textId] is the

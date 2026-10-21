@@ -27,7 +27,7 @@ abstract class GenerateCertificateTask : DefaultTask() {
   val algorithm: Property<String> = project.objects.property(String::class.java).convention("EC")
 
   init {
-    group = "openmmo"
+    group = "pirated"
     outputs.upToDateWhen { !overwriteCertificates.get() }
   }
 
@@ -91,6 +91,6 @@ tasks.register<GenerateCertificateTask>("generateFeed") {
 }
 
 tasks.register("generate") {
-  group = "openmmo"
+  group = "pirated"
   dependsOn("generateGame", "generateChat", "generateFeed")
 }

@@ -45,7 +45,7 @@ JDK=${JDK:-"/c/Program Files/Eclipse Adoptium/jdk-25.0.4.101-hotspot/bin"}
 KEYDIR="$ROOT/local/android-signing"
 SMALI="$ROOT/local/tools/smali-3.0.10"
 STOCK="$CACHE/stock-root" STAGE="$CACHE/stage" OVERLAY="$CACHE/overlay" WORK="$CACHE/work"
-DEX="$CACHE/classes.dex" MOD="$CACHE/monmmo-theme.zip"
+DEX="$CACHE/classes.dex" MOD="$CACHE/pirated-theme.zip"
 
 for f in "$APK" "$KEYDIR/monmmo-ex.p12" "$KEYDIR/password.txt"; do
   [ -f "$f" ] || { echo "ERROR: missing $f"; exit 1; }
@@ -73,7 +73,7 @@ fi
 echo "== composing the asset overlay"
 rm -rf "$OVERLAY"; mkdir -p "$OVERLAY/assets/data/resources"
 cp -r "$TOOLS/android-overlay/." "$OVERLAY/"
-MODZIP="$STAGE/data/mods/monmmo-lost-knights.zip"
+MODZIP="$STAGE/data/mods/pirated-lost-knights.zip"
 [ -f "$MODZIP" ] || { echo "ERROR: staged mod zip missing: $MODZIP"; exit 1; }
 unzip -o -q "$MODZIP" -x info.xml -d "$OVERLAY/assets/data/resources"
 for dir in cries sprites/battlesprites sprites/monstericons sprites/followsprites; do
@@ -139,7 +139,7 @@ fi
 #     colour across the mask. That was seven installs of a grey circle.
 #     So the resource side is rebuilt with apktool: decode retail's resources, swap the vector for
 #     PNGs at five densities, set the background colour, put our mipmaps in, build. The packager
-#     then takes resources.arsc, the manifest and res/ from that build (-Dmonmmo.resourcesApk) and
+#     then takes resources.arsc, the manifest and res/ from that build (-Dpirated.resourcesApk) and
 #     everything else from retail. Resource ids are pinned by apktool's public.xml; the build
 #     checks the icon chain, the ids and the dex afterwards. The desktop window icons come from
 #     the same art via IconSet.
@@ -224,7 +224,7 @@ fi
 # 5. Package, sign, align.
 echo "== packaging"
 rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
-"$JDK/java.exe" -Xmx2g "-Dmonmmo.resourcesApk=$RES_APK" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
+"$JDK/java.exe" -Xmx2g "-Dpirated.resourcesApk=$RES_APK" "$TOOLS/ApkPackager.java" prepare "$APK" "$WORK/apk/unsigned.apk" "$HOST" "$MOD" \
   "$REPO/launcher/src/main/resources/game.public.pem" "$REPO/launcher/src/main/resources/chat.public.pem" \
   "$STAGE/data/data.pak" "$STAGE/data/strings/strings_en.xml" "$DEX" "$OVERLAY"
 "$JDK/jarsigner.exe" -keystore "$KEYDIR/monmmo-ex.p12" -storetype PKCS12 -storepass:file "$KEYDIR/password.txt" \
@@ -236,14 +236,14 @@ rm -rf "$WORK/apk"; mkdir -p "$WORK/apk"
 # 6. Say what actually shipped, rather than trusting that it did.
 echo "== what is in $OUT"
 echo "-- config (server properties only; the package must never carry credentials)"
-unzip -p "$OUT" assets/config/zzz-monmmo-ex-server.properties | sed 's/^/   /'
-echo "-- code patches that add members (everything we add is named monmmo*)"
+unzip -p "$OUT" assets/config/zzz-pirated-server.properties | sed 's/^/   /'
+echo "-- code patches that add members (everything we add is named pirated*)"
 unzip -p "$OUT" classes.dex > "$WORK/shipped.dex"
 missing=0
-# Only members we DECLARE (.method/.field) or CALL (->name); smali labels like :monmmo_not_fairy
+# Only members we DECLARE (.method/.field) or CALL (->name); smali labels like :pirated_not_fairy
 # assemble into jump offsets and never appear in a dex as text.
-for marker in $(grep -rhoE "^\.(method|field).*[ (]monmmo[A-Za-z0-9_]+|->monmmo[A-Za-z0-9_]+" "$TOOLS/android-smali" \
-    | grep -oE "monmmo[A-Za-z0-9_]+" | sort -u); do
+for marker in $(grep -rhoE "^\.(method|field).*[ (]pirated[A-Za-z0-9_]+|->pirated[A-Za-z0-9_]+" "$TOOLS/android-smali" \
+    | grep -oE "pirated[A-Za-z0-9_]+" | sort -u); do
   if strings -a -n 6 "$WORK/shipped.dex" | grep -q "$marker"; then
     echo "   $marker: present"
   else
@@ -259,12 +259,12 @@ fi
 echo "-- Fairy and evolution symbols in the stock-theme atlas"
 printf "   type19 badge regions: %s, evo symbols: %s\n" \
   "$(unzip -p "$OUT" assets/data/sprites/atlas/main.atlas | grep -c '_type_19_')" \
-  "$(unzip -p "$OUT" assets/data/sprites/atlas/main.atlas | grep -c '^monmmo-\(mega\|alpha\|omega\)$')"
+  "$(unzip -p "$OUT" assets/data/sprites/atlas/main.atlas | grep -c '^pirated-\(mega\|alpha\|omega\)$')"
 if [ "$MOD" != "-" ]; then
   echo "-- theme mod"
   unzip -l "$OUT" | grep "assets/data/mods/" | sed 's/^/   /'
   printf "   Fairy extension: %s, type19 badges in its atlas: %s\n" \
-    "$(unzip -p "$OUT" "assets/data/mods/$(basename "$MOD")" > "$WORK/mod.zip" && unzip -Z1 "$WORK/mod.zip" | grep -c 'MonMMOFairy')" \
+    "$(unzip -p "$OUT" "assets/data/mods/$(basename "$MOD")" > "$WORK/mod.zip" && unzip -Z1 "$WORK/mod.zip" | grep -c 'PiratedFairy')" \
     "$(unzip -p "$WORK/mod.zip" atlas/main.atlas | grep -c '_type_19_')"
 fi
 if [ "$VERIFY_DEX" = 1 ]; then

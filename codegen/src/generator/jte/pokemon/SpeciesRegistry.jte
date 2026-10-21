@@ -1,17 +1,17 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.pokemon.ParsedSpecies
-@import de.fiereu.openmmo.codegen.pokemon.RenderUtil
+@import pirated.codegen.pokemon.ParsedSpecies
+@import pirated.codegen.pokemon.RenderUtil
 
 @param List<List<ParsedSpecies>> chunks
-package de.fiereu.openmmo.pokemon.generated
+package pirated.pokemon.generated
 
-import de.fiereu.openmmo.common.enums.Ability
-import de.fiereu.openmmo.common.enums.BodyColor
-import de.fiereu.openmmo.common.enums.EggGroup
-import de.fiereu.openmmo.common.enums.GrowthRate
-import de.fiereu.openmmo.common.enums.PokemonType
-import de.fiereu.openmmo.pokemon.SpeciesDef
-import de.fiereu.openmmo.pokemon.SpeciesRegistry
+import pirated.common.enums.Ability
+import pirated.common.enums.BodyColor
+import pirated.common.enums.EggGroup
+import pirated.common.enums.GrowthRate
+import pirated.common.enums.PokemonType
+import pirated.pokemon.SpeciesDef
+import pirated.pokemon.SpeciesRegistry
 
 internal object GeneratedSpecies {
   fun loadInto(reg: SpeciesRegistry) {

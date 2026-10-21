@@ -121,7 +121,7 @@ right key in, then build with the feed origin:
 
 ```bash
 ./gradlew :launcher:packageDistributionForCurrentOS \
-  -Popenmmo.feedOrigin=https://feed.openmmo.dev
+  -Ppirated.feedOrigin=https://feed.openmmo.dev
 ```
 
 Without the property the launcher points at the loopback dev feed, which is

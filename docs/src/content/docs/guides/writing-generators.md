@@ -61,14 +61,14 @@ Say you want to generate `berries`. You add:
 
 | File | Job |
 |---|---|
-| `codegen/src/generator/kotlin/de/fiereu/openmmo/codegen/berry/Main.kt` | Entry point: reads args, runs the parser, calls the renderer |
+| `codegen/src/generator/kotlin/pirated/codegen/berry/Main.kt` | Entry point: reads args, runs the parser, calls the renderer |
 | `.../berry/BerryParser.kt` | Reads the decomp files and returns a list of `ParsedBerry` |
 | `.../berry/ParsedModel.kt` | The `ParsedBerry` data class (plain values + enum references as `String`) |
 | `.../berry/Constants.kt` | Small helpers that turn a decomp name into an enum reference |
 | `.../berry/RenderUtil.kt` | Turns one `ParsedBerry` into a line of Kotlin source |
 | `.../berry/BerryRenderer.kt` | Runs the JTE template and writes the output file |
 | `codegen/src/generator/jte/berry/BerryRegistry.jte` | The template for the generated file |
-| `codegen/src/main/kotlin/de/fiereu/openmmo/berry/BerryDef.kt` | The runtime type the server uses |
+| `codegen/src/main/kotlin/pirated/berry/BerryDef.kt` | The runtime type the server uses |
 | `.../berry/BerryRegistry.kt` | Loads the generated data and looks it up by id |
 | `common/.../enums/*.kt` | Any semantic enums the data needs |
 
@@ -125,7 +125,7 @@ by default):
 ```kotlin
 jteCodegen {
   register("berry") {
-    mainClass.set("de.fiereu.openmmo.codegen.berry.Main")
+    mainClass.set("pirated.codegen.berry.Main")
     inputDirs.from(sourceDecompDir)            // what to watch for changes
     extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
   }

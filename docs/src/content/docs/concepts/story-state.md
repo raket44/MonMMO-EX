@@ -63,7 +63,7 @@ adapter on top, not the model.
 
 You never type a raw key string. Each region gets a generated pair of constant
 objects, `HoennFlags`/`HoennVars` and `KantoFlags`/`KantoVars`, in
-`de.fiereu.openmmo.story.generated.<region>`.
+`pirated.story.generated.<region>`.
 
 They are produced by the `story` generator
 (`codegen/.../codegen/story/`), which reads `include/constants/flags.h` and

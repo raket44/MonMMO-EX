@@ -1,5 +1,5 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.story.StoryConstant
+@import pirated.codegen.story.StoryConstant
 
 @param String pkg
 @param String objectName

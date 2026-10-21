@@ -630,7 +630,7 @@
     # and 10 are handled above). o80.T02 below only reaches the retail species.
     const/16 v3, 0x4e20
 
-    if-lt v0, v3, :monmmo_retail_follower
+    if-lt v0, v3, :pirated_retail_follower
 
     sub-int/2addr v0, v3
 
@@ -638,7 +638,7 @@
     # follower entity (f/vc1.eL0, fed by d11() = x71) draws at 4/3 scale, as retail does for alphas.
     const/16 v3, 0x2710
 
-    if-lt v0, v3, :monmmo_follower_normal
+    if-lt v0, v3, :pirated_follower_normal
 
     sub-int/2addr v0, v3
 
@@ -652,7 +652,7 @@
 
     return-void
 
-    :monmmo_follower_normal
+    :pirated_follower_normal
     int-to-short v0, v0
 
     iput-short v0, p0, Lf/dw2;->cp:S
@@ -661,7 +661,7 @@
 
     return-void
 
-    :monmmo_retail_follower
+    :pirated_retail_follower
     .line 47
     .line 48
     const/16 v3, 0xfff

@@ -24,7 +24,7 @@ closes as soon as the client is up, which is normal.
 
 ## What ends up where
 
-Everything lives under `%LOCALAPPDATA%/OpenMMO`, or the XDG equivalent on Linux
+Everything lives under `%LOCALAPPDATA%/PiratedVersion`, or the XDG equivalent on Linux
 and macOS.
 
 | Folder | What is in it |
@@ -49,7 +49,7 @@ In development that feed comes from the server `:launcher:dev` runs. A released
 launcher reads the published one instead:
 
 ```bash
-./gradlew :launcher:createDistributable -Popenmmo.feedOrigin=https://feed.openmmo.dev
+./gradlew :launcher:createDistributable -Ppirated.feedOrigin=https://feed.openmmo.dev
 ```
 
 ## Adding a patch

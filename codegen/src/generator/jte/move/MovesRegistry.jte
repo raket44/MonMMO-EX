@@ -1,20 +1,20 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.move.ParsedMove
-@import de.fiereu.openmmo.codegen.move.RenderUtil
+@import pirated.codegen.move.ParsedMove
+@import pirated.codegen.move.RenderUtil
 
 @param List<List<ParsedMove>> chunks
-package de.fiereu.openmmo.moves.generated
+package pirated.moves.generated
 
-import de.fiereu.openmmo.common.enums.DamageCategory
-import de.fiereu.openmmo.common.enums.MoveAdditionalEffect
-import de.fiereu.openmmo.common.enums.MoveEffect
-import de.fiereu.openmmo.common.enums.MoveFlag
-import de.fiereu.openmmo.common.enums.MoveTarget
-import de.fiereu.openmmo.common.enums.PokemonType
-import de.fiereu.openmmo.moves.AdditionalEffect
-import de.fiereu.openmmo.moves.MoveArgument
-import de.fiereu.openmmo.moves.MoveDef
-import de.fiereu.openmmo.moves.MoveRegistry
+import pirated.common.enums.DamageCategory
+import pirated.common.enums.MoveAdditionalEffect
+import pirated.common.enums.MoveEffect
+import pirated.common.enums.MoveFlag
+import pirated.common.enums.MoveTarget
+import pirated.common.enums.PokemonType
+import pirated.moves.AdditionalEffect
+import pirated.moves.MoveArgument
+import pirated.moves.MoveDef
+import pirated.moves.MoveRegistry
 
 internal object GeneratedMoves {
   fun loadInto(reg: MoveRegistry) {

@@ -1,28 +1,28 @@
-@import de.fiereu.openmmo.codegen.maps.ParsedMap
-@import de.fiereu.openmmo.codegen.maps.RenderUtil
+@import pirated.codegen.maps.ParsedMap
+@import pirated.codegen.maps.RenderUtil
 
 @param String packageName
 @param String objectName
 @param ParsedMap map
 package ${packageName}
 
-import de.fiereu.openmmo.common.Tile2D
-import de.fiereu.openmmo.common.enums.Direction
-import de.fiereu.openmmo.common.enums.EncounterMethod
-import de.fiereu.openmmo.common.enums.EncounterType
-import de.fiereu.openmmo.common.enums.Lighting
-import de.fiereu.openmmo.common.enums.MapType
-import de.fiereu.openmmo.common.enums.MovementType
-import de.fiereu.openmmo.common.enums.Weather
-import de.fiereu.openmmo.maps.BgEventDef
-import de.fiereu.openmmo.maps.MapCoordScript
-import de.fiereu.openmmo.maps.MapDef
-import de.fiereu.openmmo.maps.MapFrameScript
-import de.fiereu.openmmo.maps.NpcDef
-import de.fiereu.openmmo.maps.WarpTile
-import de.fiereu.openmmo.maps.WildEncounterSlot
-import de.fiereu.openmmo.maps.WildEncounterTable
-import de.fiereu.openmmo.net.game.packets.MapData
+import pirated.common.Tile2D
+import pirated.common.enums.Direction
+import pirated.common.enums.EncounterMethod
+import pirated.common.enums.EncounterType
+import pirated.common.enums.Lighting
+import pirated.common.enums.MapType
+import pirated.common.enums.MovementType
+import pirated.common.enums.Weather
+import pirated.maps.BgEventDef
+import pirated.maps.MapCoordScript
+import pirated.maps.MapDef
+import pirated.maps.MapFrameScript
+import pirated.maps.NpcDef
+import pirated.maps.WarpTile
+import pirated.maps.WildEncounterSlot
+import pirated.maps.WildEncounterTable
+import pirated.net.game.packets.MapData
 
 internal val ${objectName}: MapDef =
     MapDef(

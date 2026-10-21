@@ -1,0 +1,156 @@
+package pirated.server.game.services
+
+import pirated.network.SessionContext
+import pirated.common.DynamicWarp
+import pirated.maps.MapManager
+import pirated.net.game.packets.MapTransitionPacket
+import pirated.net.game.packets.RenderScreenPacket
+import pirated.net.game.packets.Season
+import pirated.net.game.packets.SeasonPacket
+import pirated.server.game.session.PENDING_MAP_LOAD
+import pirated.server.game.session.PlayerState
+import pirated.server.game.storage.CharacterStore
+import io.github.oshai.kotlinlogging.KotlinLogging
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
+
+private val log = KotlinLogging.logger {}
+
+// A cutscene must not hang if the client never answers the transition.
+private val MAP_LOAD_TIMEOUT = 10.seconds
+
+/** A direct, no-auto-step warp for cutscenes (the decomp's `warpsilent`). */
+@Singleton
+class ScriptWarpService
+@Inject
+constructor(
+    private val mapManager: MapManager,
+    private val mapLoadService: MapLoadService,
+    private val characterStore: CharacterStore,
+    private val presenceService: PresenceService,
+    private val warpService: javax.inject.Provider<WarpService>,
+    val ndsElevators: NdsElevators = NdsElevators(),
+) {
+  /** A DS destination: the client loads the ROM map itself, the server only names it. */
+  fun rawWarp(session: SessionContext, charId: Long, regionId: Int, bankId: Int, mapId: Int, x: Int, y: Int) {
+    warpService.get().executeRawWarp(session, charId, regionId, bankId, mapId, x, y)
+  }
+
+  /**
+   * A DS raw warp the script rides through: lands on ([x], [y]) facing [facing] and suspends
+   * until the client has asked for its player on the new map, so the script's next steps (the
+   * Unova elevator's door and walk-out) play there. No arrival step is armed - executeRawWarp
+   * clears pendingStepDir and only door fires set it - so a landing on a blocked tile (the lift
+   * car) stays where the script put it. The script owns the arrival's entry scripts: with
+   * [PlayerState.scriptRunning] already held, MapScriptService.onNdsEnter would otherwise decline
+   * to run them AND skip the npc spawn and fade-in that hang off them.
+   */
+  suspend fun rawWarpAndWait(
+      session: SessionContext,
+      state: PlayerState,
+      regionId: Int,
+      bankId: Int,
+      mapId: Int,
+      x: Int,
+      y: Int,
+      facing: pirated.common.enums.Direction,
+  ): Boolean {
+    val charId = state.characterId ?: return false
+    val loaded = CompletableDeferred<Unit>()
+    session.attributes[PENDING_MAP_LOAD] = loaded
+    state.scriptOwnsMapEntry = true
+    try {
+      // The LoadEntity after the transition spawns the player with this facing.
+      state.facingDirection = facing
+      warpService.get().executeRawWarp(session, charId, regionId, bankId, mapId, x, y)
+      if (withTimeoutOrNull(MAP_LOAD_TIMEOUT) { loaded.await() } != null) return true
+      log.warn { "Character $charId did not load $regionId:$bankId:$mapId after a scripted raw warp" }
+      state.justWarped = false
+      session.send(RenderScreenPacket(true))
+      presenceService.enter(session)
+      return false
+    } finally {
+      state.scriptOwnsMapEntry = false
+      if (session.attributes[PENDING_MAP_LOAD] === loaded) session.attributes.remove(PENDING_MAP_LOAD)
+    }
+  }
+
+  /** Warps and waits until the client has loaded the destination, so the script can go on. */
+  suspend fun warp(
+      session: SessionContext,
+      state: PlayerState,
+      destination: DynamicWarp,
+  ) {
+    val characterId = state.characterId ?: return
+    val stored = characterStore.getCharacter(characterId) ?: return
+    val map = mapManager.getMap(destination.regionId, destination.bankId, destination.mapId)
+    if (map == null) {
+      log.warn {
+        "Map not found for scripted warp ${destination.regionId}:${destination.bankId}:${destination.mapId}"
+      }
+      return
+    }
+    // The landing tile's own arrival rule (WarpService.armScriptedArrival): a door tile walks the
+    // player out one tile at arrival, the way every other warp onto it does.
+    val exitFacing =
+        warpService.get().armScriptedArrival(state, map, destination.x.toInt(), destination.y.toInt(), destination.facing)
+    val info =
+        stored.info.copy(
+            positionRegionId = destination.regionId,
+            positionBankId = destination.bankId,
+            positionMapId = destination.mapId,
+            positionX = destination.x,
+            positionY = destination.y,
+            positionFacing = exitFacing,
+        )
+
+    characterStore.updateCharacter(info)
+    characterStore.flushCharacterAsync(characterId)
+    state.justWarped = true
+    // Leave now, so the old map's observers do not keep a ghost for the whole transition.
+    presenceService.leave(session)
+    state.regionId = destination.regionId.toInt()
+    state.bankId = destination.bankId.toInt()
+    state.mapId = destination.mapId.toInt()
+    state.x = destination.x
+    state.y = destination.y
+    // The arrival layer the way the door path picks it (WarpService.executeWarp): the warp event
+    // on the target tile names it; a plain tile's own floor elevation is GBA scale and the client's
+    // is one less (FlyService.landingElevation). The tile's raw value put Fuji's guest a layer up.
+    state.elevation =
+        map.warps.find { it.x == destination.x.toInt() && it.y == destination.y.toInt() }?.elevation
+            ?: map.tileAt(destination.x.toInt(), destination.y.toInt())?.let { (it.elevation - 1).coerceAtLeast(0) }
+            ?: 0
+    state.facingDirection = exitFacing
+
+    val loaded = CompletableDeferred<Unit>()
+    session.attributes[PENDING_MAP_LOAD] = loaded
+
+    session.send(MapTransitionPacket())
+    session.send(RenderScreenPacket(false))
+    // Hosted GBA path: retail byte 1 (see WarpService.executeWarp).
+    session.send(SeasonPacket(Season.current()))
+    mapLoadService.resetClientCache(session, map)
+    session.send(mapManager.createLoadMapPacket(map, reloadPlayer = true, deleteCache = true))
+    mapLoadService.preloadConnectedMaps(session, map, depth = 1, reloadPlayer = true)
+
+    try {
+      if (withTimeoutOrNull(MAP_LOAD_TIMEOUT) { loaded.await() } == null) {
+        log.warn {
+          "Character $characterId did not load ${destination.bankId}:${destination.mapId}"
+        }
+        // No arrival will follow, so give the screen and the map group back here.
+        state.justWarped = false
+        session.send(RenderScreenPacket(true))
+        presenceService.enter(session)
+      }
+    } finally {
+      if (session.attributes[PENDING_MAP_LOAD] === loaded) {
+        session.attributes.remove(PENDING_MAP_LOAD)
+      }
+    }
+  }
+}

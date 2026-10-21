@@ -15,7 +15,7 @@ model behind it.
 ## The pieces
 
 Everything lives in
-`server.game/src/main/kotlin/de/fiereu/openmmo/server/game/script/`:
+`server.game/src/main/kotlin/pirated/server/game/script/`:
 
 - `Script.kt`: a `fun interface` with one method, `suspend fun run(ctx: ScriptContext)`.
 - `ScriptContext.kt`: everything a script is allowed to do to the player.

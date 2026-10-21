@@ -22,7 +22,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 OVERLAY="$HERE/../android-overlay/assets/data"
 JDK=${JDK:-"/c/Program Files/Eclipse Adoptium/jdk-25.0.4.101-hotspot/bin"}
 
-EXT_DIR="data/MonMMOFairy_mobile"   # must not be named `default` or `android` (the parser refuses)
+EXT_DIR="data/PiratedFairy_mobile"   # must not be named `default` or `android` (the parser refuses)
 EXT_NAME="Pirated Version Fairy"
 EXT_REVISION=8                      # their theme ships revision 8 and this client accepts it
 
@@ -47,15 +47,15 @@ fi
 
 # 2. Append our atlas pages, so the FAIRY badge and the mega/alpha/omega symbols survive the swap.
 OUR_ATLAS="$OVERLAY/sprites/atlas/main.atlas"
-{ echo; awk '/^monmmo-fairy\.png$/{found=1} found' "$OUR_ATLAS"; } >> "$MOD/atlas/main.atlas"
-cp "$OVERLAY/sprites/atlas/monmmo-fairy.png" "$OVERLAY/sprites/atlas/monmmo-evo-symbols.png" "$MOD/atlas/"
-echo "[theme] appended $(grep -c '^monmmo-' "$MOD/atlas/main.atlas") Pirated Version atlas regions"
+{ echo; awk '/^pirated-fairy\.png$/{found=1} found' "$OUR_ATLAS"; } >> "$MOD/atlas/main.atlas"
+cp "$OVERLAY/sprites/atlas/pirated-fairy.png" "$OVERLAY/sprites/atlas/pirated-evo-symbols.png" "$MOD/atlas/"
+echo "[theme] appended $(grep -c '^pirated-' "$MOD/atlas/main.atlas") Pirated Version atlas regions"
 
 # 3. The Fairy move button, drawn from THIS theme's own Psychic button so it matches its language.
 mkdir -p "$MOD/$EXT_DIR/res"
 "$JDK/java.exe" "$HERE/MakeFairyButton.java" \
   "$MOBILE/res/ui-battle-moves.png" "$MOBILE/textures/star-bold.png" \
-  "$MOD/$EXT_DIR/res/monmmo-fairy-move.png"
+  "$MOD/$EXT_DIR/res/pirated-fairy-move.png"
 cp "$HERE/fairy-extension/theme.xml" "$MOD/$EXT_DIR/theme.xml"
 
 # 3b. The version line under this theme's own wordmark, in its own accent colour. BATTLE_TTF is the

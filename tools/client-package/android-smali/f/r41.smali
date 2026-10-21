@@ -152,7 +152,7 @@
 
 .field public xr0:Lf/m39;
 
-# Pirated Version: the evolution tab's battle form-change symbols (atlas page monmmo-evo-symbols), loaded
+# Pirated Version: the evolution tab's battle form-change symbols (atlas page pirated-evo-symbols), loaded
 # with the clock badges in f/rm4 - Mega Evolution, and the alpha / omega of Primal Kyogre / Groudon.
 .field public mmxMega:Lf/m39;
 

@@ -46,7 +46,7 @@ val dialogDataDir = layout.projectDirectory.dir("dialog")
 
 jteCodegen {
   register("maps") {
-    mainClass.set("de.fiereu.openmmo.codegen.maps.Main")
+    mainClass.set("pirated.codegen.maps.Main")
     inputDirs.from(
         regionSources.values.map { rootProject.layout.projectDirectory.dir("decomp/$it") })
     extraArgs.set(
@@ -55,29 +55,29 @@ jteCodegen {
         })
   }
   register("item") {
-    mainClass.set("de.fiereu.openmmo.codegen.item.Main")
+    mainClass.set("pirated.codegen.item.Main")
     inputDirs.from(itemDataDir)
     extraArgs.set(listOf(itemDataDir.asFile.absolutePath))
   }
   register("moves") {
-    mainClass.set("de.fiereu.openmmo.codegen.move.Main")
+    mainClass.set("pirated.codegen.move.Main")
     templatesSubdir.set("move")
     inputDirs.from(expansionDecompDir)
     extraArgs.set(listOf(expansionDecompDir.asFile.absolutePath))
   }
   register("pokemon") {
-    mainClass.set("de.fiereu.openmmo.codegen.pokemon.Main")
+    mainClass.set("pirated.codegen.pokemon.Main")
     inputDirs.from(sourceDecompDir)
     extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
   }
   register("expansionPokemon") {
-    mainClass.set("de.fiereu.openmmo.codegen.pokemon.expansion.ExpansionPokemonMain")
+    mainClass.set("pirated.codegen.pokemon.expansion.ExpansionPokemonMain")
     // Pirated Version's own species (Crystal Onix), appended after the Expansion's in its syntax.
     val customSpecies = layout.projectDirectory.dir("custom-species")
     inputDirs.from(expansionDecompDir, customSpecies)
     // The client's own form catalogue (launcher :stageRetailData), so Expansion forms the client
     // already has resolve to its records instead of becoming duplicate species.
-    val retailForms = layout.projectDirectory.file("src/main/resources/monmmo/retail-forms.csv")
+    val retailForms = layout.projectDirectory.file("src/main/resources/pirated/retail-forms.csv")
     // Declared as an input, or Gradle keeps a catalog generated before the csv existed: that is
     // how 75 forms retail already draws (Unown, Rotom, Castform...) shipped again as species.
     inputDirs.from(retailForms)
@@ -88,13 +88,13 @@ jteCodegen {
             customSpecies.asFile.absolutePath))
   }
   register("learnset") {
-    mainClass.set("de.fiereu.openmmo.codegen.learnset.Main")
+    mainClass.set("pirated.codegen.learnset.Main")
     inputDirs.from(sourceDecompDir)
     extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
   }
   // Trainers differ per game, so this is by region like maps rather than from the canonical decomp.
   register("trainer") {
-    mainClass.set("de.fiereu.openmmo.codegen.trainer.Main")
+    mainClass.set("pirated.codegen.trainer.Main")
     val trainerSources = regionSources + mapOf("sinnoh" to "pokeplatinum", "johto" to "pokeheartgold")
     // Unova trainer rows extracted from the ROM by tools/nds/Trn5 (no decomp exists for it).
     val unovaTrainerDir = rootProject.layout.projectDirectory.dir("rom-data")
@@ -110,7 +110,7 @@ jteCodegen {
   // the adapter that gives ported scripts readable keys. Story covers the NDS regions too -
   // pokeheartgold has pret-style flags.h/vars.h, pokeplatinum ships a flattened enum list.
   register("story") {
-    mainClass.set("de.fiereu.openmmo.codegen.story.Main")
+    mainClass.set("pirated.codegen.story.Main")
     val storyRegionSources =
         regionSources + mapOf("johto" to "pokeheartgold", "sinnoh" to "pokeplatinum")
     inputDirs.from(
@@ -121,17 +121,17 @@ jteCodegen {
         })
   }
   register("typechart") {
-    mainClass.set("de.fiereu.openmmo.codegen.typechart.Main")
+    mainClass.set("pirated.codegen.typechart.Main")
     inputDirs.from(sourceDecompDir)
     extraArgs.set(listOf(sourceDecompDir.asFile.absolutePath))
   }
   register("dialog") {
-    mainClass.set("de.fiereu.openmmo.codegen.dialog.Main")
+    mainClass.set("pirated.codegen.dialog.Main")
     inputDirs.from(dialogDataDir)
     extraArgs.set(listOf(dialogDataDir.asFile.absolutePath) + regionSources.keys)
   }
   register("scriptCorpus") {
-    mainClass.set("de.fiereu.openmmo.codegen.script.ScriptCorpusMain")
+    mainClass.set("pirated.codegen.script.ScriptCorpusMain")
     // Unova's "decomp" is the ROM extracts in server.game; declared, or a re-dumped
     // nds-scripts-2.txt leaves the corpus stale (it did, 2026-09-19).
     val unovaExtracts =
@@ -162,7 +162,7 @@ tasks.register<JavaExec>("refreshDialogTable") {
       "Re-resolve codegen/dialog from the ROMs in roms/ (manual, run after a decomp bump, commit the result)"
   val fireredDir = rootProject.layout.projectDirectory.dir("decomp/pokefirered")
   classpath = sourceSets["generator"].runtimeClasspath
-  mainClass.set("de.fiereu.openmmo.codegen.dialog.RefreshMain")
+  mainClass.set("pirated.codegen.dialog.RefreshMain")
   args(
       romsDir.asFile.absolutePath,
       dialogDataDir.asFile.absolutePath,
@@ -180,7 +180,7 @@ tasks.register<JavaExec>("generateScriptStubs") {
   val fireredDir = rootProject.layout.projectDirectory.dir("decomp/pokefirered")
   val serverGameSrc = rootProject.layout.projectDirectory.dir("server.game/src/main/kotlin")
   classpath = sourceSets["generator"].runtimeClasspath
-  mainClass.set("de.fiereu.openmmo.codegen.script.Main")
+  mainClass.set("pirated.codegen.script.Main")
   args(
       serverGameSrc.asFile.absolutePath,
       romsDir.asFile.absolutePath,

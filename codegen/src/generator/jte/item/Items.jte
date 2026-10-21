@@ -1,11 +1,11 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.item.ParsedItem
-@import de.fiereu.openmmo.codegen.item.RenderUtil
+@import pirated.codegen.item.ParsedItem
+@import pirated.codegen.item.RenderUtil
 
 @param List<ParsedItem> items
-package de.fiereu.openmmo.items.generated
+package pirated.items.generated
 
-import de.fiereu.openmmo.items.ItemDef
+import pirated.items.ItemDef
 
 /** Generated, do not edit by hand. The KDoc on an entry is the wire ids it answers to. */
 object Items {

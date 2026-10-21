@@ -8,9 +8,9 @@
 # GBA map.bin word (metatile | collision << 10 | elevation << 12).
 #
 #   perl tools/client-overrides/extract-tile-overrides.pl <client jar or exe> \
-#        > codegen/src/generator/resources/monmmo/client-tile-overrides.csv
+#        > codegen/src/generator/resources/pirated/client-tile-overrides.csv
 use strict; use warnings;
-my $jar = shift or die "usage: $0 <MonMMO-Local.exe>\n";
+my $jar = shift or die "usage: $0 <PiratedVersion-Local.exe>\n";
 my @lines = `javap -p -c -cp "$jar" f.Xk0`;
 die "javap failed\n" unless @lines;
 print "region,clientLayoutId,index,word\n";

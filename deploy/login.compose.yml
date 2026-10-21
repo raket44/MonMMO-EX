@@ -1,4 +1,4 @@
-name: openmmo-login
+name: pirated-login
 
 services:
   database:
@@ -17,7 +17,7 @@ services:
       - database:/var/lib/postgresql
 
   server:
-    image: ${OPENMMO_LOGIN_IMAGE:-ghcr.io/openmmo-org/openmmo-login:dev}
+    image: ${OPENMMO_LOGIN_IMAGE:-ghcr.io/openmmo-org/pirated-login:dev}
     pull_policy: always
     restart: unless-stopped
     depends_on:

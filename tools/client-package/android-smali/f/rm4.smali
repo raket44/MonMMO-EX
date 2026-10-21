@@ -3946,15 +3946,15 @@
     iput-object v2, v4, Lf/r41;->xr0:Lf/m39;
 
     # Pirated Version: the form-change symbols the evolution tab (f/j67) draws for Megas and Primals.
-    const-string v2, "monmmo-mega"
+    const-string v2, "pirated-mega"
     invoke-virtual {v4, v2}, Lf/r41;->qp0(Ljava/lang/String;)Lf/m39;
     move-result-object v2
     iput-object v2, v4, Lf/r41;->mmxMega:Lf/m39;
-    const-string v2, "monmmo-alpha"
+    const-string v2, "pirated-alpha"
     invoke-virtual {v4, v2}, Lf/r41;->qp0(Ljava/lang/String;)Lf/m39;
     move-result-object v2
     iput-object v2, v4, Lf/r41;->mmxAlpha:Lf/m39;
-    const-string v2, "monmmo-omega"
+    const-string v2, "pirated-omega"
     invoke-virtual {v4, v2}, Lf/r41;->qp0(Ljava/lang/String;)Lf/m39;
     move-result-object v2
     iput-object v2, v4, Lf/r41;->mmxOmega:Lf/m39;

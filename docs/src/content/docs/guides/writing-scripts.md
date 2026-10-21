@@ -21,7 +21,7 @@ like, and how to change what an existing one does. From here:
 All scripts are in one folder, one file per map:
 
 ```
-server.game/src/main/kotlin/de/fiereu/openmmo/server/game/script/generated/
+server.game/src/main/kotlin/pirated/server/game/script/generated/
   hoenn/LittlerootTown.kt
   kanto/PalletTown.kt
   ...

@@ -86,7 +86,7 @@ jobs:
         id: login-image
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository_owner }}/openmmo-login
+          images: ghcr.io/${{ github.repository_owner }}/pirated-login
           flavor: latest=true
           labels: org.opencontainers.image.title=Pirated Version login server
           annotations: org.opencontainers.image.title=Pirated Version login server
@@ -108,7 +108,7 @@ jobs:
         id: game-image
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository_owner }}/openmmo-game
+          images: ghcr.io/${{ github.repository_owner }}/pirated-game
           flavor: latest=true
           labels: org.opencontainers.image.title=Pirated Version game server
           annotations: org.opencontainers.image.title=Pirated Version game server

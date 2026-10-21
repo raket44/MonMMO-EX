@@ -539,14 +539,14 @@
     # Expansion species (650 - the same 0x28a the retail code above uses as its no-ROM-cry marker)
     # may have a mod file, and every cry we ship is 668 or higher.
     const/16 v0, 0x28a
-    if-lt v1, v0, :monmmo_rom_cry
+    if-lt v1, v0, :pirated_rom_cry
     sget-object v0, Lf/p37;->X20:Lf/t72;
     iget-object v0, v0, Lf/aw3;->SE0:Lf/k89;
     const/high16 v5, 0xa0000
     add-int/2addr v5, v1
     invoke-virtual {v0, v5}, Lf/x44;->US1(I)Z
     move-result v0
-    if-eqz v0, :monmmo_rom_cry
+    if-eqz v0, :pirated_rom_cry
     sget-object v2, Lf/p37;->X20:Lf/t72;
     const/16 v3, 0xa
     move v4, v1
@@ -556,7 +556,7 @@
     const/4 v10, 0x0
     invoke-virtual/range {v2 .. v10}, Lf/aw3;->Gz(BSSZFFFI)V
     return-void
-    :monmmo_rom_cry
+    :pirated_rom_cry
     move v5, v1
 
     .line 217

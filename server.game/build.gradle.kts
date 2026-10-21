@@ -8,9 +8,9 @@ plugins {
   alias(libs.plugins.ksp)
 }
 
-application { mainClass.set("de.fiereu.openmmo.server.game.MainKt") }
+application { mainClass.set("pirated.server.game.MainKt") }
 
-jooqDb { packageName = "de.fiereu.openmmo.db.game" }
+jooqDb { packageName = "pirated.db.game" }
 
 dependencies {
   api(project(":network"))

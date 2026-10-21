@@ -2,8 +2,8 @@
 // Written in the Expansion's syntax but NOT preprocessed: plain numbers, no config ternaries, no
 // macros. Each entry is numbered after the Expansion's highest species id, in file order, so an
 // entry appended here never moves an existing wire id. Art paths are relative to this directory.
-// Beside the decomp-style art a species folder may carry monmmo_front.gif / monmmo_back.gif
-// (animated battle sprites, used as-is) and monmmo_icon.pal (the icon's own palette).
+// Beside the decomp-style art a species folder may carry pirated_front.gif / pirated_back.gif
+// (animated battle sprites, used as-is) and pirated_icon.pal (the icon's own palette).
 
 // Crystal Onix: the Cerulean Cave raid boss, a form of Onix (project owner, 2026-09-14). Art by
 // the owner; no shiny art exists, so the shiny palettes repeat the normal ones.

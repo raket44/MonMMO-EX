@@ -1,12 +1,12 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.learnset.ParsedLearnset
-@import de.fiereu.openmmo.codegen.learnset.RenderUtil
+@import pirated.codegen.learnset.ParsedLearnset
+@import pirated.codegen.learnset.RenderUtil
 
 @param List<List<ParsedLearnset>> chunks
-package de.fiereu.openmmo.pokemon.generated
+package pirated.pokemon.generated
 
-import de.fiereu.openmmo.pokemon.LearnsetRegistry
-import de.fiereu.openmmo.pokemon.LevelUpMove
+import pirated.pokemon.LearnsetRegistry
+import pirated.pokemon.LevelUpMove
 
 internal object GeneratedLearnsets {
   fun loadInto(reg: LearnsetRegistry) {

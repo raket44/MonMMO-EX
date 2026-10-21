@@ -9,7 +9,7 @@ there, and nobody else. Sending every packet to every online player would be
 wasteful and leak things players should not see.
 
 The `InterestManager` solves this. It lives in
-`server.game/src/main/kotlin/de/fiereu/openmmo/server/game/world/interest/`.
+`server.game/src/main/kotlin/pirated/server/game/world/interest/`.
 
 ## The idea
 

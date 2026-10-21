@@ -1,0 +1,19 @@
+package pirated.server.game.script.generated.kanto
+
+import pirated.dialog.generated.kanto.SSAnne_2F_Room3
+import pirated.server.game.script.Script
+import pirated.server.game.script.ScriptContext
+
+internal object SSAnne_2F_Room3_EventScript_Gentleman : Script {
+  override suspend fun run(ctx: ScriptContext) = ctx.say(SSAnne_2F_Room3.SeenMonsFerryPeople)
+}
+
+internal object SSAnne_2F_Room3_EventScript_OldMan : Script {
+  override suspend fun run(ctx: ScriptContext) = ctx.say(SSAnne_2F_Room3.SomeTreesCanBeCutDown)
+}
+
+internal val SSAnne_2F_Room3Scripts: Map<String, Script> =
+    mapOf(
+        "SSAnne_2F_Room3_EventScript_Gentleman" to SSAnne_2F_Room3_EventScript_Gentleman,
+        "SSAnne_2F_Room3_EventScript_OldMan" to SSAnne_2F_Room3_EventScript_OldMan,
+    )

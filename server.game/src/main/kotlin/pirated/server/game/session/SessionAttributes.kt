@@ -1,0 +1,53 @@
+package pirated.server.game.session
+
+import pirated.network.SessionAttribute
+import pirated.items.ItemDef
+import pirated.net.game.packets.ShopItem
+import pirated.net.game.packets.dialog.DialogActionResponsePacket
+import pirated.server.game.storage.StoredCharacter
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+
+val PLAYER_STATE = SessionAttribute.of<PlayerState>("playerState")
+
+/** Completed when the player advances or closes the dialog box a script is currently waiting on. */
+val PENDING_DIALOG = SessionAttribute.of<CompletableDeferred<Unit>>("pendingDialog")
+
+/** Completes with the selected dialog value. */
+val PENDING_DIALOG_RESPONSE =
+    SessionAttribute.of<CompletableDeferred<DialogActionResponsePacket>>("pendingDialogResponse")
+
+/**
+ * Completes with the bytes of a payload answer (c2s 0x28, TypedBinaryDataPacket): the Plant Seeds
+ * window answers its seed picks this way, cancel still comes as a DialogActionResponsePacket.
+ */
+val PENDING_DIALOG_PAYLOAD =
+    SessionAttribute.of<CompletableDeferred<ByteArray?>>("pendingDialogPayload")
+
+/** Completed when the client has asked for its player again, which ends a map transition. */
+val PENDING_MAP_LOAD = SessionAttribute.of<CompletableDeferred<Unit>>("pendingMapLoad")
+
+/** Scope the connection's scripts run in. Cancelled on disconnect so a waiting script unwinds. */
+val SCRIPT_SCOPE = SessionAttribute.of<CoroutineScope>("scriptScope")
+
+/**
+ * The character as it was before the running script started, so an unfinished one can be undone.
+ */
+val SCRIPT_SNAPSHOT = SessionAttribute.of<StoredCharacter>("scriptSnapshot")
+
+/**
+ * Nothing tells the server the mart window closed, so the map it opened on is recorded and a shelf
+ * left behind stops applying once the player walks off that map.
+ */
+data class OpenShop(
+    val regionId: Int,
+    val bankId: Int,
+    val mapId: Int,
+    val shelf: Map<ItemDef, ShopItem>,
+)
+
+val OPEN_SHOP = SessionAttribute.of<OpenShop>("openShop")
+
+/** Social prompts (trade, link, friend, team, duel) awaiting this player's answer, by dialog id. */
+val PENDING_SOCIAL_REQUESTS =
+    SessionAttribute.of<java.util.concurrent.ConcurrentHashMap<Int, pirated.server.game.services.SocialRequestService.Pending>>("pendingSocialRequests")

@@ -1,9 +1,9 @@
 @import java.util.List
 
 @param List<List<String>> chunks
-package de.fiereu.openmmo.maps.generated
+package pirated.maps.generated
 
-import de.fiereu.openmmo.maps.MapManager
+import pirated.maps.MapManager
 
 internal object GeneratedMaps {
   fun loadInto(mgr: MapManager) {

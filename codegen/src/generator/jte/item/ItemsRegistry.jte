@@ -1,11 +1,11 @@
 @import java.util.List
-@import de.fiereu.openmmo.codegen.item.ParsedItem
-@import de.fiereu.openmmo.codegen.item.RenderUtil
+@import pirated.codegen.item.ParsedItem
+@import pirated.codegen.item.RenderUtil
 
 @param List<List<ParsedItem>> chunks
-package de.fiereu.openmmo.items.generated
+package pirated.items.generated
 
-import de.fiereu.openmmo.items.ItemRegistry
+import pirated.items.ItemRegistry
 
 internal object GeneratedItems {
   fun loadInto(reg: ItemRegistry) {

@@ -1,0 +1,35 @@
+package pirated.net.game.packets
+
+import pirated.bytecodec.CodecScope
+import pirated.bytecodec.PacketCodec
+
+/**
+ * Empty-bodied probes for the s2c opcodes the protocol has not mapped yet.
+ *
+ * The client's packet reader catches a failed parse per packet and logs "Reading failed for packet
+ * {class}" (f/eR bytecode) with the CLASS it tried to decode - so firing an empty body at an
+ * unknown opcode makes the client itself name the packet behind it. This is the runtime-probe arm
+ * of verify-against-client, currently hunting the evolution-prompt packet whose c2s response (0x0B,
+ * entity id + accepted flag) the protocol already carries.
+ */
+class OpcodeProbeCodec<T : Any>(private val make: () -> T) : PacketCodec<T>() {
+  override fun CodecScope<T>.body(): T {
+    // 32 zero bytes: enough for any plausible header (ids, species, flags all read as zero),
+    // so the client parser either consumes a zeroed no-op or logs a clean per-packet failure -
+    // an EMPTY body desynced the compressed stream after two probes.
+    repeat(32) { field(pirated.bytecodec.U8) { 0 } }
+    return make()
+  }
+}
+
+class Probe06Packet
+
+class Probe6APacket
+
+class Probe82Packet
+
+class Probe8APacket
+
+class Probe9FPacket
+
+class ProbeAFPacket
